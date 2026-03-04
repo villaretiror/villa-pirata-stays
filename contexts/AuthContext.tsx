@@ -17,56 +17,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sincronización con tabla 'profiles' (DB Pública)
-  const syncProfile = async (sbUser: any) => {
-    try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', sbUser.id)
-        .single();
-
-      if (error && error.code === 'PGRST116') {
-        // No existe, crearlo (Sync inicial)
-        await supabase.from('profiles').insert([
-          {
-            id: sbUser.id,
-            email: sbUser.email,
-            name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0],
-            role: sbUser.user_metadata?.role || 'guest',
-            avatar: sbUser.user_metadata?.avatar || '',
-            phone: sbUser.user_metadata?.phone || '',
-            emergency_contact: sbUser.user_metadata?.emergencyContact || '',
-            registered_at: new Date().toISOString()
-          }
-        ]);
-      }
-    } catch (e) {
-      console.error("Error syncing profile:", e);
-    }
+  // Función para obtener el perfil extendido desde la tabla pública
+  const getExtendedProfile = async (id: string) => {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', id)
+      .single();
+    return profile;
   };
 
   useEffect(() => {
-    // 1. Verificar sesión inicial
     const initSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
-        await syncProfile(session.user);
+        const profile = await getExtendedProfile(session.user.id);
+        setUser(mapSupabaseUser(session.user, profile));
       }
       setLoading(false);
     };
 
     initSession();
 
-    // 2. Escuchar cambios de estado (Login/Logout/Password Changes)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
       if (session?.user) {
-        const mapped = mapSupabaseUser(session.user);
-        setUser(mapped);
-        if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
-          await syncProfile(session.user);
-        }
+        const profile = await getExtendedProfile(session.user.id);
+        setUser(mapSupabaseUser(session.user, profile));
       } else {
         setUser(null);
       }
@@ -78,15 +54,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  // Mapper para convertir User de Supabase a nuestro tipo User de tipos.ts
-  const mapSupabaseUser = (sbUser: any): User => ({
+  // Mapper mejorado que prioriza los datos de la tabla 'profiles'
+  const mapSupabaseUser = (sbUser: any, dbProfile: any = null): User => ({
     id: sbUser.id,
     email: sbUser.email || '',
-    name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
-    role: sbUser.user_metadata?.role || 'guest',
-    avatar: sbUser.user_metadata?.avatar || '',
-    phone: sbUser.user_metadata?.phone || '',
-    emergencyContact: sbUser.user_metadata?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
+    name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
+    role: dbProfile?.role || sbUser.user_metadata?.role || 'guest',
+    avatar: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || '',
+    phone: dbProfile?.phone || sbUser.user_metadata?.phone || '',
+    emergencyContact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
     verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
     registeredAt: sbUser.created_at,
   });
@@ -94,9 +70,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) return { user: null, error: error.message };
-    const mappedUser = mapSupabaseUser(data.user);
+    const profile = await getExtendedProfile(data.user.id);
+    const mappedUser = mapSupabaseUser(data.user, profile);
     setUser(mappedUser);
-    await syncProfile(data.user);
     return { user: mappedUser, error: null };
   };
 
@@ -123,24 +99,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUser = async (updated: Partial<User>) => {
-    // 1. Actualizar Supabase Auth Metadata
+    // 1. Actualizar Supabase Auth Metadata (para consistencia rápida)
     const { data, error } = await supabase.auth.updateUser({
       data: { ...updated }
     });
 
-    // 2. Sincronizar con tabla 'profiles' para persistencia pública
+    // 2. Sincronizar con tabla 'profiles' (Esquema SQL nuevo)
     if (!error && data.user) {
       await supabase
         .from('profiles')
         .upsert({
           id: data.user.id,
-          name: updated.name || data.user.user_metadata?.name,
-          phone: updated.phone || data.user.user_metadata?.phone,
-          avatar: updated.avatar || data.user.user_metadata?.avatar,
-          emergency_contact: updated.emergencyContact || data.user.user_metadata?.emergencyContact
+          full_name: updated.name,
+          phone: updated.phone,
+          avatar_url: updated.avatar,
+          emergency_contact: updated.emergencyContact
         });
 
-      setUser(mapSupabaseUser(data.user));
+      const profile = await getExtendedProfile(data.user.id);
+      setUser(mapSupabaseUser(data.user, profile));
     }
 
     if (error) throw error;
