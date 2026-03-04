@@ -17,12 +17,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Sincronización con tabla 'profiles'
+  const syncProfile = async (sbUser: any) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', sbUser.id)
+        .single();
+
+      if (error && error.code === 'PGRST116') {
+        // No existe, crearlo
+        await supabase.from('profiles').insert([
+          {
+            id: sbUser.id,
+            email: sbUser.email,
+            name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0],
+            role: sbUser.user_metadata?.role || 'guest',
+            avatar: sbUser.user_metadata?.avatar || '',
+            registered_at: new Date().toISOString()
+          }
+        ]);
+      }
+    } catch (e) {
+      console.error("Error syncing profile:", e);
+    }
+  };
+
   useEffect(() => {
     // 1. Verificar sesión inicial
     const initSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         setUser(mapSupabaseUser(session.user));
+        await syncProfile(session.user);
       }
       setLoading(false);
     };
@@ -30,9 +58,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     // 2. Escuchar cambios de estado (Login/Logout/Password Changes)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
       if (session?.user) {
-        setUser(mapSupabaseUser(session.user));
+        const mapped = mapSupabaseUser(session.user);
+        setUser(mapped);
+        if (_event === 'SIGNED_IN' || _event === 'INITIAL_SESSION') {
+          await syncProfile(session.user);
+        }
       } else {
         setUser(null);
       }
@@ -60,6 +92,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) return { user: null, error: error.message };
     const mappedUser = mapSupabaseUser(data.user);
     setUser(mappedUser);
+    await syncProfile(data.user);
     return { user: mappedUser, error: null };
   };
 

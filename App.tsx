@@ -28,7 +28,7 @@ const App: React.FC = () => {
     isReservation: location.pathname.startsWith('/reservation/')
   };
 
-  const showNavbar = !uiConfig.isHost && !uiConfig.isAuth && !uiConfig.isDetails && !uiConfig.isBooking;
+  const showNavbar = !uiConfig.isHost && !uiConfig.isDetails && !uiConfig.isBooking;
   const showWhatsApp = !uiConfig.isHost && !uiConfig.isAuth;
 
   useEffect(() => {
