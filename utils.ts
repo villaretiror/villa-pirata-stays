@@ -70,19 +70,25 @@ export const formatDateLong = (dateStr: string): string => {
   }).format(date);
 };
 
-// 3. Mock Scraping Engine
-export const fetchMockICal = async (url: string): Promise<string> => {
-  return new Promise((resolve, reject) => {
-    if (!url.startsWith('http')) return reject(new Error('URL de calendario inválida.'));
-    setTimeout(() => {
-      const today = new Date();
-      const fmt = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '');
-      const d1 = new Date(today); d1.setDate(today.getDate() + 3);
-      const d1e = new Date(today); d1e.setDate(today.getDate() + 7);
+// 3. Real iCal Fetching Engine
+export const fetchICalData = async (url: string): Promise<string> => {
+  if (!url.startsWith('http')) throw new Error('URL de calendario inválida.');
 
-      resolve(`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART;VALUE=DATE:${fmt(d1)}\nDTEND;VALUE=DATE:${fmt(d1e)}\nSUMMARY:Reserved\nEND:VEVENT\nEND:VCALENDAR`);
-    }, 1200);
-  });
+  // Usamos un proxy de CORS para poder leer feeds de Airbnb/Booking desde el navegador
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+
+  try {
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('Error al conectar con el servidor externo.');
+
+    const data = await response.json();
+    if (!data.contents) throw new Error('El calendario está vacío o no es accesible.');
+
+    return data.contents;
+  } catch (error: any) {
+    console.error("iCal Fetch Error:", error);
+    throw new Error(`Error de sincronización: ${error.message}`);
+  }
 };
 
 export const mockImportFromLink = async (url: string): Promise<Partial<Property>> => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, LocalGuideCategory, LocalGuideItem, Offer, CalendarSync, Review, User } from '../types';
 import GuideCard from '../components/GuideCard';
-import { fetchMockICal, parseICalData, mockImportFromLink, generateWhatsAppLink, getHostInstructionMessage } from '../utils';
+import { fetchICalData, parseICalData, mockImportFromLink, generateWhatsAppLink, getHostInstructionMessage } from '../utils';
 import HostMenu from '../components/host/HostMenu';
 import HostChat from '../components/host/HostChat';
 import { useAuth } from '../contexts/AuthContext';
@@ -255,17 +255,31 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
       const filePath = `property-images/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
-        .from('villas')
-        .upload(filePath, file);
+      console.log("Supabase Upload Debug: Intentando subir a bucket 'villas' el archivo", filePath);
 
-      if (uploadError) throw uploadError;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('villas')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false
+        });
+
+      if (uploadError) {
+        console.error("Supabase Upload Detailed Error:", uploadError);
+        throw new Error(`Error de Supabase: ${uploadError.message}`);
+      }
+
+      console.log("Supabase Upload Success:", uploadData);
 
       const { data } = supabase.storage
         .from('villas')
         .getPublicUrl(filePath);
 
       return data.publicUrl;
+    } catch (err: any) {
+      console.error("Critical Upload Error:", err);
+      showToast(`Error al subir imagen: ${err.message}`);
+      return null;
     } finally {
       setIsUploading(false);
     }
@@ -313,31 +327,37 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
 
   // Calendar Sync Logic
   const syncExternalCalendars = async (syncItems: CalendarSync[]) => {
+    if (syncItems.length === 0) return;
     setIsSyncing(true);
     let gatheredEvents: string[] = [];
 
     try {
       for (const sync of syncItems) {
-        const icalData = await fetchMockICal(sync.url);
+        console.log(`Syncing ${sync.platform} from: ${sync.url}`);
+        const icalData = await fetchICalData(sync.url);
         const events = parseICalData(icalData);
         gatheredEvents = [...gatheredEvents, ...events];
       }
 
+      // Combinar fechas bloqueadas existentes con las nuevas de iCal
       const allUniqueDates = Array.from(new Set([...form.blockedDates, ...gatheredEvents]));
 
-      const updatedForm = {
+      const updatedForm: Property = {
         ...form,
         blockedDates: allUniqueDates,
-        calendarSync: form.calendarSync.map(c => ({ ...c, lastSynced: new Date().toISOString() }))
+        calendarSync: form.calendarSync.map(c => ({
+          ...c,
+          lastSynced: new Date().toISOString(),
+          syncStatus: 'success' as const
+        }))
       };
 
       setForm(updatedForm);
-      // Auto-save to Context for Real-Time effect across the app
       onSave(updatedForm);
-      showToast("Sincronización completada.");
-    } catch (e) {
-      console.error("Sync failed", e);
-      showToast("No se pudo conectar con el servidor de iCal.");
+      showToast(`Éxito: ${gatheredEvents.length} fechas sincronizadas.`);
+    } catch (e: any) {
+      console.error("Calendar Sync Critical Error:", e);
+      showToast(`Error de Sincronización: ${e.message}`);
     } finally {
       setIsSyncing(false);
     }
