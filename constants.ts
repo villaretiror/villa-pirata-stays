@@ -24,21 +24,21 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
         name: 'Playa Buyé',
         distance: '12-15 min',
         desc: 'La favorita de Instagram. Arena blanca, aguas color turquesa cristalino y un ambiente tranquilo. Perfecta para snorkeling, kayak o simplemente desconectar del mundo con un atardecer eterno.',
-        image: 'https://images.unsplash.com/photo-1590523278135-c59800eac084?auto=format&fit=crop&q=80&w=1200',
+        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaBuye.jpeg',
         mapUrl: mapRoute('Playa Buyé, Cabo Rojo, Puerto Rico')
       },
       {
         name: 'Playa Sucia (La Playuela) & El Faro',
         distance: '20-25 min',
         desc: 'Reserva natural virgen e indispensable. Acantilados dramáticos, el icónico Faro Los Morrillos, y una playa sin igual. La joya de la corona del suroeste boricua. ¡Imperdible!',
-        image: 'https://images.unsplash.com/photo-1541315878235-ef728e6789f2?auto=format&fit=crop&q=80&w=1200',
+        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaSucia.jpeg',
         mapUrl: mapRoute('Playa Sucia La Playuela, Cabo Rojo, Puerto Rico')
       },
       {
         name: 'Playa Combate',
         distance: '15-18 min',
         desc: 'Los atardeceres más épicos del Caribe. Restaurantes frente al mar, ambiente familiar de día y romántico al caer el sol. El kilómetro más fotogénico de la costa oeste.',
-        image: 'https://images.unsplash.com/photo-1544949132-c41c59fe95d4?auto=format&fit=crop&q=80&w=1200',
+        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/CombateBeach.jpeg',
         mapUrl: mapRoute('Playa Combate, Cabo Rojo, Puerto Rico')
       }
     ]
@@ -51,8 +51,8 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
       {
         name: 'Buena Vibra (Boquerón)',
         distance: '6 min',
-        desc: 'Cocina criolla de autor con un toque artesanal. Mofongo, ceviches y cócteles tropicales en un ambiente relajado con decoración boho-caribeña. El spot favorito de los locales.',
-        image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&q=80&w=1200',
+        desc: 'Cócteles artesanales, ambiente vibrante y la mejor energía nocturna de Boquerón. El punto de encuentro favorito de locales y viajeros. Pide el mojito de parcha y déjate llevar por la buena vibra.',
+        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/BuenaVibra.jpeg',
         mapUrl: mapRoute('Buena Vibra Boquerón, Cabo Rojo, Puerto Rico')
       },
       {
