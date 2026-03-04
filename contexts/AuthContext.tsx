@@ -17,7 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Sincronización con tabla 'profiles'
+  // Sincronización con tabla 'profiles' (DB Pública)
   const syncProfile = async (sbUser: any) => {
     try {
       const { data: profile, error } = await supabase
@@ -27,7 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .single();
 
       if (error && error.code === 'PGRST116') {
-        // No existe, crearlo
+        // No existe, crearlo (Sync inicial)
         await supabase.from('profiles').insert([
           {
             id: sbUser.id,
@@ -35,6 +35,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0],
             role: sbUser.user_metadata?.role || 'guest',
             avatar: sbUser.user_metadata?.avatar || '',
+            phone: sbUser.user_metadata?.phone || '',
+            emergency_contact: sbUser.user_metadata?.emergencyContact || '',
             registered_at: new Date().toISOString()
           }
         ]);
@@ -83,6 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
     role: sbUser.user_metadata?.role || 'guest',
     avatar: sbUser.user_metadata?.avatar || '',
+    phone: sbUser.user_metadata?.phone || '',
+    emergencyContact: sbUser.user_metadata?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
     verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
     registeredAt: sbUser.created_at,
   });
@@ -119,12 +123,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUser = async (updated: Partial<User>) => {
+    // 1. Actualizar Supabase Auth Metadata
     const { data, error } = await supabase.auth.updateUser({
       data: { ...updated }
     });
+
+    // 2. Sincronizar con tabla 'profiles' para persistencia pública
     if (!error && data.user) {
+      await supabase
+        .from('profiles')
+        .upsert({
+          id: data.user.id,
+          name: updated.name || data.user.user_metadata?.name,
+          phone: updated.phone || data.user.user_metadata?.phone,
+          avatar: updated.avatar || data.user.user_metadata?.avatar,
+          emergency_contact: updated.emergencyContact || data.user.user_metadata?.emergencyContact
+        });
+
       setUser(mapSupabaseUser(data.user));
     }
+
+    if (error) throw error;
   };
 
   return (
