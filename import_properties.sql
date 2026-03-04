@@ -21,7 +21,7 @@ INSERT INTO public.properties (
   ARRAY['Generador Eléctrico FULL Automático','Piscina Privada de Agua Salada','Starlink WiFi','Área de BBQ','Pet Friendly','Aire Acondicionado','Cocina Completa','Self Check-in'],
   8,
   '{}',
-  '[]'::jsonb,
+  '[{"id":"airbnb-villa-retiro","platform":"Airbnb","url":"https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae","lastSynced":"","syncStatus":"success"}]'::jsonb,
   false
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -30,7 +30,8 @@ ON CONFLICT (id) DO UPDATE SET
   price_per_night = EXCLUDED.price_per_night,
   images = EXCLUDED.images,
   amenities = EXCLUDED.amenities,
-  max_guests = EXCLUDED.max_guests;
+  max_guests = EXCLUDED.max_guests,
+  calendar_sync = EXCLUDED.calendar_sync;
 
 -- 2. Pirata Family House (Airbnb ID: 42839458)
 INSERT INTO public.properties (
@@ -52,7 +53,7 @@ INSERT INTO public.properties (
   ARRAY['WiFi de Alta Velocidad','Aire Acondicionado','Cocina Completa','Self Check-in','Estacionamiento Privado','TV con Streaming','Área de BBQ','Pet Friendly'],
   6,
   '{}',
-  '[]'::jsonb,
+  '[{"id":"airbnb-pirata-family","platform":"Airbnb","url":"https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331","lastSynced":"","syncStatus":"success"}]'::jsonb,
   false
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -61,4 +62,5 @@ ON CONFLICT (id) DO UPDATE SET
   price_per_night = EXCLUDED.price_per_night,
   images = EXCLUDED.images,
   amenities = EXCLUDED.amenities,
-  max_guests = EXCLUDED.max_guests;
+  max_guests = EXCLUDED.max_guests,
+  calendar_sync = EXCLUDED.calendar_sync;

@@ -75,7 +75,15 @@ export const PROPERTIES: Property[] = [
       accessCode: "4829 #"
     },
     blockedDates: [],
-    calendarSync: [],
+    calendarSync: [
+      {
+        id: 'airbnb-villa-retiro',
+        platform: 'Airbnb',
+        url: 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae',
+        lastSynced: new Date().toISOString(),
+        syncStatus: 'success' as const
+      }
+    ],
     rating: 4.78,
     reviews: 9,
     images: [
@@ -139,7 +147,15 @@ export const PROPERTIES: Property[] = [
       accessCode: "1776 #"
     },
     blockedDates: [],
-    calendarSync: [],
+    calendarSync: [
+      {
+        id: 'airbnb-pirata-family',
+        platform: 'Airbnb',
+        url: 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331',
+        lastSynced: new Date().toISOString(),
+        syncStatus: 'success' as const
+      }
+    ],
     rating: 4.94,
     reviews: 17,
     images: [
