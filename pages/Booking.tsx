@@ -185,22 +185,26 @@ const Booking: React.FC = () => {
           </div>
 
           {/* Métodos de Pago */}
-          <div className="space-y-3">
+          <div className="space-y-4">
             <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Método de Pago</h3>
             <div className="grid grid-cols-2 gap-3">
               <button
                 onClick={() => setPaymentMethod('paypal')}
-                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-orange-50' : 'border-gray-100 bg-white'}`}
+                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-orange-50 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
               >
-                <div className="w-10 h-10 bg-[#003087] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-sm">P</div>
-                <p className="font-bold text-xs">PayPal</p>
+                <div className="w-12 h-8 flex items-center justify-center">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-5" alt="PayPal" />
+                </div>
+                <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">PayPal</p>
               </button>
               <button
                 onClick={() => setPaymentMethod('ath_movil')}
-                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}
+                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-orange-500 bg-orange-50 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
               >
-                <div className="w-10 h-10 bg-[#FF6B35] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-sm">ATH</div>
-                <p className="font-bold text-xs">ATH Móvil</p>
+                <div className="w-12 h-8 flex items-center justify-center">
+                  <span className="bg-[#FF6B35] text-white px-2 py-0.5 rounded-md font-black text-[10px] italic">ATH</span>
+                </div>
+                <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">ATH Móvil</p>
               </button>
             </div>
 
@@ -294,7 +298,7 @@ const Booking: React.FC = () => {
         .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { background-color: #EF4444 !important; border-radius: 12px !important; color: white !important; }
         .react-datepicker__day--in-range { background-color: rgba(239, 68, 68, 0.1) !important; color: #EF4444 !important; }
       `}</style>
-    </div>
+    </div >
   );
 };
 
