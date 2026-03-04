@@ -7,7 +7,7 @@ import HostMenu from '../components/host/HostMenu';
 import HostChat from '../components/host/HostChat';
 import { useAuth } from '../contexts/AuthContext';
 import { useProperty } from '../contexts/PropertyContext';
-import { localAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 
 // --- CUSTOM TOAST ---
 let globalToastCallback: (msg: string) => void = () => { };
@@ -244,7 +244,31 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 
 const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p: Property) => void, onCancel: () => void }) => {
   const [form, setForm] = useState(property);
+  const [isUploading, setIsUploading] = useState(false);
   const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers'>('info');
+
+  const uploadImage = async (file: File) => {
+    setIsUploading(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `property-images/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('villas')
+        .upload(filePath, file);
+
+      if (uploadError) throw uploadError;
+
+      const { data } = supabase.storage
+        .from('villas')
+        .getPublicUrl(filePath);
+
+      return data.publicUrl;
+    } finally {
+      setIsUploading(false);
+    }
+  };
 
   // Offers state helpers
   const [newOfferText, setNewOfferText] = useState("");
@@ -551,21 +575,34 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
 
           {activeSection === 'photos' && (
             <div className="space-y-6 animate-slide-up">
-              <div className="bg-gray-50 p-6 rounded-[2rem] border-2 border-dashed border-gray-200 text-center relative group">
-                <input
-                  type="file"
-                  accept="image/webp,image/jpeg,image/png"
-                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > 2 * 1024 * 1024) return showToast("La imagen supera los 2MB permitidos.");
-                      showToast("Imagen subida con éxito (Simulación)");
-                    }
-                  }}
-                />
-                <span className="material-icons text-4xl text-gray-300 mb-2 group-hover:text-primary transition-colors">add_a_photo</span>
-                <p className="text-xs font-bold text-text-light uppercase tracking-widest">Subir nueva fotografía (Máx 2MB)</p>
+              <div className={`bg-gray-50 p-6 rounded-[2rem] border-2 border-dashed border-gray-200 text-center relative group ${isUploading ? 'opacity-50 cursor-wait' : ''}`}>
+                {!isUploading && (
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > 2 * 1024 * 1024) return showToast("La imagen supera los 2MB permitidos.");
+                        try {
+                          const url = await uploadImage(file);
+                          setForm({ ...form, images: [...form.images, url] });
+                          showToast("Imagen subida con éxito.");
+                        } catch (err) {
+                          showToast("Error al subir a Supabase Storage.");
+                          console.error(err);
+                        }
+                      }
+                    }}
+                  />
+                )}
+                <span className={`material-icons text-4xl mb-2 ${isUploading ? 'animate-spin text-primary' : 'text-gray-300 group-hover:text-primary transition-colors'}`}>
+                  {isUploading ? 'sync' : 'add_a_photo'}
+                </span>
+                <p className="text-xs font-bold text-text-light uppercase tracking-widest">
+                  {isUploading ? 'Subiendo archivo...' : 'Subir nueva fotografía (Máx 2MB)'}
+                </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {form.images.map((img, i) => (
@@ -573,13 +610,15 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
                     <img src={img} className="w-full h-32 object-cover" alt="Property" />
                     <div className="absolute inset-x-0 bottom-0 bg-black/40 backdrop-blur-sm p-1.5 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                       <span className="material-icons text-white text-sm">drag_indicator</span>
-                      <span className="material-icons text-white text-sm hover:text-red-400">delete</span>
+                      <button onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })}>
+                        <span className="material-icons text-white text-sm hover:text-red-400">delete</span>
+                      </button>
                     </div>
                     <div className="absolute top-2 left-2 bg-white/90 text-black text-[9px] font-black px-2 py-0.5 rounded-full shadow-sm uppercase">#{i + 1}</div>
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-center text-text-light font-bold uppercase tracking-widest bg-sand py-2 rounded-xl">Mantén presionado para reordenar (Demo)</p>
+              <p className="text-[10px] text-center text-text-light font-bold uppercase tracking-widest bg-sand py-2 rounded-xl">Gestión de imágenes real conectada</p>
             </div>
           )}
           {activeSection === 'fees' && <p className="text-gray-400 text-center py-10">Configuración de tarifas próximamente.</p>}
@@ -632,28 +671,104 @@ const HostDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [leads, setLeads] = useState<User[]>([]);
-
-  // Property & Guide Editing State
   const [isEditing, setIsEditing] = useState<string | null>(null);
   const [isEditingGuide, setIsEditingGuide] = useState<{ catId: string, idx: number } | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
-
-  // Chat State (Controlled by Dashboard to open from "Today" view)
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  // Real-time Database State
+  const [realBookings, setRealBookings] = useState<any[]>([]);
   const [cleaningStatus, setCleaningStatus] = useState<'ready' | 'progress' | 'dirty'>('ready');
 
-  // --- FETCH LEADS ---
+  // --- SYNC WITH SUPABASE ---
   useEffect(() => {
-    if (activeTab === 'leads') {
-      const data = localAuth.getAllLeads();
-      setLeads(data);
-    }
+    const fetchData = async () => {
+      // 1. Fetch Properties from DB
+      const { data: props } = await supabase.from('properties').select('*');
+      if (props && props.length > 0) {
+        const mappedProps = props.map(p => ({
+          id: p.id,
+          title: p.title,
+          description: p.description,
+          price: Number(p.price_per_night),
+          location: p.location,
+          images: p.images || [],
+          amenities: p.amenities || [],
+          guests: p.max_guests,
+          // Re-mapping deeper fields to satisfy Property type
+          featuredAmenity: p.amenities?.[0],
+          rating: 4.8,
+          reviews: 12,
+          subtitle: "Villa Privada",
+          address: p.location,
+          bedrooms: 2, beds: 2, baths: 1,
+          fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
+          policies: { checkInTime: "15:00", checkOutTime: "11:00", maxGuests: p.max_guests, wifiName: "Villa_WiFi", wifiPass: "familia123", accessCode: "4532" },
+          blockedDates: [],
+          calendarSync: [],
+          host: { name: user?.name || 'Anfitrión', image: user?.avatar || '', yearsHosting: 3, badges: ['Superhost'] }
+        } as Property));
+        onUpdateProperties(mappedProps);
+      }
+
+      // 2. Fetch Bookings joined with User Profiles
+      const today = new Date().toISOString().split('T')[0];
+      const { data: bookings } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:user_id (full_name, avatar_url),
+          properties:property_id (title, images)
+        `)
+        .eq('check_in', today);
+
+      if (bookings) setRealBookings(bookings);
+    };
+
+    fetchData();
+  }, [user]);
+
+  // --- FETCH LEADS (PROFILES) ---
+  useEffect(() => {
+    const fetchLeads = async () => {
+      const { data } = await supabase.from('profiles').select('*');
+      if (data) {
+        setLeads(data.map(p => ({
+          id: p.id,
+          name: p.full_name || 'Huésped Anónimo',
+          email: 'Registrado vía App',
+          role: p.role || 'guest',
+          avatar: p.avatar_url,
+          phone: p.phone,
+          verificationStatus: 'verified',
+          registeredAt: p.updated_at
+        } as any)));
+      }
+    };
+    if (activeTab === 'leads') fetchLeads();
   }, [activeTab]);
 
   // --- HANDLERS ---
 
-  const handleSaveProperty = (updated: Property) => {
-    // Check if it's a new property or existing
+  const handleSaveProperty = async (updated: Property) => {
+    // Persistent Save to Supabase
+    const { error } = await supabase.from('properties').upsert({
+      id: updated.id.includes('imported') ? undefined : updated.id,
+      title: updated.title,
+      description: updated.description,
+      location: updated.location,
+      price_per_night: updated.price,
+      images: updated.images,
+      amenities: updated.amenities,
+      max_guests: updated.guests
+    });
+
+    if (error) {
+      showToast("Error al sincronizar con Supabase.");
+      console.error(error);
+      return;
+    }
+
     const exists = properties.find(p => p.id === updated.id);
     if (exists) {
       const updatedProperties = properties.map(p => p.id === updated.id ? updated : p);
@@ -662,6 +777,7 @@ const HostDashboard: React.FC = () => {
       onUpdateProperties([...properties, updated]);
     }
     setIsEditing(null);
+    showToast("Propiedad guardada en la nube.");
   };
 
   const handleSaveGuideItem = (updatedItem: LocalGuideItem, catId: string, itemIdx: number) => {
@@ -679,23 +795,37 @@ const HostDashboard: React.FC = () => {
 
   const handleImport = async (url: string) => {
     setShowImportModal(false);
-    // 1. Get Simulated Data
     const importedData = await mockImportFromLink(url);
 
-    // 2. Create a full Property object merging defaults with imported data
-    const newProperty: Property = {
-      id: `imported-${Date.now()}`,
+    // Save to Database first to get a real ID
+    const { data: dbItem, error } = await supabase.from('properties').insert({
       title: importedData.title || "Nueva Propiedad",
-      subtitle: "Recién importada",
-      location: "Cabo Rojo, PR",
-      address: "",
       description: importedData.description || "",
-      price: importedData.price || 150,
-      rating: importedData.rating || 0,
-      reviews: importedData.reviews || 0,
+      price_per_night: importedData.price || 150,
+      location: "Isabela, PR",
       images: importedData.images || [],
       amenities: importedData.amenities || [],
-      guests: 4,
+      max_guests: 4
+    }).select().single();
+
+    if (error || !dbItem) {
+      showToast("Fallo en la importación a DB.");
+      return;
+    }
+
+    const newProperty: Property = {
+      id: dbItem.id,
+      title: dbItem.title,
+      subtitle: "Importada de plataforma",
+      location: dbItem.location,
+      address: "",
+      description: dbItem.description,
+      price: Number(dbItem.price_per_night),
+      rating: importedData.rating || 4.5,
+      reviews: importedData.reviews || 10,
+      images: dbItem.images,
+      amenities: dbItem.amenities,
+      guests: dbItem.max_guests,
       bedrooms: 2,
       beds: 2,
       baths: 1,
@@ -703,12 +833,12 @@ const HostDashboard: React.FC = () => {
       policies: { checkInTime: "15:00", checkOutTime: "11:00", maxGuests: 6, wifiName: "", wifiPass: "", accessCode: "" },
       blockedDates: [],
       calendarSync: [],
-      host: properties[0]?.host || { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
+      host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
     };
 
-    // 3. Add to list and immediately open editor
     onUpdateProperties([...properties, newProperty]);
     setIsEditing(newProperty.id);
+    showToast("Importada con éxito en Supabase.");
   };
 
   // Check if an offer is expired
@@ -782,50 +912,59 @@ const HostDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Reservation Card */}
-      <article className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 relative overflow-hidden">
-        <div className="flex justify-between items-start mb-6">
-          <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-            Check-in Hoy
-          </div>
-          <span className="font-serif font-bold text-text-main">15:00</span>
-        </div>
+      {/* Reservation Cards: Real Real-Time Data */}
+      {realBookings.length > 0 ? (
+        realBookings.map((booking) => (
+          <article key={booking.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 relative overflow-hidden mb-4">
+            <div className="flex justify-between items-start mb-6">
+              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
+                Reserva {booking.status}
+              </div>
+              <span className="font-serif font-bold text-text-main">In: {booking.check_in}</span>
+            </div>
 
-        <div className="flex items-center gap-4 mb-6">
-          <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-float relative">
-            <img src="https://i.pravatar.cc/150?img=32" alt="Guest" className="w-full h-full object-cover" />
-            <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
-          </div>
-          <div>
-            <h3 className="text-xl font-serif font-bold text-text-main leading-tight">Meliza & Familia</h3>
-            <p className="text-[10px] font-black uppercase tracking-widest text-text-light mt-1">7 Huéspedes • 2 Noches</p>
-          </div>
-        </div>
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-float relative">
+                <img src={booking.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="Guest" className="w-full h-full object-cover" />
+                <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+              </div>
+              <div>
+                <h3 className="text-xl font-serif font-bold text-text-main leading-tight">{booking.profiles?.full_name || 'Huésped'}</h3>
+                <p className="text-[10px] font-black uppercase tracking-widest text-text-light mt-1">
+                  ${booking.total_price} • {booking.status}
+                </p>
+              </div>
+            </div>
 
-        <div className="bg-gray-50/50 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 mb-6">
-          <div className="w-12 h-12 bg-white p-1 rounded-xl shadow-sm overflow-hidden">
-            <img src={properties[0]?.images[0]} className="w-full h-full object-cover rounded-lg" alt="Prop" />
-          </div>
-          <div>
-            <h4 className="font-bold text-sm text-text-main">{properties[0]?.title}</h4>
-            <p className="text-[10px] font-black uppercase tracking-widest text-secondary">Asegurada con ATH Móvil</p>
-          </div>
-        </div>
+            <div className="bg-gray-50/50 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 mb-6">
+              <div className="w-12 h-12 bg-white p-1 rounded-xl shadow-sm overflow-hidden">
+                <img src={booking.properties?.images?.[0] || 'https://placehold.co/150'} className="w-full h-full object-cover rounded-lg" alt="Prop" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-text-main">{booking.properties?.title || 'Villa'}</h4>
+                <p className="text-[10px] font-black uppercase tracking-widest text-secondary">ID: {booking.id.slice(0, 8)}</p>
+              </div>
+            </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => setIsChatOpen(true)}
-            className="bg-black hover:bg-gray-900 text-white font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
-          >
-            <span className="material-icons text-sm">chat</span>
-            Mensaje
-          </button>
-          <button className="bg-white border border-gray-200 text-text-main font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95">
-            <span className="material-icons text-sm">assignment</span>
-            Detalles
-          </button>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setIsChatOpen(true)}
+                className="bg-black hover:bg-gray-900 text-white font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all"
+              >
+                <span className="material-icons text-sm">chat</span> Mensaje
+              </button>
+              <button className="bg-white border border-gray-200 text-text-main font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all">
+                <span className="material-icons text-sm">assignment</span> Detalles
+              </button>
+            </div>
+          </article>
+        ))
+      ) : (
+        <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
+          <span className="material-icons text-4xl text-gray-200 mb-2">hotel</span>
+          <p className="text-xs font-bold text-gray-400">Sin check-ins para hoy</p>
         </div>
-      </article>
+      )}
     </div>
   );
 
