@@ -53,11 +53,11 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
 export const PROPERTIES: Property[] = [
   {
     id: '1081171030449673920',
-    title: 'Villa Retiro R: Tu Refugio de Lujo',
-    subtitle: 'Energía y Agua Garantizada • Piscina Privada • Cabo Rojo',
+    title: 'Villa Retiro R',
+    subtitle: 'Family Pool Retreat · Energía Garantizada · Cabo Rojo',
     location: 'Cabo Rojo, Puerto Rico',
     address: 'Carr 307 Km 6.2, Interior, Cabo Rojo, 00623',
-    description: 'Nuestra Villa Retiro R es la joya del oeste, donde la exclusividad se encuentra con la paz total. Energía y agua garantizada para un confort ininterrumpido gracias a nuestro sistema de generador automático y cisterna industrial. Relájate en tu piscina de agua salada privada rodeado de un entorno natural sereno. Ubicada estratégicamente cerca de Combate y Buyé, es el destino definitivo para una staycation PR de alto nivel con total privacidad.',
+    description: 'Escápate de la rutina en nuestro espacio diseñado para vacaciones familiares. A solo 9 minutos del colorido centro de "El Poblado" Boquerón y 10 minutos de Playa Buyé, Playa Combate y la famosa Playa Sucia. Villa Retiro R ofrece piscina privada de agua salada, generador eléctrico automático para energía 24/7 y cisterna industrial para agua garantizada. El retiro perfecto para familias que buscan confort, privacidad y acceso inmediato a las mejores playas del suroeste de Puerto Rico.',
     price: 285,
     fees: {
       cleaningShort: 85,
@@ -69,21 +69,26 @@ export const PROPERTIES: Property[] = [
     policies: {
       checkInTime: "3:00 PM",
       checkOutTime: "11:00 AM",
-      maxGuests: 10,
+      maxGuests: 8,
       wifiName: "VillaRetiro_Starlink_Premium",
       wifiPass: "Tropical2024!",
       accessCode: "4829 #"
     },
     blockedDates: [],
     calendarSync: [],
-    rating: 4.99,
-    reviews: 142,
+    rating: 4.78,
+    reviews: 9,
     images: [
-      "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1613977257363-707ba9348227?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1556912177-eb6369ee09d3?auto=format&fit=crop&q=80&w=1200",
-      "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&q=80&w=1200"
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/95730c30-f345-41de-bf0d-1d9562c775e4.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-1081171030449673920/original/ced4098c-c522-4c05-b0d8-1ea532d338c0.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/0afd3011-e7b9-4ae2-94b5-5466425b52b2.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/b118ac79-89a6-47b1-adf4-5fea46f6dc33.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-1081171030449673920/original/d51583c6-3c7e-4c79-a0d1-31501ac4a867.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/281b582c-ec67-41f7-b2f3-c4e2836e80a4.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/e1f1a0e7-dff5-40f8-95df-d349ff4ad13e.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/0d16a2dc-b605-486a-884a-644228e95fb3.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/576f4bf0-2417-455c-8a57-ac41b2ea88e3.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/d3471c3b-3710-4222-8f30-016b7d33c2c4.jpeg"
     ],
     amenities: [
       'Generador Eléctrico FULL Automático',
@@ -93,17 +98,85 @@ export const PROPERTIES: Property[] = [
       'Starlink WiFi de Alta Velocidad',
       'Área de BBQ Profesional',
       'Pet Friendly con Patio Cerrado',
-      'Minutos de Playa Buyé & Combate'
+      'Aire Acondicionado Central',
+      'Cocina Completa Equipada',
+      'Self Check-in con Lockbox'
     ],
-    guests: 10,
-    bedrooms: 3,
-    beds: 6,
+    featuredAmenity: 'Generador Eléctrico FULL Automático',
+    category: 'Boutique',
+    guests: 8,
+    bedrooms: 2,
+    beds: 5,
     baths: 2,
     host: {
-      name: 'Carlos',
-      image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBEaokxH_ZWfMSA9DkAdNOrBrxi3UAC3m1h9TooqLj_sa6fh4ew_1GEq7EphFx7x52GRb0fdetzbcryLWpbnyFYxSBzPLbBL-ctobQpVyWXI4fufFaA6VVmEXXgBi65bCeU8mYihp1bgC2wXd1U6WzIhuUMplMFT1T8oQoNDb1ck7gYn6RXJ2v22QrDSbhg5zWWZ2MKrbczk4vtv5UgNP5oeK6EnQkGZ1doa_qAMIXcsXL0LLblW6GaPei8CMcSd50buW6udF5Uexg',
-      badges: ['Superhost Elite', 'Respuesta en < 1hr'],
-      yearsHosting: 6
+      name: 'Brian',
+      image: 'https://a0.muscache.com/im/pictures/user/User/original/0d2bef47-283d-4f96-a3be-4c8bbf46862b.jpeg?aki_policy=profile_x_medium',
+      badges: ['4 años como Anfitrión', 'Respuesta en < 1hr'],
+      yearsHosting: 4
+    }
+  },
+  {
+    id: '42839458',
+    title: 'Pirata Family House',
+    subtitle: 'Área de Boquerón · Cerca de Todo · Cabo Rojo',
+    location: 'Cabo Rojo, Puerto Rico',
+    address: 'Boquerón, Cabo Rojo, Puerto Rico 00622',
+    description: 'Disfruta y recarga energías en nuestra casa familiar. Este espacio es perfecto para parejas o familias que buscan vacacionar estando cerca de todo. Pirata Family House está ubicada a solo minutos de Boquerón, Combate, Buyé y Playa Sucia. Cerca de supermercados, restaurantes y licorerías. Self check-in para acceso fácil. ¡Tu aventura en el suroeste de Puerto Rico comienza aquí!',
+    price: 145,
+    fees: {
+      cleaningShort: 65,
+      cleaningMedium: 85,
+      cleaningLong: 120,
+      petFee: 35,
+      securityDeposit: 150
+    },
+    policies: {
+      checkInTime: "3:00 PM",
+      checkOutTime: "11:00 AM",
+      maxGuests: 6,
+      wifiName: "PirataHouse_WiFi",
+      wifiPass: "Pirata2024!",
+      accessCode: "1776 #"
+    },
+    blockedDates: [],
+    calendarSync: [],
+    rating: 4.94,
+    reviews: 17,
+    images: [
+      "https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/05f8a5b2-ef01-4470-a8f1-5f73fcba3301.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/a26d55e6-2784-45f1-81a3-6b73cf753a97.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/1ace8639-f247-4ebf-b0f0-174e5b3c1b46.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/34ba219d-7f08-402d-9ca5-6580c845d1e9.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/4fddfcb0-1fc7-468d-8ec4-d4a55f767006.jpeg",
+      "https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/c2464fa9-f2f9-4709-ae86-e6ace617f7f8.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/b5cf8898-cbe6-4f07-a98e-6818f8b9ae73.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/33a7455c-5e08-4aaa-96dd-13c9c3c3170e.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/e31738ed-102f-426c-82d2-31263eb8d445.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/a3fc93d3-5558-4390-8213-2431be1edef5.jpeg"
+    ],
+    amenities: [
+      'WiFi de Alta Velocidad',
+      'Aire Acondicionado',
+      'Cocina Completa',
+      'Self Check-in con Lockbox',
+      'Estacionamiento Privado',
+      'TV con Streaming',
+      'Área de BBQ',
+      'Pet Friendly',
+      'Cerca de Playa Boquerón',
+      'A minutos de Playa Sucia & Buyé'
+    ],
+    featuredAmenity: 'Cerca de Playa Boquerón',
+    category: 'Familiar',
+    guests: 6,
+    bedrooms: 2,
+    beds: 4,
+    baths: 1,
+    host: {
+      name: 'Brian',
+      image: 'https://a0.muscache.com/im/pictures/user/User/original/0d2bef47-283d-4f96-a3be-4c8bbf46862b.jpeg?aki_policy=profile_x_medium',
+      badges: ['4 años como Anfitrión', 'Superhost'],
+      yearsHosting: 4
     }
   }
 ];
