@@ -45,6 +45,9 @@ const Home: React.FC = () => {
 
   // Filter Logic based on Guests (Adults + Kids) AND Pets AND Category
   const filteredProperties = properties.filter(property => {
+    // 0. Emergency Check: Don't show offline properties
+    if (property.isOffline) return false;
+
     const totalHumans = adults + children;
 
     // 1. Check Capacity

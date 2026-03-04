@@ -71,6 +71,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
         {/* Badges */}
         {getBadge()}
 
+        {/* Emergency Badge */}
+        {property.isOffline && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-white p-6 text-center animate-fade-in">
+            <span className="material-icons text-5xl mb-3 text-red-500 animate-pulse">report_problem</span>
+            <h4 className="font-bold text-lg uppercase tracking-widest">Fuera de Servicio</h4>
+            <p className="text-xs opacity-80 mt-1">Esta propiedad está en mantenimiento o bajo emergencia. Regresa pronto.</p>
+          </div>
+        )}
+
         {/* Fav Button */}
         <button
           onClick={handleFavoriteClick}

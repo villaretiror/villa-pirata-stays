@@ -243,10 +243,10 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
   );
 };
 
-const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p: Property) => void, onCancel: () => void }) => {
+const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void }) => {
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'emergency'>('info');
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
@@ -298,6 +298,26 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
   const [isSyncing, setIsSyncing] = useState(false);
   const [newSyncUrl, setNewSyncUrl] = useState('');
   const [newSyncPlatform, setNewSyncPlatform] = useState('Airbnb');
+
+  // Emergency / Panic State
+  const [panicStart, setPanicStart] = useState("");
+  const [panicEnd, setPanicEnd] = useState("");
+  const [conflictSummary, setConflictSummary] = useState<any[]>([]);
+
+  const checkPanicConflicts = () => {
+    if (!panicStart || !panicEnd) return;
+    const start = new Date(panicStart);
+    const end = new Date(panicEnd);
+
+    const conflicts = bookings.filter(b => {
+      if (b.property_id !== form.id) return false;
+      const bStart = new Date(b.check_in);
+      const bEnd = new Date(b.check_out);
+      return (start < bEnd && end > bStart);
+    });
+
+    setConflictSummary(conflicts);
+  };
 
   const handleAddOffer = () => {
     if (!newOfferText.trim() || !newOfferDate) return;
@@ -539,6 +559,124 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
     );
   };
 
+  const renderEmergencySection = () => {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        {/* Offline Mode Switch */}
+        <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 shadow-sm">
+          <div className="flex justify-between items-center">
+            <div>
+              <h3 className="font-bold text-gray-900">Modo Offline (Invisible)</h3>
+              <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">La villa no aparecerá en búsquedas</p>
+            </div>
+            <button
+              onClick={() => setForm({ ...form, isOffline: !form.isOffline })}
+              className={`w-14 h-7 rounded-full transition-all relative ${form.isOffline ? 'bg-red-500' : 'bg-gray-300'}`}
+            >
+              <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all ${form.isOffline ? 'right-1' : 'left-1'}`}></div>
+            </button>
+          </div>
+        </div>
+
+        {/* Panic Button Section */}
+        <div className="p-6 bg-red-50 rounded-2xl border-2 border-red-100 relative overflow-hidden">
+          <div className="relative z-10">
+            <h3 className="text-red-600 font-black text-lg flex items-center gap-2 mb-2 italic">
+              <span className="material-icons">report_problem</span> BOTÓN DE PÁNICO
+            </h3>
+            <p className="text-red-700/70 text-xs font-bold mb-6">Bloqueo instantáneo por mantenimiento o emergencia climática.</p>
+
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div>
+                <label className="block text-[10px] font-black text-red-800 uppercase mb-1">Inicio Bloqueo</label>
+                <input
+                  type="date"
+                  value={panicStart}
+                  onChange={e => { setPanicStart(e.target.value); }}
+                  className="w-full p-2 bg-white border border-red-200 rounded-lg text-xs outline-none focus:ring-2 ring-red-300"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-black text-red-800 uppercase mb-1">Fin Bloqueo</label>
+                <input
+                  type="date"
+                  value={panicEnd}
+                  onChange={e => { setPanicEnd(e.target.value); }}
+                  className="w-full p-2 bg-white border border-red-200 rounded-lg text-xs outline-none focus:ring-2 ring-red-300"
+                />
+              </div>
+            </div>
+
+            <button
+              onClick={checkPanicConflicts}
+              className="w-full bg-red-600 text-white font-black py-4 rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all text-xs tracking-widest uppercase"
+            >
+              Auditar Conflictos de Reservas
+            </button>
+          </div>
+        </div>
+
+        {/* Conflicts & Actions */}
+        {conflictSummary.length > 0 && (
+          <div className="space-y-4 animate-slide-up">
+            <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+              <p className="text-orange-800 font-bold text-sm flex items-center gap-2">
+                <span className="material-icons text-base">warning</span>
+                Se detectaron {conflictSummary.length} reservas afectadas
+              </p>
+              <p className="text-orange-700/70 text-[10px] mt-1 italic">Debes contactar a estos huéspedes antes de confirmar el bloqueo.</p>
+            </div>
+
+            <div className="max-h-48 overflow-y-auto space-y-2 pr-2">
+              {conflictSummary.map((b, i) => (
+                <div key={i} className="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-xl shadow-sm">
+                  <div className="flex items-center gap-3">
+                    <img src={b.profiles?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'} className="w-8 h-8 rounded-full object-cover" alt="User" />
+                    <div>
+                      <p className="text-[11px] font-black text-text-main">{b.profiles?.full_name}</p>
+                      <p className="text-[9px] text-gray-400 font-bold uppercase tracking-tighter">{b.check_in} al {b.check_out}</p>
+                    </div>
+                  </div>
+                  <a
+                    href={generateWhatsAppLink(b.profiles?.phone || '17873560895', `¡Hola ${b.profiles?.full_name}! Lamentamos informarte que por una emergencia técnica/climática en Villa Retiro R debemos reprogramar tu estancia del ${b.check_in}. Por favor, contáctanos.`)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-2 bg-green-500 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-transform"
+                    title="Enviar WhatsApp de Alerta"
+                  >
+                    <span className="material-icons text-sm">whatsapp</span>
+                  </a>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-gray-900 text-white p-5 rounded-2xl shadow-xl border border-white/10">
+              <p className="text-xs font-bold mb-4">¿Deseas proceder con el bloqueo masivo? (Esto no cancela las reservas, solo bloquea el calendario)</p>
+              <button
+                onClick={() => {
+                  const datesToBlock = []; // Generate dates between panicStart and panicEnd
+                  let curr = new Date(panicStart);
+                  const end = new Date(panicEnd);
+                  while (curr <= end) {
+                    datesToBlock.push(curr.toISOString().split('T')[0]);
+                    curr.setDate(curr.getDate() + 1);
+                  }
+                  const newBlocked = Array.from(new Set([...form.blockedDates, ...datesToBlock]));
+                  setForm({ ...form, blockedDates: newBlocked, isOffline: true });
+                  showToast("Villa Bloqueada por Emergencia 🚨");
+                  setConflictSummary([]);
+                }}
+                className="w-full bg-white text-black font-black py-3 rounded-xl text-xs uppercase tracking-widest hover:bg-gray-200 transition-colors"
+              >
+                Confirmar Bloqueo y Poner Offline
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white w-full max-w-2xl max-h-[90vh] rounded-3xl p-6 shadow-2xl overflow-y-auto">
@@ -548,13 +686,13 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {['info', 'photos', 'calendar', 'fees', 'offers'].map((section: any) => (
+          {['info', 'photos', 'calendar', 'fees', 'offers', 'emergency'].map((section: any) => (
             <button
               key={section}
               onClick={() => setActiveSection(section as any)}
               className={`px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap ${activeSection === section ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
             >
-              {section}
+              {section === 'emergency' ? '🚨 Panic Mode' : section}
             </button>
           ))}
         </div>
@@ -591,6 +729,8 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
               </div>
             </>
           )}
+
+          {activeSection === 'emergency' && renderEmergencySection()}
 
           {activeSection === 'calendar' && renderCalendarEditor()}
 
@@ -733,6 +873,9 @@ const HostDashboard: React.FC = () => {
           images: p.images || [],
           amenities: p.amenities || [],
           guests: p.max_guests,
+          isOffline: p.is_offline || false,
+          blockedDates: p.blocked_dates || [],
+          calendarSync: p.calendar_sync || [],
           // Re-mapping deeper fields to satisfy Property type
           featuredAmenity: p.amenities?.[0],
           rating: 4.8,
@@ -742,8 +885,6 @@ const HostDashboard: React.FC = () => {
           bedrooms: 2, beds: 2, baths: 1,
           fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
           policies: { checkInTime: "15:00", checkOutTime: "11:00", maxGuests: p.max_guests, wifiName: "Villa_WiFi", wifiPass: "familia123", accessCode: "4532" },
-          blockedDates: [],
-          calendarSync: [],
           host: { name: user?.name || 'Anfitrión', image: user?.avatar || '', yearsHosting: 3, badges: ['Superhost'] }
         } as Property));
         onUpdateProperties(mappedProps);
@@ -755,10 +896,10 @@ const HostDashboard: React.FC = () => {
         .from('bookings')
         .select(`
           *,
-          profiles:user_id (full_name, avatar_url),
+          profiles:user_id (full_name, avatar_url, phone),
           properties:property_id (title, images)
         `)
-        .eq('check_in', today);
+        .gte('check_out', today);
 
       if (bookings) setRealBookings(bookings);
     };
@@ -827,7 +968,10 @@ const HostDashboard: React.FC = () => {
       price_per_night: updated.price,
       images: updated.images,
       amenities: updated.amenities,
-      max_guests: updated.guests
+      max_guests: updated.guests,
+      is_offline: updated.isOffline,
+      blocked_dates: updated.blockedDates,
+      calendar_sync: updated.calendarSync
     });
 
     if (error) {
@@ -1319,7 +1463,7 @@ const HostDashboard: React.FC = () => {
       {/* Overlays */}
       <CustomToast />
       <HostChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-      {editingProperty && <Editor property={editingProperty} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} />}
+      {editingProperty && <Editor property={editingProperty} bookings={realBookings} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} />}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
 
       {isEditingGuide && (

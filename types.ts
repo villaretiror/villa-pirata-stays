@@ -64,6 +64,7 @@ export interface Property {
   policies: Policies;
   blockedDates: string[];
   calendarSync: CalendarSync[];
+  isOffline?: boolean;
   host: {
     name: string;
     image: string;
