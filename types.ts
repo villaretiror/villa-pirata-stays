@@ -103,6 +103,7 @@ export interface LocalGuideItem {
   distance: string;
   desc: string;
   image: string;
+  mapUrl?: string;
 }
 
 export interface LocalGuideCategory {

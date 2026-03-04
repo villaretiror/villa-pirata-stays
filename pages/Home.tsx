@@ -251,6 +251,31 @@ const Home: React.FC = () => {
           </div>
         </div>
 
+        {/* CTA Banner */}
+        <div className="mb-10 bg-gradient-to-br from-secondary/10 via-primary/5 to-transparent rounded-3xl p-6 border border-secondary/20 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
+          <div className="relative z-10">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-2">📍 Sector Samán, Cabo Rojo</p>
+            <h3 className="font-serif font-bold text-lg text-text-main leading-snug mb-2">
+              Hospédate en el corazón del Paraíso.<br />
+              <span className="text-primary italic">Todo lo que amas de Cabo Rojo a menos de 20 minutos.</span>
+            </h3>
+            <p className="text-xs text-text-light mb-4 max-w-md">Nuestras propiedades están ubicadas estratégicamente cerca de Boquerón, las mejores playas y restaurantes del suroeste.</p>
+            <div className="flex gap-3 flex-wrap">
+              <a href="https://share.google/LBxZV0NwKZps4rliR" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
+                <span className="material-icons text-sm text-primary">villa</span>
+                Villa Retiro R en Google
+              </a>
+              <a href="https://share.google/iQA2MMS4C2Vv7HBIx" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
+                <span className="material-icons text-sm text-secondary">house</span>
+                Pirata Family en Google
+              </a>
+            </div>
+          </div>
+        </div>
+
         {/* Listings Header */}
         <div ref={resultsRef} className="flex justify-between items-center mb-6 scroll-mt-32">
           <h3 className="font-serif font-bold text-xl text-text-main">
