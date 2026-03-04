@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -23,30 +24,43 @@ const Login: React.FC = () => {
         const { user, error } = await register(email, password, name);
         if (error) throw new Error(error);
         if (user) {
-          navigate(user.role === 'host' ? '/host' : '/profile');
+          // Supabase requiere confirmar email por defecto en modo real
+          setError("¡Registro casi listo! Revisa tu email para confirmar tu cuenta.");
         }
       } else {
         const { user, error } = await login(email, password);
         if (error) throw new Error(error);
         if (user) {
-          navigate(user.role === 'host' ? '/host' : '/profile');
+          // Redirección condicionada por Rol
+          if (user.role === 'host') {
+            navigate('/host');
+          } else {
+            navigate('/profile');
+          }
         }
       }
     } catch (err: any) {
-      setError(err.message || 'Ocurrió un error');
+      setError(err.message === 'Invalid login credentials' ? 'Credenciales incorrectas. Verifica tu email y contraseña.' : err.message || 'Ocurrió un error');
     } finally {
       setLoading(false);
     }
   };
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
-    setTimeout(async () => {
-      const googleEmail = "usuario.demo@gmail.com";
-      const { user } = await login(googleEmail, "google-pass");
-      if (user) navigate(user.role === 'host' ? '/host' : '/profile');
+    try {
+      setLoading(true);
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin
+        }
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setError(err.message || 'Error al conectar con Google');
+    } finally {
       setLoading(false);
-    }, 1200);
+    }
   };
 
   return (

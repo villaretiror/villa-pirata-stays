@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { localAuth } from '../lib/auth';
+import { supabase } from '../lib/supabase';
 
 interface AuthContextType {
   user: User | null;
@@ -18,48 +18,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let isMounted = true;
+    // 1. Verificar sesión inicial
     const initSession = async () => {
-      try {
-        const sessionUser = await localAuth.getSession();
-        if (isMounted) {
-          setUser(sessionUser);
-          setLoading(false);
-        }
-      } catch (error) {
-        if (isMounted) setLoading(false);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        setUser(mapSupabaseUser(session.user));
       }
+      setLoading(false);
     };
+
     initSession();
-    return () => { isMounted = false; };
+
+    // 2. Escuchar cambios de estado (Login/Logout/Password Changes)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: string, session: any) => {
+      if (session?.user) {
+        setUser(mapSupabaseUser(session.user));
+      } else {
+        setUser(null);
+      }
+      setLoading(false);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
+  // Mapper para convertir User de Supabase a nuestro tipo User de tipos.ts
+  const mapSupabaseUser = (sbUser: any): User => ({
+    id: sbUser.id,
+    email: sbUser.email || '',
+    name: sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
+    role: sbUser.user_metadata?.role || 'guest',
+    avatar: sbUser.user_metadata?.avatar || '',
+    verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
+    registeredAt: sbUser.created_at,
+  });
+
   const login = async (email: string, password: string) => {
-    const result = await localAuth.signIn(email, password);
-    if (result.user) setUser(result.user);
-    return result;
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) return { user: null, error: error.message };
+    const mappedUser = mapSupabaseUser(data.user);
+    setUser(mappedUser);
+    return { user: mappedUser, error: null };
   };
 
   const register = async (email: string, password: string, name: string) => {
-    const result = await localAuth.signUp(email, password, name);
-    // Auto-login después de registro? Opcional según UX.
-    // if (result.user) setUser(result.user);
-    return result;
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name,
+          role: 'guest' // Por defecto todos son guests vía registro público
+        }
+      }
+    });
+
+    if (error) return { user: null, error: error.message };
+    const mappedUser = data.user ? mapSupabaseUser(data.user) : null;
+    return { user: mappedUser, error: null };
   };
 
   const logout = async () => {
-    await localAuth.signOut();
+    await supabase.auth.signOut();
     setUser(null);
   };
 
-  const updateUser = (updated: Partial<User>) => {
-    setUser(prev => {
-      if (!prev) return null;
-      const newUser = { ...prev, ...updated };
-      // Sincronizamos con el almacenamiento a través de la librería
-      localStorage.setItem('vp_current_session', JSON.stringify(newUser));
-      return newUser;
+  const updateUser = async (updated: Partial<User>) => {
+    const { data, error } = await supabase.auth.updateUser({
+      data: { ...updated }
     });
+    if (!error && data.user) {
+      setUser(mapSupabaseUser(data.user));
+    }
   };
 
   return (
