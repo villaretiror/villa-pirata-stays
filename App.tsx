@@ -31,30 +31,30 @@ const App: React.FC = () => {
   const showNavbar = !uiConfig.isHost && !uiConfig.isDetails && !uiConfig.isBooking;
   const showWhatsApp = !uiConfig.isHost && !uiConfig.isAuth;
 
-  useEffect(() => {
-    window.scrollTo(0, 0);
-
-    const pageTitles: Record<string, string> = {
-      '/': 'Villa Retiro | Inicio',
-      '/favorites': 'Villa Retiro | Favoritos',
-      '/messages': 'Villa Retiro | Mensajes',
-      '/login': 'Villa Retiro | Acceso',
-      '/profile': 'Villa Retiro | Perfil',
-      '/host': 'Villa Retiro | Host Panel',
-      '/success': 'Villa Retiro | ¡Éxito!',
-    };
-
-    if (uiConfig.isDetails) document.title = 'Villa Retiro | Detalles';
-    else if (uiConfig.isBooking) document.title = 'Villa Retiro | Reserva';
-    else if (uiConfig.isReservation) document.title = 'Villa Retiro | Confirmación';
-    else document.title = pageTitles[location.pathname] || 'Villa Retiro R LLC';
-  }, [location.pathname, uiConfig.isDetails, uiConfig.isBooking, uiConfig.isReservation]);
-
   let propertyTitle: string | undefined;
   if (uiConfig.isDetails || uiConfig.isBooking) {
     const id = location.pathname.split('/').pop();
     propertyTitle = properties.find(p => p.id === id)?.title;
   }
+
+  useEffect(() => {
+    window.scrollTo(0, 0);
+
+    const pageTitles: Record<string, string> = {
+      '/': 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR',
+      '/favorites': 'Mis Favoritos | Villa & Pirata Stays',
+      '/messages': 'Mensajes | Villa & Pirata Stays',
+      '/login': 'Acceso | Villa & Pirata Stays',
+      '/profile': 'Mi Perfil | Villa & Pirata Stays',
+      '/host': 'Host Dashboard | Villa & Pirata Stays',
+      '/success': '¡Reserva Confirmada! | Villa & Pirata Stays',
+    };
+
+    if (uiConfig.isDetails) document.title = propertyTitle ? `${propertyTitle} | Cabo Rojo, PR` : 'Detalles | Villa & Pirata Stays';
+    else if (uiConfig.isBooking) document.title = propertyTitle ? `Reservar ${propertyTitle}` : 'Reservar | Villa & Pirata Stays';
+    else if (uiConfig.isReservation) document.title = 'Confirmación | Villa & Pirata Stays';
+    else document.title = pageTitles[location.pathname] || 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR';
+  }, [location.pathname, uiConfig.isDetails, uiConfig.isBooking, uiConfig.isReservation, propertyTitle]);
 
   return (
     <div className="font-sans text-text-main bg-sand min-h-screen overflow-x-hidden">
