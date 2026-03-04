@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { generateWhatsAppLink, getBookingWAMessage } from '../utils';
+import { HOST_PHONE } from '../constants';
 
 const Success: React.FC = () => {
   const navigate = useNavigate();
@@ -9,7 +10,6 @@ const Success: React.FC = () => {
   const bookingData = location.state?.bookingData;
 
   // Real contact number for the host (can be env var)
-  const HOST_PHONE = "17870000000";
 
   const handleWhatsAppContact = () => {
     let msg = "¡Hola! Quisiera información sobre mi reserva en Villa Retiro R.";

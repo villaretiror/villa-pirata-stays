@@ -8,6 +8,7 @@ import HostChat from '../components/host/HostChat';
 import { useAuth } from '../contexts/AuthContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
+import { HOST_PHONE } from '../constants';
 
 // --- CUSTOM TOAST ---
 let globalToastCallback: (msg: string) => void = () => { };
@@ -966,7 +967,7 @@ const HostDashboard: React.FC = () => {
                   accessCode: "C-" + booking.id.slice(-4),
                   googleMapsLink: "https://maps.google.com/?q=Villa+Retiro+R"
                 });
-                const link = generateWhatsAppLink(booking.profiles?.phone || "17870000000", msg);
+                const link = generateWhatsAppLink(booking.profiles?.phone || HOST_PHONE, msg);
                 window.open(link, '_blank');
               }}
               className="w-full bg-[#25D366] text-white font-black text-[11px] uppercase tracking-[0.2em] py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-95 transition-all"

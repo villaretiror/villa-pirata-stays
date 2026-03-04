@@ -1,5 +1,7 @@
 import { Property, LocalGuideCategory } from './types';
 
+export const HOST_PHONE = "17873560895";
+
 export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
   {
     id: 'beaches',
