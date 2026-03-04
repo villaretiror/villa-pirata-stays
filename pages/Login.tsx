@@ -58,40 +58,40 @@ const Login: React.FC = () => {
           <span className="material-icons mr-1 text-sm">arrow_back</span> Volver
         </button>
 
-        <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg text-white transform -rotate-3">
+        <div className="text-center mb-8 relative">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg text-white transform -rotate-3 transition-transform hover:rotate-0">
             <span className="material-icons text-[32px]">{isRegistering ? 'person_add' : 'cottage'}</span>
           </div>
-          <h1 className="text-2xl font-serif text-text-main mb-1">{isRegistering ? 'Crear Cuenta' : 'Bienvenido'}</h1>
-          <p className="text-text-light text-xs">
-            {isRegistering ? 'Regístrate para gestionar tus estancias' : 'Accede a tu cuenta de Villa & Pirata'}
+          <h1 className="text-2xl font-serif text-text-main mb-1 transition-all duration-300">
+            {isRegistering ? 'Únete a la Familia' : 'Bienvenido a Villa Retiro R'}
+          </h1>
+          <p className="text-text-light text-xs transition-all duration-300">
+            {isRegistering ? 'Regístrate para gestionar tus estancias con nosotros' : 'Accede a tu portal seguro de Villa Retiro R LLC'}
           </p>
         </div>
 
         {error && (
-          <div className="bg-red-50 text-red-500 text-[11px] p-3 rounded-xl mb-4 text-center border border-red-100">
+          <div className="bg-red-50 text-red-500 text-[11px] p-3 rounded-xl mb-4 text-center border border-red-100 animate-slide-up">
             {error}
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {isRegistering && (
-            <div className="animate-fade-in">
-              <label className="block text-[10px] font-bold text-text-light uppercase tracking-wider mb-1 ml-1">Nombre</label>
-              <input
-                className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-sand/30 focus:ring-2 focus:ring-primary/10 text-sm"
-                type="text"
-                value={name}
-                onChange={e => setName(e.target.value)}
-                placeholder="Juan del Pueblo"
-              />
-            </div>
-          )}
+          <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isRegistering ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
+            <label className="block text-[10px] font-bold text-text-light uppercase tracking-wider mb-1 ml-1">Nombre</label>
+            <input
+              className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-sand/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors text-sm"
+              type="text"
+              value={name}
+              onChange={e => setName(e.target.value)}
+              placeholder="Juan del Pueblo"
+            />
+          </div>
 
           <div>
             <label className="block text-[10px] font-bold text-text-light uppercase tracking-wider mb-1 ml-1">Email</label>
             <input
-              className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-sand/30 focus:ring-2 focus:ring-primary/10 text-sm"
+              className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-sand/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors text-sm"
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
@@ -103,7 +103,7 @@ const Login: React.FC = () => {
           <div>
             <label className="block text-[10px] font-bold text-text-light uppercase tracking-wider mb-1 ml-1">Contraseña</label>
             <input
-              className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-sand/30 focus:ring-2 focus:ring-primary/10 text-sm"
+              className="block w-full px-4 py-3 border border-gray-200 rounded-xl bg-sand/30 focus:border-primary focus:ring-1 focus:ring-primary outline-none transition-colors text-sm"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
@@ -112,10 +112,18 @@ const Login: React.FC = () => {
             />
           </div>
 
+          <div className={`flex justify-between items-center px-1 transition-all duration-500 overflow-hidden ${isRegistering ? 'max-h-0 opacity-0' : 'max-h-10 opacity-100'}`}>
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input type="checkbox" className="accent-primary w-3.5 h-3.5 cursor-pointer border-gray-300 rounded" />
+              <span className="text-[10px] font-bold text-text-light group-hover:text-text-main transition-colors">Recordarme</span>
+            </label>
+            <button type="button" className="text-[10px] font-bold text-primary hover:underline">¿Olvidaste tu contraseña?</button>
+          </div>
+
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-primary/30 active:scale-[0.98] transition-all flex justify-center items-center gap-2 mt-2"
+            className="w-full bg-primary text-white font-bold py-4 rounded-xl shadow-lg hover:shadow-primary/30 active:scale-[0.98] transition-all flex justify-center items-center gap-2 mt-4"
           >
             {loading ? 'Cargando...' : (isRegistering ? 'REGISTRARSE' : 'INICIAR SESIÓN')}
           </button>

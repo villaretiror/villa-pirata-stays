@@ -14,41 +14,50 @@ interface PropertyContextType {
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
 
 export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [properties, setProperties] = useState<Property[]>(PROPERTIES);
-  const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>(INITIAL_LOCAL_GUIDE);
-  const [favorites, setFavorites] = useState<string[]>(() => {
-    const saved = localStorage.getItem('favorites');
-    return saved ? JSON.parse(saved) : [];
+  const [properties, setProperties] = useState<Property[]>(() => {
+    try {
+      const saved = localStorage.getItem('vp_properties');
+      return saved ? JSON.parse(saved) : PROPERTIES;
+    } catch { return PROPERTIES; }
   });
 
+  const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>(() => {
+    try {
+      const saved = localStorage.getItem('vp_guide');
+      return saved ? JSON.parse(saved) : INITIAL_LOCAL_GUIDE;
+    } catch { return INITIAL_LOCAL_GUIDE; }
+  });
+
+  const [favorites, setFavorites] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('favorites');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
+
+  // Efectos de Sincronización
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
 
+  useEffect(() => {
+    localStorage.setItem('vp_properties', JSON.stringify(properties));
+  }, [properties]);
+
+  useEffect(() => {
+    localStorage.setItem('vp_guide', JSON.stringify(localGuideData));
+  }, [localGuideData]);
+
   const toggleFavorite = (id: string) => {
-    setFavorites(prev => 
-      prev.includes(id) 
-        ? prev.filter(favId => favId !== id) 
-        : [...prev, id]
-    );
+    setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
   };
 
-  const updateProperties = (updated: Property[]) => {
-    setProperties(updated);
-  };
-
-  const updateGuide = (updated: LocalGuideCategory[]) => {
-    setLocalGuideData(updated);
-  };
+  const updateProperties = (updated: Property[]) => setProperties(updated);
+  const updateGuide = (updated: LocalGuideCategory[]) => setLocalGuideData(updated);
 
   return (
     <PropertyContext.Provider value={{
-      properties,
-      localGuideData,
-      favorites,
-      toggleFavorite,
-      updateProperties,
-      updateGuide
+      properties, localGuideData, favorites, toggleFavorite, updateProperties, updateGuide
     }}>
       {children}
     </PropertyContext.Provider>

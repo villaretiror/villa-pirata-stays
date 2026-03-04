@@ -1,3 +1,4 @@
+export type ViewState = 'guest' | 'host';
 
 export interface Review {
   id: string;
@@ -11,13 +12,13 @@ export interface Review {
 
 export interface Offer {
   text: string;
-  expiresAt: string; // ISO String
+  expiresAt: string;
 }
 
 export interface FeeStructure {
-  cleaningShort: number; // 1-2 nights
-  cleaningMedium: number; // 3-7 nights
-  cleaningLong: number; // 7+ nights
+  cleaningShort: number;
+  cleaningMedium: number;
+  cleaningLong: number;
   petFee: number;
   securityDeposit: number;
 }
@@ -33,9 +34,10 @@ export interface Policies {
 
 export interface CalendarSync {
   id: string;
-  platform: string; // 'Airbnb', 'Booking', 'VRBO', 'Other'
+  platform: string;
   url: string;
   lastSynced: string;
+  syncStatus: 'success' | 'error' | 'syncing';
 }
 
 export interface Property {
@@ -43,13 +45,15 @@ export interface Property {
   title: string;
   subtitle: string;
   location: string;
-  address: string; // For reservation details
+  address: string;
   description: string;
-  price: number; // Base nightly price
+  price: number;
   rating: number;
   reviews: number;
   images: string[];
   amenities: string[];
+  featuredAmenity?: string;
+  category?: 'Boutique' | 'Familiar';
   guests: number;
   bedrooms: number;
   beds: number;
@@ -58,7 +62,7 @@ export interface Property {
   offers?: Offer[];
   fees: FeeStructure;
   policies: Policies;
-  blockedDates: string[]; // Array of ISO date strings (YYYY-MM-DD)
+  blockedDates: string[];
   calendarSync: CalendarSync[];
   host: {
     name: string;
@@ -71,13 +75,26 @@ export interface Property {
 export interface Booking {
   id: string;
   propertyId: string;
+  guestId: string;
   guestName: string;
   guestImage: string;
   checkIn: string;
   checkOut: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
-  total: number;
   guests: number;
+  paymentDetails: {
+    method: 'Credit Card' | 'ATH Movil' | 'Cash';
+    transactionId?: string;
+    paidAt?: string;
+  };
+  nightlyBreakdown: {
+    basePrice: number;
+    nights: number;
+    cleaningFee: number;
+    serviceFee: number;
+    tax?: number;
+    total: number;
+  };
 }
 
 export interface LocalGuideItem {
@@ -94,8 +111,6 @@ export interface LocalGuideCategory {
   items: LocalGuideItem[];
 }
 
-
-
 export interface User {
   id: string;
   email: string;
@@ -105,4 +120,6 @@ export interface User {
   phone?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified';
   emergencyContact?: string;
+  registeredAt: string;
+  favoriteProperties?: string[];
 }

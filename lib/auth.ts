@@ -9,21 +9,24 @@ export const localAuth = {
     return new Promise((resolve) => {
       setTimeout(() => {
         const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
-        
-        if (users.find((u: any) => u.email === email)) {
+        const normalizedEmail = email.toLowerCase();
+        const formattedName = name ? name.charAt(0).toUpperCase() + name.slice(1) : normalizedEmail.split('@')[0];
+
+        if (users.find((u: any) => u.email === normalizedEmail)) {
           resolve({ user: null, error: 'Este correo ya está registrado.' });
           return;
         }
 
         const newUser: User = {
           id: `user-${Date.now()}`,
-          email: email.toLowerCase(),
-          name: name || email.split('@')[0],
+          email: normalizedEmail,
+          name: formattedName,
           role: 'guest',
-          verificationStatus: 'verified'
+          verificationStatus: 'verified',
+          registeredAt: new Date().toISOString()
         };
 
-        users.push({ ...newUser, password }); 
+        users.push({ ...newUser, password });
         localStorage.setItem(USERS_KEY, JSON.stringify(users));
 
         resolve({ user: newUser, error: null });
@@ -39,17 +42,18 @@ export const localAuth = {
 
         // 1. LLAVE MAESTRA: Si es este correo/pass, entra como Host automáticamente
         if (normalizedEmail === 'admin@villaretiro.com' && password === 'admin') {
-            const adminUser: User = {
-                id: 'admin-master',
-                email: 'admin@villaretiro.com',
-                name: 'Carlos (Host)',
-                role: 'host',
-                verificationStatus: 'verified',
-                avatar: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBEaokxH_ZWfMSA9DkAdNOrBrxi3UAC3m1h9TooqLj_sa6fh4ew_1GEq7EphFx7x52GRb0fdetzbcryLWpbnyFYxSBzPLbBL-ctobQpVyWXI4fufFaA6VVmEXXgBi65bCeU8mYihp1bgC2wXd1U6WzIhuUMplMFT1T8oQoNDb1ck7gYn6RXJ2v22QrDSbhg5zWWZ2MKrbczk4vtv5UgNP5oeK6EnQkGZ1doa_qAMIXcsXL0LLblW6GaPei8CMcSd50buW6udF5Uexg'
-            };
-            localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
-            resolve({ user: adminUser, error: null });
-            return;
+          const adminUser: User = {
+            id: 'admin-master',
+            email: 'admin@villaretiro.com',
+            name: 'Carlos (Host)',
+            role: 'host',
+            verificationStatus: 'verified',
+            avatar: 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?auto=format&fit=crop&q=80&w=200',
+            registeredAt: new Date('2024-01-01').toISOString()
+          };
+          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
+          resolve({ user: adminUser, error: null });
+          return;
         }
 
         // 2. Usuarios Normales
@@ -74,9 +78,15 @@ export const localAuth = {
     return Promise.resolve();
   },
 
+  // 2. Sesión Robusta
   getSession: async (): Promise<User | null> => {
-    const stored = localStorage.getItem(CURRENT_USER_KEY);
-    return stored ? JSON.parse(stored) : null;
+    try {
+      const stored = localStorage.getItem(CURRENT_USER_KEY);
+      return stored ? JSON.parse(stored) : null;
+    } catch (e) {
+      localStorage.removeItem(CURRENT_USER_KEY);
+      return null;
+    }
   },
 
   getAllLeads: (): User[] => {

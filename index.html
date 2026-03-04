@@ -1,116 +1,131 @@
 <!DOCTYPE html>
 <html lang="es">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Villa & Pirata Stays</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Playfair+Display:wght@500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Symbols+Rounded" rel="stylesheet" />
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            colors: {
-              primary: "#FF6B35", // Tropical Coral
-              "primary-dark": "#E05A2B",
-              secondary: "#004E64", // Deep Ocean Blue
-              "secondary-light": "#006A89",
-              sand: "#F9F6F2", // Lighter, cleaner sand
-              surface: "#FFFFFF",
-              "text-main": "#1A1A1A",
-              "text-light": "#888888",
-              accent: "#F2CC8F",
-            },
-            fontFamily: {
-              sans: ["Outfit", "sans-serif"], // Switch main font to Outfit for modern look
-              serif: ["Playfair Display", "serif"],
-              display: ["Outfit", "sans-serif"],
-            },
-            borderRadius: {
-              DEFAULT: "16px",
-              "xl": "24px",
-              "2xl": "32px",
-              "3xl": "40px",
-              "4xl": "50px",
-            },
-            boxShadow: {
-              'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
-              'card': '0 20px 40px -15px rgba(0,0,0,0.08)',
-              'float': '0 25px 50px -12px rgba(255, 107, 53, 0.25)',
-              'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
-              'inner-light': 'inset 0 2px 4px 0 rgba(255, 255, 255, 0.3)',
-            },
-            animation: {
-              'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-              'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
-              'float': 'float 6s ease-in-out infinite',
-              'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-              'bounce-subtle': 'bounceSubtle 2s infinite',
-              'blob': 'blob 7s infinite',
-            },
-            keyframes: {
-              fadeIn: {
-                '0%': { opacity: '0' },
-                '100%': { opacity: '1' },
-              },
-              slideUp: {
-                '0%': { transform: 'translateY(20px)', opacity: '0' },
-                '100%': { transform: 'translateY(0)', opacity: '1' },
-              },
-              float: {
-                '0%, 100%': { transform: 'translateY(0)' },
-                '50%': { transform: 'translateY(-10px)' },
-              },
-              bounceSubtle: {
-                '0%, 100%': { transform: 'translateY(-3%)', animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)' },
-                '50%': { transform: 'translateY(0)', animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)' },
-              },
-              blob: {
-                '0%': { transform: 'translate(0px, 0px) scale(1)' },
-                '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
-                '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
-                '100%': { transform: 'translate(0px, 0px) scale(1)' },
-              }
-            }
-          },
-        },
-      };
-    </script>
-    <style>
-      body {
-        -webkit-tap-highlight-color: transparent;
-        background-color: #F9F6F2;
-      }
-      .no-scrollbar::-webkit-scrollbar {
-        display: none;
-      }
-      .no-scrollbar {
-        -ms-overflow-style: none;
-        scrollbar-width: none;
-      }
-      .glass {
-        background: rgba(255, 255, 255, 0.7);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.3);
-      }
-      .glass-dark {
-        background: rgba(0, 0, 0, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-      }
-      /* Google Translate Customization */
-      #google_translate_element {
-        display: none; /* Hidden for clearer design for now, logic remains */
-      }
-    </style>
 
-<link rel="stylesheet" href="/index.css">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Villa Retiro R | Cabo Rojo</title>
+
+  <!-- PWA & Mobile Optimization -->
+  <meta name="theme-color" content="#F9F6F2" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Villa Retiro" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="apple-touch-icon"
+    href="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=180" />
+
+  <!-- SEO & Open Graph -->
+  <meta name="description"
+    content="Tu refugio privado en Cabo Rojo con confort ininterrumpido. Villa con piscina de sal, generador y cisterna." />
+  <meta property="og:title" content="Villa Retiro R | Confort Ininterrumpido" />
+  <meta property="og:description"
+    content="Tu refugio privado en Cabo Rojo con confort ininterrumpido. Staycation perfecta en Puerto Rico." />
+  <meta property="og:image"
+    content="https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=1200" />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600;700;800&family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons|Material+Icons+Outlined|Material+Symbols+Rounded"
+    rel="stylesheet" />
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            primary: "#FF6B35",
+            "primary-dark": "#E05A2B",
+            secondary: "#004E64",
+            "secondary-light": "#006A89",
+            sand: "#F9F6F2",
+            surface: "#FFFFFF",
+            "text-main": "#1A1A1A",
+            "text-light": "#888888",
+            accent: "#F2CC8F",
+          },
+          fontFamily: {
+            sans: ["Outfit", "sans-serif"],
+            serif: ["Playfair Display", "serif"],
+            display: ["Outfit", "sans-serif"],
+          },
+          borderRadius: {
+            DEFAULT: "16px",
+            "xl": "24px",
+            "2xl": "32px",
+            "3xl": "40px",
+            "4xl": "50px",
+          },
+          boxShadow: {
+            'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
+            'card': '0 20px 40px -15px rgba(0,0,0,0.08)',
+            'float': '0 25px 50px -12px rgba(255, 107, 53, 0.15)',
+            'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+            'slide-up': 'slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+            'float': 'float 6s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+            slideUp: { '0%': { transform: 'translateY(20px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+            float: { '0%, 100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-10px)' } }
+          }
+        },
+      },
+    };
+  </script>
+
+  <style>
+    :root {
+      --sand: #F9F6F2;
+    }
+
+    body {
+      -webkit-tap-highlight-color: transparent;
+      background-color: var(--sand);
+      overscroll-behavior-y: none;
+    }
+
+    .no-scrollbar::-webkit-scrollbar {
+      display: none;
+    }
+
+    .no-scrollbar {
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    /* Smooth transitions for mobile PWA */
+    * {
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+  </style>
+
+  <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-sand text-text-main antialiased h-full selection:bg-primary selection:text-white">
-    <div id="root"></div>
+
+<body class="bg-sand text-text-main antialiased h-full selection:bg-primary selection:text-white">
+  <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>
+
 </html>

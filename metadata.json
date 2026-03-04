@@ -1,5 +1,27 @@
 {
-  "name": "Villa & Pirata Stays",
-  "description": "Una plataforma inmersiva y elegante para reservar estancias exclusivas en Villa Retiro R y Pirata Family House. Gestión completa para huéspedes y anfitriones.",
-  "requestFramePermissions": []
+  "name": "Villa Retiro R | Exclusive Stays Cabo Rojo",
+  "short_name": "Villa Retiro",
+  "description": "La plataforma oficial de Villa Retiro R y Pirata Family House. Reserva estancias boutique con infraestructura garantizada, piscina privada y acceso exclusivo a las mejores playas del oeste de Puerto Rico.",
+  "requestFramePermissions": [
+    "geolocation",
+    "camera"
+  ],
+  "theme_color": "#F9F6F2",
+  "background_color": "#F9F6F2",
+  "display": "standalone",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=192",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://images.unsplash.com/photo-1576013551627-0cc20b96c2a7?auto=format&fit=crop&q=80&w=512",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }

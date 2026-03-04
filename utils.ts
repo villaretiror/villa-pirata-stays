@@ -1,147 +1,117 @@
 import { Property } from './types';
 import { PROPERTIES } from './constants';
 
-// Helper to parse a date string like "20231201" or "20231201T120000Z" to YYYY-MM-DD
-const parseICalDate = (icalDate: string): string => {
-  if (!icalDate) return '';
-  const year = icalDate.substring(0, 4);
-  const month = icalDate.substring(4, 6);
-  const day = icalDate.substring(6, 8);
-  return `${year}-${month}-${day}`;
+// 1. iCal Helpers - Precision & Robustness
+const parseICalDateStr = (raw: string): string => {
+  // Handles DTSTART:20240501 or DTSTART;VALUE=DATE:20240501
+  const val = raw.includes(':') ? raw.split(':').pop() || '' : raw;
+  if (val.length < 8) return '';
+  const y = val.substring(0, 4);
+  const m = val.substring(4, 6);
+  const d = val.substring(6, 8);
+  return `${y}-${m}-${d}`;
 };
 
-// Helper to get all dates between start and end
-const getDatesInRange = (startDate: Date, endDate: Date) => {
-  const date = new Date(startDate.getTime());
-  const dates = [];
-  
-  // Iterate while date is < endDate
-  while (date < endDate) {
-    dates.push(date.toISOString().split('T')[0]);
-    date.setDate(date.getDate() + 1);
+export const getDatesInRange = (startStr: string, endStr: string): string[] => {
+  const dates: string[] = [];
+  const curr = new Date(`${startStr}T12:00:00`); // Use T12 to avoid day shifts
+  const end = new Date(`${endStr}T12:00:00`);
+
+  while (curr < end) {
+    const y = curr.getFullYear();
+    const m = String(curr.getMonth() + 1).padStart(2, '0');
+    const d = String(curr.getDate()).padStart(2, '0');
+    dates.push(`${y}-${m}-${d}`);
+    curr.setDate(curr.getDate() + 1);
   }
   return dates;
 };
 
-// Main function to parse iCal text content
 export const parseICalData = (icalData: string): string[] => {
   const events: string[] = [];
   const lines = icalData.split(/\r\n|\n|\r/);
-  
   let inEvent = false;
-  let dtStart = '';
-  let dtEnd = '';
+  let dtStartRaw = '';
+  let dtEndRaw = '';
 
   for (const line of lines) {
     if (line.startsWith('BEGIN:VEVENT')) {
       inEvent = true;
-      dtStart = '';
-      dtEnd = '';
+      dtStartRaw = ''; dtEndRaw = '';
     } else if (line.startsWith('END:VEVENT')) {
       inEvent = false;
-      if (dtStart && dtEnd) {
-        const start = new Date(parseICalDate(dtStart));
-        const end = new Date(parseICalDate(dtEnd));
-        const range = getDatesInRange(start, end);
-        events.push(...range);
-      }
+      const start = parseICalDateStr(dtStartRaw);
+      const end = parseICalDateStr(dtEndRaw);
+      if (start && end) events.push(...getDatesInRange(start, end));
     } else if (inEvent) {
-      if (line.startsWith('DTSTART')) {
-        dtStart = line.split(':')[1];
-      } else if (line.startsWith('DTEND')) {
-        dtEnd = line.split(':')[1];
-      }
+      if (line.startsWith('DTSTART')) dtStartRaw = line;
+      else if (line.startsWith('DTEND')) dtEndRaw = line;
     }
   }
-
-  // Remove duplicates
   return Array.from(new Set(events));
 };
 
-// Mock Fetcher to simulate getting data from Airbnb/VRBO (Bypassing CORS for demo)
+// 2. Formatting Helpers
+export const formatCurrency = (amount: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0
+  }).format(amount);
+};
+
+export const formatDateLong = (dateStr: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(`${dateStr}T12:00:00`);
+  return new Intl.DateTimeFormat('es-PR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(date);
+};
+
+// 3. Mock Scraping Engine
 export const fetchMockICal = async (url: string): Promise<string> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // Logic to generate dates relative to "Today" so the demo always looks active
       const today = new Date();
-      const nextWeek = new Date(today);
-      nextWeek.setDate(today.getDate() + 5);
-      const nextWeekEnd = new Date(today);
-      nextWeekEnd.setDate(today.getDate() + 10); // 5 day booking
-
-      const nextMonth = new Date(today);
-      nextMonth.setDate(today.getDate() + 25);
-      const nextMonthEnd = new Date(today);
-      nextMonthEnd.setDate(today.getDate() + 30); // 5 day booking
-
       const fmt = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '');
+      const d1 = new Date(today); d1.setDate(today.getDate() + 3);
+      const d1e = new Date(today); d1e.setDate(today.getDate() + 7);
 
-      // Return realistic iCal structure
-      resolve(`BEGIN:VCALENDAR
-PRODID:-//Airbnb Inc//Hosting Calendar 0.8.8//EN
-VERSION:2.0
-BEGIN:VEVENT
-DTEND;VALUE=DATE:${fmt(nextWeekEnd)}
-DTSTART;VALUE=DATE:${fmt(nextWeek)}
-UID:123456-airbnb
-SUMMARY:Reserved
-END:VEVENT
-BEGIN:VEVENT
-DTEND;VALUE=DATE:${fmt(nextMonthEnd)}
-DTSTART;VALUE=DATE:${fmt(nextMonth)}
-UID:789012-airbnb
-SUMMARY:Reserved
-END:VEVENT
-END:VCALENDAR`);
-    }, 1500);
+      resolve(`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART;VALUE=DATE:${fmt(d1)}\nDTEND;VALUE=DATE:${fmt(d1e)}\nSUMMARY:Reserved\nEND:VEVENT\nEND:VCALENDAR`);
+    }, 1200);
   });
 };
 
-// SIMULATED SCRAPER FOR "IMPORT FROM LINK" FEATURE
 export const mockImportFromLink = async (url: string): Promise<Partial<Property>> => {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            // DETECT SPECIFIC AIRBNB LINKS PROVIDED BY USER
-            // Villa Retiro R ID: 1081171030449673920
-            if (url.includes('1081171030449673920') || url.includes('Retiro')) {
-               const villa = PROPERTIES.find(p => p.id === '1081171030449673920');
-               if (villa) {
-                   resolve({
-                       ...villa,
-                       title: "Villa Retiro R (Sincronizado)",
-                       subtitle: "Datos actualizados de Airbnb"
-                   });
-                   return;
-               }
-            }
-            
-            // Pirata Family House ID: 42839458
-            if (url.includes('42839458') || url.includes('Pirata')) {
-               const pirata = PROPERTIES.find(p => p.id === '42839458');
-               if (pirata) {
-                   resolve({
-                       ...pirata,
-                       title: "Pirata Family House (Sincronizado)",
-                       subtitle: "Datos actualizados de Airbnb"
-                   });
-                   return;
-               }
-            }
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const isBooking = url.toLowerCase().includes('booking.com');
+      const isAirbnb = url.toLowerCase().includes('airbnb');
 
-            // Fallback for unknown links
-            const isAirbnb = url.includes('airbnb');
-            resolve({
-                title: "Propiedad Importada (Demo)",
-                description: `Esta descripción fue extraída automáticamente de ${isAirbnb ? 'Airbnb' : 'la web'}. Aquí aparecería todo el texto detallado de tu anuncio original.`,
-                price: 250,
-                rating: 4.8,
-                reviews: 42,
-                amenities: ['Wifi', 'Piscina', 'Aire Acondicionado', 'Cocina'],
-                images: [
-                    "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80",
-                    "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80"
-                ]
-            });
-        }, 2000);
-    });
+      // Logic for specific Villa IDs
+      if (url.includes('1081171030449673920')) {
+        const villa = PROPERTIES.find(p => p.id === '1081171030449673920');
+        if (villa) {
+          resolve({
+            ...villa,
+            title: `${villa.title} (Sync ${isBooking ? 'Booking' : 'Airbnb'})`,
+            description: `[Importado de ${isBooking ? 'Booking.com' : 'Airbnb'}] ${villa.description}`
+          });
+          return;
+        }
+      }
+
+      resolve({
+        title: `Propiedad de ${isBooking ? 'Booking.com' : isAirbnb ? 'Airbnb' : 'Web Link'}`,
+        description: `Sincronizada exitosamente. Esta es una descripción boutique optimizada extraída de ${isBooking ? 'Booking.com con el standard de alta demanda.' : 'Airbnb para tu hosting premium.'}`,
+        price: isBooking ? 295 : 245,
+        rating: 4.9,
+        reviews: 88,
+        amenities: ['Wifi Starlink', 'Piscina Privada', 'Generador Full'],
+        images: ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"]
+      });
+    }, 1800);
+  });
 };

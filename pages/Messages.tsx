@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 interface Message {
   id: number;
   text: string;
-  sender: string; 
+  sender: string;
   created_at: string;
 }
 
@@ -15,6 +15,7 @@ const Messages: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchMessages = async () => {
@@ -28,45 +29,59 @@ const Messages: React.FC = () => {
     }, 500);
   };
 
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
   useEffect(() => {
-    fetchMessages();
-  }, []);
+    scrollToBottom();
+  }, [messages, isTyping]);
+
+  useEffect(() => {
+    if (activeChatId && messages.length === 0) {
+      setMessages([
+        { id: 1, text: "¡Hola! Bienvenidos a Cabo Rojo. ¿Tienen alguna duda sobre la llegada a Villa Retiro?", sender: 'host', created_at: new Date(Date.now() - 3600000).toISOString() }
+      ]);
+    }
+  }, [activeChatId]);
 
   const handleSendMessage = (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
+    const query = inputText.toLowerCase();
     const userMsg: Message = { id: Date.now(), text: inputText, sender: 'guest', created_at: new Date().toISOString() };
     setMessages(prev => [...prev, userMsg]);
-    const query = inputText.toLowerCase();
     setInputText("");
+    setIsTyping(true);
 
-    // Lógica IA "Dudas Boricuas" integrada
+    // Lógica IA "Dudas Boricuas" integrada - Villa Retiro R LLC
     setTimeout(() => {
-      let aiResponse = "¡Gracias por escribir! Carlos (el host) te contestará en breve. Si es sobre la llegada, el código se activa a las 3:00 PM.";
-      
+      let aiResponse = "¡Gracias por escribir! Carlos de Villa Retiro R LLC te contestará en breve. Si es sobre la llegada, tu código de acceso se activa a las 3:00 PM.";
+
       if (query.includes("playa") || query.includes("buye")) {
-        aiResponse = "Playa Buyé está a solo 5 min en carro. ¡Es la favorita de la zona! Te recomendamos ir temprano los fines de semana.";
+        aiResponse = "Playa Buyé está a solo 5 min en carro desde Villa Retiro R. ¡Es la favorita de la zona! Te recomendamos ir temprano los fines de semana para conseguir buen parking.";
       } else if (query.includes("luz") || query.includes("planta") || query.includes("energia")) {
-        aiResponse = "¡Tranquilo/a! Villa Retiro cuenta con generador eléctrico automático y cisterna. Aquí tus vacaciones no se interrumpen.";
-      } else if (query.includes("comida") || query.includes("poblado")) {
-        aiResponse = "El Poblado de Boquerón está 'walking distance' de Pirata House. Allí tienes los mejores ostiones y música en vivo.";
+        aiResponse = "¡Tranquilo/a! Villa Retiro R LLC cuenta con generador eléctrico automático y cisterna industrial. Aquí tus vacaciones no se interrumpen por nada.";
+      } else if (query.includes("comida") || query.includes("poblado") || query.includes("comer")) {
+        aiResponse = "El Poblado de Boquerón está a solo 10 minutos. Allí tienes los mejores ostiones, mariscos frescos y música en vivo. ¡100% recomendado!";
       }
 
+      setIsTyping(false);
       setMessages(prev => [...prev, {
         id: Date.now() + 1,
         text: aiResponse,
         sender: 'host',
         created_at: new Date().toISOString()
       }]);
-    }, 1500);
+    }, 1800);
   };
 
   if (!activeChatId) {
     return (
       <div className="min-h-screen bg-sand px-4 pt-12 pb-24 animate-fade-in">
         <h1 className="text-3xl font-serif font-bold mb-8">Mensajes</h1>
-        <div 
+        <div
           onClick={() => setActiveChatId('host-chat')}
           className="bg-white p-5 rounded-[2rem] shadow-card border border-gray-100 flex gap-4 items-center cursor-pointer active:scale-95 transition-all"
         >
@@ -98,20 +113,33 @@ const Messages: React.FC = () => {
           </div>
         </div>
       </header>
-      
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-sand/30">
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-sand/30 scroll-smooth pb-10">
+        <div className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest my-4">Hoy</div>
         {messages.map(m => (
-          <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`max-w-[80%] p-4 rounded-2xl text-sm ${m.sender === 'guest' ? 'bg-primary text-white rounded-br-none' : 'bg-white text-text-main rounded-bl-none shadow-sm'}`}>
+          <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end animate-slide-up' : 'justify-start animate-fade-in'}`}>
+            <div className={`max-w-[85%] p-4 text-[13px] leading-relaxed relative ${m.sender === 'guest' ? 'bg-primary text-white rounded-2xl rounded-tr-sm shadow-sm' : 'bg-white text-text-main rounded-2xl rounded-tl-sm shadow-sm border border-gray-100'}`}>
               {m.text}
+              <span className={`text-[8px] absolute -bottom-5 ${m.sender === 'guest' ? 'right-1 text-gray-400' : 'left-1 text-gray-400'}`}>
+                {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
             </div>
           </div>
         ))}
+        {isTyping && (
+          <div className="flex justify-start animate-fade-in">
+            <div className="max-w-[85%] px-4 py-3 bg-white border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center">
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
+              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
       <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-100 flex gap-2">
-        <input 
+        <input
           value={inputText}
           onChange={e => setInputText(e.target.value)}
           placeholder="Pregunta sobre la playa, luz, comida..."

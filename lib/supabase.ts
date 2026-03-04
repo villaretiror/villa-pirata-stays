@@ -1,33 +1,47 @@
 import { createClient } from '@supabase/supabase-js';
 
-// ¡IMPORTANTE! Reemplaza estas variables con las de tu proyecto de Supabase
-// Las encuentras en Settings -> API
-const SUPABASE_URL: string = 'https://TU_PROYECTO.supabase.co'; 
-const SUPABASE_ANON_KEY: string = 'TU_CLAVE_PUBLICA_ANON';
+// Las llaves se deben configurar en un archivo .env
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Check if credentials are still placeholders
-// Using negation of OR to avoid TypeScript narrowing 'SUPABASE_URL' to 'never' in the second condition
-const isConfigured = !(SUPABASE_URL === 'https://TU_PROYECTO.supabase.co' || SUPABASE_URL.includes('TU_PROYECTO'));
+const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
 
-// Return real client if configured, otherwise return a robust mock client for the UI to function
-export const supabase = isConfigured 
+// Mock factory para evitar repetición
+const mockResponse = (data: any = []) => ({
+  data,
+  error: null,
+  count: 0,
+  status: 200,
+  statusText: 'OK'
+});
+
+const createMockClient = () => {
+  const handler: any = {
+    select: () => Promise.resolve(mockResponse()),
+    insert: (d: any) => Promise.resolve(mockResponse(d)),
+    update: (d: any) => Promise.resolve(mockResponse(d)),
+    delete: () => Promise.resolve(mockResponse()),
+    eq: () => handler,
+    single: () => Promise.resolve(mockResponse(null)),
+    match: () => handler,
+    order: () => handler,
+    limit: () => handler,
+    range: () => handler,
+    on: () => ({ subscribe: (fn: any) => fn?.('SUBSCRIBED') }),
+    subscribe: (fn: any) => fn?.('SUBSCRIBED'),
+  };
+
+  return {
+    from: () => handler,
+    channel: () => handler,
+    removeChannel: () => { },
+    auth: {
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
+    }
+  } as any;
+};
+
+export const supabase = isConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-  : {
-      from: (table: string) => ({
-        select: () => Promise.resolve({ data: [], error: null }),
-        insert: (data: any) => Promise.resolve({ data: [data], error: null }),
-        update: (data: any) => Promise.resolve({ data: [data], error: null }),
-        delete: () => Promise.resolve({ data: [], error: null }),
-        order: () => Promise.resolve({ data: [], error: null }),
-        eq: () => ({ 
-            select: () => Promise.resolve({ data: [], error: null }),
-            delete: () => Promise.resolve({ data: [], error: null }),
-            update: () => Promise.resolve({ data: [], error: null })
-        })
-      }),
-      channel: () => ({
-        on: () => ({ subscribe: (fn: any) => fn && fn('SUBSCRIBED') }),
-        subscribe: (fn: any) => fn && fn('SUBSCRIBED')
-      }),
-      removeChannel: () => {},
-    } as any;
+  : createMockClient();
