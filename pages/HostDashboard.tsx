@@ -670,6 +670,21 @@ const HostDashboard: React.FC = () => {
     else navigate(path);
   };
 
+  useEffect(() => {
+    if (!user) {
+      console.log("HostDashboard Debug: No user found, redirecting to login");
+      navigate('/login');
+      return;
+    }
+
+    if (user.role !== 'host' && user.email !== 'admin@villaretiro.com') {
+      console.log(`HostDashboard Debug: Access denied. Email: ${user.email}, Role: ${user.role}`);
+      navigate('/profile');
+    } else {
+      console.log(`HostDashboard Debug: Access granted for ${user.email}`);
+    }
+  }, [user, navigate]);
+
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [leads, setLeads] = useState<User[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);

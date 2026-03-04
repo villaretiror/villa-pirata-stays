@@ -31,8 +31,9 @@ const Login: React.FC = () => {
         const { user, error } = await login(email, password);
         if (error) throw new Error(error);
         if (user) {
+          console.log(`Login Debug: User authenticated successfully. Email: ${user.email}, Role: ${user.role}`);
           // Redirección condicionada por Rol
-          if (user.role === 'host') {
+          if (user.role === 'host' || user.email === 'admin@villaretiro.com') {
             navigate('/host');
           } else {
             navigate('/profile');

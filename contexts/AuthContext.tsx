@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     id: sbUser.id,
     email: sbUser.email || '',
     name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
-    role: dbProfile?.role || sbUser.user_metadata?.role || 'guest',
+    role: sbUser.email === 'admin@villaretiro.com' ? 'host' : (dbProfile?.role || sbUser.user_metadata?.role || 'guest'),
     avatar: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || '',
     phone: dbProfile?.phone || sbUser.user_metadata?.phone || '',
     emergencyContact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
