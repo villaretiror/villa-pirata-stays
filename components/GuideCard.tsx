@@ -1,4 +1,5 @@
 import React from 'react';
+import SmartImage from './SmartImage';
 import { LocalGuideItem } from '../types';
 
 interface GuideCardProps {
@@ -24,11 +25,11 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, isEditable = false 
         <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-2 z-10">
           <p className="text-white font-bold text-sm shadow-black drop-shadow-md">{item.name}</p>
         </div>
-        <img src={item.image || "https://placehold.co/400x300"} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110" alt={item.name} />
+        <SmartImage src={item.image} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110" alt={item.name} />
       </div>
       <div className="flex justify-between items-start mb-1">
         <div className="bg-sand px-2 py-0.5 rounded text-[10px] font-bold text-secondary border border-orange-100 flex items-center gap-1">
-          <span className="material-icons text-[10px]">directions_car</span> {item.distance}
+          <span className="material-icons text-[10px]">directions_car</span> Aprox. {item.distance}
         </div>
       </div>
       <p className="text-xs text-text-light line-clamp-3 leading-relaxed">{item.desc}</p>

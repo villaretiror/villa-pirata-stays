@@ -72,7 +72,8 @@ export const formatDateLong = (dateStr: string): string => {
 
 // 3. Mock Scraping Engine
 export const fetchMockICal = async (url: string): Promise<string> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    if (!url.startsWith('http')) return reject(new Error('URL de calendario inválida.'));
     setTimeout(() => {
       const today = new Date();
       const fmt = (d: Date) => d.toISOString().split('T')[0].replace(/-/g, '');

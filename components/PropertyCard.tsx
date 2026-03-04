@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SmartImage from './SmartImage';
 import { Property } from '../types';
 
 interface PropertyCardProps {
@@ -57,7 +58,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
     >
       {/* Image Container */}
       <div className="relative h-80 w-full overflow-hidden">
-        <img
+        <SmartImage
           src={property.images[currentImageIndex]}
           alt={property.title}
           loading="lazy"
@@ -102,10 +103,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
         {/* Dots */}
         <div className="absolute bottom-4 left-0 right-0 flex justify-center gap-1.5">
           {property.images.slice(0, 5).map((_, i) => (
-            <div
+            <button
               key={i}
+              onClick={(e) => {
+                e.stopPropagation();
+                setCurrentImageIndex(i);
+              }}
               className={`h-1.5 rounded-full shadow-sm transition-all duration-300 ${i === currentImageIndex ? 'w-4 bg-white' : 'w-1.5 bg-white/50'}`}
-            ></div>
+              aria-label={`Ir a imagen ${i + 1}`}
+            ></button>
           ))}
         </div>
       </div>

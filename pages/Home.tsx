@@ -162,7 +162,7 @@ const Home: React.FC = () => {
               className="w-full bg-primary text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all hover:bg-primary-dark"
             >
               <span className="material-icons text-xl">search</span>
-              Explorar {filteredProperties.length} lugares
+              Explorar {filteredProperties.length} propiedades
             </button>
           </div>
         </div>
@@ -178,7 +178,10 @@ const Home: React.FC = () => {
               <span className="text-primary italic">paraíso privado.</span>
             </h1>
           </div>
-          <div className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50">
+          <div
+            onClick={() => alert("¡Próximamente! Recibirás notificaciones sobre tus estancias exclusivas aquí.")}
+            className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all"
+          >
             <span className="material-icons text-secondary">notifications_none</span>
           </div>
         </div>
@@ -207,8 +210,8 @@ const Home: React.FC = () => {
               key={cat.id}
               onClick={() => handleCategorySelect(cat.id)}
               className={`flex items-center gap-2 px-5 py-3 rounded-full border whitespace-nowrap transition-all duration-300 ${activeCategory === cat.id
-                  ? 'bg-secondary text-white border-secondary shadow-lg shadow-secondary/20 scale-105'
-                  : 'bg-white border-transparent text-gray-500 shadow-sm hover:bg-gray-50'
+                ? 'bg-secondary text-white border-secondary shadow-lg shadow-secondary/20 scale-105'
+                : 'bg-white border-transparent text-gray-500 shadow-sm hover:bg-gray-50'
                 }`}
             >
               <span className="material-icons text-sm">{cat.icon}</span>
@@ -224,7 +227,7 @@ const Home: React.FC = () => {
         {/* Guide Section */}
         <div className="mb-10">
           <div className="flex justify-between items-end mb-4">
-            <h2 className="font-serif font-bold text-xl text-text-main">Vive Cabo Rojo</h2>
+            <h2 className="font-serif font-bold text-xl text-text-main">Experiencia Cabo Rojo</h2>
             <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
               {localGuideData.map((guide, idx) => (
                 <button
@@ -273,7 +276,7 @@ const Home: React.FC = () => {
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
                 <span className="material-icons text-4xl text-gray-300">search_off</span>
               </div>
-              <p className="text-text-main font-bold text-lg">No encontramos resultados</p>
+              <p className="text-text-main font-bold text-lg">Sin estancias disponibles</p>
               <p className="text-sm text-text-light mt-1 mb-6 max-w-[200px]">
                 Intenta cambiar los filtros para encontrar tu estancia ideal.
               </p>

@@ -309,10 +309,10 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
       setForm(updatedForm);
       // Auto-save to Context for Real-Time effect across the app
       onSave(updatedForm);
-      showToast("Calendarios sincronizados con éxito.");
+      showToast("Sincronización completada.");
     } catch (e) {
       console.error("Sync failed", e);
-      showToast("Error al sincronizar calendarios.");
+      showToast("No se pudo conectar con el servidor de iCal.");
     } finally {
       setIsSyncing(false);
     }
@@ -551,9 +551,21 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
 
           {activeSection === 'photos' && (
             <div className="space-y-6 animate-slide-up">
-              <div className="bg-gray-50 p-6 rounded-[2rem] border-2 border-dashed border-gray-200 text-center">
-                <span className="material-icons text-4xl text-gray-300 mb-2">add_a_photo</span>
-                <p className="text-xs font-bold text-text-light uppercase tracking-widest">Arrastra o haz clic para subir</p>
+              <div className="bg-gray-50 p-6 rounded-[2rem] border-2 border-dashed border-gray-200 text-center relative group">
+                <input
+                  type="file"
+                  accept="image/webp,image/jpeg,image/png"
+                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      if (file.size > 2 * 1024 * 1024) return showToast("La imagen supera los 2MB permitidos.");
+                      showToast("Imagen subida con éxito (Simulación)");
+                    }
+                  }}
+                />
+                <span className="material-icons text-4xl text-gray-300 mb-2 group-hover:text-primary transition-colors">add_a_photo</span>
+                <p className="text-xs font-bold text-text-light uppercase tracking-widest">Subir nueva fotografía (Máx 2MB)</p>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {form.images.map((img, i) => (
@@ -730,6 +742,13 @@ const HostDashboard: React.FC = () => {
 
   const renderToday = () => (
     <div className="space-y-6 animate-slide-up">
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-2xl font-serif font-bold text-text-main">Gestión del Día</h2>
+        <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+          <span className="material-icons text-[12px]">check_circle</span>
+          Villas Listas para Check-in
+        </div>
+      </div>
       {/* Quick Summary Dashboard */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-black p-5 rounded-[2rem] text-white shadow-soft">

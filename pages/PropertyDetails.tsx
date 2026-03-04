@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProperty } from '../contexts/PropertyContext';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
+import SmartImage from '../components/SmartImage';
 
 // --- STYLES HELPER ---
 const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
@@ -33,7 +34,7 @@ export const PropertyDetails: React.FC = () => {
   useEffect(() => {
     const interval = setInterval(() => {
       // Randomly change viewers between 2 and 6
-      setViewers(prev => {
+      setViewers((prev: number) => {
         const change = Math.random() > 0.5 ? 1 : -1;
         const next = prev + change;
         return next < 2 ? 2 : next > 6 ? 6 : next;
@@ -61,11 +62,11 @@ export const PropertyDetails: React.FC = () => {
   }
 
   const handleNextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
+    setCurrentImageIndex((prev: number) => (prev + 1) % property.images.length);
   };
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev) => (prev - 1 + property.images.length) % property.images.length);
+    setCurrentImageIndex((prev: number) => (prev - 1 + property.images.length) % property.images.length);
   };
 
   const handleShare = async () => {
@@ -153,16 +154,20 @@ export const PropertyDetails: React.FC = () => {
       {/* Hero Image Carousel - AnimatePresence */}
       <div className="relative w-full h-[55vh] rounded-b-[2.5rem] overflow-hidden bg-gray-200 shadow-sm">
         <AnimatePresence mode="popLayout">
-          <motion.img
+          <motion.div
             key={currentImageIndex}
-            src={property.images[currentImageIndex]}
-            alt={property.title}
+            className="absolute inset-0 w-full h-full"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.4 }}
-            className="absolute inset-0 w-full h-full object-cover"
-          />
+          >
+            <SmartImage
+              src={property.images[currentImageIndex]}
+              alt={property.title}
+              className="w-full h-full object-cover"
+            />
+          </motion.div>
         </AnimatePresence>
 
         {/* Navigation Arrows */}
@@ -251,7 +256,7 @@ export const PropertyDetails: React.FC = () => {
         <div className="flex items-center gap-4 p-5 bg-white rounded-[2rem] mb-8 border border-gray-50 shadow-sm relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/5 rounded-full blur-2xl"></div>
           <div className="relative">
-            <img src={property.host.image} alt={property.host.name} className="w-16 h-16 rounded-full object-cover shadow-md" />
+            <SmartImage src={property.host.image} alt={property.host.name} className="w-16 h-16 rounded-full object-cover shadow-md" />
             <span className="absolute -bottom-1 -right-1 bg-secondary text-white p-1 rounded-full border-2 border-white flex items-center justify-center">
               <span className="material-icons text-[12px]">verified</span>
             </span>
@@ -305,8 +310,11 @@ export const PropertyDetails: React.FC = () => {
               </div>
             ))}
           </div>
-          <button className="mt-8 w-full border border-gray-300 text-text-main rounded-2xl py-3.5 font-bold hover:bg-gray-50 hover:border-gray-400 transition-all">
-            Ver las {property.amenities.length} amenidades
+          <button
+            onClick={() => alert(`Lista completa de amenidades: ${property.amenities.join(', ')}`)}
+            className="mt-8 w-full border border-gray-300 text-text-main rounded-2xl py-3.5 font-bold hover:bg-gray-50 hover:border-gray-400 transition-all"
+          >
+            Ver las {property.amenities.length} comodidades
           </button>
         </div>
 
@@ -326,7 +334,7 @@ export const PropertyDetails: React.FC = () => {
               <div key={review.id} className="min-w-[280px] bg-surface rounded-2xl p-5 shadow-card border border-gray-100 flex flex-col">
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex items-center gap-2">
-                    <img src={review.avatar} className="w-8 h-8 rounded-full bg-gray-200" alt="Reviewer" />
+                    <SmartImage src={review.avatar} className="w-8 h-8 rounded-full bg-gray-200" alt="Reviewer" />
                     <div>
                       <p className="text-sm font-bold text-text-main">{review.author}</p>
                       <p className="text-[10px] text-text-light">{review.date}</p>
@@ -389,6 +397,20 @@ export const PropertyDetails: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Sticky Booking Footer */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-gray-100 p-4 pb-safe z-40 flex items-center justify-between shadow-2xl">
+        <div>
+          <p className="text-xs text-text-light font-bold uppercase tracking-tighter">Inversión por noche</p>
+          <p className="text-xl font-serif font-bold text-text-main">${property.price} <span className="text-xs font-sans text-gray-400">USD</span></p>
+        </div>
+        <Link
+          to={`/booking/${property.id}`}
+          className="bg-primary text-white px-10 py-4 rounded-[2rem] font-bold shadow-lg shadow-primary/30 hover:scale-[1.02] active:scale-[0.98] transition-all"
+        >
+          Reservar Ahora
+        </Link>
+      </div>
 
     </div>
   );

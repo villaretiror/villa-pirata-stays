@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useProperty } from '../contexts/PropertyContext';
+import SmartImage from '../components/SmartImage';
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -58,7 +59,7 @@ const Booking: React.FC = () => {
         <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
           {/* Info Propiedad */}
           <div className="flex gap-4 p-3 bg-sand/50 rounded-2xl border border-orange-100">
-            <img src={property.images[0]} className="w-20 h-20 rounded-xl object-cover" />
+            <SmartImage src={property.images[0]} className="w-20 h-20 rounded-xl object-cover" />
             <div>
               <h3 className="font-bold text-text-main text-sm">{property.title}</h3>
               <p className="text-xs text-text-light">{nights} noches • {adults + children} huéspedes</p>
@@ -122,11 +123,11 @@ const Booking: React.FC = () => {
               <span className="font-medium">${basePrice}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-text-light">Limpieza</span>
+              <span className="text-text-light">Servicio de Preparación</span>
               <span className="font-medium">${cleaningFee}</span>
             </div>
             <div className="flex justify-between text-sm pt-4 border-t border-gray-100">
-              <span className="font-bold text-base">Total a Pagar</span>
+              <span className="font-bold text-base">Inversión Total</span>
               <span className="font-bold text-xl text-primary">${total}</span>
             </div>
           </div>
