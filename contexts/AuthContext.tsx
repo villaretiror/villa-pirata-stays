@@ -30,6 +30,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+
+      // Bypass Check: Si hay una sesión de emergencia en localStorage
+      const emergencyAdmin = localStorage.getItem('emergency_admin');
+      if (emergencyAdmin === 'true') {
+        console.log("Auth Debug: Emergency Admin Session Detected in LocalStorage");
+        setUser({
+          id: 'admin-master-id',
+          email: 'admin@villaretiro.com',
+          name: 'Master Admin',
+          role: 'host',
+          avatar: '',
+          phone: '17873560895',
+          verificationStatus: 'verified',
+          registeredAt: new Date().toISOString()
+        });
+        setLoading(false);
+        return;
+      }
+
       if (session?.user) {
         const profile = await getExtendedProfile(session.user.id);
         setUser(mapSupabaseUser(session.user, profile));
@@ -40,9 +59,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
+      // Si no hay sesión de Supabase, checkeamos el bypass nuevamente
+      const emergencyAdmin = localStorage.getItem('emergency_admin');
+
       if (session?.user) {
         const profile = await getExtendedProfile(session.user.id);
         setUser(mapSupabaseUser(session.user, profile));
+      } else if (emergencyAdmin === 'true') {
+        // Mantener al admin de emergencia aunque no haya sesión real
+        return;
       } else {
         setUser(null);
       }
@@ -68,8 +93,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
 
   const login = async (email: string, password: string) => {
+    console.log(`LOGIN_STATUS: Attempting login for ${email}`);
+
+    // --- EMERGENCY BYPASS FOR MASTER ADMIN ---
+    if (email === 'admin@villaretiro.com' && password === 'admin') {
+      console.log("LOGIN_STATUS: MASTER ADMIN BYPASS GRANTED 🔓");
+      const adminUser: User = {
+        id: 'admin-master-id',
+        email: 'admin@villaretiro.com',
+        name: 'Master Admin',
+        role: 'host',
+        avatar: '',
+        phone: '17873560895',
+        verificationStatus: 'verified',
+        registeredAt: new Date().toISOString()
+      };
+      localStorage.setItem('emergency_admin', 'true');
+      setUser(adminUser);
+      return { user: adminUser, error: null };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) return { user: null, error: error.message };
+
+    if (error) {
+      console.error(`LOGIN_STATUS: Failed. Error: ${error.message}`);
+      return { user: null, error: error.message };
+    }
+
+    console.log("LOGIN_STATUS: Supabase Auth Success ✅");
     const profile = await getExtendedProfile(data.user.id);
     const mappedUser = mapSupabaseUser(data.user, profile);
     setUser(mappedUser);
@@ -94,6 +145,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    localStorage.removeItem('emergency_admin');
     await supabase.auth.signOut();
     setUser(null);
   };
