@@ -4,14 +4,9 @@ import { useProperty } from '../contexts/PropertyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import SmartImage from '../components/SmartImage';
-import DatePicker, { registerLocale } from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
-import { es } from 'date-fns/locale';
 import { addDays, format, differenceInDays } from 'date-fns';
-import PayPalPayment from '../components/PayPalPayment';
-import { HOST_PHONE } from '../constants';
-
-registerLocale('es', es);
+import BookingCalendar from '../components/BookingCalendar';
+import PaymentProcessor from '../components/PaymentProcessor';
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -24,17 +19,12 @@ const Booking: React.FC = () => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'ath_movil' | 'paypal'>('ath_movil');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [screenshot, setScreenshot] = useState<File | null>(null);
-  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
       if (!id) return;
-
       const manualBlocked = property?.blockedDates.map(d => new Date(d)) || [];
-
       const { data: bookings } = await supabase
         .from('bookings')
         .select('check_in, check_out')
@@ -50,10 +40,8 @@ const Booking: React.FC = () => {
           start = addDays(start, 1);
         }
       });
-
       setBlockedDates([...manualBlocked, ...bookingDates]);
     };
-
     fetchBlockedDates();
   }, [id, property]);
 
@@ -71,29 +59,7 @@ const Booking: React.FC = () => {
   const cleaningFee = property.fees.cleaningShort;
   const total = basePrice + cleaningFee;
 
-  const handleATHUpload = async () => {
-    if (!screenshot) return null;
-    setIsUploading(true);
-    const fileExt = screenshot.name.split('.').pop();
-    const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
-    const filePath = `receipts/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('payments')
-      .upload(filePath, screenshot);
-
-    if (uploadError) {
-      alert("Error subiendo el comprobante: " + uploadError.message);
-      setIsUploading(false);
-      return null;
-    }
-
-    const { data } = supabase.storage.from('payments').getPublicUrl(filePath);
-    setIsUploading(false);
-    return data.publicUrl;
-  };
-
-  const processBooking = async (status: string, proofUrl?: string, method?: string) => {
+  const handlePaymentSuccess = async (status: string, proofUrl?: string, method?: string) => {
     if (!startDate || !endDate || !user) return;
 
     setIsProcessing(true);
@@ -104,7 +70,7 @@ const Booking: React.FC = () => {
       check_out: format(endDate, 'yyyy-MM-dd'),
       total_price: total,
       status: status,
-      payment_method: method || paymentMethod,
+      payment_method: method,
       payment_proof_url: proofUrl || null
     });
 
@@ -114,6 +80,7 @@ const Booking: React.FC = () => {
       return;
     }
 
+    // Navigar a success con los datos para WhatsApp
     navigate('/success', {
       state: {
         bookingData: {
@@ -125,21 +92,6 @@ const Booking: React.FC = () => {
         }
       }
     });
-  };
-
-  const handleManualConfirm = async () => {
-    if (paymentMethod === 'ath_movil' && !screenshot) {
-      alert("Por favor, sube una captura de pantalla de tu pago por ATH Móvil.");
-      return;
-    }
-
-    let proofUrl = undefined;
-    if (paymentMethod === 'ath_movil') {
-      proofUrl = await handleATHUpload();
-      if (!proofUrl) return;
-    }
-
-    await processBooking('waiting_approval', proofUrl);
   };
 
   return (
@@ -165,140 +117,56 @@ const Booking: React.FC = () => {
             </div>
           </div>
 
-          {/* Selector de Fechas Real */}
-          <div className="space-y-3">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Selecciona tus fechas</h3>
-            <div className="relative booking-datepicker-container">
-              <DatePicker
-                selectsRange={true}
-                startDate={startDate}
-                endDate={endDate}
-                onChange={(update: [Date | null, Date | null]) => setDateRange(update)}
-                excludeDates={blockedDates}
-                minDate={new Date()}
-                monthsShown={1}
-                inline
-                locale="es"
-                calendarClassName="luxury-calendar"
-              />
-            </div>
-          </div>
-
-          {/* Métodos de Pago */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Método de Pago</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => setPaymentMethod('paypal')}
-                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-orange-50 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
-              >
-                <div className="w-12 h-8 flex items-center justify-center">
-                  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-5" alt="PayPal" />
-                </div>
-                <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">PayPal</p>
-              </button>
-              <button
-                onClick={() => setPaymentMethod('ath_movil')}
-                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-orange-500 bg-orange-50 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
-              >
-                <div className="w-12 h-8 flex items-center justify-center">
-                  <span className="bg-[#FF6B35] text-white px-2 py-0.5 rounded-md font-black text-[10px] italic">ATH</span>
-                </div>
-                <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">ATH Móvil</p>
-              </button>
-            </div>
-
-            {paymentMethod === 'ath_movil' && (
-              <div className="bg-orange-50/50 p-5 rounded-[1.5rem] border border-orange-100 animate-fade-in">
-                <p className="text-xs font-bold text-orange-800 mb-3 flex items-center gap-2">
-                  <span className="material-symbols-outlined text-sm">info</span>
-                  Instrucciones ATH Móvil
-                </p>
-                <div className="space-y-3 mb-4">
-                  <div className="flex gap-3">
-                    <div className="w-5 h-5 bg-orange-200 rounded-full flex items-center justify-center text-[10px] font-bold text-orange-800">1</div>
-                    <p className="text-[11px] text-orange-700 leading-tight">Envía el total de <span className="font-bold">${total}</span> a:</p>
-                  </div>
-                  <div className="ml-8 bg-white p-2 rounded-lg border border-orange-200 inline-block">
-                    <p className="text-sm font-black text-orange-600 tracking-wider">{HOST_PHONE}</p>
-                  </div>
-                  <div className="flex gap-3">
-                    <div className="w-5 h-5 bg-orange-200 rounded-full flex items-center justify-center text-[10px] font-bold text-orange-800">2</div>
-                    <p className="text-[11px] text-orange-700 leading-tight">Sube la captura de pantalla del recibo:</p>
-                  </div>
-                </div>
-
-                <label className="block w-full cursor-pointer group">
-                  <div className="w-full py-4 px-4 bg-white border-2 border-dashed border-orange-200 rounded-xl flex flex-col items-center justify-center gap-2 group-hover:border-orange-400 group-hover:bg-orange-50 transition-all">
-                    <span className="material-icons text-orange-400 group-hover:scale-110 transition-transform">cloud_upload</span>
-                    <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">
-                      {screenshot ? screenshot.name : "Subir Comprobante"}
-                    </span>
-                  </div>
-                  <input type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} />
-                </label>
-              </div>
-            )}
-          </div>
+          {/* Calendario Modular */}
+          <BookingCalendar
+            startDate={startDate}
+            endDate={endDate}
+            onChange={(update) => setDateRange(update)}
+            blockedDates={blockedDates}
+          />
 
           {/* Desglose de Precios */}
-          <div className="space-y-2 pt-2 border-t border-gray-100">
-            <div className="flex justify-between text-sm">
-              <span className="text-text-light">${property.price} x {nights || 0} noches</span>
-              <span className="font-medium">${basePrice}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-text-light">Servicio de Preparación</span>
-              <span className="font-medium">${cleaningFee}</span>
-            </div>
-            <div className="flex justify-between items-end pt-4">
-              <span className="font-bold text-base text-text-main">Inversión Final</span>
-              <div className="text-right">
-                <span className="text-[10px] block font-black text-secondary tracking-widest uppercase mb-1">Total PR Tax Incl.</span>
-                <span className="font-bold text-2xl text-primary">${total}</span>
+          <div className="space-y-4 py-6 border-y border-gray-100 bg-gray-50/30 -mx-6 px-6">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Resumen de Inversión</h3>
+            <div className="space-y-2">
+              <div className="flex justify-between text-sm">
+                <span className="text-text-light">${property.price} x {nights || 0} noches</span>
+                <span className="font-medium">${basePrice}</span>
+              </div>
+              <div className="flex justify-between text-sm">
+                <span className="text-text-light">Servicio de Preparación</span>
+                <span className="font-medium">${cleaningFee}</span>
+              </div>
+              <div className="flex justify-between items-end pt-4 border-t border-dashed border-gray-200 mt-2">
+                <span className="font-bold text-base text-text-main">Inversión Final</span>
+                <div className="text-right">
+                  <span className="text-[10px] block font-black text-secondary tracking-widest uppercase mb-1">Total PR Tax Incl.</span>
+                  <span className="font-bold text-2xl text-primary">${total}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="p-6 bg-white border-t border-gray-100">
-          {paymentMethod === 'paypal' && startDate && endDate ? (
-            <div className="animate-fade-in">
-              <PayPalPayment
-                amount={total}
-                onSuccess={(details) => processBooking('confirmed', undefined, 'paypal')}
-                onError={(err) => alert("Error en PayPal: " + err)}
-              />
+          {/* Pasarela de Pago Modular */}
+          {startDate && endDate && (
+            <PaymentProcessor
+              total={total}
+              user={user}
+              isProcessing={isProcessing}
+              onSuccess={handlePaymentSuccess}
+            />
+          )}
+
+          {!startDate && (
+            <div className="py-6 text-center">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                Selecciona fechas para proceder al pago
+              </p>
             </div>
-          ) : (
-            <button
-              onClick={handleManualConfirm}
-              disabled={isProcessing || isUploading || !startDate || !endDate}
-              className={`w-full text-white font-bold py-4 rounded-2xl shadow-float transition-all flex items-center justify-center gap-2 ${isProcessing || isUploading || !startDate || !endDate ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:scale-[1.02] active:scale-[0.98]'}`}
-            >
-              {isProcessing || isUploading ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-              ) : (
-                <>
-                  {paymentMethod === 'ath_movil' ? 'CONFIRMAR PAGO ATH MÓVIL' : 'CONFIRMAR RESERVA'}
-                  <span className="material-icons">bolt</span>
-                </>
-              )}
-            </button>
           )}
         </div>
       </div>
-
-      <style>{`
-        .luxury-calendar { border: none !important; font-family: inherit !important; width: 100% !important; }
-        .react-datepicker { display: block !important; border: none !important; }
-        .react-datepicker__header { background-color: white !important; border: none !important; }
-        .react-datepicker__month-container { width: 100% !important; }
-        .react-datepicker__day--disabled { color: #ccc !important; text-decoration: line-through !important; cursor: not-allowed !important; }
-        .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { background-color: #EF4444 !important; border-radius: 12px !important; color: white !important; }
-        .react-datepicker__day--in-range { background-color: rgba(239, 68, 68, 0.1) !important; color: #EF4444 !important; }
-      `}</style>
-    </div >
+    </div>
   );
 };
 

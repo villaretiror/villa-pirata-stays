@@ -685,6 +685,7 @@ const HostDashboard: React.FC = () => {
   // --- SYNC WITH SUPABASE ---
   useEffect(() => {
     const fetchData = async () => {
+      fetchPayments(); // Initialize payments badge count
       // 1. Fetch Properties from DB
       const { data: props } = await supabase.from('properties').select('*');
       if (props && props.length > 0) {
