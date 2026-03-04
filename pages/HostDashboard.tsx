@@ -658,7 +658,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -680,6 +680,7 @@ const HostDashboard: React.FC = () => {
   // Real-time Database State
   const [realBookings, setRealBookings] = useState<any[]>([]);
   const [cleaningStatus, setCleaningStatus] = useState<'ready' | 'progress' | 'dirty'>('ready');
+  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
 
   // --- SYNC WITH SUPABASE ---
   useEffect(() => {
@@ -748,6 +749,35 @@ const HostDashboard: React.FC = () => {
     };
     if (activeTab === 'leads') fetchLeads();
   }, [activeTab]);
+
+  // --- FETCH PENDING PAYMENTS ---
+  const fetchPayments = async () => {
+    const { data } = await supabase
+      .from('bookings')
+      .select('*, profiles:user_id(full_name, avatar_url, phone), properties:property_id(title, images)')
+      .eq('status', 'waiting_approval');
+    if (data) setPendingPayments(data);
+  };
+
+  useEffect(() => {
+    if (activeTab === 'payments') fetchPayments();
+  }, [activeTab]);
+
+  const handleApprovePayment = async (bookingId: string) => {
+    const { error } = await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId);
+    if (!error) {
+      showToast("Pago Aprobado y Reserva Confirmada ✨");
+      fetchPayments();
+    }
+  };
+
+  const handleRejectPayment = async (bookingId: string) => {
+    const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    if (!error) {
+      showToast("Pago Rechazado ❌");
+      fetchPayments();
+    }
+  };
 
   // --- HANDLERS ---
 
@@ -1149,6 +1179,71 @@ const HostDashboard: React.FC = () => {
       })}
     </div>
   );
+  const renderPayments = () => (
+    <div className="space-y-6 animate-fade-in mb-10">
+      <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100 flex items-center gap-4">
+        <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center text-orange-600">
+          <span className="material-icons">payments</span>
+        </div>
+        <div>
+          <h3 className="font-bold text-orange-900 text-sm">Conciliación de ATH Móvil</h3>
+          <p className="text-[10px] text-orange-700 leading-tight mt-1">Verifica los comprobantes subidos por tus huéspedes para confirmar sus estancias.</p>
+        </div>
+      </div>
+
+      {pendingPayments.length > 0 ? (
+        pendingPayments.map(payment => (
+          <div key={payment.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 rounded-full overflow-hidden">
+                <img src={payment.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="User" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex-1">
+                <h4 className="font-bold text-sm text-text-main leading-tight">{payment.profiles?.full_name}</h4>
+                <p className="text-[10px] font-black uppercase tracking-widest text-text-light mt-0.5">${payment.total_price} • {payment.properties?.title}</p>
+              </div>
+              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider">Pendiente</div>
+            </div>
+
+            <div className="mb-6">
+              <p className="text-[10px] font-black uppercase text-text-light tracking-widest mb-2">Comprobante Recibido:</p>
+              <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 group">
+                <img src={payment.payment_proof_url} alt="Proof" className="w-full h-full object-contain" />
+                <a
+                  href={payment.payment_proof_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <span className="text-white text-[10px] font-black uppercase tracking-widest border border-white/30 px-4 py-2 rounded-full backdrop-blur-sm">Ver Pantalla Completa</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => handleRejectPayment(payment.id)}
+                className="py-4 rounded-2xl border border-gray-200 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
+              >
+                Rechazar
+              </button>
+              <button
+                onClick={() => handleApprovePayment(payment.id)}
+                className="py-4 rounded-2xl bg-black text-white font-black text-[10px] uppercase tracking-widest hover:bg-gray-900 shadow-lg transition-all"
+              >
+                Confirmar Pago
+              </button>
+            </div>
+          </div>
+        ))
+      ) : (
+        <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
+          <span className="material-icons text-4xl text-gray-200 mb-2">done_all</span>
+          <p className="text-xs font-bold text-gray-400">Todos los pagos están al día</p>
+        </div>
+      )}
+    </div>
+  );
 
   const editingProperty = properties.find(p => p.id === isEditing);
 
@@ -1164,6 +1259,7 @@ const HostDashboard: React.FC = () => {
           {activeTab === 'reviews' && 'Reseñas'}
           {activeTab === 'messages' && 'Mensajes'}
           {activeTab === 'leads' && 'Clientes'}
+          {activeTab === 'payments' && 'Pagos'}
         </h1>
         <button
           onClick={() => onNavigate && onNavigate('home')}
@@ -1180,6 +1276,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'reviews' && renderReviews()}
         {activeTab === 'leads' && renderLeads()}
         {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} />}
+        {activeTab === 'payments' && renderPayments()}
         {activeTab === 'messages' && <div className="text-center py-10 text-gray-400">Centro de mensajes (Próximamente)</div>}
       </main>
 
@@ -1206,6 +1303,17 @@ const HostDashboard: React.FC = () => {
           >
             <span className="material-icons text-xl">insights</span>
             <span className="text-[9px] font-black uppercase tracking-widest">Hoy</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('payments')}
+            className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === 'payments' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            <div className="relative">
+              <span className="material-icons text-xl">payments</span>
+              {pendingPayments.length > 0 && <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-black animate-pulse">{pendingPayments.length}</span>}
+            </div>
+            <span className="text-[9px] font-black uppercase tracking-widest">Pagos</span>
           </button>
 
           <button

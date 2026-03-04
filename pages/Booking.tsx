@@ -8,6 +8,8 @@ import DatePicker, { registerLocale } from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { es } from 'date-fns/locale';
 import { addDays, format, differenceInDays } from 'date-fns';
+import PayPalPayment from '../components/PayPalPayment';
+import { HOST_PHONE } from '../constants';
 
 registerLocale('es', es);
 
@@ -22,17 +24,17 @@ const Booking: React.FC = () => {
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
-  const [paymentMethod, setPaymentMethod] = useState<'ath_movil' | 'stripe' | 'paypal'>('ath_movil');
+  const [paymentMethod, setPaymentMethod] = useState<'ath_movil' | 'paypal'>('ath_movil');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [screenshot, setScreenshot] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
       if (!id) return;
 
-      // 1. Fechas bloqueadas manualmente por el Host
       const manualBlocked = property?.blockedDates.map(d => new Date(d)) || [];
 
-      // 2. Fechas con reservas confirmadas
       const { data: bookings } = await supabase
         .from('bookings')
         .select('check_in, check_out')
@@ -69,42 +71,75 @@ const Booking: React.FC = () => {
   const cleaningFee = property.fees.cleaningShort;
   const total = basePrice + cleaningFee;
 
-  const handleConfirm = async () => {
-    if (!startDate || !endDate || !user) {
-      alert("Por favor, selecciona las fechas y asegúrate de haber iniciado sesión.");
-      return;
+  const handleATHUpload = async () => {
+    if (!screenshot) return null;
+    setIsUploading(true);
+    const fileExt = screenshot.name.split('.').pop();
+    const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
+    const filePath = `receipts/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('payments')
+      .upload(filePath, screenshot);
+
+    if (uploadError) {
+      alert("Error subiendo el comprobante: " + uploadError.message);
+      setIsUploading(false);
+      return null;
     }
 
-    setIsProcessing(true);
+    const { data } = supabase.storage.from('payments').getPublicUrl(filePath);
+    setIsUploading(false);
+    return data.publicUrl;
+  };
 
+  const processBooking = async (status: string, proofUrl?: string, method?: string) => {
+    if (!startDate || !endDate || !user) return;
+
+    setIsProcessing(true);
     const { error } = await supabase.from('bookings').insert({
       user_id: user.id,
       property_id: id,
       check_in: format(startDate, 'yyyy-MM-dd'),
       check_out: format(endDate, 'yyyy-MM-dd'),
       total_price: total,
-      status: 'confirmed' // En demo lo confirmamos directo
+      status: status,
+      payment_method: method || paymentMethod,
+      payment_proof_url: proofUrl || null
     });
 
     if (error) {
-      alert("Error al reservar: " + error.message);
+      alert("Error en la reserva: " + error.message);
       setIsProcessing(false);
       return;
     }
 
-    setTimeout(() => {
-      navigate('/success', {
-        state: {
-          bookingData: {
-            guestName: user.name,
-            propertyName: property.title,
-            checkIn: format(startDate, 'dd MMM yyyy'),
-            checkOut: format(endDate, 'dd MMM yyyy'),
-            total: total
-          }
+    navigate('/success', {
+      state: {
+        bookingData: {
+          guestName: user.name,
+          propertyName: property.title,
+          checkIn: format(startDate, 'dd MMM yyyy'),
+          checkOut: format(endDate, 'dd MMM yyyy'),
+          total: total
         }
-      });
-    }, 1500);
+      }
+    });
+  };
+
+  const handleManualConfirm = async () => {
+    if (paymentMethod === 'ath_movil' && !screenshot) {
+      alert("Por favor, sube una captura de pantalla de tu pago por ATH Móvil.");
+      return;
+    }
+
+    let proofUrl = undefined;
+    if (paymentMethod === 'ath_movil') {
+      proofUrl = await handleATHUpload();
+      if (!proofUrl) return;
+    }
+
+    await processBooking('waiting_approval', proofUrl);
   };
 
   return (
@@ -151,17 +186,55 @@ const Booking: React.FC = () => {
 
           {/* Métodos de Pago */}
           <div className="space-y-3">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Confirmar con</h3>
-            <button
-              onClick={() => setPaymentMethod('ath_movil')}
-              className={`w-full p-4 rounded-2xl border-2 flex items-center justify-between transition-all ${paymentMethod === 'ath_movil' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-[#FF6B35] rounded-xl flex items-center justify-center text-white font-black text-xs">ATH</div>
-                <div className="text-left"><p className="font-bold text-sm">ATH Móvil</p></div>
+            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Método de Pago</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => setPaymentMethod('paypal')}
+                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-orange-50' : 'border-gray-100 bg-white'}`}
+              >
+                <div className="w-10 h-10 bg-[#003087] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-sm">P</div>
+                <p className="font-bold text-xs">PayPal</p>
+              </button>
+              <button
+                onClick={() => setPaymentMethod('ath_movil')}
+                className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-orange-500 bg-orange-50' : 'border-gray-100 bg-white'}`}
+              >
+                <div className="w-10 h-10 bg-[#FF6B35] rounded-xl flex items-center justify-center text-white font-black text-xs shadow-sm">ATH</div>
+                <p className="font-bold text-xs">ATH Móvil</p>
+              </button>
+            </div>
+
+            {paymentMethod === 'ath_movil' && (
+              <div className="bg-orange-50/50 p-5 rounded-[1.5rem] border border-orange-100 animate-fade-in">
+                <p className="text-xs font-bold text-orange-800 mb-3 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-sm">info</span>
+                  Instrucciones ATH Móvil
+                </p>
+                <div className="space-y-3 mb-4">
+                  <div className="flex gap-3">
+                    <div className="w-5 h-5 bg-orange-200 rounded-full flex items-center justify-center text-[10px] font-bold text-orange-800">1</div>
+                    <p className="text-[11px] text-orange-700 leading-tight">Envía el total de <span className="font-bold">${total}</span> a:</p>
+                  </div>
+                  <div className="ml-8 bg-white p-2 rounded-lg border border-orange-200 inline-block">
+                    <p className="text-sm font-black text-orange-600 tracking-wider">{HOST_PHONE}</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <div className="w-5 h-5 bg-orange-200 rounded-full flex items-center justify-center text-[10px] font-bold text-orange-800">2</div>
+                    <p className="text-[11px] text-orange-700 leading-tight">Sube la captura de pantalla del recibo:</p>
+                  </div>
+                </div>
+
+                <label className="block w-full cursor-pointer group">
+                  <div className="w-full py-4 px-4 bg-white border-2 border-dashed border-orange-200 rounded-xl flex flex-col items-center justify-center gap-2 group-hover:border-orange-400 group-hover:bg-orange-50 transition-all">
+                    <span className="material-icons text-orange-400 group-hover:scale-110 transition-transform">cloud_upload</span>
+                    <span className="text-[10px] font-black text-orange-600 uppercase tracking-widest">
+                      {screenshot ? screenshot.name : "Subir Comprobante"}
+                    </span>
+                  </div>
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => setScreenshot(e.target.files?.[0] || null)} />
+                </label>
               </div>
-              {paymentMethod === 'ath_movil' && <span className="material-icons text-orange-500">check_circle</span>}
-            </button>
+            )}
           </div>
 
           {/* Desglose de Precios */}
@@ -185,52 +258,44 @@ const Booking: React.FC = () => {
         </div>
 
         <div className="p-6 bg-white border-t border-gray-100">
-          <button
-            onClick={handleConfirm}
-            disabled={isProcessing || !startDate || !endDate}
-            className={`w-full text-white font-bold py-4 rounded-2xl shadow-float transition-all flex items-center justify-center gap-2 ${isProcessing || !startDate || !endDate ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:scale-[1.02] active:scale-[0.98]'}`}
-          >
-            {isProcessing ? (
-              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-            ) : (
-              <>
-                {paymentMethod === 'ath_movil' ? 'INICIAR PAGO ATH MÓVIL' : 'CONFIRMAR RESERVA'}
-                <span className="material-icons">bolt</span>
-              </>
-            )}
-          </button>
+          {paymentMethod === 'paypal' && startDate && endDate ? (
+            <div className="animate-fade-in">
+              <PayPalPayment
+                amount={total}
+                onSuccess={(details) => processBooking('confirmed', undefined, 'paypal')}
+                onError={(err) => alert("Error en PayPal: " + err)}
+              />
+            </div>
+          ) : (
+            <button
+              onClick={handleManualConfirm}
+              disabled={isProcessing || isUploading || !startDate || !endDate}
+              className={`w-full text-white font-bold py-4 rounded-2xl shadow-float transition-all flex items-center justify-center gap-2 ${isProcessing || isUploading || !startDate || !endDate ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary hover:scale-[1.02] active:scale-[0.98]'}`}
+            >
+              {isProcessing || isUploading ? (
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+              ) : (
+                <>
+                  {paymentMethod === 'ath_movil' ? 'CONFIRMAR PAGO ATH MÓVIL' : 'CONFIRMAR RESERVA'}
+                  <span className="material-icons">bolt</span>
+                </>
+              )}
+            </button>
+          )}
         </div>
       </div>
 
       <style>{`
-        .luxury-calendar {
-          border: none !important;
-          font-family: inherit !important;
-          width: 100% !important;
-        }
-        .react-datepicker {
-          display: block !important;
-        }
-        .react-datepicker__month-container {
-          width: 100% !important;
-        }
-        .react-datepicker__day--disabled {
-          color: #ccc !important;
-          text-decoration: line-through !important;
-          cursor: not-allowed !important;
-        }
-        .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end {
-          background-color: #EF4444 !important;
-          border-radius: 12px !important;
-        }
-        .react-datepicker__day--in-range {
-          background-color: rgba(239, 68, 68, 0.1) !important;
-          color: #EF4444 !important;
-        }
+        .luxury-calendar { border: none !important; font-family: inherit !important; width: 100% !important; }
+        .react-datepicker { display: block !important; border: none !important; }
+        .react-datepicker__header { background-color: white !important; border: none !important; }
+        .react-datepicker__month-container { width: 100% !important; }
+        .react-datepicker__day--disabled { color: #ccc !important; text-decoration: line-through !important; cursor: not-allowed !important; }
+        .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { background-color: #EF4444 !important; border-radius: 12px !important; color: white !important; }
+        .react-datepicker__day--in-range { background-color: rgba(239, 68, 68, 0.1) !important; color: #EF4444 !important; }
       `}</style>
     </div>
   );
 };
 
 export default Booking;
-
