@@ -24,7 +24,7 @@ const Booking: React.FC = () => {
   useEffect(() => {
     const fetchBlockedDates = async () => {
       if (!id) return;
-      const manualBlocked = property?.blockedDates.map(d => new Date(d)) || [];
+      const manualBlocked = property?.blockedDates.map((d: string) => new Date(d)) || [];
       const { data: bookings } = await supabase
         .from('bookings')
         .select('check_in, check_out')

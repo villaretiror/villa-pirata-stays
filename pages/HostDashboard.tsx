@@ -304,7 +304,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
     const isBlocked = form.blockedDates.includes(dateStr);
     let newBlocked;
     if (isBlocked) {
-      newBlocked = form.blockedDates.filter(d => d !== dateStr);
+      newBlocked = form.blockedDates.filter((d: string) => d !== dateStr);
     } else {
       newBlocked = [...form.blockedDates, dateStr];
     }
@@ -364,7 +364,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
   };
 
   const handleRemoveSync = (id: string) => {
-    setForm({ ...form, calendarSync: (form.calendarSync || []).filter(c => c.id !== id) });
+    setForm({ ...form, calendarSync: (form.calendarSync || []).filter((c: CalendarSync) => c.id !== id) });
   };
 
   const handleSyncRefresh = () => {
@@ -418,7 +418,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
             <button onClick={() => setCalMonth(new Date(year, month + 1))} className="p-1"><span className="material-icons">chevron_right</span></button>
           </div>
           <div className="grid grid-cols-7 gap-2 mb-2 text-center text-xs font-bold text-gray-400">
-            {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map(d => <div key={d}>{d}</div>)}
+            {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d: string) => <div key={d}>{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-2">{days}</div>
           <p className="text-xs text-center mt-4 text-gray-400">Toca para bloquear/desbloquear.</p>
@@ -445,7 +445,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
 
           {/* Import List */}
           <div className="space-y-3 mb-6">
-            {form.calendarSync?.map((sync) => (
+            {form.calendarSync?.map((sync: CalendarSync) => (
               <div key={sync.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
                 <div className="flex items-center gap-3 overflow-hidden">
                   <div className="bg-white p-2 rounded-lg shadow-sm">
@@ -528,7 +528,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {['info', 'photos', 'calendar', 'fees', 'offers'].map(section => (
+          {['info', 'photos', 'calendar', 'fees', 'offers'].map((section: any) => (
             <button
               key={section}
               onClick={() => setActiveSection(section as any)}
@@ -606,12 +606,12 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                {form.images.map((img, i) => (
+                {form.images.map((img: string, i: number) => (
                   <div key={i} className="relative group rounded-3xl overflow-hidden shadow-soft border-2 border-transparent hover:border-primary transition-all cursor-move">
                     <img src={img} className="w-full h-32 object-cover" alt="Property" />
                     <div className="absolute inset-x-0 bottom-0 bg-black/40 backdrop-blur-sm p-1.5 flex justify-between opacity-0 group-hover:opacity-100 transition-opacity">
                       <span className="material-icons text-white text-sm">drag_indicator</span>
-                      <button onClick={() => setForm({ ...form, images: form.images.filter((_, idx) => idx !== i) })}>
+                      <button onClick={() => setForm({ ...form, images: form.images.filter((_: string, idx: number) => idx !== i) })}>
                         <span className="material-icons text-white text-sm hover:text-red-400">delete</span>
                       </button>
                     </div>
@@ -636,7 +636,7 @@ const Editor = ({ property, onSave, onCancel }: { property: Property, onSave: (p
                 <button onClick={handleAddOffer} className="bg-black text-white px-4 rounded-lg text-xs font-bold">Agregar</button>
               </div>
               <div className="space-y-2">
-                {form.offers?.map((offer, i) => (
+                {form.offers?.map((offer: Offer, i: number) => (
                   <div key={i} className="flex justify-between items-center p-2 bg-gray-50 rounded-lg">
                     <span className="text-sm">{offer.text}</span>
                     <button onClick={() => handleRemoveOffer(i)} className="text-red-500"><span className="material-icons text-sm">delete</span></button>
@@ -689,7 +689,7 @@ const HostDashboard: React.FC = () => {
       // 1. Fetch Properties from DB
       const { data: props } = await supabase.from('properties').select('*');
       if (props && props.length > 0) {
-        const mappedProps = props.map(p => ({
+        const mappedProps = props.map((p: any) => ({
           id: p.id,
           title: p.title,
           description: p.description,
@@ -736,7 +736,7 @@ const HostDashboard: React.FC = () => {
     const fetchLeads = async () => {
       const { data } = await supabase.from('profiles').select('*');
       if (data) {
-        setLeads(data.map(p => ({
+        setLeads(data.map((p: any) => ({
           id: p.id,
           name: p.full_name || 'Huésped Anónimo',
           email: 'Registrado vía App',
@@ -803,7 +803,7 @@ const HostDashboard: React.FC = () => {
 
     const exists = properties.find(p => p.id === updated.id);
     if (exists) {
-      const updatedProperties = properties.map(p => p.id === updated.id ? updated : p);
+      const updatedProperties = properties.map((p: Property) => p.id === updated.id ? updated : p);
       onUpdateProperties(updatedProperties);
     } else {
       onUpdateProperties([...properties, updated]);
@@ -813,7 +813,7 @@ const HostDashboard: React.FC = () => {
   };
 
   const handleSaveGuideItem = (updatedItem: LocalGuideItem, catId: string, itemIdx: number) => {
-    const newGuide = guideData.map(cat => {
+    const newGuide = guideData.map((cat: LocalGuideCategory) => {
       if (cat.id === catId) {
         const newItems = [...cat.items];
         newItems[itemIdx] = updatedItem;
@@ -880,7 +880,7 @@ const HostDashboard: React.FC = () => {
 
   // --- REVIEW MANAGEMENT ---
   const handleUpdateReviewStats = (propertyId: string, newRating: number, newCount: number) => {
-    const updatedProps = properties.map(p => {
+    const updatedProps = properties.map((p: Property) => {
       if (p.id === propertyId) {
         return { ...p, rating: newRating, reviews: newCount };
       }
@@ -890,7 +890,7 @@ const HostDashboard: React.FC = () => {
   };
 
   const handleAddManualReview = (propertyId: string, review: Review) => {
-    const updatedProps = properties.map(p => {
+    const updatedProps = properties.map((p: Property) => {
       if (p.id === propertyId) {
         const currentReviews = p.reviewsList || [];
         return { ...p, reviewsList: [review, ...currentReviews] };
@@ -932,7 +932,7 @@ const HostDashboard: React.FC = () => {
           </span>
         </div>
         <div className="flex gap-2">
-          {['dirty', 'progress', 'ready'].map(s => (
+          {['dirty', 'progress', 'ready'].map((s: any) => (
             <button
               key={s}
               onClick={() => setCleaningStatus(s as any)}
@@ -946,7 +946,7 @@ const HostDashboard: React.FC = () => {
 
       {/* Reservation Cards: Real Real-Time Data */}
       {realBookings.length > 0 ? (
-        realBookings.map((booking) => (
+        realBookings.map((booking: any) => (
           <article key={booking.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 relative overflow-hidden mb-4">
             <div className="flex justify-between items-start mb-6">
               <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
@@ -1048,7 +1048,7 @@ const HostDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
-            {leads.map((lead, i) => (
+            {leads.map((lead: any, i: number) => (
               <div key={i} className="p-4 hover:bg-gray-50/50 transition-colors flex items-center justify-between">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded-full bg-sand text-secondary flex items-center justify-center font-bold text-sm shadow-sm">
@@ -1085,7 +1085,7 @@ const HostDashboard: React.FC = () => {
         </div>
       </div>
 
-      {properties.map(p => (
+      {properties.map((p: Property) => (
         <ReviewManager
           key={p.id}
           property={p}
@@ -1103,14 +1103,14 @@ const HostDashboard: React.FC = () => {
         <p className="text-xs text-blue-600">Edita lugares para asegurar que los huéspedes tengan información precisa.</p>
       </div>
 
-      {guideData.map((category) => (
+      {guideData.map((category: LocalGuideCategory) => (
         <div key={category.id}>
           <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
             <span className="material-icons text-secondary">{category.icon}</span>
             {category.category}
           </h3>
           <div className="grid grid-cols-2 gap-4">
-            {category.items.map((item, idx) => (
+            {category.items.map((item: LocalGuideItem, idx: number) => (
               <div key={idx} className="h-64">
                 <GuideCard
                   item={item}
@@ -1142,7 +1142,7 @@ const HostDashboard: React.FC = () => {
         </div>
       </div>
 
-      {properties.map(p => {
+      {properties.map((p: Property) => {
         const activeOffersCount = p.offers?.filter(isOfferActive).length || 0;
 
         return (
@@ -1193,7 +1193,7 @@ const HostDashboard: React.FC = () => {
       </div>
 
       {pendingPayments.length > 0 ? (
-        pendingPayments.map(payment => (
+        pendingPayments.map((payment: any) => (
           <div key={payment.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100">
             <div className="flex items-center gap-4 mb-6">
               <div className="w-12 h-12 rounded-full overflow-hidden">
