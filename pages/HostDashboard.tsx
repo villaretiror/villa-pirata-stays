@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, LocalGuideCategory, LocalGuideItem, Offer, CalendarSync, Review, User } from '../types';
 import GuideCard from '../components/GuideCard';
-import { fetchMockICal, parseICalData, mockImportFromLink } from '../utils';
+import { fetchMockICal, parseICalData, mockImportFromLink, generateWhatsAppLink, getHostInstructionMessage } from '../utils';
 import HostMenu from '../components/host/HostMenu';
 import HostChat from '../components/host/HostChat';
 import { useAuth } from '../contexts/AuthContext';
@@ -946,7 +946,7 @@ const HostDashboard: React.FC = () => {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-3 mb-3">
               <button
                 onClick={() => setIsChatOpen(true)}
                 className="bg-black hover:bg-gray-900 text-white font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all"
@@ -957,6 +957,23 @@ const HostDashboard: React.FC = () => {
                 <span className="material-icons text-sm">assignment</span> Detalles
               </button>
             </div>
+
+            <button
+              onClick={() => {
+                const msg = getHostInstructionMessage({
+                  guestName: booking.profiles?.full_name || 'Huésped',
+                  propertyName: booking.properties?.title || 'Villa',
+                  accessCode: "C-" + booking.id.slice(-4),
+                  googleMapsLink: "https://maps.google.com/?q=Villa+Retiro+R"
+                });
+                const link = generateWhatsAppLink(booking.profiles?.phone || "17870000000", msg);
+                window.open(link, '_blank');
+              }}
+              className="w-full bg-[#25D366] text-white font-black text-[11px] uppercase tracking-[0.2em] py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-95 transition-all"
+            >
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-4 h-4 brightness-0 invert" alt="WA" />
+              Enviar Instrucciones
+            </button>
           </article>
         ))
       ) : (

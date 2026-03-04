@@ -40,7 +40,7 @@ const Booking: React.FC = () => {
         .eq('status', 'confirmed');
 
       const bookingDates: Date[] = [];
-      bookings?.forEach(b => {
+      bookings?.forEach((b: any) => {
         let start = new Date(b.check_in);
         const end = new Date(b.check_out);
         while (start < end) {
@@ -93,7 +93,17 @@ const Booking: React.FC = () => {
     }
 
     setTimeout(() => {
-      navigate('/success');
+      navigate('/success', {
+        state: {
+          bookingData: {
+            guestName: user.name,
+            propertyName: property.title,
+            checkIn: format(startDate, 'dd MMM yyyy'),
+            checkOut: format(endDate, 'dd MMM yyyy'),
+            total: total
+          }
+        }
+      });
     }, 1500);
   };
 

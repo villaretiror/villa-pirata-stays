@@ -1,9 +1,24 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { generateWhatsAppLink, getBookingWAMessage } from '../utils';
 
 const Success: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const bookingData = location.state?.bookingData;
+
+  // Real contact number for the host (can be env var)
+  const HOST_PHONE = "17870000000";
+
+  const handleWhatsAppContact = () => {
+    let msg = "¡Hola! Quisiera información sobre mi reserva en Villa Retiro R.";
+    if (bookingData) {
+      msg = getBookingWAMessage(bookingData);
+    }
+    const link = generateWhatsAppLink(HOST_PHONE, msg);
+    window.open(link, '_blank');
+  };
 
   return (
     <div className="min-h-screen bg-[radial-gradient(circle,_#ffffff_0%,_#FDFCFB_100%)] flex flex-col items-center justify-center p-6 text-center select-none overflow-hidden relative">
@@ -49,7 +64,7 @@ const Success: React.FC = () => {
           ¡Todo listo para tu descanso!
         </h1>
         <p className="text-text-light text-lg font-medium mb-12 max-w-sm mx-auto leading-relaxed px-4">
-          Hemos recibido tu reserva. Es un honor para nosotros recibirte en <span className="text-secondary font-bold">Villa Retiro R LLC</span>.
+          Hemos recibido tu reserva {bookingData ? `para ${bookingData.propertyName}` : ''}. Es un honor para nosotros recibirte en <span className="text-secondary font-bold">Villa Retiro R LLC</span>.
         </p>
       </motion.div>
 
@@ -74,11 +89,14 @@ const Success: React.FC = () => {
           </button>
 
           <button
-            onClick={() => window.open('https://wa.me/17870000000', '_blank')}
-            className="w-full bg-white/50 border border-gray-100 text-text-main font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-sm hover:bg-white active:scale-95 transition-all flex items-center justify-center gap-3"
+            onClick={handleWhatsAppContact}
+            className="w-full bg-white/50 border border-gray-100 text-text-main font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-sm hover:bg-[#25D366]/5 active:scale-95 transition-all flex items-center justify-center gap-3 group"
           >
-            <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5 opacity-80" alt="WA" />
-            Contactar Concierge
+            <div className="relative">
+              <div className="absolute inset-0 bg-[#25D366] blur-lg opacity-0 group-hover:opacity-20 transition-opacity"></div>
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5 relative z-10" alt="WA" />
+            </div>
+            ENVIAR CONFIRMACIÓN
           </button>
         </div>
       </motion.div>
@@ -91,7 +109,7 @@ const Success: React.FC = () => {
           transition={{ delay: 1, duration: 1.5 }}
           className="text-[10px] font-black text-text-light uppercase tracking-[0.25em] mb-6 px-6"
         >
-          Te hemos enviado un correo con todos los detalles de tu estancia.
+          {bookingData ? `Confirmación enviada a ${bookingData.guestName}` : 'Te hemos enviado un correo con los detalles.'}
         </motion.p>
 
         <motion.button

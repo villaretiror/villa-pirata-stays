@@ -116,3 +116,28 @@ export const mockImportFromLink = async (url: string): Promise<Partial<Property>
     }, 1800);
   });
 };
+
+// 4. WhatsApp Automation
+export const generateWhatsAppLink = (phone: string, message: string): string => {
+  const cleanPhone = phone.replace(/\D/g, '');
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+};
+
+export const getBookingWAMessage = (data: {
+  guestName: string,
+  propertyName: string,
+  checkIn: string,
+  checkOut: string,
+  total: number
+}): string => {
+  return `¡Hola! Soy ${data.guestName}, acabo de reservar ${data.propertyName} para las fechas del ${data.checkIn} al ${data.checkOut} a través de la web oficial de Villa Retiro R. El total de mi inversión es de $${data.total}. Aquí mi confirmación.`;
+};
+
+export const getHostInstructionMessage = (data: {
+  guestName: string,
+  propertyName: string,
+  accessCode: string,
+  googleMapsLink: string
+}): string => {
+  return `¡Hola ${data.guestName}! Gracias por elegir ${data.propertyName}. Aquí tus instrucciones de llegada: \n\n📍 Ubicación: ${data.googleMapsLink} \n🔑 Código de puerta: ${data.accessCode} \n\n¡Cualquier duda, estamos a tu orden!`;
+};
