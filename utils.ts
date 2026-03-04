@@ -91,36 +91,43 @@ export const fetchICalData = async (url: string): Promise<string> => {
   }
 };
 
-export const mockImportFromLink = async (url: string): Promise<Partial<Property>> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const isBooking = url.toLowerCase().includes('booking.com');
-      const isAirbnb = url.toLowerCase().includes('airbnb');
+// 4. Magic Importer - Metadata Extraction via CORS Proxy
+export const importPropertyFromUrl = async (url: string): Promise<Partial<Property>> => {
+  if (!url.startsWith('http')) throw new Error('URL inválida.');
 
-      // Logic for specific Villa IDs
-      if (url.includes('1081171030449673920')) {
-        const villa = PROPERTIES.find(p => p.id === '1081171030449673920');
-        if (villa) {
-          resolve({
-            ...villa,
-            title: `${villa.title} (Sync ${isBooking ? 'Booking' : 'Airbnb'})`,
-            description: `[Importado de ${isBooking ? 'Booking.com' : 'Airbnb'}] ${villa.description}`
-          });
-          return;
-        }
-      }
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
 
-      resolve({
-        title: `Propiedad de ${isBooking ? 'Booking.com' : isAirbnb ? 'Airbnb' : 'Web Link'}`,
-        description: `Sincronizada exitosamente. Esta es una descripción boutique optimizada extraída de ${isBooking ? 'Booking.com con el standard de alta demanda.' : 'Airbnb para tu hosting premium.'}`,
-        price: isBooking ? 295 : 245,
-        rating: 4.9,
-        reviews: 88,
-        amenities: ['Wifi Starlink', 'Piscina Privada', 'Generador Full'],
-        images: ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"]
-      });
-    }, 1800);
-  });
+  try {
+    const response = await fetch(proxyUrl);
+    if (!response.ok) throw new Error('Error de conexión con el proxy.');
+
+    const data = await response.json();
+    const html = data.contents;
+
+    // Función auxiliar para extraer contenido de meta tags específicos
+    const getMeta = (prop: string) => {
+      const match = html.match(new RegExp(`<meta[^>]*property=["']${prop}["'][^>]*content=["']([^"']*)["']`, 'i')) ||
+        html.match(new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*property=["']${prop}["']`, 'i'));
+      return match ? match[1] : null;
+    };
+
+    const title = getMeta('og:title') || "Nueva Villa Importada";
+    const description = getMeta('og:description') || "Descripción no disponible.";
+    const image = getMeta('og:image');
+
+    return {
+      title: title.split(' - ')[0], // Limpiar títulos largos de Airbnb
+      description: description,
+      images: image ? [image] : ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"],
+      price: 250, // Default price
+      rating: 4.9,
+      reviews: 15,
+      amenities: ['Wifi Starlink', 'Check-in Autónomo', 'Cocina Completa']
+    };
+  } catch (error: any) {
+    console.error("Import Error:", error);
+    throw new Error('No pudimos extraer los datos automáticamente.');
+  }
 };
 
 // 4. WhatsApp Automation

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, LocalGuideCategory, LocalGuideItem, Offer, CalendarSync, Review, User } from '../types';
 import GuideCard from '../components/GuideCard';
-import { fetchICalData, parseICalData, mockImportFromLink, generateWhatsAppLink, getHostInstructionMessage } from '../utils';
+import { fetchICalData, parseICalData, importPropertyFromUrl, generateWhatsAppLink, getHostInstructionMessage } from '../utils';
 import HostMenu from '../components/host/HostMenu';
 import HostChat from '../components/host/HostChat';
 import { useAuth } from '../contexts/AuthContext';
@@ -228,7 +228,7 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
             {isLoading ? (
               <>
                 <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                Analizando...
+                Extrayendo datos básicos...
               </>
             ) : (
               <>
@@ -1005,8 +1005,22 @@ const HostDashboard: React.FC = () => {
   };
 
   const handleImport = async (url: string) => {
+    let importedData: Partial<Property> = {};
+
+    try {
+      importedData = await importPropertyFromUrl(url);
+    } catch (e) {
+      console.warn("Import warning:", e);
+      showToast("No pudimos extraer todo automáticamente por las restricciones de Airbnb, pero hemos preparado el formulario para que lo completes manualmente en segundos.");
+      // Proveemos datos mínimos para no romper el flujo
+      importedData = {
+        title: "Nueva Villa (Manual)",
+        description: "Completa la descripción aquí...",
+        images: ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"]
+      };
+    }
+
     setShowImportModal(false);
-    const importedData = await mockImportFromLink(url);
 
     // Save to Database first to get a real ID
     const { data: dbItem, error } = await supabase.from('properties').insert({
@@ -1016,11 +1030,15 @@ const HostDashboard: React.FC = () => {
       location: "Isabela, PR",
       images: importedData.images || [],
       amenities: importedData.amenities || [],
-      max_guests: 4
+      max_guests: 4,
+      is_offline: false,
+      blocked_dates: [],
+      calendar_sync: []
     }).select().single();
 
     if (error || !dbItem) {
-      showToast("Fallo en la importación a DB.");
+      console.error("DB Import Error:", error);
+      showToast("Fallo al crear la propiedad en la base de datos.");
       return;
     }
 
@@ -1037,13 +1055,14 @@ const HostDashboard: React.FC = () => {
       images: dbItem.images,
       amenities: dbItem.amenities,
       guests: dbItem.max_guests,
+      isOffline: dbItem.is_offline,
+      blockedDates: dbItem.blocked_dates,
+      calendarSync: dbItem.calendar_sync,
       bedrooms: 2,
       beds: 2,
       baths: 1,
       fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 100 },
       policies: { checkInTime: "15:00", checkOutTime: "11:00", maxGuests: 6, wifiName: "", wifiPass: "", accessCode: "" },
-      blockedDates: [],
-      calendarSync: [],
       host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
     };
 
