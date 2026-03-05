@@ -1018,7 +1018,16 @@ const HostDashboard: React.FC = () => {
           address: p.location,
           bedrooms: 2, beds: 2, baths: 1,
           fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
-          policies: { checkInTime: "15:00", checkOutTime: "11:00", maxGuests: p.max_guests, wifiName: "Villa_WiFi", wifiPass: "familia123", accessCode: "4532" },
+          policies: {
+            checkInTime: p.check_in_time || "4:00 PM",
+            checkOutTime: p.check_out_time || "11:00 AM",
+            maxGuests: p.max_guests_policy || p.max_guests,
+            wifiName: "Villa_WiFi",
+            wifiPass: "familia123",
+            accessCode: "4532",
+            cancellationPolicy: p.cancellation_policy || 'firm',
+            houseRules: p.house_rules || []
+          },
           host: { name: user?.name || 'Anfitrión', image: user?.avatar || '', yearsHosting: 3, badges: ['Superhost'] }
         } as Property));
         onUpdateProperties(mappedProps);
@@ -1105,7 +1114,12 @@ const HostDashboard: React.FC = () => {
       max_guests: updated.guests,
       is_offline: updated.isOffline,
       blocked_dates: updated.blockedDates,
-      calendar_sync: updated.calendarSync
+      calendar_sync: updated.calendarSync,
+      cancellation_policy: updated.policies.cancellationPolicy || 'firm',
+      house_rules: updated.policies.houseRules || [],
+      check_in_time: updated.policies.checkInTime,
+      check_out_time: updated.policies.checkOutTime,
+      max_guests_policy: updated.policies.maxGuests
     });
 
     if (error) {
