@@ -1123,38 +1123,42 @@ const HostDashboard: React.FC = () => {
       return;
     }
 
-    // 2. Exact Schema Mapping for TABLE 'properties'
+    // 2. Exact Schema Mapping & Payload Cleanup
     const propertyId = updated.id.includes('imported') ? undefined : updated.id;
 
-    const { error } = await supabase.from('properties').upsert({
+    const payload = {
       id: propertyId,
       host_id: hostId,
       title: updated.title,
-      description: updated.description,
-      location: updated.location,
-      address: updated.address,
-      subtitle: updated.subtitle,
-      price_per_night: updated.price,
-      images: updated.images,
-      amenities: updated.amenities,
-      featured_amenity: updated.featuredAmenity,
-      category: updated.category,
-      max_guest: updated.guests, // MAP: max_guest
-      max_guest_policy: updated.policies.maxGuests, // MAP: max_guest_policy
-      bedrooms: updated.bedrooms,
-      beds: updated.beds,
-      baths: updated.baths,
-      rating: updated.rating,
-      reviews_count: updated.reviews,
-      is_offline: updated.isOffline,
-      blocked_dates: updated.blockedDates,
-      calendar_sync: updated.calendarSync,
-      fees: updated.fees,
-      cancellation_policy: updated.policies.cancellationPolicy || 'firm', // MAP: cancellation_policy
-      house_rules: updated.policies.houseRules || [], // MAP: house_rules
-      check_in_time: updated.policies.checkInTime, // MAP: check_in_time
-      check_out_time: updated.policies.checkOutTime // MAP: check_out_time
-    });
+      description: updated.description || '',
+      location: updated.location || 'Cabo Rojo, PR',
+      address: updated.address || '',
+      subtitle: updated.subtitle || '',
+      price_per_night: Number(updated.price) || 0,
+      images: updated.images || [],
+      amenities: updated.amenities || [],
+      featured_amenity: updated.featuredAmenity || '',
+      category: updated.category || 'villa',
+      max_guest: updated.guests || 2, // Verification: Singular 'max_guest'
+      max_guest_policy: updated.policies.maxGuests || '',
+      bedrooms: updated.bedrooms || 1,
+      beds: updated.beds || 1,
+      baths: updated.baths || 1,
+      rating: updated.rating || 5.0,
+      reviews_count: updated.reviews || 0,
+      is_offline: !!updated.isOffline,
+      blocked_dates: updated.blockedDates || [],
+      calendar_sync: updated.calendarSync || null,
+      fees: updated.fees || {},
+      cancellation_policy: updated.policies.cancellationPolicy || 'firm',
+      house_rules: updated.policies.houseRules || [],
+      check_in_time: updated.policies.checkInTime || null,
+      check_out_time: updated.policies.checkOutTime || null
+    };
+
+    console.log("DEBUG: Sending payload to table 'properties':", payload);
+
+    const { error } = await supabase.from('properties').upsert(payload);
 
     if (error) {
       showToast(`Error de sincronización: ${error.message}`);
