@@ -35,8 +35,19 @@ const createMockClient = () => {
     from: () => handler,
     channel: () => handler,
     removeChannel: () => { },
+    storage: {
+      from: () => ({
+        upload: () => Promise.resolve({ data: null, error: null }),
+        getPublicUrl: () => ({ data: { publicUrl: '' } })
+      })
+    },
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signInWithOAuth: () => Promise.resolve({ data: null, error: null }),
+      signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Demo mode: Supabase not configured' } }),
+      signUp: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Demo mode: Supabase not configured' } }),
+      signOut: () => Promise.resolve({ error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
     }
   } as any;
