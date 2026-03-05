@@ -1,6 +1,7 @@
 {
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
+    "framework": "vite",
     "redirects": [
         {
             "source": "/:path(.*)",
@@ -12,12 +13,6 @@
             ],
             "destination": "https://www.villaretiror.com/:path",
             "permanent": true
-        }
-    ],
-    "rewrites": [
-        {
-            "source": "/(.*)",
-            "destination": "/index.html"
         }
     ],
     "headers": [
