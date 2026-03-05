@@ -1114,11 +1114,18 @@ const HostDashboard: React.FC = () => {
     let hostId = user?.id;
 
     if (!hostId && localStorage.getItem('emergency_admin') === 'true') {
-      hostId = 'admin-master-id';
+      hostId = 'da63919e-e092-482a-9e2c-3adminmaster';
     }
 
-    if (!hostId) {
-      console.error("Critical Auth Failure: Component missing host session.");
+    // Helper to validate UUID
+    const isValidUUID = (id: string | undefined): boolean => {
+      if (!id) return false;
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      return uuidRegex.test(id);
+    };
+
+    if (!hostId || !isValidUUID(hostId)) {
+      console.error("Critical Auth Failure: Component missing valid UUID host session.", hostId);
       showToast("Error critico: Sesión de anfitrión inválida. Por favor, refresca la página.");
       return;
     }
@@ -1138,7 +1145,8 @@ const HostDashboard: React.FC = () => {
     };
 
     // 2. Exact Schema Mapping & Payload Cleanup (PLURALIZED max_guests)
-    const propertyId = updated.id.includes('imported') ? undefined : updated.id;
+    // IMPORTANT: Only use ID if it's a valid UUID, otherwise let Supabase generate one (for imported/mock items)
+    const propertyId = isValidUUID(updated.id) ? updated.id : undefined;
 
     const payload: any = {
       id: propertyId,
@@ -1219,7 +1227,7 @@ const HostDashboard: React.FC = () => {
     // Save to Database first to get a real ID
     let hostId = user?.id;
     if (!hostId && localStorage.getItem('emergency_admin') === 'true') {
-      hostId = 'admin-master-id';
+      hostId = 'da63919e-e092-482a-9e2c-3adminmaster';
     }
 
     const { data: dbItem, error } = await supabase.from('properties').insert({

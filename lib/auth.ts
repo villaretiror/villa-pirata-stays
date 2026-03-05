@@ -43,7 +43,7 @@ export const localAuth = {
         // 1. LLAVE MAESTRA: Si es este correo/pass, entra como Host automáticamente
         if (normalizedEmail === 'admin@villaretiro.com' && password === 'admin') {
           const adminUser: User = {
-            id: 'admin-master',
+            id: 'da63919e-e092-482a-9e2c-3adminmaster',
             email: 'admin@villaretiro.com',
             name: 'Carlos (Host)',
             role: 'host',

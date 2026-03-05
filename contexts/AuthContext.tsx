@@ -36,7 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (emergencyAdmin === 'true') {
         console.log("Auth Debug: Emergency Admin Session Detected in LocalStorage");
         setUser({
-          id: 'admin-master-id',
+          id: 'da63919e-e092-482a-9e2c-3adminmaster',
           email: 'admin@villaretiro.com',
           name: 'Master Admin',
           role: 'host',
@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (emergencyAdmin === 'true') {
         // Explicitly set the emergency admin if session is lost but bypass is active
         setUser({
-          id: 'admin-master-id',
+          id: 'da63919e-e092-482a-9e2c-3adminmaster',
           email: 'admin@villaretiro.com',
           name: 'Master Admin',
           role: 'host',
@@ -107,7 +107,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (email === 'admin@villaretiro.com' && password === 'admin') {
       console.log("LOGIN_STATUS: MASTER ADMIN BYPASS GRANTED 🔓");
       const adminUser: User = {
-        id: 'admin-master-id',
+        id: 'da63919e-e092-482a-9e2c-3adminmaster',
         email: 'admin@villaretiro.com',
         name: 'Master Admin',
         role: 'host',
