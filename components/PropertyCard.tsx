@@ -86,7 +86,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
           className="absolute top-4 right-4 p-2.5 rounded-full bg-black/20 backdrop-blur-md hover:bg-white transition-all z-10 flex items-center justify-center border border-white/20 group/fav"
         >
-          <span className={`material-icons-round text-xl drop-shadow-sm transition-transform group-active/fav:scale-75 ${isFavorite ? 'text-red-500 scale-110' : 'text-white group-hover/fav:text-red-500'}`}>
+          <span className={`material-icons text-xl drop-shadow-sm transition-transform group-active/fav:scale-75 ${isFavorite ? 'text-red-500 scale-110' : 'text-white group-hover/fav:text-red-500'}`}>
             {isFavorite ? 'favorite' : 'favorite_border'}
           </span>
         </button>

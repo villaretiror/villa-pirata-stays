@@ -331,50 +331,104 @@ export const PropertyDetails: React.FC = () => {
             ))}
           </div>
           <button
-            onClick={() => setShowAmenities(true)}
-            onTouchEnd={(e) => { e.preventDefault(); setShowAmenities(true); }}
+            onPointerDown={() => setShowAmenities(true)}
             className="mt-8 w-full border border-gray-300 text-text-main rounded-2xl py-3.5 font-bold hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-[0.98]"
           >
             Ver las {property.amenities.length} comodidades
           </button>
         </div>
 
-        {/* Reviews Section */}
-        <div className="py-8">
-          <div className="flex justify-between items-end mb-6">
-            <h2 className={SECTION_TITLE_STYLE + " mb-0"}>Lo que dicen</h2>
-            <div className="flex gap-1.5 items-center bg-gray-50 px-2 py-1 rounded-lg">
-              <span className="material-icons text-green-500 text-[14px]">verified_user</span>
-              <span className={TAG_STYLE + " text-gray-500"}>Verificado</span>
+        {/* Reglas y Políticas */}
+        <div className="py-6 border-b border-gray-100">
+          <h2 className={SECTION_TITLE_STYLE}>Reglas y Políticas</h2>
+
+          <div className="space-y-4">
+            {/* Check-in/out */}
+            <div className="flex gap-4">
+              <div className="flex-1 bg-green-50/50 rounded-2xl p-4 border border-green-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="material-icons text-green-600 text-[18px]">login</span>
+                  <span className="text-xs font-black uppercase tracking-widest text-green-700">Check-in</span>
+                </div>
+                <p className="font-serif font-bold text-lg text-text-main">{property.policies.checkInTime}</p>
+              </div>
+              <div className="flex-1 bg-red-50/50 rounded-2xl p-4 border border-red-100">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="material-icons text-red-500 text-[18px]">logout</span>
+                  <span className="text-xs font-black uppercase tracking-widest text-red-600">Check-out</span>
+                </div>
+                <p className="font-serif font-bold text-lg text-text-main">{property.policies.checkOutTime}</p>
+              </div>
+            </div>
+
+            {/* Reglas Generales */}
+            <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-3">
+              <h4 className="text-sm font-bold text-text-main flex items-center gap-2">
+                <span className="material-icons text-secondary text-[18px]">gavel</span>
+                Reglas de la Casa
+              </h4>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-red-400 text-[16px] mt-0.5">smoke_free</span>
+                  <span className="text-sm text-gray-700">No fumar en interiores</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-red-400 text-[16px] mt-0.5">celebration</span>
+                  <span className="text-sm text-gray-700">No fiestas ni eventos masivos</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-orange-400 text-[16px] mt-0.5">volume_off</span>
+                  <span className="text-sm text-gray-700">Horas de silencio: 10:00 PM – 8:00 AM</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-green-500 text-[16px] mt-0.5">groups</span>
+                  <span className="text-sm text-gray-700">Máximo {property.policies.maxGuests} huéspedes</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Cancelación */}
+            <div className="bg-blue-50/30 rounded-2xl p-5 border border-blue-100 space-y-3">
+              <h4 className="text-sm font-bold text-text-main flex items-center gap-2">
+                <span className="material-icons text-blue-500 text-[18px]">event_busy</span>
+                Política de Cancelación
+              </h4>
+              <div className="space-y-2">
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-green-500 text-[14px] mt-0.5">check_circle</span>
+                  <span className="text-sm text-gray-700"><strong>+30 días antes:</strong> Reembolso completo (100%)</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-orange-400 text-[14px] mt-0.5">warning</span>
+                  <span className="text-sm text-gray-700"><strong>7–30 días antes:</strong> Reembolso del 50%</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="material-icons text-red-400 text-[14px] mt-0.5">block</span>
+                  <span className="text-sm text-gray-700"><strong>Menos de 7 días:</strong> Sin reembolso</span>
+                </div>
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Horizontal Scroll for reviews */}
-          <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
-            {property.reviewsList?.map((review) => (
-              <div key={review.id} className="min-w-[280px] bg-surface rounded-2xl p-5 shadow-card border border-gray-100 flex flex-col">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex items-center gap-2">
-                    <SmartImage src={review.avatar} className="w-8 h-8 rounded-full bg-gray-200" alt="Reviewer" />
-                    <div>
-                      <p className="text-sm font-bold text-text-main">{review.author}</p>
-                      <p className="text-[10px] text-text-light">{review.date}</p>
-                    </div>
-                  </div>
-                  {getSourceLabel(review.source)}
-                </div>
-                <p className="text-sm text-text-main line-clamp-3 mb-2 flex-1">"{review.text}"</p>
-                <div className="flex items-center gap-1 text-primary text-xs font-bold">
-                  <span className="material-icons text-sm">star</span> {review.rating}
-                </div>
-              </div>
-            ))}
-            {(!property.reviewsList || property.reviewsList.length === 0) && (
-              <div className="w-full py-8 text-center">
-                <span className="material-icons text-4xl text-gray-200 mb-2">rate_review</span>
-                <p className="text-sm text-text-light">Las reseñas estarán disponibles pronto.</p>
-              </div>
-            )}
+        {/* Reviews — Real Airbnb Link */}
+        <div className="py-8">
+          <h2 className={SECTION_TITLE_STYLE}>Reseñas Verificadas</h2>
+          <div className="bg-white rounded-2xl p-6 shadow-card border border-gray-100 text-center">
+            <div className="flex justify-center gap-0.5 text-orange-400 mb-3">
+              {[...Array(5)].map((_, i) => <span key={i} className="material-icons text-[20px]">star</span>)}
+            </div>
+            <p className="font-serif font-bold text-2xl text-text-main mb-1">{property.rating}</p>
+            <p className="text-sm text-text-light mb-4">{property.reviews} reseñas verificadas en Airbnb</p>
+            <a
+              href={property.id === '1081171030449673920' ? 'https://www.airbnb.com/h/villaretiro' : 'https://www.airbnb.com/h/piratafamilyhouse'}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 bg-[#FF5A5F] text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-[#e04e52] active:scale-95 transition-all"
+            >
+              <span className="material-icons text-[18px]">open_in_new</span>
+              Leer reseñas en Airbnb
+            </a>
           </div>
         </div>
 
@@ -383,20 +437,19 @@ export const PropertyDetails: React.FC = () => {
       {/* Amenities Full Modal — Mobile Drawer / Desktop Centered Modal */}
       {showAmenities && (
         <div
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-fade-in"
-          onClick={() => setShowAmenities(false)}
-          onTouchEnd={(e) => { if (e.target === e.currentTarget) { e.preventDefault(); setShowAmenities(false); } }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-fade-in"
+          style={{ zIndex: 9999 }}
+          onPointerDown={(e) => { if (e.target === e.currentTarget) setShowAmenities(false); }}
         >
           <div
             className="bg-white w-full sm:max-w-md sm:rounded-[2rem] rounded-t-[2rem] max-h-[80vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up"
-            onClick={e => e.stopPropagation()}
+            onPointerDown={e => e.stopPropagation()}
           >
             {/* Header */}
             <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
               <h3 className="font-bold text-lg text-text-main">Todas las Comodidades</h3>
               <button
-                onClick={() => setShowAmenities(false)}
-                onTouchEnd={(e) => { e.preventDefault(); setShowAmenities(false); }}
+                onPointerDown={() => setShowAmenities(false)}
                 className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
               >
                 <span className="material-icons text-sm text-gray-600">close</span>
@@ -423,8 +476,7 @@ export const PropertyDetails: React.FC = () => {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 bg-white pb-safe">
               <button
-                onClick={() => setShowAmenities(false)}
-                onTouchEnd={(e) => { e.preventDefault(); setShowAmenities(false); }}
+                onPointerDown={() => setShowAmenities(false)}
                 className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
               >
                 ¡Entendido!
