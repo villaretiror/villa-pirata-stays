@@ -11,7 +11,7 @@ const SECTION_TITLE_STYLE = "text-2xl font-serif text-text-main mb-6";
 export const PropertyDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { properties, favorites, toggleFavorite } = useProperty();
+  const { properties, favorites, toggleFavorite, refreshProperties, isLoading } = useProperty();
 
   const property = properties.find(p => p.id === id);
   const isFavorite = id ? favorites.includes(id) : false;
@@ -19,6 +19,11 @@ export const PropertyDetails: React.FC = () => {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showAmenities, setShowAmenities] = useState(false);
+
+  // 1. Fetch Fresh on Mount
+  useEffect(() => {
+    refreshProperties();
+  }, [id]);
 
   // Custom Hook param
   const { scrollY } = useScroll();
@@ -43,6 +48,14 @@ export const PropertyDetails: React.FC = () => {
     }, 5000);
     return () => clearInterval(interval);
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-[#FDFCFB]">
+        <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   if (!property) {
     return (

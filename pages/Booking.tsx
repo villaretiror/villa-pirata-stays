@@ -12,7 +12,7 @@ import { fetchICalData, parseICalData } from '../utils';
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { properties } = useProperty();
+  const { properties, refreshProperties } = useProperty();
   const { user } = useAuth();
 
   const property = properties.find(p => p.id === id);
@@ -21,6 +21,12 @@ const Booking: React.FC = () => {
   const [startDate, endDate] = dateRange;
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [priceMismatch, setPriceMismatch] = useState(false);
+
+  // 1. Fetch Fresh on Mount
+  useEffect(() => {
+    refreshProperties();
+  }, [id]);
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
@@ -83,6 +89,28 @@ const Booking: React.FC = () => {
     if (!startDate || !endDate || !user) return;
 
     setIsProcessing(true);
+
+    // 3. Last-second Price Validation (Anti-Stale Cache)
+    const { data: freshProperty } = await supabase
+      .from('properties')
+      .select('price_per_night, fees')
+      .eq('id', id)
+      .single();
+
+    if (freshProperty) {
+      const freshPrice = Number(freshProperty.price_per_night);
+      const freshFees = Object.entries(freshProperty.fees || {}).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+      const freshTotal = (freshPrice * nights) + freshFees;
+
+      if (Math.abs(freshTotal - total) > 0.01) {
+        setPriceMismatch(true);
+        setIsProcessing(false);
+        refreshProperties(); // Update the local state
+        setTimeout(() => setPriceMismatch(false), 5000);
+        return;
+      }
+    }
+
     const { error } = await supabase.from('bookings').insert({
       user_id: user.id,
       property_id: id,
@@ -180,8 +208,19 @@ const Booking: React.FC = () => {
             </div>
           )}
 
+          {/* Alerta de Cambio de Precio Realtime */}
+          {priceMismatch && (
+            <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 flex items-start gap-3 animate-slide-up">
+              <span className="material-icons text-orange-500">sync</span>
+              <div>
+                <p className="text-xs font-bold text-orange-700">Las tarifas han sido actualizadas</p>
+                <p className="text-[10px] text-orange-600 mt-0.5">El anfitrión ha realizado un cambio. Estamos cargando los nuevos precios...</p>
+              </div>
+            </div>
+          )}
+
           {/* Pasarela de Pago Modular */}
-          {startDate && endDate && !isTooShort && (
+          {startDate && endDate && !isTooShort && !priceMismatch && (
             <PaymentProcessor
               total={total}
               user={user}
