@@ -17,44 +17,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Función para obtener el perfil extendido desde la tabla pública
-  const getExtendedProfile = async (id: string) => {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', id)
-      .single();
-    return profile;
-  };
-
-  useEffect(() => {
-    const initSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.user) {
-        const profile = await getExtendedProfile(session.user.id);
-        setUser(mapSupabaseUser(session.user, profile));
-      }
-      setLoading(false);
-    };
-
-    initSession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
-      if (session?.user) {
-        const profile = await getExtendedProfile(session.user.id);
-        setUser(mapSupabaseUser(session.user, profile));
-      } else {
-        setUser(null);
-      }
-      setLoading(false);
-    });
-
-    return () => {
-      subscription.unsubscribe();
-    };
-  }, []);
-
   // Mapper mejorado que prioriza los datos de la tabla 'profiles'
   const mapSupabaseUser = (sbUser: any, dbProfile: any = null): User => ({
     id: sbUser.id,
@@ -68,21 +30,100 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registeredAt: sbUser.created_at,
   });
 
+  // Función para obtener el perfil extendido desde la tabla pública
+  const getExtendedProfile = async (id: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+
+      if (error) {
+        console.warn("AuthContext: Error fetching profile:", error.message);
+        return null;
+      }
+      return profile;
+    } catch (err) {
+      console.error("AuthContext: Critical profile fetch error:", err);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    // 10-second safety timeout to prevent infinite "Loading"
+    const safetyTimeout = setTimeout(() => {
+      setLoading(prev => {
+        if (prev) console.warn("AuthContext: Safety timeout reached. Breaking loading state.");
+        return false;
+      });
+    }, 10000);
+
+    const initSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+          const profile = await getExtendedProfile(session.user.id);
+          setUser(mapSupabaseUser(session.user, profile));
+        }
+      } catch (err) {
+        console.error("AuthContext: Session init error:", err);
+      } finally {
+        setLoading(false);
+        clearTimeout(safetyTimeout);
+      }
+    };
+
+    initSession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
+      try {
+        if (session?.user) {
+          const profile = await getExtendedProfile(session.user.id);
+          setUser(mapSupabaseUser(session.user, profile));
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        console.error("AuthContext: Auth change error:", err);
+      } finally {
+        setLoading(false);
+        clearTimeout(safetyTimeout);
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+    };
+  }, []);
+
   const login = async (email: string, password: string) => {
     console.log(`LOGIN_STATUS: Attempting login for ${email}`);
 
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    const authTimeout = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error("Error de conexión, reintente")), 12000)
+    );
 
-    if (error) {
-      console.error(`LOGIN_STATUS: Failed. Error: ${error.message}`);
-      return { user: null, error: error.message };
+    try {
+      const loginPromise = supabase.auth.signInWithPassword({ email, password });
+      const result: any = await Promise.race([loginPromise, authTimeout]);
+      const { data, error } = result;
+
+      if (error) {
+        console.error(`LOGIN_STATUS: Failed. Error: ${error.message}`);
+        return { user: null, error: error.message };
+      }
+
+      console.log("LOGIN_STATUS: Supabase Auth Success ✅");
+      const profile = await getExtendedProfile(data.user.id);
+      const mappedUser = mapSupabaseUser(data.user, profile);
+      setUser(mappedUser);
+      return { user: mappedUser, error: null };
+    } catch (err: any) {
+      console.error("LOGIN_STATUS: Catch Error:", err.message);
+      return { user: null, error: err.message || "Error de conexión, reintente" };
     }
-
-    console.log("LOGIN_STATUS: Supabase Auth Success ✅");
-    const profile = await getExtendedProfile(data.user.id);
-    const mappedUser = mapSupabaseUser(data.user, profile);
-    setUser(mappedUser);
-    return { user: mappedUser, error: null };
   };
 
   const register = async (email: string, password: string, name: string) => {
@@ -92,7 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       options: {
         data: {
           name,
-          role: 'guest' // Por defecto todos son guests vía registro público
+          role: 'guest'
         }
       }
     });
@@ -108,12 +149,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const updateUser = async (updated: Partial<User>) => {
-    // 1. Actualizar Supabase Auth Metadata (para consistencia rápida)
     const { data, error } = await supabase.auth.updateUser({
       data: { ...updated }
     });
 
-    // 2. Sincronizar con tabla 'profiles' (Esquema SQL nuevo)
     if (!error && data.user) {
       await supabase
         .from('profiles')

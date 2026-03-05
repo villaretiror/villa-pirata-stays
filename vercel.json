@@ -23,7 +23,7 @@
     ],
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/((?!assets/.*|.*\\..*|auth/v1/.*).*)",
             "destination": "/index.html"
         }
     ]
