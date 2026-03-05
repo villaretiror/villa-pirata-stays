@@ -253,9 +253,94 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void }) => {
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency' | 'cohosts'>('info');
   const [newFeeName, setNewFeeName] = useState('');
   const [newFeeValue, setNewFeeValue] = useState(0);
+  const [newCohostEmail, setNewCohostEmail] = useState('');
+  const [cohosts, setCohosts] = useState<any[]>([]);
+
+  const fetchCohosts = async () => {
+    const { data } = await supabase.from('property_cohosts').select('*').eq('property_id', property.id);
+    if (data) setCohosts(data);
+  };
+
+  useEffect(() => {
+    if (activeSection === 'cohosts') fetchCohosts();
+  }, [activeSection, property.id]);
+
+  const handleInviteCohost = async () => {
+    if (!newCohostEmail.trim()) return;
+    const { error } = await supabase.from('property_cohosts').insert({
+      property_id: property.id,
+      email: newCohostEmail.toLowerCase(),
+      status: 'pending'
+    });
+    if (!error) {
+      showToast("Invitación enviada ✨");
+      setNewCohostEmail('');
+      fetchCohosts();
+    }
+  };
+
+  const handleRemoveCohost = async (id: string) => {
+    const { error } = await supabase.from('property_cohosts').delete().eq('id', id);
+    if (!error) {
+      showToast("Co-anfitrión eliminado 🗑️");
+      fetchCohosts();
+    }
+  };
+
+  const renderCohostsSection = () => (
+    <div className="space-y-6 animate-fade-in">
+      <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+        <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+          <span className="material-icons text-primary">groups</span>
+          Gestión de Co-anfitriones
+        </h3>
+        <p className="text-xs text-text-light mb-4">Invita a otros usuarios a gestionar esta villa contigo.</p>
+
+        <div className="space-y-3 mb-6">
+          {cohosts.map((ch, idx) => (
+            <div key={idx} className="flex justify-between items-center p-4 bg-gray-100 rounded-2xl border border-gray-100">
+              <div>
+                <p className="text-sm font-bold text-text-main">{ch.email}</p>
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                  {ch.status === 'active' ? 'Activo' : 'Pendiente'}
+                </span>
+              </div>
+              <button onClick={() => handleRemoveCohost(ch.id)} className="text-red-300 hover:text-red-500">
+                <span className="material-icons text-sm">delete</span>
+              </button>
+            </div>
+          ))}
+          {cohosts.length === 0 && (
+            <p className="text-center py-6 text-xs text-gray-400 font-bold uppercase tracking-widest border-2 border-dashed border-gray-100 rounded-2xl">
+              No hay co-anfitriones invitados
+            </p>
+          )}
+        </div>
+
+        <div className="bg-sand/30 p-4 rounded-2xl space-y-3">
+          <p className="text-[10px] font-black uppercase tracking-widest text-text-light">Enviar Invitación</p>
+          <div className="flex gap-2">
+            <input
+              type="email"
+              value={newCohostEmail}
+              onChange={e => setNewCohostEmail(e.target.value)}
+              placeholder="correo@ejemplo.com"
+              className="flex-1 p-3 bg-white border border-gray-200 rounded-xl text-sm outline-none"
+            />
+            <button
+              onClick={handleInviteCohost}
+              className="bg-black text-white px-5 rounded-xl text-xs font-bold"
+            >
+              Invitar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
@@ -694,14 +779,14 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
           <button onClick={onCancel} className="p-2 hover:bg-gray-100 rounded-full"><span className="material-icons">close</span></button>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {['info', 'photos', 'calendar', 'fees', 'offers', 'policies', 'emergency'].map((section: any) => (
+        <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
+          {['info', 'photos', 'calendar', 'fees', 'offers', 'policies', 'emergency', 'cohosts'].map((section: any) => (
             <button
               key={section}
               onClick={() => setActiveSection(section as any)}
               className={`px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap ${activeSection === section ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
             >
-              {section === 'emergency' ? '🚨 Panic Mode' : section === 'policies' ? '📋 Políticas' : section}
+              {section === 'emergency' ? '🚨 Panic Mode' : section === 'policies' ? '📋 Políticas' : section === 'cohosts' ? '👥 Co-hosts' : section}
             </button>
           ))}
         </div>
@@ -742,6 +827,8 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
           {activeSection === 'emergency' && renderEmergencySection()}
 
           {activeSection === 'calendar' && renderCalendarEditor()}
+
+          {activeSection === 'cohosts' && renderCohostsSection()}
 
           {activeSection === 'photos' && (
             <div className="space-y-6 animate-slide-up">
@@ -1101,14 +1188,36 @@ const HostDashboard: React.FC = () => {
       const hostId = user?.id;
       if (!hostId) return;
 
-      // 1. Fetch Properties from DB (Filtro de Seguridad)
-      let propsQuery = supabase.from('properties').select('*').abortSignal(signal || new AbortController().signal);
-      if (user?.email !== 'admin@villaretiro.com') {
-        propsQuery = propsQuery.eq('host_id', hostId);
-      }
-      const { data: props } = await propsQuery;
+      // 1. Fetch Properties from DB (Own properties + Cohost properties)
+      const userEmail = user?.email?.toLowerCase();
+      let hostPropertyIds: string[] = [];
 
-      const hostPropertyIds = props?.map((p: any) => p.id) || [];
+      if (userEmail === 'admin@villaretiro.com') {
+        const { data: allProps } = await supabase.from('properties').select('id').abortSignal(signal || new AbortController().signal);
+        hostPropertyIds = allProps?.map((p: any) => p.id) || [];
+      } else {
+        // Find properties where user is host OR cohost
+        const [{ data: owned }, { data: cohosted }] = await Promise.all([
+          supabase.from('properties').select('id').eq('host_id', hostId).abortSignal(signal || new AbortController().signal),
+          supabase.from('property_cohosts').select('property_id').eq('email', userEmail).abortSignal(signal || new AbortController().signal)
+        ]);
+
+        hostPropertyIds = [
+          ...(owned?.map((p: any) => p.id) || []),
+          ...(cohosted?.map((p: any) => p.property_id) || [])
+        ];
+      }
+
+      if (hostPropertyIds.length === 0) {
+        setIsLoading(false);
+        return;
+      }
+
+      const { data: props } = await supabase
+        .from('properties')
+        .select('*')
+        .in('id', hostPropertyIds)
+        .abortSignal(signal || new AbortController().signal);
 
       if (props && props.length > 0) {
         const mappedProps = props.map((p: any) => ({
@@ -1220,6 +1329,30 @@ const HostDashboard: React.FC = () => {
   useEffect(() => {
     const controller = new AbortController();
     fetchData(controller.signal);
+
+    // Auto-confirm invitations for co-hosts
+    const confirmInvitations = async () => {
+      const email = user?.email?.toLowerCase();
+      if (!email) return;
+
+      const { data: pending } = await supabase
+        .from('property_cohosts')
+        .select('id')
+        .eq('email', email)
+        .eq('status', 'pending');
+
+      if (pending && pending.length > 0) {
+        await supabase
+          .from('property_cohosts')
+          .update({ status: 'active' })
+          .in('id', pending.map((p: any) => p.id));
+
+        showToast("Invitaciones a co-anfitrión activadas ✨");
+        fetchData();
+      }
+    };
+    confirmInvitations();
+
     return () => controller.abort();
   }, [user]);
 
