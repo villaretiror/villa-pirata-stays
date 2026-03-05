@@ -1140,12 +1140,11 @@ const HostDashboard: React.FC = () => {
       }
     };
 
-    // 2. Exact Schema Mapping & Payload Cleanup (PLURALIZED max_guests)
-    // IMPORTANT: Only use ID if it's a valid UUID, otherwise let Supabase generate one (for imported/mock items)
+    // 2. Exact Schema Mapping & Payload Cleanup (STRICT UPDATE PAYLOAD)
     const propertyId = isValidUUID(updated.id) ? updated.id : undefined;
 
+    // We exclude 'id' and 'created_at' from the update body as per DB best practices / RLS
     const payload: any = {
-      id: propertyId,
       host_id: hostId,
       title: updated.title,
       description: updated.description || '',
@@ -1158,25 +1157,27 @@ const HostDashboard: React.FC = () => {
       bedrooms: Number(updated.bedrooms) || 1,
       beds: Number(updated.beds) || 1,
       baths: Number(updated.baths) || 1,
-      max_guests: Number(updated.guests) || 2, // PLURAL max_guests
+      max_guests: Number(updated.guests) || 2,
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
-      check_in_time: formatTo24h(updated.policies.checkInTime), // 24h Format
-      check_out_time: formatTo24h(updated.policies.checkOutTime) // 24h Format
+      check_in_time: formatTo24h(updated.policies.checkInTime),
+      check_out_time: formatTo24h(updated.policies.checkOutTime)
     };
 
-    console.log("DEBUG: Final Payload Verification (TABLE: properties)");
-    console.table(payload);
+    console.log("Sincronización iniciada...");
+    console.table(propertyId ? { ...payload, id_filter: propertyId } : payload);
 
-    const { error } = await supabase.from('properties').upsert(payload);
+    const { error } = propertyId
+      ? await supabase.from('properties').update(payload).eq('id', propertyId)
+      : await supabase.from('properties').upsert({ ...payload, id: undefined });
 
     if (error) {
       showToast(`Error de sincronización: ${error.message}`);
-      console.error("SUPABASE_SAVE_ERROR:", error);
+      console.error("SUPABASE_SAVE_ERROR_CRITICAL:", error);
       return;
     }
 
-    showToast("Propiedad actualizada con éxito ✅");
+    showToast("¡Cambios guardados con éxito! ✅");
 
     const exists = properties.find(p => p.id === updated.id);
     if (exists) {
@@ -1186,7 +1187,6 @@ const HostDashboard: React.FC = () => {
       onUpdateProperties([...properties, updated]);
     }
     setIsEditing(null);
-    showToast("Propiedad guardada en la nube.");
   };
 
   const handleSaveGuideItem = (updatedItem: LocalGuideItem, catId: string, itemIdx: number) => {
