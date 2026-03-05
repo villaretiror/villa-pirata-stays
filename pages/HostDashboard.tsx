@@ -1104,16 +1104,15 @@ const HostDashboard: React.FC = () => {
   // --- HANDLERS ---
 
   const handleSaveProperty = async (updated: Property) => {
-    // Persistent Save to Supabase
-    const { data: { user: currentUser } } = await supabase.auth.getUser();
-    if (!currentUser?.id) {
+    const hostId = user?.id;
+    if (!hostId) {
       showToast("Error critico: Sesión de anfitrión inválida. Inicia sesión de nuevo.");
       return;
     }
 
     const { error } = await supabase.from('properties').upsert({
       id: updated.id.includes('imported') ? undefined : updated.id,
-      host_id: currentUser.id,
+      host_id: hostId,
       title: updated.title,
       description: updated.description,
       location: updated.location,
@@ -1190,7 +1189,7 @@ const HostDashboard: React.FC = () => {
     setShowImportModal(false);
 
     // Save to Database first to get a real ID
-    const authUser = (await supabase.auth.getUser()).data.user;
+    const authUser = user;
     const { data: dbItem, error } = await supabase.from('properties').insert({
       host_id: authUser?.id || null,
       title: importedData.title || 'Nueva Propiedad',
