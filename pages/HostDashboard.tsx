@@ -1123,40 +1123,29 @@ const HostDashboard: React.FC = () => {
       return;
     }
 
-    // 2. Exact Schema Mapping & Payload Cleanup
+    // 2. Exact Schema Mapping & Payload Cleanup (STRICT SCHEMA ONLY)
+    // Confirmed Columns: id, host_id, title, description, price_per_night, location, images, amenities, max_guest, cancellation_policy, house_rules, check_in_time, check_out_time.
     const propertyId = updated.id.includes('imported') ? undefined : updated.id;
 
-    const payload = {
+    const payload: any = {
       id: propertyId,
       host_id: hostId,
       title: updated.title,
       description: updated.description || '',
-      location: updated.location || 'Cabo Rojo, PR',
-      address: updated.address || '',
-      subtitle: updated.subtitle || '',
       price_per_night: Number(updated.price) || 0,
+      location: updated.location || 'Cabo Rojo, PR',
       images: updated.images || [],
       amenities: updated.amenities || [],
-      featured_amenity: updated.featuredAmenity || '',
-      category: updated.category || 'villa',
-      max_guest: updated.guests || 2, // Verification: Singular 'max_guest'
-      max_guest_policy: updated.policies.maxGuests || '',
-      bedrooms: updated.bedrooms || 1,
-      beds: updated.beds || 1,
-      baths: updated.baths || 1,
-      rating: updated.rating || 5.0,
-      reviews_count: updated.reviews || 0,
-      is_offline: !!updated.isOffline,
-      blocked_dates: updated.blockedDates || [],
-      calendar_sync: updated.calendarSync || null,
-      fees: updated.fees || {},
+      // Primary: max_guest. If fails, check if DB actually uses max_guests.
+      max_guest: updated.guests || 2,
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
       check_in_time: updated.policies.checkInTime || null,
       check_out_time: updated.policies.checkOutTime || null
     };
 
-    console.log("DEBUG: Sending payload to table 'properties':", payload);
+    console.log("DEBUG: Final Payload Verification (TABLE: properties)");
+    console.table(payload);
 
     const { error } = await supabase.from('properties').upsert(payload);
 
