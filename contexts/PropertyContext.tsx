@@ -40,9 +40,9 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
 
   // 1. Initial Fresh Fetch & Realtime Subscription
-  const fetchPropertiesFromDB = async () => {
+  const fetchPropertiesFromDB = async (signal?: AbortSignal) => {
     try {
-      const { data, error } = await supabase.from('properties').select('*');
+      const { data, error } = await supabase.from('properties').select('*').abortSignal(signal || new AbortController().signal);
       if (error) throw error;
       if (data) {
         // Map DB schema to Frontend types if necessary (Subtitle, Address, etc.)
@@ -91,7 +91,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   useEffect(() => {
-    fetchPropertiesFromDB();
+    const controller = new AbortController();
+    fetchPropertiesFromDB(controller.signal);
 
     // 2. Realtime Subscription
     const channel = supabase
@@ -107,6 +108,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       .subscribe();
 
     return () => {
+      controller.abort();
       supabase.removeChannel(channel);
     };
   }, []);
