@@ -71,9 +71,13 @@ const Booking: React.FC = () => {
   }
 
   const nights = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
-  const basePrice = property.price * (nights || 1);
-  const cleaningFee = property.fees.cleaningShort;
-  const total = basePrice + cleaningFee;
+  const isTooShort = nights > 0 && nights < 2;
+  const basePrice = property.price * (nights || 0);
+
+  // Dynamic fees summation (SAFE NUMBER PARSING)
+  const feesList = Object.entries(property.fees || {});
+  const totalFees = feesList.reduce((sum, [_, value]) => sum + (Number(value) || 0), 0);
+  const total = basePrice + totalFees;
 
   const handlePaymentSuccess = async (status: string, proofUrl?: string, method?: string) => {
     if (!startDate || !endDate || !user) return;
@@ -149,10 +153,12 @@ const Booking: React.FC = () => {
                 <span className="text-text-light">${property.price} x {nights || 0} noches</span>
                 <span className="font-medium">${basePrice}</span>
               </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-text-light">Servicio de Preparación</span>
-                <span className="font-medium">${cleaningFee}</span>
-              </div>
+              {feesList.map(([name, value]) => (
+                <div key={name} className="flex justify-between text-sm animate-fade-in">
+                  <span className="text-text-light">{name}</span>
+                  <span className="font-medium">${Number(value) || 0}</span>
+                </div>
+              ))}
               <div className="flex justify-between items-end pt-4 border-t border-dashed border-gray-200 mt-2">
                 <span className="font-bold text-base text-text-main">Inversión Final</span>
                 <div className="text-right">
@@ -163,8 +169,19 @@ const Booking: React.FC = () => {
             </div>
           </div>
 
+          {/* Alerta de Estancia Mínima */}
+          {isTooShort && (
+            <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-3 animate-shake">
+              <span className="material-icons text-red-500">warning</span>
+              <div>
+                <p className="text-xs font-bold text-red-700">La reserva mínima es de 2 noches</p>
+                <p className="text-[10px] text-red-600 mt-0.5">Por favor, selecciona una fecha de salida posterior.</p>
+              </div>
+            </div>
+          )}
+
           {/* Pasarela de Pago Modular */}
-          {startDate && endDate && (
+          {startDate && endDate && !isTooShort && (
             <PaymentProcessor
               total={total}
               user={user}

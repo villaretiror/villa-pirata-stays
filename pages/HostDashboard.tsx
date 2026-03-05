@@ -247,6 +247,8 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
   const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency'>('info');
+  const [newFeeName, setNewFeeName] = useState('');
+  const [newFeeValue, setNewFeeValue] = useState(0);
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
@@ -782,7 +784,85 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
               <p className="text-[10px] text-center text-text-light font-bold uppercase tracking-widest bg-sand py-2 rounded-xl">Gestión de imágenes real conectada</p>
             </div>
           )}
-          {activeSection === 'fees' && <p className="text-gray-400 text-center py-10">Configuración de tarifas próximamente.</p>}
+          {activeSection === 'fees' && (
+            <div className="space-y-6 animate-fade-in">
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+                  <span className="material-icons text-primary">payments</span>
+                  Cargos y Comisiones (Fees)
+                </h3>
+                <p className="text-xs text-text-light mb-4">Gestiona los cargos fijos que se sumarán al total de la reserva.</p>
+
+                <div className="space-y-3 mb-6">
+                  {Object.entries(form.fees || {}).map(([name, value], idx) => (
+                    <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                          <span className="material-icons text-sm text-gray-400">label</span>
+                        </div>
+                        <span className="text-sm font-bold text-text-main">{name}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-sm font-black text-primary">${value}</span>
+                        <button
+                          onClick={() => {
+                            const newFees = { ...form.fees };
+                            delete newFees[name];
+                            setForm({ ...form, fees: newFees });
+                          }}
+                          className="text-red-300 hover:text-red-500 transition-colors"
+                        >
+                          <span className="material-icons text-sm">delete</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {Object.keys(form.fees || {}).length === 0 && (
+                    <div className="text-center py-6 border-2 border-dashed border-gray-100 rounded-2xl">
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">No hay cargos extra configurados</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-sand/30 p-4 rounded-2xl space-y-3">
+                  <p className="text-[10px] font-black text-text-light uppercase tracking-widest">Añadir Nuevo Cargo</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newFeeName}
+                      onChange={e => setNewFeeName(e.target.value)}
+                      placeholder="Ej: Limpieza"
+                      className="flex-[2] p-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-primary/20"
+                    />
+                    <input
+                      type="number"
+                      value={newFeeValue || ''}
+                      onChange={e => setNewFeeValue(Number(e.target.value))}
+                      placeholder="$25"
+                      className="flex-1 p-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-primary/20"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!newFeeName.trim()) return;
+                        setForm({
+                          ...form,
+                          fees: {
+                            ...form.fees,
+                            [newFeeName]: newFeeValue
+                          }
+                        });
+                        setNewFeeName('');
+                        setNewFeeValue(0);
+                      }}
+                      className="bg-black text-white px-4 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <span className="material-icons text-sm">add</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {activeSection === 'policies' && (
             <div className="space-y-6 animate-fade-in">
@@ -1158,6 +1238,7 @@ const HostDashboard: React.FC = () => {
       beds: Number(updated.beds) || 1,
       baths: Number(updated.baths) || 1,
       max_guests: Number(updated.guests) || 2,
+      fees: updated.fees || {},
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
       check_in_time: formatTo24h(updated.policies.checkInTime),

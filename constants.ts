@@ -110,11 +110,9 @@ export const PROPERTIES: Property[] = [
     description: 'Escápate de la rutina en nuestro espacio diseñado para vacaciones familiares. A solo 9 minutos del colorido centro de "El Poblado" Boquerón y 10 minutos de Playa Buyé, Playa Combate y la famosa Playa Sucia. Villa Retiro R ofrece piscina privada de agua salada, generador eléctrico automático para energía 24/7 y cisterna industrial para agua garantizada. El retiro perfecto para familias que buscan confort, privacidad y acceso inmediato a las mejores playas del suroeste de Puerto Rico.',
     price: 285,
     fees: {
-      cleaningShort: 85,
-      cleaningMedium: 110,
-      cleaningLong: 160,
-      petFee: 50,
-      securityDeposit: 250
+      "Limpieza": 85,
+      "Service Fee": 20,
+      "Security Deposit": 250
     },
     policies: {
       checkInTime: "4:00 PM",
@@ -194,11 +192,9 @@ export const PROPERTIES: Property[] = [
     description: 'Disfruta y recarga energías en nuestra casa familiar. Este espacio es perfecto para parejas o familias que buscan vacacionar estando cerca de todo. Pirata Family House está ubicada a solo minutos de Boquerón, Combate, Buyé y Playa Sucia. Cerca de supermercados, restaurantes y licorerías. Self check-in para acceso fácil. ¡Tu aventura en el suroeste de Puerto Rico comienza aquí!',
     price: 145,
     fees: {
-      cleaningShort: 65,
-      cleaningMedium: 85,
-      cleaningLong: 120,
-      petFee: 35,
-      securityDeposit: 150
+      "Limpieza": 85,
+      "Mantenimiento de Piscina": 25,
+      "Security Deposit": 250
     },
     policies: {
       checkInTime: "4:00 PM",

@@ -15,13 +15,7 @@ export interface Offer {
   expiresAt: string;
 }
 
-export interface FeeStructure {
-  cleaningShort: number;
-  cleaningMedium: number;
-  cleaningLong: number;
-  petFee: number;
-  securityDeposit: number;
-}
+export type FeeStructure = Record<string, number>;
 
 export type CancellationPolicyType = 'flexible' | 'moderate' | 'firm' | 'strict' | 'non-refundable';
 
