@@ -50,7 +50,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-// 3. PWA Service Worker Registration
+/* 
 const registerServiceWorker = () => {
   if ('serviceWorker' in navigator && import.meta.env.PROD) {
     window.addEventListener('load', () => {
@@ -60,6 +60,7 @@ const registerServiceWorker = () => {
     });
   }
 };
+*/
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -82,4 +83,4 @@ root.render(
   </React.StrictMode>
 );
 
-registerServiceWorker();
+// registerServiceWorker();
