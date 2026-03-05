@@ -1123,8 +1123,21 @@ const HostDashboard: React.FC = () => {
       return;
     }
 
-    // 2. Exact Schema Mapping & Payload Cleanup (STRICT SCHEMA ONLY)
-    // Confirmed Columns: id, host_id, title, description, price_per_night, location, images, amenities, max_guest, cancellation_policy, house_rules, check_in_time, check_out_time.
+    // Helper to convert "04:00 PM" -> "16:00:00"
+    const formatTo24h = (timeStr: string | undefined): string | null => {
+      if (!timeStr) return null;
+      try {
+        const [time, modifier] = timeStr.split(' ');
+        let [hours, minutes] = time.split(':');
+        if (hours === '12') hours = '00';
+        if (modifier === 'PM') hours = (parseInt(hours, 10) + 12).toString();
+        return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`;
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // 2. Exact Schema Mapping & Payload Cleanup (PLURALIZED max_guests)
     const propertyId = updated.id.includes('imported') ? undefined : updated.id;
 
     const payload: any = {
@@ -1141,12 +1154,11 @@ const HostDashboard: React.FC = () => {
       bedrooms: Number(updated.bedrooms) || 1,
       beds: Number(updated.beds) || 1,
       baths: Number(updated.baths) || 1,
-      // Primary: max_guest (singular field in DB)
-      max_guest: updated.guests || 2,
+      max_guests: Number(updated.guests) || 2, // PLURAL max_guests
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
-      check_in_time: updated.policies.checkInTime || null,
-      check_out_time: updated.policies.checkOutTime || null
+      check_in_time: formatTo24h(updated.policies.checkInTime), // 24h Format
+      check_out_time: formatTo24h(updated.policies.checkOutTime) // 24h Format
     };
 
     console.log("DEBUG: Final Payload Verification (TABLE: properties)");
@@ -1156,14 +1168,11 @@ const HostDashboard: React.FC = () => {
 
     if (error) {
       showToast(`Error de sincronización: ${error.message}`);
-      console.error("SUPABASE_SAVE_ERROR:", {
-        message: error.message,
-        hint: error.hint,
-        details: error.details,
-        code: error.code
-      });
+      console.error("SUPABASE_SAVE_ERROR:", error);
       return;
     }
+
+    showToast("Propiedad actualizada con éxito ✅");
 
     const exists = properties.find(p => p.id === updated.id);
     if (exists) {
