@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -16,8 +16,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const initialFetchRef = useRef(false);
 
-  // Mapper mejorado que prioriza los datos de la tabla 'profiles'
+  // Singleton approach refinement: Singleton to map and persist users
   const mapSupabaseUser = (sbUser: any, dbProfile: any = null): User => ({
     id: sbUser.id,
     email: sbUser.email || '',
@@ -30,8 +31,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registeredAt: sbUser.created_at,
   });
 
-  // Función para obtener el perfil extendido desde la tabla pública
-  const getExtendedProfile = async (id: string) => {
+  const getExtendedProfile = async (id: string): Promise<any> => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -40,7 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (error) {
-        console.warn("AuthContext: Error fetching profile:", error.message);
+        console.warn("AuthContext: Profile fetch error:", error.message);
         return null;
       }
       return profile;
@@ -51,78 +51,90 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // 10-second safety timeout to prevent infinite "Loading"
+    // Audit: This ensures we have a singleton-like listener.
+    let isSubscribed = true;
+
+    // 10s Safety fallback in case of connection drop
     const safetyTimeout = setTimeout(() => {
-      setLoading(prev => {
-        if (prev) console.warn("AuthContext: Safety timeout reached. Breaking loading state.");
-        return false;
-      });
+      if (isSubscribed && loading) {
+        console.warn("AuthContext: Safety timeout reached. Resolving loading.");
+        setLoading(false);
+      }
     }, 10000);
 
-    const initSession = async () => {
+    const checkInitialSession = async () => {
+      if (initialFetchRef.current) return;
+      initialFetchRef.current = true;
+
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-          const profile = await getExtendedProfile(session.user.id);
-          setUser(mapSupabaseUser(session.user, profile));
+        if (isSubscribed) {
+          if (session?.user) {
+            const profile = await getExtendedProfile(session.user.id);
+            setUser(mapSupabaseUser(session.user, profile));
+          } else {
+            setUser(null);
+          }
         }
       } catch (err) {
-        console.error("AuthContext: Session init error:", err);
+        console.error("AuthContext: Bootstrap session error:", err);
       } finally {
-        setLoading(false);
-        clearTimeout(safetyTimeout);
+        if (isSubscribed) {
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       }
     };
 
-    initSession();
+    checkInitialSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
-      try {
-        if (session?.user) {
-          const profile = await getExtendedProfile(session.user.id);
-          setUser(mapSupabaseUser(session.user, profile));
-        } else {
-          setUser(null);
-        }
-      } catch (err) {
-        console.error("AuthContext: Auth change error:", err);
-      } finally {
+    // Audit: Unified listener to avoid race conditions. 
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+      console.log(`Auth Strategy [Audit]: Event type: ${event}`);
+
+      if (!isSubscribed) return;
+
+      if (session?.user) {
+        // Debounce if already syncing? No, we need fresh profile.
+        const profile = await getExtendedProfile(session.user.id);
+        if (isSubscribed) setUser(mapSupabaseUser(session.user, profile));
+      } else {
+        if (isSubscribed) setUser(null);
+      }
+
+      if (isSubscribed) {
         setLoading(false);
         clearTimeout(safetyTimeout);
       }
     });
 
     return () => {
+      isSubscribed = false;
       subscription.unsubscribe();
       clearTimeout(safetyTimeout);
     };
   }, []);
 
   const login = async (email: string, password: string) => {
-    console.log(`LOGIN_STATUS: Attempting login for ${email}`);
-
+    // 15s absolute timeout for Auth strategy
     const authTimeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Error de conexión, reintente")), 12000)
+      setTimeout(() => reject(new Error("Error de conexión, reintente")), 15000)
     );
 
     try {
-      const loginPromise = supabase.auth.signInWithPassword({ email, password });
-      const result: any = await Promise.race([loginPromise, authTimeout]);
-      const { data, error } = result;
+      const loginRequest = supabase.auth.signInWithPassword({ email, password });
+      const response: any = await Promise.race([loginRequest, authTimeout]);
+      const { data, error } = response;
 
-      if (error) {
-        console.error(`LOGIN_STATUS: Failed. Error: ${error.message}`);
-        return { user: null, error: error.message };
-      }
+      if (error) throw error;
 
-      console.log("LOGIN_STATUS: Supabase Auth Success ✅");
       const profile = await getExtendedProfile(data.user.id);
       const mappedUser = mapSupabaseUser(data.user, profile);
       setUser(mappedUser);
       return { user: mappedUser, error: null };
     } catch (err: any) {
-      console.error("LOGIN_STATUS: Catch Error:", err.message);
-      return { user: null, error: err.message || "Error de conexión, reintente" };
+      console.error("AuthStrategy FAIL:", err.message);
+      return { user: null, error: err.message || "Error al iniciar sesión" };
     }
   };
 
@@ -130,12 +142,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        data: {
-          name,
-          role: 'guest'
-        }
-      }
+      options: { data: { name, role: 'guest' } }
     });
 
     if (error) return { user: null, error: error.message };
@@ -144,30 +151,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
+    setLoading(true);
+    try {
+      await supabase.auth.signOut();
+      setUser(null);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateUser = async (updated: Partial<User>) => {
-    const { data, error } = await supabase.auth.updateUser({
-      data: { ...updated }
-    });
-
+    const { data, error } = await supabase.auth.updateUser({ data: { ...updated } });
     if (!error && data.user) {
-      await supabase
-        .from('profiles')
-        .upsert({
-          id: data.user.id,
-          full_name: updated.name,
-          phone: updated.phone,
-          avatar_url: updated.avatar,
-          emergency_contact: updated.emergencyContact
-        });
-
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: updated.name,
+        phone: updated.phone,
+        avatar_url: updated.avatar,
+        emergency_contact: updated.emergencyContact
+      });
       const profile = await getExtendedProfile(data.user.id);
       setUser(mapSupabaseUser(data.user, profile));
     }
-
     if (error) throw error;
   };
 
@@ -180,8 +185,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (context === undefined) throw new Error('useAuth must be used within an AuthProvider');
   return context;
 };

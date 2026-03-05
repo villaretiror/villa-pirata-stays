@@ -9,6 +9,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
 import { HOST_PHONE } from '../constants';
+import SectionErrorBoundary from '../components/SectionErrorBoundary';
 
 // --- CUSTOM TOAST ---
 let globalToastCallback: (msg: string) => void = () => { };
@@ -848,7 +849,11 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
 
           {activeSection === 'calendar' && renderCalendarEditor()}
 
-          {activeSection === 'cohosts' && <CohostManager propertyId={form.id} onShowToast={showToast} />}
+          {activeSection === 'cohosts' && (
+            <SectionErrorBoundary sectionName="Gestión de Co-anfitriones">
+              <CohostManager propertyId={form.id} onShowToast={showToast} />
+            </SectionErrorBoundary>
+          )}
 
           {activeSection === 'photos' && (
             <div className="space-y-6 animate-slide-up">
@@ -1266,13 +1271,18 @@ const HostDashboard: React.FC = () => {
             checkInTime: p.check_in_time || '4:00 PM',
             checkOutTime: p.check_out_time || '11:00 AM',
             maxGuests: p.max_guests_policy || p.max_guests,
-            wifiName: 'Villa_WiFi',
-            wifiPass: 'familia123',
-            accessCode: '4532',
+            wifiName: p.wifi_name || 'Villa_WiFi',
+            wifiPass: p.wifi_pass || 'familia123',
+            accessCode: p.access_code || '4532',
             cancellationPolicy: p.cancellation_policy || 'firm',
             houseRules: p.house_rules || []
           },
-          host: { name: user?.name || 'Anfitrión', image: user?.avatar || '', yearsHosting: 3, badges: ['Superhost'] }
+          host: {
+            name: user?.name || 'Anfitrión',
+            image: user?.avatar || '',
+            yearsHosting: user?.registeredAt ? new Date().getFullYear() - new Date(user.registeredAt).getFullYear() : 1,
+            badges: user?.role === 'host' ? ['Pro Host'] : []
+          }
         } as Property));
         onUpdateProperties(mappedProps);
       }
@@ -1345,59 +1355,61 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  // --- SYNC WITH SUPABASE ---
+  // --- INTEGRATED SYNC CYCLE ---
   useEffect(() => {
+    if (!user) return;
+
     const controller = new AbortController();
-    fetchData(controller.signal);
 
-    // Auto-confirm invitations for co-hosts
-    const confirmInvitations = async () => {
-      const email = user?.email?.toLowerCase();
-      if (!email) return;
+    const initializeDashboard = async () => {
+      try {
+        await fetchData(controller.signal);
 
-      const { data: pending } = await supabase
-        .from('property_cohosts')
-        .select('id')
-        .eq('email', email)
-        .eq('status', 'pending');
+        // Leads Fetch (if active)
+        if (activeTab === 'leads') {
+          const { data } = await supabase.from('profiles').select('*').abortSignal(controller.signal);
+          if (data) {
+            setLeads(data.map((p: any) => ({
+              id: p.id,
+              name: p.full_name || 'Huésped Anónimo',
+              email: 'Registrado vía App',
+              role: p.role || 'guest',
+              avatar: p.avatar_url,
+              phone: p.phone,
+              verificationStatus: 'verified',
+              registeredAt: p.updated_at
+            } as any)));
+          }
+        }
 
-      if (pending && pending.length > 0) {
-        await supabase
-          .from('property_cohosts')
-          .update({ status: 'active' })
-          .in('id', pending.map((p: any) => p.id));
+        // Auto-confirm invitations for co-hosts (Audited Singleton Logic)
+        const email = user?.email?.toLowerCase();
+        if (email) {
+          const { data: pending } = await supabase
+            .from('property_cohosts')
+            .select('id')
+            .eq('email', email)
+            .eq('status', 'pending');
 
-        showToast("Invitaciones a co-anfitrión activadas ✨");
-        fetchData();
+          if (pending && pending.length > 0) {
+            await supabase
+              .from('property_cohosts')
+              .update({ status: 'active' })
+              .in('id', pending.map((p: any) => p.id));
+
+            showToast("Accesos de Co-anfitrión activados ✨");
+            await fetchData(controller.signal);
+          }
+        }
+      } catch (err: any) {
+        if (err.name !== 'AbortError') console.error("Initialization Error:", err);
       }
     };
-    confirmInvitations();
+
+    initializeDashboard();
 
     return () => controller.abort();
-  }, [user]);
-
-
-  // --- FETCH LEADS (PROFILES) ---
-  useEffect(() => {
-    const controller = new AbortController();
-    const fetchLeads = async () => {
-      const { data } = await supabase.from('profiles').select('*').abortSignal(controller.signal);
-      if (data) {
-        setLeads(data.map((p: any) => ({
-          id: p.id,
-          name: p.full_name || 'Huésped Anónimo',
-          email: 'Registrado vía App',
-          role: p.role || 'guest',
-          avatar: p.avatar_url,
-          phone: p.phone,
-          verificationStatus: 'verified',
-          registeredAt: p.updated_at
-        } as any)));
-      }
-    };
-    if (activeTab === 'leads') fetchLeads();
-    return () => controller.abort();
-  }, [activeTab]);
+  }, [user, activeTab, activeTab]); // Unified trigger for better sync
 
   // --- FETCH PENDING PAYMENTS ---
   useEffect(() => {
