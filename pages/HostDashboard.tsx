@@ -258,7 +258,7 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
       console.log("Supabase Upload Debug: Intentando subir a bucket 'villas' el archivo", filePath);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('villas')
+        .from('properties')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -272,7 +272,7 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
       console.log("Supabase Upload Success:", uploadData);
 
       const { data } = supabase.storage
-        .from('villas')
+        .from('properties')
         .getPublicUrl(filePath);
 
       return data.publicUrl;
@@ -1104,6 +1104,12 @@ const HostDashboard: React.FC = () => {
   // --- HANDLERS ---
 
   const handleSaveProperty = async (updated: Property) => {
+    // 0. Only admins can execute this operation
+    if (user?.email !== 'admin@villaretiro.com') {
+      showToast("Acceso denegado. Solo el administrador puede guardar cambios.");
+      return;
+    }
+
     // 1. Get hostId from Context or Fallback to Emergency ID if bypass is active
     let hostId = user?.id;
 
@@ -1117,8 +1123,11 @@ const HostDashboard: React.FC = () => {
       return;
     }
 
+    // 2. Exact Schema Mapping for TABLE 'properties'
+    const propertyId = updated.id.includes('imported') ? undefined : updated.id;
+
     const { error } = await supabase.from('properties').upsert({
-      id: updated.id.includes('imported') ? undefined : updated.id,
+      id: propertyId,
       host_id: hostId,
       title: updated.title,
       description: updated.description,
@@ -1130,7 +1139,8 @@ const HostDashboard: React.FC = () => {
       amenities: updated.amenities,
       featured_amenity: updated.featuredAmenity,
       category: updated.category,
-      max_guests: updated.guests,
+      max_guest: updated.guests, // MAP: max_guest
+      max_guest_policy: updated.policies.maxGuests, // MAP: max_guest_policy
       bedrooms: updated.bedrooms,
       beds: updated.beds,
       baths: updated.baths,
@@ -1140,16 +1150,20 @@ const HostDashboard: React.FC = () => {
       blocked_dates: updated.blockedDates,
       calendar_sync: updated.calendarSync,
       fees: updated.fees,
-      cancellation_policy: updated.policies.cancellationPolicy || 'firm',
-      house_rules: updated.policies.houseRules || [],
-      check_in_time: updated.policies.checkInTime,
-      check_out_time: updated.policies.checkOutTime,
-      max_guests_policy: updated.policies.maxGuests
+      cancellation_policy: updated.policies.cancellationPolicy || 'firm', // MAP: cancellation_policy
+      house_rules: updated.policies.houseRules || [], // MAP: house_rules
+      check_in_time: updated.policies.checkInTime, // MAP: check_in_time
+      check_out_time: updated.policies.checkOutTime // MAP: check_out_time
     });
 
     if (error) {
-      showToast("Error al sincronizar con Supabase.");
-      console.error(error);
+      showToast(`Error de sincronización: ${error.message}`);
+      console.error("SUPABASE_SAVE_ERROR:", {
+        message: error.message,
+        hint: error.hint,
+        details: error.details,
+        code: error.code
+      });
       return;
     }
 
