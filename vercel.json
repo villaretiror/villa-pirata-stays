@@ -2,19 +2,6 @@
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
     "framework": "vite",
-    "redirects": [
-        {
-            "source": "/:path(.*)",
-            "has": [
-                {
-                    "type": "host",
-                    "value": "villaretiror.com"
-                }
-            ],
-            "destination": "https://www.villaretiror.com/:path",
-            "permanent": true
-        }
-    ],
     "headers": [
         {
             "source": "/assets/(.*)",
