@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase, SITE_URL } from '../lib/supabase';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
@@ -53,7 +53,7 @@ const Login: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin
+          redirectTo: window.location.origin || SITE_URL
         }
       });
       if (error) throw error;

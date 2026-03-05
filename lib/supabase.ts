@@ -1,8 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Las llaves se deben configurar en un archivo .env
+// Environment config
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://www.villaretiror.com';
 
 const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
 
@@ -65,5 +66,12 @@ const createMockClient = () => {
 };
 
 export const supabase = isConfigured
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true,
+      flowType: 'pkce'
+    }
+  })
   : createMockClient();
