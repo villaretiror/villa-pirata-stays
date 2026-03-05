@@ -23,6 +23,8 @@ export interface FeeStructure {
   securityDeposit: number;
 }
 
+export type CancellationPolicyType = 'flexible' | 'moderate' | 'firm' | 'strict' | 'non-refundable';
+
 export interface Policies {
   checkInTime: string;
   checkOutTime: string;
@@ -30,6 +32,8 @@ export interface Policies {
   wifiName: string;
   wifiPass: string;
   accessCode: string;
+  cancellationPolicy?: CancellationPolicyType;
+  houseRules?: string[];
 }
 
 export interface CalendarSync {

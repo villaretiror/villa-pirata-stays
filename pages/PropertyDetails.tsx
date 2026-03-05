@@ -361,51 +361,94 @@ export const PropertyDetails: React.FC = () => {
               </div>
             </div>
 
-            {/* Reglas Generales */}
+            {/* Reglas Generales — Dynamic from property.policies.houseRules */}
             <div className="bg-gray-50/50 rounded-2xl p-5 border border-gray-100 space-y-3">
               <h4 className="text-sm font-bold text-text-main flex items-center gap-2">
                 <span className="material-icons text-secondary text-[18px]">gavel</span>
                 Reglas de la Casa
               </h4>
               <div className="space-y-2.5">
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-red-400 text-[16px] mt-0.5">smoke_free</span>
-                  <span className="text-sm text-gray-700">No fumar en interiores</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-red-400 text-[16px] mt-0.5">celebration</span>
-                  <span className="text-sm text-gray-700">No fiestas ni eventos masivos</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-orange-400 text-[16px] mt-0.5">volume_off</span>
-                  <span className="text-sm text-gray-700">Horas de silencio: 10:00 PM – 8:00 AM</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-green-500 text-[16px] mt-0.5">groups</span>
-                  <span className="text-sm text-gray-700">Máximo {property.policies.maxGuests} huéspedes</span>
-                </div>
+                {(property.policies.houseRules || []).map((rule, i) => {
+                  const ruleIcon = rule.toLowerCase().includes('fumar') ? 'smoke_free'
+                    : rule.toLowerCase().includes('fiesta') || rule.toLowerCase().includes('evento') ? 'celebration'
+                      : rule.toLowerCase().includes('silencio') ? 'volume_off'
+                        : rule.toLowerCase().includes('máximo') || rule.toLowerCase().includes('huésped') ? 'groups'
+                          : rule.toLowerCase().includes('mascota') || rule.toLowerCase().includes('pet') ? 'pets'
+                            : 'rule';
+                  const ruleColor = rule.toLowerCase().includes('no ') ? 'text-red-400'
+                    : rule.toLowerCase().includes('silencio') ? 'text-orange-400'
+                      : 'text-green-500';
+                  return (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className={`material-icons ${ruleColor} text-[16px] mt-0.5`}>{ruleIcon}</span>
+                      <span className="text-sm text-gray-700">{rule}</span>
+                    </div>
+                  );
+                })}
+                {(!property.policies.houseRules || property.policies.houseRules.length === 0) && (
+                  <p className="text-sm text-gray-400 italic">Consulta con el anfitrión para reglas específicas.</p>
+                )}
               </div>
             </div>
 
-            {/* Cancelación */}
+            {/* Cancelación — Dynamic from property.policies.cancellationPolicy */}
             <div className="bg-blue-50/30 rounded-2xl p-5 border border-blue-100 space-y-3">
-              <h4 className="text-sm font-bold text-text-main flex items-center gap-2">
-                <span className="material-icons text-blue-500 text-[18px]">event_busy</span>
-                Política de Cancelación
-              </h4>
+              <div className="flex items-center justify-between">
+                <h4 className="text-sm font-bold text-text-main flex items-center gap-2">
+                  <span className="material-icons text-blue-500 text-[18px]">event_busy</span>
+                  Política de Cancelación
+                </h4>
+                <span className="text-[10px] font-black uppercase tracking-widest bg-blue-100 text-blue-700 px-2 py-0.5 rounded-md">
+                  {property.policies.cancellationPolicy || 'firm'}
+                </span>
+              </div>
               <div className="space-y-2">
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-green-500 text-[14px] mt-0.5">check_circle</span>
-                  <span className="text-sm text-gray-700"><strong>+30 días antes:</strong> Reembolso completo (100%)</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-orange-400 text-[14px] mt-0.5">warning</span>
-                  <span className="text-sm text-gray-700"><strong>7–30 días antes:</strong> Reembolso del 50%</span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <span className="material-icons text-red-400 text-[14px] mt-0.5">block</span>
-                  <span className="text-sm text-gray-700"><strong>Menos de 7 días:</strong> Sin reembolso</span>
-                </div>
+                {(property.policies.cancellationPolicy === 'flexible') && (
+                  <div className="flex items-start gap-3">
+                    <span className="material-icons text-green-500 text-[14px] mt-0.5">check_circle</span>
+                    <span className="text-sm text-gray-700">Reembolso completo si cancelas con al menos <strong>24 horas</strong> de antelación.</span>
+                  </div>
+                )}
+                {(property.policies.cancellationPolicy === 'moderate') && (
+                  <div className="flex items-start gap-3">
+                    <span className="material-icons text-green-500 text-[14px] mt-0.5">check_circle</span>
+                    <span className="text-sm text-gray-700">Reembolso completo si cancelas con al menos <strong>5 días</strong> de antelación.</span>
+                  </div>
+                )}
+                {(property.policies.cancellationPolicy === 'firm' || !property.policies.cancellationPolicy) && (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <span className="material-icons text-green-500 text-[14px] mt-0.5">check_circle</span>
+                      <span className="text-sm text-gray-700"><strong>+30 días antes:</strong> Reembolso completo (100%)</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="material-icons text-orange-400 text-[14px] mt-0.5">warning</span>
+                      <span className="text-sm text-gray-700"><strong>7–30 días antes:</strong> Reembolso del 50%</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="material-icons text-red-400 text-[14px] mt-0.5">block</span>
+                      <span className="text-sm text-gray-700"><strong>Menos de 7 días:</strong> Sin reembolso</span>
+                    </div>
+                  </>
+                )}
+                {(property.policies.cancellationPolicy === 'strict') && (
+                  <>
+                    <div className="flex items-start gap-3">
+                      <span className="material-icons text-orange-400 text-[14px] mt-0.5">warning</span>
+                      <span className="text-sm text-gray-700"><strong>+7 días antes:</strong> Reembolso del 50%</span>
+                    </div>
+                    <div className="flex items-start gap-3">
+                      <span className="material-icons text-red-400 text-[14px] mt-0.5">block</span>
+                      <span className="text-sm text-gray-700"><strong>Menos de 7 días:</strong> Sin reembolso</span>
+                    </div>
+                  </>
+                )}
+                {(property.policies.cancellationPolicy === 'non-refundable') && (
+                  <div className="flex items-start gap-3">
+                    <span className="material-icons text-red-400 text-[14px] mt-0.5">block</span>
+                    <span className="text-sm text-gray-700">No se realizan reembolsos bajo ninguna circunstancia.</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>

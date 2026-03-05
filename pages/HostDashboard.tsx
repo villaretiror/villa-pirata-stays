@@ -246,7 +246,7 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void }) => {
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'emergency'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency'>('info');
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
@@ -686,13 +686,13 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
-          {['info', 'photos', 'calendar', 'fees', 'offers', 'emergency'].map((section: any) => (
+          {['info', 'photos', 'calendar', 'fees', 'offers', 'policies', 'emergency'].map((section: any) => (
             <button
               key={section}
               onClick={() => setActiveSection(section as any)}
               className={`px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap ${activeSection === section ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
             >
-              {section === 'emergency' ? '🚨 Panic Mode' : section}
+              {section === 'emergency' ? '🚨 Panic Mode' : section === 'policies' ? '📋 Políticas' : section}
             </button>
           ))}
         </div>
@@ -783,6 +783,140 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
             </div>
           )}
           {activeSection === 'fees' && <p className="text-gray-400 text-center py-10">Configuración de tarifas próximamente.</p>}
+
+          {activeSection === 'policies' && (
+            <div className="space-y-6 animate-fade-in">
+              {/* Cancellation Policy Dropdown */}
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+                  <span className="material-icons text-blue-500">event_busy</span>
+                  Política de Cancelación
+                </h3>
+                <p className="text-xs text-text-light mb-4">Selecciona la política que aplica a esta propiedad.</p>
+                <select
+                  value={form.policies.cancellationPolicy || 'firm'}
+                  onChange={e => setForm({ ...form, policies: { ...form.policies, cancellationPolicy: e.target.value as any } })}
+                  className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
+                >
+                  <option value="flexible">Flexible — Reembolso 100% hasta 24h antes</option>
+                  <option value="moderate">Moderada — Reembolso 100% hasta 5 días antes</option>
+                  <option value="firm">Firme — 100% +30d, 50% 7–30d, 0% &lt;7d</option>
+                  <option value="strict">Estricta — 50% hasta 7 días antes, luego 0%</option>
+                  <option value="non-refundable">No Reembolsable</option>
+                </select>
+                {/* Policy Badge Preview */}
+                <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
+                  <p className="text-xs font-bold text-blue-700 mb-1">Vista previa para el huésped:</p>
+                  <p className="text-xs text-blue-600">
+                    {form.policies.cancellationPolicy === 'flexible' && 'Reembolso completo si cancelas con al menos 24 horas de antelación.'}
+                    {form.policies.cancellationPolicy === 'moderate' && 'Reembolso completo si cancelas con al menos 5 días de antelación.'}
+                    {(form.policies.cancellationPolicy === 'firm' || !form.policies.cancellationPolicy) && 'Reembolso completo +30 días antes. 50% entre 7–30 días. Sin reembolso menos de 7 días.'}
+                    {form.policies.cancellationPolicy === 'strict' && 'Reembolso del 50% hasta 7 días antes. Sin reembolso después.'}
+                    {form.policies.cancellationPolicy === 'non-refundable' && 'Sin reembolso bajo ninguna circunstancia.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* House Rules Editor */}
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-base mb-1 flex items-center gap-2">
+                  <span className="material-icons text-secondary">gavel</span>
+                  Reglas de la Casa
+                </h3>
+                <p className="text-xs text-text-light mb-4">Añade o elimina reglas según necesites.</p>
+                <div className="space-y-2 mb-4">
+                  {(form.policies.houseRules || []).map((rule: string, i: number) => (
+                    <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                      <span className="text-sm text-text-main flex-1">{rule}</span>
+                      <button
+                        onClick={() => {
+                          const updated = (form.policies.houseRules || []).filter((_: string, idx: number) => idx !== i);
+                          setForm({ ...form, policies: { ...form.policies, houseRules: updated } });
+                        }}
+                        className="text-red-400 hover:text-red-600 p-1"
+                      >
+                        <span className="material-icons text-sm">close</span>
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    id="new-rule-input"
+                    type="text"
+                    placeholder="Nueva regla..."
+                    className="flex-1 p-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 focus:ring-primary/20"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        const input = e.target as HTMLInputElement;
+                        if (input.value.trim()) {
+                          setForm({ ...form, policies: { ...form.policies, houseRules: [...(form.policies.houseRules || []), input.value.trim()] } });
+                          input.value = '';
+                        }
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById('new-rule-input') as HTMLInputElement;
+                      if (input?.value.trim()) {
+                        setForm({ ...form, policies: { ...form.policies, houseRules: [...(form.policies.houseRules || []), input.value.trim()] } });
+                        input.value = '';
+                      }
+                    }}
+                    className="bg-black text-white px-4 rounded-xl text-xs font-bold"
+                  >
+                    Añadir
+                  </button>
+                </div>
+              </div>
+
+              {/* Check-in / Check-out Time */}
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                  <span className="material-icons text-green-500">schedule</span>
+                  Horarios de Acceso
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Check-in</label>
+                    <select
+                      value={form.policies.checkInTime}
+                      onChange={e => setForm({ ...form, policies: { ...form.policies, checkInTime: e.target.value } })}
+                      className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
+                    >
+                      {['12:00 PM', '1:00 PM', '2:00 PM', '3:00 PM', '4:00 PM', '5:00 PM', '6:00 PM'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Check-out</label>
+                    <select
+                      value={form.policies.checkOutTime}
+                      onChange={e => setForm({ ...form, policies: { ...form.policies, checkOutTime: e.target.value } })}
+                      className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
+                    >
+                      {['9:00 AM', '10:00 AM', '11:00 AM', '12:00 PM'].map(t => (
+                        <option key={t} value={t}>{t}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="mt-4">
+                  <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Máximo de Huéspedes</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={20}
+                    value={form.policies.maxGuests}
+                    onChange={e => setForm({ ...form, policies: { ...form.policies, maxGuests: parseInt(e.target.value) || 1 } })}
+                    className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
 
           {activeSection === 'offers' && (
             <div>

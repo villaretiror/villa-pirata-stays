@@ -122,7 +122,15 @@ export const PROPERTIES: Property[] = [
       maxGuests: 8,
       wifiName: "VillaRetiro_Starlink_Premium",
       wifiPass: "Tropical2024!",
-      accessCode: "4829 #"
+      accessCode: "4829 #",
+      cancellationPolicy: 'firm',
+      houseRules: [
+        'No fumar en interiores',
+        'No fiestas ni eventos masivos',
+        'Horas de silencio: 10:00 PM – 8:00 AM',
+        'Máximo 8 huéspedes',
+        'Mascotas permitidas con fee adicional'
+      ]
     },
     blockedDates: [],
     calendarSync: [
@@ -198,7 +206,15 @@ export const PROPERTIES: Property[] = [
       maxGuests: 6,
       wifiName: "PirataHouse_WiFi",
       wifiPass: "Pirata2024!",
-      accessCode: "1776 #"
+      accessCode: "1776 #",
+      cancellationPolicy: 'firm',
+      houseRules: [
+        'No fumar en interiores',
+        'No fiestas ni eventos masivos',
+        'Horas de silencio: 10:00 PM – 8:00 AM',
+        'Máximo 6 huéspedes',
+        'Mascotas permitidas con fee adicional'
+      ]
     },
     blockedDates: [],
     calendarSync: [
