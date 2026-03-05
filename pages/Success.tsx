@@ -61,10 +61,13 @@ const Success: React.FC = () => {
         className="z-10"
       >
         <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 text-text-main tracking-tight">
-          ¡Todo listo para tu descanso!
+          {bookingData?.method === 'ath_movil' ? 'Pago Recibido' : '¡Todo listo para tu descanso!'}
         </h1>
         <p className="text-text-light text-lg font-medium mb-12 max-w-sm mx-auto leading-relaxed px-4">
-          Hemos recibido tu reserva {bookingData ? `para ${bookingData.propertyName}` : ''}. Es un honor para nosotros recibirte en <span className="text-secondary font-bold">Villa Retiro R LLC</span>.
+          {bookingData?.method === 'ath_movil'
+            ? <>Tu reserva está siendo <span className="text-orange-500 font-bold">validada</span> por el anfitrión. Recibirás una confirmación en breve.</>
+            : <>Hemos recibido tu reserva {bookingData ? `para ${bookingData.propertyName}` : ''}. Es un honor para nosotros recibirte en <span className="text-secondary font-bold">Villa Retiro R LLC</span>.</>
+          }
         </p>
       </motion.div>
 

@@ -136,7 +136,8 @@ const Booking: React.FC = () => {
           propertyName: property.title,
           checkIn: format(startDate, 'dd MMM yyyy'),
           checkOut: format(endDate, 'dd MMM yyyy'),
-          total: total
+          total: total,
+          method: method
         }
       }
     });

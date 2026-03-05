@@ -1076,124 +1076,125 @@ const HostDashboard: React.FC = () => {
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [propertyPerformance, setPropertyPerformance] = useState<any>({ performance: {}, chartData: [] });
 
+  const fetchData = async () => {
+    fetchPayments(); // Initialize payments badge count
+
+    const hostId = user?.id;
+    if (!hostId) return;
+
+    // 1. Fetch Properties from DB (Filtro de Seguridad)
+    let propsQuery = supabase.from('properties').select('*');
+    if (user?.email !== 'admin@villaretiro.com') {
+      propsQuery = propsQuery.eq('host_id', hostId);
+    }
+    const { data: props } = await propsQuery;
+
+    const hostPropertyIds = props?.map((p: any) => p.id) || [];
+
+    if (props && props.length > 0) {
+      const mappedProps = props.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        description: p.description,
+        price: Number(p.price_per_night),
+        location: p.location,
+        images: p.images || [],
+        amenities: p.amenities || [],
+        guests: p.max_guests,
+        isOffline: p.is_offline || false,
+        blockedDates: p.blocked_dates || [],
+        calendarSync: p.calendar_sync || [],
+        featuredAmenity: p.featured_amenity || p.amenities?.[0],
+        rating: p.rating || 4.8,
+        reviews: p.reviews_count || 12,
+        subtitle: p.subtitle || 'Villa Privada',
+        address: p.address || p.location,
+        category: p.category,
+        bedrooms: p.bedrooms || 2,
+        beds: p.beds || 2,
+        baths: p.baths || 1,
+        fees: p.fees || { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
+        policies: {
+          checkInTime: p.check_in_time || '4:00 PM',
+          checkOutTime: p.check_out_time || '11:00 AM',
+          maxGuests: p.max_guests_policy || p.max_guests,
+          wifiName: 'Villa_WiFi',
+          wifiPass: 'familia123',
+          accessCode: '4532',
+          cancellationPolicy: p.cancellation_policy || 'firm',
+          houseRules: p.house_rules || []
+        },
+        host: { name: user?.name || 'Anfitrión', image: user?.avatar || '', yearsHosting: 3, badges: ['Superhost'] }
+      } as Property));
+      onUpdateProperties(mappedProps);
+    }
+
+    // 2. Fetch All Valid Bookings for Analytics (Cross properties table logic)
+    if (hostPropertyIds.length > 0) {
+      const { data: allBookings } = await supabase
+        .from('bookings')
+        .select(`
+          *,
+          profiles:user_id (full_name, avatar_url, phone),
+          properties:property_id (title, images)
+        `)
+        .in('property_id', hostPropertyIds);
+
+      if (allBookings) {
+        // Calculate Revenue
+        let total = 0;
+        let monthly = 0;
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const performance: Record<string, number> = {};
+        const monthsHistory: Record<string, number> = {};
+
+        allBookings.forEach((b: any) => {
+          if (b.status === 'confirmed' || b.status === 'completed') {
+            const amount = Number(b.total_price) || 0;
+            total += amount;
+
+            // Prop performance
+            const propTitle = b.properties?.title || 'Villa Desconocida';
+            performance[propTitle] = (performance[propTitle] || 0) + amount;
+
+            // Monthly split based on created_at
+            const dateObj = new Date(b.created_at);
+            const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+            monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
+
+            if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
+              monthly += amount;
+            }
+          }
+        });
+
+        // Generate ordered arrays for charts (Last 6 months)
+        const chartData = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date();
+          d.setMonth(d.getMonth() - i);
+          const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          const mLabel = d.toLocaleString('es-PR', { month: 'short' }).toUpperCase();
+          chartData.push({ label: mLabel, val: monthsHistory[mKey] || 0 });
+        }
+
+        setTotalRevenue(total);
+        setMonthlyRevenue(monthly);
+        setPropertyPerformance({ performance, chartData });
+
+        // Update realBookings (Active/Future stays)
+        const today = new Date().toISOString().split('T')[0];
+        setRealBookings(allBookings.filter((b: any) => b.check_out >= today));
+      }
+    }
+  };
+
   // --- SYNC WITH SUPABASE ---
   useEffect(() => {
-    const fetchData = async () => {
-      fetchPayments(); // Initialize payments badge count
-
-      const hostId = user?.id;
-      if (!hostId) return;
-
-      // 1. Fetch Properties from DB (Filtro de Seguridad)
-      let propsQuery = supabase.from('properties').select('*');
-      if (user?.email !== 'admin@villaretiro.com') {
-        propsQuery = propsQuery.eq('host_id', hostId);
-      }
-      const { data: props } = await propsQuery;
-
-      const hostPropertyIds = props?.map((p: any) => p.id) || [];
-
-      if (props && props.length > 0) {
-        const mappedProps = props.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          price: Number(p.price_per_night),
-          location: p.location,
-          images: p.images || [],
-          amenities: p.amenities || [],
-          guests: p.max_guests,
-          isOffline: p.is_offline || false,
-          blockedDates: p.blocked_dates || [],
-          calendarSync: p.calendar_sync || [],
-          featuredAmenity: p.featured_amenity || p.amenities?.[0],
-          rating: p.rating || 4.8,
-          reviews: p.reviews_count || 12,
-          subtitle: p.subtitle || 'Villa Privada',
-          address: p.address || p.location,
-          category: p.category,
-          bedrooms: p.bedrooms || 2,
-          beds: p.beds || 2,
-          baths: p.baths || 1,
-          fees: p.fees || { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
-          policies: {
-            checkInTime: p.check_in_time || '4:00 PM',
-            checkOutTime: p.check_out_time || '11:00 AM',
-            maxGuests: p.max_guests_policy || p.max_guests,
-            wifiName: 'Villa_WiFi',
-            wifiPass: 'familia123',
-            accessCode: '4532',
-            cancellationPolicy: p.cancellation_policy || 'firm',
-            houseRules: p.house_rules || []
-          },
-          host: { name: user?.name || 'Anfitrión', image: user?.avatar || '', yearsHosting: 3, badges: ['Superhost'] }
-        } as Property));
-        onUpdateProperties(mappedProps);
-      }
-
-      // 2. Fetch All Valid Bookings for Analytics (Cross properties table logic)
-      if (hostPropertyIds.length > 0) {
-        const { data: allBookings } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            profiles:user_id (full_name, avatar_url, phone),
-            properties:property_id (title, images)
-          `)
-          .in('property_id', hostPropertyIds);
-
-        if (allBookings) {
-          // Calculate Revenue
-          let total = 0;
-          let monthly = 0;
-          const currentMonth = new Date().getMonth();
-          const currentYear = new Date().getFullYear();
-          const performance: Record<string, number> = {};
-          const monthsHistory: Record<string, number> = {};
-
-          allBookings.forEach((b: any) => {
-            if (b.status === 'confirmed' || b.status === 'completed') {
-              const amount = Number(b.total_price) || 0;
-              total += amount;
-
-              // Prop performance
-              const propTitle = b.properties?.title || 'Villa Desconocida';
-              performance[propTitle] = (performance[propTitle] || 0) + amount;
-
-              // Monthly split based on created_at
-              const dateObj = new Date(b.created_at);
-              const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-              monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
-
-              if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
-                monthly += amount;
-              }
-            }
-          });
-
-          // Generate ordered arrays for charts (Last 6 months)
-          const chartData = [];
-          for (let i = 5; i >= 0; i--) {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i);
-            const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const mLabel = d.toLocaleString('es-PR', { month: 'short' }).toUpperCase();
-            chartData.push({ label: mLabel, val: monthsHistory[mKey] || 0 });
-          }
-
-          setTotalRevenue(total);
-          setMonthlyRevenue(monthly);
-          setPropertyPerformance({ performance, chartData });
-
-          // Update realBookings (Active/Future stays)
-          const today = new Date().toISOString().split('T')[0];
-          setRealBookings(allBookings.filter((b: any) => b.check_out >= today));
-        }
-      }
-    };
-
     fetchData();
   }, [user]);
+
 
   // --- FETCH LEADS (PROFILES) ---
   useEffect(() => {
@@ -1231,16 +1232,18 @@ const HostDashboard: React.FC = () => {
   const handleApprovePayment = async (bookingId: string) => {
     const { error } = await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId);
     if (!error) {
-      showToast("Pago Aprobado y Reserva Confirmada ✨");
-      fetchPayments();
+      showToast("¡Reserva confirmada e ingresos actualizados! ✨");
+      fetchData();
     }
   };
 
   const handleRejectPayment = async (bookingId: string) => {
-    const { error } = await supabase.from('bookings').update({ status: 'cancelled' }).eq('id', bookingId);
+    const confirmReject = window.confirm("¿Rechazar este pago? Esto cancelará la reserva.");
+    if (!confirmReject) return;
+    const { error } = await supabase.from('bookings').update({ status: 'rejected' }).eq('id', bookingId);
     if (!error) {
       showToast("Pago Rechazado ❌");
-      fetchPayments();
+      fetchData();
     }
   };
 
