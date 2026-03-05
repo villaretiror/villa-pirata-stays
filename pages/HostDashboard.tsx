@@ -1104,9 +1104,16 @@ const HostDashboard: React.FC = () => {
   // --- HANDLERS ---
 
   const handleSaveProperty = async (updated: Property) => {
-    const hostId = user?.id;
+    // 1. Get hostId from Context or Fallback to Emergency ID if bypass is active
+    let hostId = user?.id;
+
+    if (!hostId && localStorage.getItem('emergency_admin') === 'true') {
+      hostId = 'admin-master-id';
+    }
+
     if (!hostId) {
-      showToast("Error critico: Sesión de anfitrión inválida. Inicia sesión de nuevo.");
+      console.error("Critical Auth Failure: Component missing host session.");
+      showToast("Error critico: Sesión de anfitrión inválida. Por favor, refresca la página.");
       return;
     }
 
@@ -1189,9 +1196,13 @@ const HostDashboard: React.FC = () => {
     setShowImportModal(false);
 
     // Save to Database first to get a real ID
-    const authUser = user;
+    let hostId = user?.id;
+    if (!hostId && localStorage.getItem('emergency_admin') === 'true') {
+      hostId = 'admin-master-id';
+    }
+
     const { data: dbItem, error } = await supabase.from('properties').insert({
-      host_id: authUser?.id || null,
+      host_id: hostId,
       title: importedData.title || 'Nueva Propiedad',
       description: importedData.description || '',
       price_per_night: importedData.price || 150,

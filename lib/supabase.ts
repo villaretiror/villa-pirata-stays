@@ -60,6 +60,7 @@ const createMockClient = () => {
       signInWithPassword: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Demo mode: Supabase not configured' } }),
       signUp: () => Promise.resolve({ data: { user: null, session: null }, error: { message: 'Demo mode: Supabase not configured' } }),
       signOut: () => Promise.resolve({ error: null }),
+      updateUser: (d: any) => Promise.resolve({ data: { user: { ...d, id: 'admin-master-id' } }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
     }
   } as any;

@@ -59,15 +59,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     initSession();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event: string, session: any) => {
-      // Si no hay sesión de Supabase, checkeamos el bypass nuevamente
       const emergencyAdmin = localStorage.getItem('emergency_admin');
 
       if (session?.user) {
         const profile = await getExtendedProfile(session.user.id);
         setUser(mapSupabaseUser(session.user, profile));
       } else if (emergencyAdmin === 'true') {
-        // Mantener al admin de emergencia aunque no haya sesión real
-        return;
+        // Explicitly set the emergency admin if session is lost but bypass is active
+        setUser({
+          id: 'admin-master-id',
+          email: 'admin@villaretiro.com',
+          name: 'Master Admin',
+          role: 'host',
+          avatar: '',
+          phone: '17873560895',
+          verificationStatus: 'verified',
+          registeredAt: new Date().toISOString()
+        });
       } else {
         setUser(null);
       }
