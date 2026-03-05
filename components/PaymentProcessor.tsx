@@ -15,6 +15,15 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, onSuccess, i
     const [paymentMethod, setPaymentMethod] = useState<'ath_movil' | 'paypal'>('ath_movil');
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [copied, setCopied] = useState(false);
+
+    const handleCopyPhone = () => {
+        // We clean the phone for ATH Movil (no hyphens, no leading 1 if present)
+        const cleanPhone = HOST_PHONE.replace(/\D/g, '').replace(/^1/, '');
+        navigator.clipboard.writeText(cleanPhone);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+    };
 
     const handleATHUpload = async () => {
         if (!screenshot) return null;
@@ -82,34 +91,53 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, onSuccess, i
             {paymentMethod === 'ath_movil' ? (
                 <div className="bg-orange-50/50 p-5 rounded-[1.5rem] border border-orange-100 animate-slide-up">
                     <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
-                            <span className="material-icons text-orange-600 text-sm">info</span>
+                        <div className="w-8 h-8 bg-[#FF6B35] rounded-full flex items-center justify-center">
+                            <span className="material-icons text-white text-xs">account_balance_wallet</span>
                         </div>
-                        <p className="text-xs font-bold text-orange-800">Pago Directo a Villa Retiro R</p>
+                        <p className="text-xs font-bold text-orange-900 leading-tight">Transferencia ATH Móvil</p>
                     </div>
 
                     <div className="space-y-4 mb-5">
-                        <div className="bg-white p-4 rounded-xl border border-orange-100 shadow-sm relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-2 opacity-5">
-                                <span className="material-icons text-4xl">smartphone</span>
+                        {/* Information Card */}
+                        <div className="bg-white p-5 rounded-3xl border border-orange-100 shadow-float relative overflow-hidden group">
+                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
+                                <span className="material-icons text-6xl">qr_code_2</span>
                             </div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-1">Total a enviar</p>
-                            <p className="text-2xl font-black text-orange-600">${total}</p>
-                            <p className="text-[10px] text-text-light mt-2 flex items-center gap-1">
-                                <span className="material-icons text-[12px]">person</span>
-                                A nombre de: <span className="font-bold text-text-main">Villa Retiro R</span>
-                            </p>
+
+                            <div className="space-y-4 relative z-10">
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-orange-400 mb-1 leading-none">Número de Transferencia</p>
+                                    <div className="flex items-center justify-between">
+                                        <p className="text-xl font-black text-slate-800 tracking-tighter">787-356-0895</p>
+                                        <button
+                                            onClick={handleCopyPhone}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${copied ? 'bg-green-500 text-white' : 'bg-orange-100 text-orange-600 hover:bg-orange-200'}`}
+                                        >
+                                            <span className="material-icons text-xs">{copied ? 'done' : 'content_copy'}</span>
+                                            {copied ? '¡COPIADO!' : 'COPIAR'}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div className="pt-3 border-t border-orange-50">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-orange-400 mb-1 leading-none">A nombre de</p>
+                                    <p className="text-sm font-bold text-slate-700">Villa Retiro R</p>
+                                </div>
+                            </div>
                         </div>
 
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="flex-1 bg-white px-4 py-3 rounded-xl border border-orange-100 flex items-center justify-between">
-                                <span className="text-sm font-black tracking-widest text-text-main">{HOST_PHONE}</span>
-                                <button
-                                    onClick={() => navigator.clipboard.writeText(HOST_PHONE)}
-                                    className="text-orange-500 hover:text-orange-600 transition-colors"
-                                >
-                                    <span className="material-icons text-sm">content_copy</span>
-                                </button>
+                        {/* Amount Card */}
+                        <div className="bg-black text-white p-5 rounded-3xl shadow-xl relative overflow-hidden">
+                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent p-5"></div>
+                            <div className="relative z-10 flex justify-between items-center">
+                                <div>
+                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Inversión Total</p>
+                                    <p className="text-2xl font-black tracking-tight">${total}</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-[8px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">Instrucción</p>
+                                    <p className="text-[10px] font-medium text-white/80 leading-tight">Usa la opción <span className="text-orange-300 font-bold">Transferir</span></p>
+                                </div>
                             </div>
                         </div>
                     </div>
