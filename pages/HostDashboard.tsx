@@ -1010,21 +1010,23 @@ const HostDashboard: React.FC = () => {
           isOffline: p.is_offline || false,
           blockedDates: p.blocked_dates || [],
           calendarSync: p.calendar_sync || [],
-          // Re-mapping deeper fields to satisfy Property type
-          featuredAmenity: p.amenities?.[0],
-          rating: 4.8,
-          reviews: 12,
-          subtitle: "Villa Privada",
-          address: p.location,
-          bedrooms: 2, beds: 2, baths: 1,
-          fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
+          featuredAmenity: p.featured_amenity || p.amenities?.[0],
+          rating: p.rating || 4.8,
+          reviews: p.reviews_count || 12,
+          subtitle: p.subtitle || 'Villa Privada',
+          address: p.address || p.location,
+          category: p.category,
+          bedrooms: p.bedrooms || 2,
+          beds: p.beds || 2,
+          baths: p.baths || 1,
+          fees: p.fees || { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
           policies: {
-            checkInTime: p.check_in_time || "4:00 PM",
-            checkOutTime: p.check_out_time || "11:00 AM",
+            checkInTime: p.check_in_time || '4:00 PM',
+            checkOutTime: p.check_out_time || '11:00 AM',
             maxGuests: p.max_guests_policy || p.max_guests,
-            wifiName: "Villa_WiFi",
-            wifiPass: "familia123",
-            accessCode: "4532",
+            wifiName: 'Villa_WiFi',
+            wifiPass: 'familia123',
+            accessCode: '4532',
             cancellationPolicy: p.cancellation_policy || 'firm',
             houseRules: p.house_rules || []
           },
@@ -1105,16 +1107,27 @@ const HostDashboard: React.FC = () => {
     // Persistent Save to Supabase
     const { error } = await supabase.from('properties').upsert({
       id: updated.id.includes('imported') ? undefined : updated.id,
+      host_id: (await supabase.auth.getUser()).data.user?.id || null,
       title: updated.title,
       description: updated.description,
       location: updated.location,
+      address: updated.address,
+      subtitle: updated.subtitle,
       price_per_night: updated.price,
       images: updated.images,
       amenities: updated.amenities,
+      featured_amenity: updated.featuredAmenity,
+      category: updated.category,
       max_guests: updated.guests,
+      bedrooms: updated.bedrooms,
+      beds: updated.beds,
+      baths: updated.baths,
+      rating: updated.rating,
+      reviews_count: updated.reviews,
       is_offline: updated.isOffline,
       blocked_dates: updated.blockedDates,
       calendar_sync: updated.calendarSync,
+      fees: updated.fees,
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
       check_in_time: updated.policies.checkInTime,
@@ -1171,31 +1184,38 @@ const HostDashboard: React.FC = () => {
     setShowImportModal(false);
 
     // Save to Database first to get a real ID
+    const authUser = (await supabase.auth.getUser()).data.user;
     const { data: dbItem, error } = await supabase.from('properties').insert({
-      title: importedData.title || "Nueva Propiedad",
-      description: importedData.description || "",
+      host_id: authUser?.id || null,
+      title: importedData.title || 'Nueva Propiedad',
+      description: importedData.description || '',
       price_per_night: importedData.price || 150,
-      location: "Isabela, PR",
+      location: 'Isabela, PR',
       images: importedData.images || [],
       amenities: importedData.amenities || [],
       max_guests: 4,
       is_offline: false,
       blocked_dates: [],
-      calendar_sync: []
+      calendar_sync: [],
+      cancellation_policy: 'firm',
+      house_rules: [],
+      check_in_time: '4:00 PM',
+      check_out_time: '11:00 AM',
+      max_guests_policy: 4
     }).select().single();
 
     if (error || !dbItem) {
-      console.error("DB Import Error:", error);
-      showToast("Fallo al crear la propiedad en la base de datos.");
+      console.error('DB Import Error:', error);
+      showToast('Fallo al crear la propiedad en la base de datos.');
       return;
     }
 
     const newProperty: Property = {
       id: dbItem.id,
       title: dbItem.title,
-      subtitle: "Importada de plataforma",
+      subtitle: 'Importada de plataforma',
       location: dbItem.location,
-      address: "",
+      address: '',
       description: dbItem.description,
       price: Number(dbItem.price_per_night),
       rating: importedData.rating || 4.5,
@@ -1204,19 +1224,28 @@ const HostDashboard: React.FC = () => {
       amenities: dbItem.amenities,
       guests: dbItem.max_guests,
       isOffline: dbItem.is_offline,
-      blockedDates: dbItem.blocked_dates,
-      calendarSync: dbItem.calendar_sync,
+      blockedDates: dbItem.blocked_dates || [],
+      calendarSync: dbItem.calendar_sync || [],
       bedrooms: 2,
       beds: 2,
       baths: 1,
       fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 100 },
-      policies: { checkInTime: "15:00", checkOutTime: "11:00", maxGuests: 6, wifiName: "", wifiPass: "", accessCode: "" },
+      policies: {
+        checkInTime: dbItem.check_in_time || '4:00 PM',
+        checkOutTime: dbItem.check_out_time || '11:00 AM',
+        maxGuests: dbItem.max_guests_policy || 4,
+        wifiName: '',
+        wifiPass: '',
+        accessCode: '',
+        cancellationPolicy: dbItem.cancellation_policy || 'firm',
+        houseRules: dbItem.house_rules || []
+      },
       host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
     };
 
     onUpdateProperties([...properties, newProperty]);
     setIsEditing(newProperty.id);
-    showToast("Importada con éxito en Supabase.");
+    showToast('Importada con éxito en Supabase.');
   };
 
   // Check if an offer is expired
