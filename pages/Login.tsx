@@ -53,7 +53,7 @@ const Login: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: 'https://villaretiror.com'
+          redirectTo: window.location.origin
         }
       });
       if (error) throw error;

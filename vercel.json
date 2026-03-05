@@ -1,6 +1,19 @@
 {
     "buildCommand": "npm run build",
     "outputDirectory": "dist",
+    "redirects": [
+        {
+            "source": "/:path(.*)",
+            "has": [
+                {
+                    "type": "host",
+                    "value": "villaretiror.com"
+                }
+            ],
+            "destination": "https://www.villaretiror.com/:path",
+            "permanent": true
+        }
+    ],
     "rewrites": [
         {
             "source": "/(.*)",
@@ -23,6 +36,14 @@
                 {
                     "key": "X-Content-Type-Options",
                     "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
                 }
             ]
         }
