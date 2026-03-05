@@ -1071,12 +1071,28 @@ const HostDashboard: React.FC = () => {
   const [cleaningStatus, setCleaningStatus] = useState<'ready' | 'progress' | 'dirty'>('ready');
   const [pendingPayments, setPendingPayments] = useState<any[]>([]);
 
+  // Analytics State
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [monthlyRevenue, setMonthlyRevenue] = useState(0);
+  const [propertyPerformance, setPropertyPerformance] = useState<any>({ performance: {}, chartData: [] });
+
   // --- SYNC WITH SUPABASE ---
   useEffect(() => {
     const fetchData = async () => {
       fetchPayments(); // Initialize payments badge count
-      // 1. Fetch Properties from DB
-      const { data: props } = await supabase.from('properties').select('*');
+
+      const hostId = user?.id;
+      if (!hostId) return;
+
+      // 1. Fetch Properties from DB (Filtro de Seguridad)
+      let propsQuery = supabase.from('properties').select('*');
+      if (user?.email !== 'admin@villaretiro.com') {
+        propsQuery = propsQuery.eq('host_id', hostId);
+      }
+      const { data: props } = await propsQuery;
+
+      const hostPropertyIds = props?.map((p: any) => p.id) || [];
+
       if (props && props.length > 0) {
         const mappedProps = props.map((p: any) => ({
           id: p.id,
@@ -1115,18 +1131,65 @@ const HostDashboard: React.FC = () => {
         onUpdateProperties(mappedProps);
       }
 
-      // 2. Fetch Bookings joined with User Profiles
-      const today = new Date().toISOString().split('T')[0];
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          profiles:user_id (full_name, avatar_url, phone),
-          properties:property_id (title, images)
-        `)
-        .gte('check_out', today);
+      // 2. Fetch All Valid Bookings for Analytics (Cross properties table logic)
+      if (hostPropertyIds.length > 0) {
+        const { data: allBookings } = await supabase
+          .from('bookings')
+          .select(`
+            *,
+            profiles:user_id (full_name, avatar_url, phone),
+            properties:property_id (title, images)
+          `)
+          .in('property_id', hostPropertyIds);
 
-      if (bookings) setRealBookings(bookings);
+        if (allBookings) {
+          // Calculate Revenue
+          let total = 0;
+          let monthly = 0;
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          const performance: Record<string, number> = {};
+          const monthsHistory: Record<string, number> = {};
+
+          allBookings.forEach((b: any) => {
+            if (b.status === 'confirmed' || b.status === 'completed') {
+              const amount = Number(b.total_price) || 0;
+              total += amount;
+
+              // Prop performance
+              const propTitle = b.properties?.title || 'Villa Desconocida';
+              performance[propTitle] = (performance[propTitle] || 0) + amount;
+
+              // Monthly split based on created_at
+              const dateObj = new Date(b.created_at);
+              const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+              monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
+
+              if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
+                monthly += amount;
+              }
+            }
+          });
+
+          // Generate ordered arrays for charts (Last 6 months)
+          const chartData = [];
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+            const mLabel = d.toLocaleString('es-PR', { month: 'short' }).toUpperCase();
+            chartData.push({ label: mLabel, val: monthsHistory[mKey] || 0 });
+          }
+
+          setTotalRevenue(total);
+          setMonthlyRevenue(monthly);
+          setPropertyPerformance({ performance, chartData });
+
+          // Update realBookings (Active/Future stays)
+          const today = new Date().toISOString().split('T')[0];
+          setRealBookings(allBookings.filter((b: any) => b.check_out >= today));
+        }
+      }
     };
 
     fetchData();
@@ -1410,13 +1473,74 @@ const HostDashboard: React.FC = () => {
       </div>
       {/* Quick Summary Dashboard */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-black p-5 rounded-[2rem] text-white shadow-soft">
-          <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Ingresos Marzo</p>
-          <p className="text-2xl font-serif font-bold">$4,820</p>
+        <div className="bg-black p-5 rounded-[2rem] text-white shadow-soft relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-4 opacity-10">
+            <span className="material-icons text-6xl">account_balance</span>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1 relative z-10">Ingresos del Mes</p>
+          <p className="text-2xl font-serif font-bold relative z-10">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
         </div>
         <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft">
-          <p className="text-[10px] font-black uppercase tracking-widest text-text-light mb-1">Ocupación</p>
-          <p className="text-2xl font-serif font-bold text-text-main">82%</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-text-light mb-1">Ingresos Totales</p>
+          <p className="text-2xl font-serif font-bold text-text-main">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        </div>
+      </div>
+
+      {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length > 0 && (
+        <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 flex items-center justify-between cursor-pointer" onClick={() => setActiveTab('payments')}>
+          <div className="flex items-center gap-3">
+            <span className="material-icons text-orange-500 animate-pulse">notification_important</span>
+            <div>
+              <p className="text-xs font-bold text-orange-800">Tienes {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length} pago(s) ATH Móvil por confirmar</p>
+              <p className="text-[10px] text-orange-600 mt-0.5">Valida el recibo para liberar el calendario.</p>
+            </div>
+          </div>
+          <span className="material-icons text-orange-400 text-sm">arrow_forward_ios</span>
+        </div>
+      )}
+
+      {/* Ingresos Históricos (Bar Chart) */}
+      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft">
+        <h3 className="text-sm font-bold text-text-main mb-4">Ingresos Históricos</h3>
+        <div className="flex items-end gap-2 h-32">
+          {propertyPerformance.chartData?.map((data: any, i: number) => {
+            const maxVal = Math.max(...propertyPerformance.chartData.map((d: any) => d.val), 1);
+            const height = (data.val / maxVal) * 100;
+            return (
+              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                <div className="w-full relative flex items-end justify-center h-full bg-gray-50 rounded-t-md overflow-hidden">
+                  <div
+                    className="w-full bg-primary transition-all duration-500 rounded-t-sm group-hover:bg-black"
+                    style={{ height: `${height}%` }}
+                  ></div>
+                  {/* Tooltip on hover */}
+                  <div className="absolute top-0 opacity-0 group-hover:opacity-100 text-[8px] font-black text-xs text-text-main -translate-y-4 transition-opacity bg-white px-1 rounded shadow-sm">
+                    ${data.val}
+                  </div>
+                </div>
+                <span className="text-[8px] font-black uppercase tracking-widest text-text-light">{data.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Rendimiento por Propiedad */}
+      <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft">
+        <h3 className="text-sm font-bold text-text-main mb-4">Rendimiento por Propiedad</h3>
+        <div className="space-y-3">
+          {Object.entries(propertyPerformance.performance || {}).map(([title, amount], idx) => (
+            <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <span className="text-xs font-bold text-text-main flex items-center gap-2">
+                <span className="material-icons text-primary text-sm">home</span>
+                {title}
+              </span>
+              <span className="text-sm font-black text-green-600">${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+            </div>
+          ))}
+          {Object.keys(propertyPerformance.performance || {}).length === 0 && (
+            <p className="text-xs text-gray-400 text-center uppercase tracking-widest font-bold py-2">No hay datos suficientes</p>
+          )}
         </div>
       </div>
 
