@@ -4,6 +4,7 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  base: '/',
   clearScreen: false,
   resolve: {
     alias: {
@@ -22,9 +23,6 @@ export default defineConfig({
         },
       },
     },
-  },
-  esbuild: {
-    drop: ['console', 'debugger'],
   },
   server: {
     port: 3000,
