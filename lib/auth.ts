@@ -40,29 +40,13 @@ export const localAuth = {
       setTimeout(() => {
         const normalizedEmail = email.toLowerCase();
 
-        // 1. LLAVE MAESTRA: Si es este correo/pass, entra como Host automáticamente
-        if (normalizedEmail === 'admin@villaretiro.com' && password === 'admin') {
-          const adminUser: User = {
-            id: 'da63919e-e092-482a-9e2c-3adminmaster',
-            email: 'admin@villaretiro.com',
-            name: 'Carlos (Host)',
-            role: 'host',
-            verificationStatus: 'verified',
-            avatar: 'https://images.unsplash.com/photo-1547425260-76bcadfb4f2c?auto=format&fit=crop&q=80&w=200',
-            registeredAt: new Date('2024-01-01').toISOString()
-          };
-          localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(adminUser));
-          resolve({ user: adminUser, error: null });
-          return;
-        }
-
-        // 2. Usuarios Normales
+        // 1. Usuarios Normales
         const users = JSON.parse(localStorage.getItem(USERS_KEY) || '[]');
         const foundUser = users.find((u: any) => u.email === normalizedEmail && u.password === password);
 
         if (foundUser) {
           const { password, ...safeUser } = foundUser;
-          // Forzar rol guest si no es la cuenta maestra
+          // Forzar rol guest si no es la cuenta maestra (Nota: Ahora manejado via Supabase mayormente)
           const userWithRole: User = { ...(safeUser as User), role: 'guest' };
           localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(userWithRole));
           resolve({ user: userWithRole, error: null });

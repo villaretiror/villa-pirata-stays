@@ -1110,12 +1110,8 @@ const HostDashboard: React.FC = () => {
       return;
     }
 
-    // 1. Get hostId from Context or Fallback to Emergency ID if bypass is active
-    let hostId = user?.id;
-
-    if (!hostId && localStorage.getItem('emergency_admin') === 'true') {
-      hostId = 'da63919e-e092-482a-9e2c-3adminmaster';
-    }
+    // 1. Get hostId from Context. Strict enforcement.
+    const hostId = user?.id;
 
     // Helper to validate UUID
     const isValidUUID = (id: string | undefined): boolean => {
@@ -1125,8 +1121,8 @@ const HostDashboard: React.FC = () => {
     };
 
     if (!hostId || !isValidUUID(hostId)) {
-      console.error("Critical Auth Failure: Component missing valid UUID host session.", hostId);
-      showToast("Error critico: Sesión de anfitrión inválida. Por favor, refresca la página.");
+      console.error("Critical Auth Failure: Component missing valid host session.");
+      navigate('/login');
       return;
     }
 
@@ -1225,9 +1221,10 @@ const HostDashboard: React.FC = () => {
     setShowImportModal(false);
 
     // Save to Database first to get a real ID
-    let hostId = user?.id;
-    if (!hostId && localStorage.getItem('emergency_admin') === 'true') {
-      hostId = 'da63919e-e092-482a-9e2c-3adminmaster';
+    const hostId = user?.id;
+    if (!hostId) {
+      navigate('/login');
+      return;
     }
 
     const { data: dbItem, error } = await supabase.from('properties').insert({
@@ -1244,9 +1241,8 @@ const HostDashboard: React.FC = () => {
       calendar_sync: [],
       cancellation_policy: 'firm',
       house_rules: [],
-      check_in_time: '4:00 PM',
-      check_out_time: '11:00 AM',
-      max_guests_policy: 4
+      check_in_time: '16:00:00', // 24h format
+      check_out_time: '11:00:00' // 24h format
     }).select().single();
 
     if (error || !dbItem) {
