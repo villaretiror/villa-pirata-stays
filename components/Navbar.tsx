@@ -89,9 +89,26 @@ const Navbar: React.FC = () => {
                 </div>
                 <div>
                   <p className="text-xs font-black text-text-main uppercase tracking-widest">{user?.name}</p>
-                  <p className="text-[10px] font-bold text-primary">Huésped VIP</p>
+                  <p className="text-[10px] font-bold text-primary">
+                    {user?.email === 'admin@villaretiro.com' ? 'Master Host' : 'Huésped VIP'}
+                  </p>
                 </div>
               </div>
+
+              {/* MODO ADMIN DUAL: Persistent link if admin */}
+              {user?.email === 'admin@villaretiro.com' && (
+                <Link
+                  to="/host"
+                  onClick={() => {
+                    localStorage.setItem('host_mode_preferred', 'true');
+                    setShowMenu(false);
+                  }}
+                  className="flex items-center gap-3 px-5 py-3.5 bg-primary/10 hover:bg-primary/20 rounded-[1.5rem] transition-all group mb-1 border border-primary/20"
+                >
+                  <span className="material-icons-round text-lg text-primary">dashboard_customize</span>
+                  <span className="text-xs font-black text-primary uppercase tracking-tighter">Panel de Host (Admin)</span>
+                </Link>
+              )}
 
               {menuItems.map((item) => (
                 <Link

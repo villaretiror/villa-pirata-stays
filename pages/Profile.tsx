@@ -212,6 +212,18 @@ const Profile: React.FC = () => {
 
               {/* Security / Account Actions */}
               <div className="flex flex-col gap-3">
+                {user.email === 'admin@villaretiro.com' && (
+                  <button
+                    onClick={() => {
+                      localStorage.setItem('host_mode_preferred', 'true');
+                      navigate('/host');
+                    }}
+                    className="w-full p-5 bg-primary text-white rounded-[2rem] font-black text-xs flex items-center justify-center gap-2 shadow-lg shadow-primary/20 uppercase tracking-widest"
+                  >
+                    <span className="material-icons-round text-lg">dashboard_customize</span>
+                    Regresar a Panel de Host
+                  </button>
+                )}
                 <button onClick={logout} className="w-full p-5 bg-red-50 text-red-600 rounded-[2rem] font-bold text-xs flex items-center justify-center gap-2">
                   <span className="material-icons-round text-lg text-red-400">logout</span>
                   Cerrar Sesión Segura
