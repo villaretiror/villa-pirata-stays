@@ -1136,7 +1136,12 @@ const HostDashboard: React.FC = () => {
       location: updated.location || 'Cabo Rojo, PR',
       images: updated.images || [],
       amenities: updated.amenities || [],
-      // Primary: max_guest. If fails, check if DB actually uses max_guests.
+      featured_amenity: updated.featuredAmenity || '',
+      category: updated.category || 'villa',
+      bedrooms: Number(updated.bedrooms) || 1,
+      beds: Number(updated.beds) || 1,
+      baths: Number(updated.baths) || 1,
+      // Primary: max_guest (singular field in DB)
       max_guest: updated.guests || 2,
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
