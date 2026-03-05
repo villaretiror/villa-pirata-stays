@@ -1105,9 +1105,15 @@ const HostDashboard: React.FC = () => {
 
   const handleSaveProperty = async (updated: Property) => {
     // Persistent Save to Supabase
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser?.id) {
+      showToast("Error critico: Sesión de anfitrión inválida. Inicia sesión de nuevo.");
+      return;
+    }
+
     const { error } = await supabase.from('properties').upsert({
       id: updated.id.includes('imported') ? undefined : updated.id,
-      host_id: (await supabase.auth.getUser()).data.user?.id || null,
+      host_id: currentUser.id,
       title: updated.title,
       description: updated.description,
       location: updated.location,
