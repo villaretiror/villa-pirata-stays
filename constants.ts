@@ -171,7 +171,54 @@ export const PROPERTIES: Property[] = [
       image: 'https://a0.muscache.com/im/pictures/user/User/original/0d2bef47-283d-4f96-a3be-4c8bbf46862b.jpeg?aki_policy=profile_x_medium',
       badges: ['4 años como Anfitrión', 'Respuesta en < 1hr'],
       yearsHosting: 4
-    }
+    },
+    reviewsList: [
+      {
+        id: 'r1',
+        author: 'Michelle C.',
+        date: 'Enero 2025',
+        rating: 5,
+        text: 'Increíble experiencia. La piscina privada es espectacular y el generador eléctrico nos salvó durante un apagón. Brian fue un host excepcional, siempre atento.',
+        source: 'Airbnb',
+        avatar: 'https://ui-avatars.com/api/?name=MC&background=FF6B35&color=fff&bold=true'
+      },
+      {
+        id: 'r2',
+        author: 'Carlos R.',
+        date: 'Febrero 2025',
+        rating: 5,
+        text: 'La villa es aún mejor que en las fotos. Perfecta para familias. Mis hijos disfrutaron la piscina y las playas están súper cerca. Volveremos seguro.',
+        source: 'Google',
+        avatar: 'https://ui-avatars.com/api/?name=CR&background=004E64&color=fff&bold=true'
+      },
+      {
+        id: 'r3',
+        author: 'Ana M.',
+        date: 'Diciembre 2024',
+        rating: 4.5,
+        text: 'Limpia, cómoda y bien equipada. El WiFi Starlink funciona perfecto para trabajar remoto. La ubicación es estratégica para explorar todo el suroeste.',
+        source: 'Airbnb',
+        avatar: 'https://ui-avatars.com/api/?name=AM&background=F2CC8F&color=333&bold=true'
+      },
+      {
+        id: 'r4',
+        author: 'David P.',
+        date: 'Noviembre 2024',
+        rating: 5,
+        text: 'El check-in autónomo fue súper fácil. Llegamos tarde y no tuvimos ningún problema. La cisterna y el generador le dan tranquilidad total.',
+        source: 'Google',
+        avatar: 'https://ui-avatars.com/api/?name=DP&background=25D366&color=fff&bold=true'
+      },
+      {
+        id: 'r5',
+        author: 'Jessica L.',
+        date: 'Octubre 2024',
+        rating: 5,
+        text: 'Nuestra mascota fue bienvenida y el patio cerrado es ideal. A 10 min de Boquerón. Definitivamente el mejor alojamiento que hemos tenido en Cabo Rojo.',
+        source: 'Airbnb',
+        avatar: 'https://ui-avatars.com/api/?name=JL&background=FF5A5F&color=fff&bold=true'
+      }
+    ]
   },
   {
     id: '42839458',
@@ -243,6 +290,53 @@ export const PROPERTIES: Property[] = [
       image: 'https://a0.muscache.com/im/pictures/user/User/original/0d2bef47-283d-4f96-a3be-4c8bbf46862b.jpeg?aki_policy=profile_x_medium',
       badges: ['4 años como Anfitrión', 'Superhost'],
       yearsHosting: 4
-    }
+    },
+    reviewsList: [
+      {
+        id: 'r6',
+        author: 'María T.',
+        date: 'Enero 2025',
+        rating: 5,
+        text: 'Casita perfecta para nuestra escapada en pareja. Cerca de todo y muy limpia. Brian contesta rápido cualquier duda. Las playas están a minutos.',
+        source: 'Airbnb',
+        avatar: 'https://ui-avatars.com/api/?name=MT&background=FF6B35&color=fff&bold=true'
+      },
+      {
+        id: 'r7',
+        author: 'Roberto S.',
+        date: 'Febrero 2025',
+        rating: 5,
+        text: 'Excelente relación calidad-precio. Llevamos nuestro perro y no hubo problema. El self check-in con lockbox es súper conveniente.',
+        source: 'Google',
+        avatar: 'https://ui-avatars.com/api/?name=RS&background=004E64&color=fff&bold=true'
+      },
+      {
+        id: 'r8',
+        author: 'Luisa V.',
+        date: 'Diciembre 2024',
+        rating: 5,
+        text: 'La ubicación es increíble. Fuimos a Boquerón, Combate y Playa Sucia todo en un fin de semana. La cocina tiene todo lo necesario para cocinar.',
+        source: 'Airbnb',
+        avatar: 'https://ui-avatars.com/api/?name=LV&background=F2CC8F&color=333&bold=true'
+      },
+      {
+        id: 'r9',
+        author: 'Fernando G.',
+        date: 'Noviembre 2024',
+        rating: 4.5,
+        text: 'Muy buena experiencia. La casa es acogedora y funcional. Perfecta para familias pequeñas que quieren explorar Cabo Rojo sin gastar una fortuna.',
+        source: 'Google',
+        avatar: 'https://ui-avatars.com/api/?name=FG&background=25D366&color=fff&bold=true'
+      },
+      {
+        id: 'r10',
+        author: 'Patricia N.',
+        date: 'Octubre 2024',
+        rating: 5,
+        text: 'Ya hemos ido tres veces. Es nuestra casa favorita para escaparnos los fines de semana. El estacionamiento privado y la tranquilidad del área son un plus enorme.',
+        source: 'Airbnb',
+        avatar: 'https://ui-avatars.com/api/?name=PN&background=FF5A5F&color=fff&bold=true'
+      }
+    ]
   }
 ];

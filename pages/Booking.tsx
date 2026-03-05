@@ -7,6 +7,7 @@ import SmartImage from '../components/SmartImage';
 import { addDays, format, differenceInDays } from 'date-fns';
 import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
+import { fetchICalData, parseICalData } from '../utils';
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -23,8 +24,8 @@ const Booking: React.FC = () => {
 
   useEffect(() => {
     const fetchBlockedDates = async () => {
-      if (!id) return;
-      const manualBlocked = property?.blockedDates.map((d: string) => new Date(d)) || [];
+      if (!id || !property) return;
+      const manualBlocked = property.blockedDates.map((d: string) => new Date(d)) || [];
       const { data: bookings } = await supabase
         .from('bookings')
         .select('check_in, check_out')
@@ -40,7 +41,22 @@ const Booking: React.FC = () => {
           start = addDays(start, 1);
         }
       });
-      setBlockedDates([...manualBlocked, ...bookingDates]);
+
+      // Fetch iCal feeds from Airbnb/Booking.com
+      const icalDates: Date[] = [];
+      if (property.calendarSync && property.calendarSync.length > 0) {
+        for (const sync of property.calendarSync) {
+          try {
+            const icalData = await fetchICalData(sync.url);
+            const dateStrings = parseICalData(icalData);
+            dateStrings.forEach(ds => icalDates.push(new Date(`${ds}T12:00:00`)));
+          } catch (err) {
+            console.warn(`iCal sync failed for ${sync.platform}:`, err);
+          }
+        }
+      }
+
+      setBlockedDates([...manualBlocked, ...bookingDates, ...icalDates]);
     };
     fetchBlockedDates();
   }, [id, property]);

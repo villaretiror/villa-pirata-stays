@@ -18,6 +18,7 @@ export const PropertyDetails: React.FC = () => {
 
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showAmenities, setShowAmenities] = useState(false);
 
   // Custom Hook param
   const { scrollY } = useScroll();
@@ -117,6 +118,25 @@ export const PropertyDetails: React.FC = () => {
         {source}
       </span>
     );
+  };
+
+  // Amenity icon mapper
+  const getAmenityIcon = (amenity: string): string => {
+    const lower = amenity.toLowerCase();
+    if (lower.includes('piscina')) return 'pool';
+    if (lower.includes('generador') || lower.includes('eléctric')) return 'bolt';
+    if (lower.includes('wifi') || lower.includes('starlink')) return 'wifi';
+    if (lower.includes('bbq') || lower.includes('parrilla')) return 'outdoor_grill';
+    if (lower.includes('pet') || lower.includes('mascota')) return 'pets';
+    if (lower.includes('aire') || lower.includes('acondicionado')) return 'ac_unit';
+    if (lower.includes('cocina')) return 'kitchen';
+    if (lower.includes('check-in') || lower.includes('lockbox')) return 'lock_open';
+    if (lower.includes('cisterna') || lower.includes('agua')) return 'water_drop';
+    if (lower.includes('estacionamiento')) return 'local_parking';
+    if (lower.includes('tv') || lower.includes('streaming')) return 'tv';
+    if (lower.includes('playa') || lower.includes('beach')) return 'beach_access';
+    if (lower.includes('privacidad') || lower.includes('seguridad')) return 'security';
+    return 'check_circle';
   };
 
   return (
@@ -311,8 +331,9 @@ export const PropertyDetails: React.FC = () => {
             ))}
           </div>
           <button
-            onClick={() => alert(`Lista completa de amenidades: ${property.amenities.join(', ')}`)}
-            className="mt-8 w-full border border-gray-300 text-text-main rounded-2xl py-3.5 font-bold hover:bg-gray-50 hover:border-gray-400 transition-all"
+            onClick={() => setShowAmenities(true)}
+            onTouchEnd={(e) => { e.preventDefault(); setShowAmenities(true); }}
+            className="mt-8 w-full border border-gray-300 text-text-main rounded-2xl py-3.5 font-bold hover:bg-gray-50 hover:border-gray-400 transition-all active:scale-[0.98]"
           >
             Ver las {property.amenities.length} comodidades
           </button>
@@ -348,10 +369,70 @@ export const PropertyDetails: React.FC = () => {
                 </div>
               </div>
             ))}
+            {(!property.reviewsList || property.reviewsList.length === 0) && (
+              <div className="w-full py-8 text-center">
+                <span className="material-icons text-4xl text-gray-200 mb-2">rate_review</span>
+                <p className="text-sm text-text-light">Las reseñas estarán disponibles pronto.</p>
+              </div>
+            )}
           </div>
         </div>
 
       </div>
+
+      {/* Amenities Full Modal — Mobile Drawer / Desktop Centered Modal */}
+      {showAmenities && (
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center animate-fade-in"
+          onClick={() => setShowAmenities(false)}
+          onTouchEnd={(e) => { if (e.target === e.currentTarget) { e.preventDefault(); setShowAmenities(false); } }}
+        >
+          <div
+            className="bg-white w-full sm:max-w-md sm:rounded-[2rem] rounded-t-[2rem] max-h-[80vh] overflow-hidden flex flex-col shadow-2xl animate-slide-up"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <h3 className="font-bold text-lg text-text-main">Todas las Comodidades</h3>
+              <button
+                onClick={() => setShowAmenities(false)}
+                onTouchEnd={(e) => { e.preventDefault(); setShowAmenities(false); }}
+                className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 active:scale-95 transition-all"
+              >
+                <span className="material-icons text-sm text-gray-600">close</span>
+              </button>
+            </div>
+
+            {/* Amenities List */}
+            <div className="flex-1 overflow-y-auto px-6 py-4 no-scrollbar">
+              <div className="space-y-3">
+                {property.amenities.map((amenity, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center gap-4 py-3 px-4 rounded-2xl bg-gray-50/50 border border-gray-100 hover:bg-gray-50 transition-colors"
+                  >
+                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-primary">
+                      <span className="material-icons text-[20px]">{getAmenityIcon(amenity)}</span>
+                    </div>
+                    <span className="text-text-main font-medium text-[15px] flex-1">{amenity}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-6 py-4 border-t border-gray-100 bg-white pb-safe">
+              <button
+                onClick={() => setShowAmenities(false)}
+                onTouchEnd={(e) => { e.preventDefault(); setShowAmenities(false); }}
+                className="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-lg shadow-primary/20 active:scale-[0.98] transition-all"
+              >
+                ¡Entendido!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Share Modal */}
       {showShareModal && (

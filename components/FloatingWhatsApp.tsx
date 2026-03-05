@@ -1,12 +1,12 @@
 import React from 'react';
+import { HOST_PHONE } from '../constants';
 
 interface FloatingWhatsAppProps {
   propertyTitle?: string;
 }
 
 const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ propertyTitle }) => {
-  // Replace with your actual phone number
-  const phoneNumber = "17870000000";
+  const phoneNumber = HOST_PHONE;
 
   // Dynamic message based on context
   const message = propertyTitle
