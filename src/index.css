@@ -1,11 +1,8 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
 @layer base {
   :root {
     --sand: #F9F6F2;
   }
+
   body {
     -webkit-tap-highlight-color: transparent;
     background-color: var(--sand);
@@ -17,10 +14,12 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
   .no-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
+
   .glass {
     background: rgba(255, 255, 255, 0.7);
     backdrop-filter: blur(12px);
