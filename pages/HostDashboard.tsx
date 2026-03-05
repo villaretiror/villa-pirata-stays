@@ -250,97 +250,117 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
   );
 };
 
-const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void }) => {
-  const [form, setForm] = useState(property);
-  const [isUploading, setIsUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency' | 'cohosts'>('info');
-  const [newFeeName, setNewFeeName] = useState('');
-  const [newFeeValue, setNewFeeValue] = useState(0);
+const CohostManager = ({ propertyId, onShowToast }: { propertyId: string, onShowToast: (msg: string) => void }) => {
   const [newCohostEmail, setNewCohostEmail] = useState('');
   const [cohosts, setCohosts] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const fetchCohosts = async () => {
-    const { data } = await supabase.from('property_cohosts').select('*').eq('property_id', property.id);
+    setIsLoading(true);
+    const { data } = await supabase.from('property_cohosts').select('*').eq('property_id', propertyId);
     if (data) setCohosts(data);
+    setIsLoading(false);
   };
 
   useEffect(() => {
-    if (activeSection === 'cohosts') fetchCohosts();
-  }, [activeSection, property.id]);
+    fetchCohosts();
+  }, [propertyId]);
 
   const handleInviteCohost = async () => {
-    if (!newCohostEmail.trim()) return;
+    const trimmedEmail = newCohostEmail.trim().toLowerCase();
+    if (!trimmedEmail || !trimmedEmail.includes('@')) {
+      onShowToast("Escribe un email válido 📧");
+      return;
+    }
+
     const { error } = await supabase.from('property_cohosts').insert({
-      property_id: property.id,
-      email: newCohostEmail.toLowerCase(),
+      property_id: propertyId,
+      email: trimmedEmail,
       status: 'pending'
     });
+
     if (!error) {
-      showToast("Invitación enviada ✨");
+      onShowToast("Invitación enviada ✨");
       setNewCohostEmail('');
       fetchCohosts();
+    } else {
+      onShowToast("Ya existe una invitación para este email.");
     }
   };
 
   const handleRemoveCohost = async (id: string) => {
     const { error } = await supabase.from('property_cohosts').delete().eq('id', id);
     if (!error) {
-      showToast("Co-anfitrión eliminado 🗑️");
+      onShowToast("Co-anfitrión eliminado 🗑️");
       fetchCohosts();
     }
   };
 
-  const renderCohostsSection = () => (
+  return (
     <div className="space-y-6 animate-fade-in">
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
         <h3 className="font-bold text-base mb-1 flex items-center gap-2">
           <span className="material-icons text-primary">groups</span>
           Gestión de Co-anfitriones
         </h3>
-        <p className="text-xs text-text-light mb-4">Invita a otros usuarios a gestionar esta villa contigo.</p>
+        <p className="text-xs text-text-light mb-4 text-balance">Invita a otros usuarios a gestionar esta villa contigo. Podrán ver el calendario y las reservas en tiempo real.</p>
 
         <div className="space-y-3 mb-6">
           {cohosts.map((ch, idx) => (
-            <div key={idx} className="flex justify-between items-center p-4 bg-gray-100 rounded-2xl border border-gray-100">
+            <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-soft">
               <div>
                 <p className="text-sm font-bold text-text-main">{ch.email}</p>
                 <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
                   {ch.status === 'active' ? 'Activo' : 'Pendiente'}
                 </span>
               </div>
-              <button onClick={() => handleRemoveCohost(ch.id)} className="text-red-300 hover:text-red-500">
+              <button onClick={() => handleRemoveCohost(ch.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
                 <span className="material-icons text-sm">delete</span>
               </button>
             </div>
           ))}
-          {cohosts.length === 0 && (
-            <p className="text-center py-6 text-xs text-gray-400 font-bold uppercase tracking-widest border-2 border-dashed border-gray-100 rounded-2xl">
-              No hay co-anfitriones invitados
-            </p>
+          {cohosts.length === 0 && !isLoading && (
+            <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/50">
+              <span className="material-icons text-gray-200 text-4xl mb-2">person_add_disabled</span>
+              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Sin co-anfitriones registrados</p>
+            </div>
           )}
+          {isLoading && <div className="text-center py-6 animate-pulse text-[10px] font-bold text-gray-300 uppercase italic">Sincronizando...</div>}
         </div>
 
-        <div className="bg-sand/30 p-4 rounded-2xl space-y-3">
-          <p className="text-[10px] font-black uppercase tracking-widest text-text-light">Enviar Invitación</p>
-          <div className="flex gap-2">
-            <input
-              type="email"
-              value={newCohostEmail}
-              onChange={e => setNewCohostEmail(e.target.value)}
-              placeholder="correo@ejemplo.com"
-              className="flex-1 p-3 bg-white border border-gray-200 rounded-xl text-sm outline-none"
-            />
-            <button
-              onClick={handleInviteCohost}
-              className="bg-black text-white px-5 rounded-xl text-xs font-bold"
-            >
-              Invitar
-            </button>
+        <div className="bg-sand/40 p-5 rounded-3xl border border-white/50 space-y-4">
+          <div>
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1 ml-1 leading-none">Añadir Email de Invitado</p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={newCohostEmail}
+                onChange={e => setNewCohostEmail(e.target.value)}
+                placeholder="correo@ejemplo.com"
+                className="flex-1 p-4 bg-white border border-gray-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+              />
+              <button
+                onClick={handleInviteCohost}
+                disabled={!newCohostEmail}
+                className="bg-black text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
+              >
+                Invitar
+              </button>
+            </div>
           </div>
+          <p className="text-[9px] text-gray-400 px-1 font-medium italic">Nota: El usuario debe iniciar sesión con este email para activar su acceso.</p>
         </div>
       </div>
     </div>
   );
+};
+
+const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void }) => {
+  const [form, setForm] = useState(property);
+  const [isUploading, setIsUploading] = useState(false);
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency' | 'cohosts'>('info');
+  const [newFeeName, setNewFeeName] = useState('');
+  const [newFeeValue, setNewFeeValue] = useState(0);
 
   const uploadImage = async (file: File) => {
     setIsUploading(true);
@@ -828,7 +848,7 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
 
           {activeSection === 'calendar' && renderCalendarEditor()}
 
-          {activeSection === 'cohosts' && renderCohostsSection()}
+          {activeSection === 'cohosts' && <CohostManager propertyId={form.id} onShowToast={showToast} />}
 
           {activeSection === 'photos' && (
             <div className="space-y-6 animate-slide-up">
