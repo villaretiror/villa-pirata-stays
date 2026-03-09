@@ -84,7 +84,7 @@ const Success: React.FC = () => {
 
         <div className="space-y-4">
           <button
-            onClick={() => navigate('/reservation/demo')}
+            onClick={() => navigate(`/reservation/${bookingData?.id || 'latest'}`)}
             className="w-full bg-primary text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all flex items-center justify-center gap-3 group"
           >
             <span className="material-icons text-sm group-hover:rotate-12 transition-transform">auto_stories</span>
