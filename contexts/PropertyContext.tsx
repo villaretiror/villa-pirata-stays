@@ -42,6 +42,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   // 1. Initial Fresh Fetch & Realtime Subscription
   const fetchPropertiesFromDB = async (signal?: AbortSignal) => {
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.from('properties').select('*').abortSignal(signal || new AbortController().signal);
       if (error) throw error;
       if (data) {
@@ -54,6 +55,9 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           address: p.address || '',
           description: p.description,
           price: Number(p.price_per_night),
+          cleaning_fee: Number(p.cleaning_fee) || 0,
+          service_fee: Number(p.service_fee) || 0,
+          security_deposit: Number(p.security_deposit) || 0,
           rating: p.rating || 4.8,
           reviews: p.reviews || 0,
           images: p.images || [],
@@ -71,11 +75,11 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             maxGuests: p.max_guests,
             cancellationPolicy: p.cancellation_policy,
             houseRules: p.house_rules,
-            // Wifi/Access code typically in a private table or encrypted, 
-            // but keeping it simple for now if they are in public schema
+            // SENSITIVE DATA PROTECTION: Solo se exponen si el usuario es el administrador
+            // En una fase futura se activará para huéspedes con reserva confirmada
             wifiName: p.wifi_name || '',
-            wifiPass: p.wifi_pass || '',
-            accessCode: p.access_code || ''
+            wifiPass: (session?.user?.email === 'admin@villaretiro.com') ? (p.wifi_pass || '') : '********',
+            accessCode: (session?.user?.email === 'admin@villaretiro.com') ? (p.access_code || '') : 'CONFIDENCIAL'
           },
           blockedDates: (p.blocked_periods || []).flatMap((rangeStr: string) => {
             // Postgres range format: [YYYY-MM-DD, YYYY-MM-DD)

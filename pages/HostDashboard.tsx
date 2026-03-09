@@ -911,45 +911,86 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
                 </h3>
                 <p className="text-xs text-text-light mb-4">Gestiona los cargos fijos que se sumarán al total de la reserva.</p>
 
-                <div className="space-y-3 mb-6">
-                  {Object.entries(form.fees || {}).map(([name, value], idx) => (
-                    <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
-                          <span className="material-icons text-sm text-gray-400">label</span>
+                <div className="space-y-4 mb-6 pt-2">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Tarifa de Limpieza</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-3 text-sm text-gray-400">$</span>
+                        <input
+                          type="number"
+                          value={form.cleaning_fee || 0}
+                          onChange={e => setForm({ ...form, cleaning_fee: Number(e.target.value) })}
+                          className="w-full pl-7 p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Depósito de Seguridad</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-3 text-sm text-gray-400">$</span>
+                        <input
+                          type="number"
+                          value={form.security_deposit || 0}
+                          onChange={e => setForm({ ...form, security_deposit: Number(e.target.value) })}
+                          className="w-full pl-7 p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Service Fee ($)</label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-3 text-sm text-gray-400">$</span>
+                      <input
+                        type="number"
+                        value={form.service_fee || 0}
+                        onChange={e => setForm({ ...form, service_fee: Number(e.target.value) })}
+                        className="w-full pl-7 p-3 bg-gray-50 border border-gray-100 rounded-xl text-sm font-bold"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-gray-100 my-4"></div>
+                  <p className="text-[10px] font-black text-text-light uppercase tracking-widest mb-2">Otros Cargos Personalizados</p>
+
+                  {Object.entries(form.fees || {})
+                    .filter(([name]) => !['Limpieza', 'Service Fee', 'Security Deposit'].includes(name))
+                    .map(([name, value], idx) => (
+                      <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
+                            <span className="material-icons text-sm text-gray-400">label</span>
+                          </div>
+                          <span className="text-sm font-bold text-text-main">{name}</span>
                         </div>
-                        <span className="text-sm font-bold text-text-main">{name}</span>
+                        <div className="flex items-center gap-4">
+                          <span className="text-sm font-black text-primary">${value}</span>
+                          <button
+                            onClick={() => {
+                              const newFees = { ...form.fees };
+                              delete newFees[name];
+                              setForm({ ...form, fees: newFees });
+                            }}
+                            className="text-red-300 hover:text-red-500 transition-colors"
+                          >
+                            <span className="material-icons text-sm">delete</span>
+                          </button>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm font-black text-primary">${value}</span>
-                        <button
-                          onClick={() => {
-                            const newFees = { ...form.fees };
-                            delete newFees[name];
-                            setForm({ ...form, fees: newFees });
-                          }}
-                          className="text-red-300 hover:text-red-500 transition-colors"
-                        >
-                          <span className="material-icons text-sm">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                  {Object.keys(form.fees || {}).length === 0 && (
-                    <div className="text-center py-6 border-2 border-dashed border-gray-100 rounded-2xl">
-                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">No hay cargos extra configurados</p>
-                    </div>
-                  )}
+                    ))}
                 </div>
 
-                <div className="bg-sand/30 p-4 rounded-2xl space-y-3">
-                  <p className="text-[10px] font-black text-text-light uppercase tracking-widest">Añadir Nuevo Cargo</p>
+                <div className="bg-sand/30 p-4 rounded-2xl space-y-3 border border-orange-100/50">
+                  <p className="text-[10px] font-bold text-text-light uppercase tracking-widest flex items-center gap-1">
+                    <span className="material-icons text-[12px]">add_circle</span> Añadir Cargo Extra
+                  </p>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={newFeeName}
                       onChange={e => setNewFeeName(e.target.value)}
-                      placeholder="Ej: Limpieza"
+                      placeholder="Ej: Fee de Mascota"
                       className="flex-[2] p-3 bg-white border border-gray-200 rounded-xl text-sm outline-none focus:ring-2 ring-primary/20"
                     />
                     <input
@@ -972,7 +1013,7 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
                         setNewFeeName('');
                         setNewFeeValue(0);
                       }}
-                      className="bg-black text-white px-4 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all"
+                      className="bg-black text-white px-4 rounded-xl flex items-center justify-center hover:scale-105 active:scale-95 transition-all shadow-md"
                     >
                       <span className="material-icons text-sm">add</span>
                     </button>
@@ -1111,6 +1152,49 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
                     onChange={e => setForm({ ...form, policies: { ...form.policies, maxGuests: parseInt(e.target.value) || 1 } })}
                     className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
                   />
+                </div>
+              </div>
+
+              {/* Access & Security Info */}
+              <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
+                <h3 className="font-bold text-base mb-4 flex items-center gap-2">
+                  <span className="material-icons text-orange-500">lock</span>
+                  Información de Acceso y Seguridad
+                </h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Nombre de Red WiFi</label>
+                    <input
+                      value={form.policies.wifiName}
+                      onChange={e => setForm({ ...form, policies: { ...form.policies, wifiName: e.target.value } })}
+                      className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
+                      placeholder="Ej: Starlink_Premium"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Contraseña WiFi</label>
+                    <input
+                      value={form.policies.wifiPass}
+                      onChange={e => setForm({ ...form, policies: { ...form.policies, wifiPass: e.target.value } })}
+                      className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
+                      type="text"
+                      placeholder="Contraseña de la red"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-500 uppercase mb-1">Código de Acceso (Lockbox)</label>
+                    <input
+                      value={form.policies.accessCode}
+                      onChange={e => setForm({ ...form, policies: { ...form.policies, accessCode: e.target.value } })}
+                      className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
+                      placeholder="Ej: 1234 #"
+                    />
+                  </div>
+                </div>
+                <div className="mt-4 p-3 bg-orange-50/50 rounded-xl border border-orange-100">
+                  <p className="text-[10px] text-orange-600 font-bold leading-relaxed italic">
+                    Nota: Estos datos son privados y solo se mostrarán automáticamente al huésped una vez confirmada su reserva.
+                  </p>
                 </div>
               </div>
             </div>
@@ -1506,11 +1590,17 @@ const HostDashboard: React.FC = () => {
       beds: Number(updated.beds) || 1,
       baths: Number(updated.baths) || 1,
       max_guests: Number(updated.guests) || 2,
+      cleaning_fee: Number(updated.cleaning_fee) || 0,
+      service_fee: Number(updated.service_fee) || 0,
+      security_deposit: Number(updated.security_deposit) || 0,
       fees: updated.fees || {},
       cancellation_policy: updated.policies.cancellationPolicy || 'firm',
       house_rules: updated.policies.houseRules || [],
       check_in_time: formatTo24h(updated.policies.checkInTime),
-      check_out_time: formatTo24h(updated.policies.checkOutTime)
+      check_out_time: formatTo24h(updated.policies.checkOutTime),
+      wifi_name: updated.policies.wifiName || '',
+      wifi_pass: updated.policies.wifiPass || '',
+      access_code: updated.policies.accessCode || ''
     };
 
     console.log("Sincronización iniciada...");
@@ -1608,6 +1698,9 @@ const HostDashboard: React.FC = () => {
       address: '',
       description: dbItem.description,
       price: Number(dbItem.price_per_night),
+      cleaning_fee: Number(dbItem.cleaning_fee) || 0,
+      service_fee: Number(dbItem.service_fee) || 0,
+      security_deposit: Number(dbItem.security_deposit) || 0,
       rating: importedData.rating || 4.5,
       reviews: importedData.reviews || 10,
       images: dbItem.images,

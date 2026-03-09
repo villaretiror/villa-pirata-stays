@@ -46,6 +46,9 @@ export interface Property {
   address: string;
   description: string;
   price: number;
+  cleaning_fee: number;
+  service_fee: number;
+  security_deposit: number;
   rating: number;
   reviews: number;
   images: string[];
