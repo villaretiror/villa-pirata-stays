@@ -373,7 +373,7 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
       console.log("Supabase Upload Debug: Intentando subir a bucket 'villas' el archivo", filePath);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('properties')
+        .from('villas')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -387,7 +387,7 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
       console.log("Supabase Upload Success:", uploadData);
 
       const { data } = supabase.storage
-        .from('properties')
+        .from('villas')
         .getPublicUrl(filePath);
 
       return data.publicUrl;

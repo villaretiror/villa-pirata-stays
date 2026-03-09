@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 
 interface Message {
   id: number;
@@ -20,13 +21,15 @@ const Messages: React.FC = () => {
 
   const fetchMessages = async () => {
     setLoading(true);
-    // Simulación de carga de mensajes
-    setTimeout(() => {
-      setMessages([
-        { id: 1, text: "¡Hola! Bienvenidos a Cabo Rojo. ¿Tienen alguna duda sobre la llegada?", sender: 'host', created_at: new Date(Date.now() - 3600000).toISOString() }
-      ]);
-      setLoading(false);
-    }, 500);
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    if (!error && data) {
+      setMessages(data);
+    }
+    setLoading(false);
   };
 
   const scrollToBottom = () => {
@@ -38,25 +41,44 @@ const Messages: React.FC = () => {
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (activeChatId && messages.length === 0) {
-      setMessages([
-        { id: 1, text: "¡Hola! Bienvenidos a Cabo Rojo. ¿Tienen alguna duda sobre la llegada a Villa Retiro?", sender: 'host', created_at: new Date(Date.now() - 3600000).toISOString() }
-      ]);
-    }
-  }, [activeChatId]);
+    fetchMessages();
 
-  const handleSendMessage = (e: React.FormEvent) => {
+    // Suscribirse a cambios en tiempo real
+    const channel = supabase
+      .channel('public:messages')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
+        setMessages(prev => [...prev, payload.new as Message]);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
     const query = inputText.toLowerCase();
-    const userMsg: Message = { id: Date.now(), text: inputText, sender: 'guest', created_at: new Date().toISOString() };
-    setMessages(prev => [...prev, userMsg]);
+    const messageText = inputText;
     setInputText("");
+
+    // Guardar en Supabase
+    const { error } = await supabase.from('messages').insert({
+      text: messageText,
+      sender: 'guest'
+    });
+
+    if (error) {
+      console.error("Error sending message:", error);
+      return;
+    }
+
     setIsTyping(true);
 
     // Lógica IA "Dudas Boricuas" integrada - Villa Retiro R LLC
-    setTimeout(() => {
+    setTimeout(async () => {
       let aiResponse = "¡Gracias por escribir! Carlos de Villa Retiro R LLC te contestará en breve. Si es sobre la llegada, tu código de acceso se activa a las 3:00 PM.";
 
       if (query.includes("playa") || query.includes("buye")) {
@@ -67,13 +89,13 @@ const Messages: React.FC = () => {
         aiResponse = "El Poblado de Boquerón está a solo 10 minutos. Allí tienes los mejores ostiones, mariscos frescos y música en vivo. ¡100% recomendado!";
       }
 
-      setIsTyping(false);
-      setMessages(prev => [...prev, {
-        id: Date.now() + 1,
+      // Guardar respuesta de la IA/Host en Supabase
+      await supabase.from('messages').insert({
         text: aiResponse,
-        sender: 'host',
-        created_at: new Date().toISOString()
-      }]);
+        sender: 'host'
+      });
+
+      setIsTyping(false);
     }, 1800);
   };
 
