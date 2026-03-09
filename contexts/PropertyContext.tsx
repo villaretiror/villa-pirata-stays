@@ -77,7 +77,20 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             wifiPass: p.wifi_pass || '',
             accessCode: p.access_code || ''
           },
-          blockedDates: p.blocked_dates || [],
+          blockedDates: (p.blocked_periods || []).flatMap((rangeStr: string) => {
+            // Postgres range format: [YYYY-MM-DD, YYYY-MM-DD)
+            const match = rangeStr.match(/\[(.*?),(.*?)\)/);
+            if (!match) return [];
+            const start = new Date(match[1]);
+            const end = new Date(match[2]);
+            const dates: string[] = [];
+            let curr = new Date(start);
+            while (curr < end) {
+              dates.push(curr.toISOString().split('T')[0]);
+              curr.setDate(curr.getDate() + 1);
+            }
+            return dates;
+          }),
           calendarSync: p.calendar_sync || [],
           host: p.host_data || { name: 'Admin', image: '', badges: [], yearsHosting: 3 }
         }));

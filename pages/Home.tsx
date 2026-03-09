@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
 import GuideCard from '../components/GuideCard';
 import { useProperty } from '../contexts/PropertyContext';
+import { supabase } from '../lib/supabase';
 
 type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
@@ -316,6 +317,87 @@ const Home: React.FC = () => {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Contact / Leads Form Section */}
+        <div className="mt-20 mb-10 bg-white rounded-[3rem] p-8 lg:p-12 shadow-float border border-gray-100/50 relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-orange-400 to-secondary"></div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-3xl font-serif font-bold text-text-main mb-4 leading-tight">
+                ¿Tienes planes para <br />
+                <span className="text-primary italic">tu próxima escapada?</span>
+              </h2>
+              <p className="text-sm text-text-light mb-8 leading-relaxed">
+                Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales,
+                déjanos un mensaje. Villa Retiro R LLC te responderá en menos de 24 horas.
+              </p>
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 text-sm font-bold text-text-main">
+                  <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                    <span className="material-icons">phone</span>
+                  </div>
+                  +1 (787) 356-0895
+                </div>
+                <div className="flex items-center gap-4 text-sm font-bold text-text-main">
+                  <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
+                    <span className="material-icons">email</span>
+                  </div>
+                  carlos@villaretiror.com
+                </div>
+              </div>
+            </div>
+
+            <form
+              onSubmit={async (e) => {
+                e.preventDefault();
+                const target = e.target as any;
+                const leadData = {
+                  name: target.name.value,
+                  email: target.email.value,
+                  message: target.message.value,
+                  status: 'new'
+                };
+
+                const btn = target.querySelector('button[type="submit"]');
+                const originalText = btn.innerText;
+                btn.disabled = true;
+                btn.innerText = "Enviando...";
+
+                const { error } = await supabase.from('leads').insert(leadData);
+
+                if (error) {
+                  alert("Error al enviar mensaje: " + error.message);
+                } else {
+                  alert("¡Mensaje enviado con éxito! Nos comunicaremos pronto.");
+                  target.reset();
+                }
+                btn.disabled = false;
+                btn.innerText = originalText;
+              }}
+              className="space-y-4 bg-sand/30 p-6 lg:p-8 rounded-[2rem] border border-white"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Nombre</label>
+                  <input name="name" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none" placeholder="Tu nombre" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Email</label>
+                  <input name="email" type="email" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none" placeholder="tu@email.com" />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Mensaje</label>
+                <textarea name="message" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none h-32" placeholder="¿En qué podemos ayudarte?"></textarea>
+              </div>
+              <button type="submit" className="w-full bg-secondary text-white font-black py-4 rounded-xl shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-xs">
+                Enviar Mensaje Directo
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>

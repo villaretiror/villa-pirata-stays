@@ -123,3 +123,14 @@ export interface User {
   registeredAt: string;
   favoriteProperties?: string[];
 }
+
+export interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  message: string;
+  date_of_interest?: string;
+  status: 'new' | 'contacted' | 'converted' | 'closed';
+  created_at: string;
+}

@@ -368,13 +368,12 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
     try {
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `property-images/${fileName}`;
 
-      console.log("Supabase Upload Debug: Intentando subir a bucket 'villas' el archivo", filePath);
+      console.log("Supabase Upload Debug: Intentando subir a bucket 'property-images' el archivo", fileName);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('villas')
-        .upload(filePath, file, {
+        .from('property-images')
+        .upload(fileName, file, {
           cacheControl: '3600',
           upsert: false
         });
@@ -387,8 +386,8 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
       console.log("Supabase Upload Success:", uploadData);
 
       const { data } = supabase.storage
-        .from('villas')
-        .getPublicUrl(filePath);
+        .from('property-images')
+        .getPublicUrl(fileName);
 
       return data.publicUrl;
     } catch (err: any) {
@@ -1367,18 +1366,9 @@ const HostDashboard: React.FC = () => {
 
         // Leads Fetch (if active)
         if (activeTab === 'leads') {
-          const { data } = await supabase.from('profiles').select('*').abortSignal(controller.signal);
+          const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).abortSignal(controller.signal);
           if (data) {
-            setLeads(data.map((p: any) => ({
-              id: p.id,
-              name: p.full_name || 'Huésped Anónimo',
-              email: 'Registrado vía App',
-              role: p.role || 'guest',
-              avatar: p.avatar_url,
-              phone: p.phone,
-              verificationStatus: 'verified',
-              registeredAt: p.updated_at
-            } as any)));
+            setLeads(data as any);
           }
         }
 
@@ -1489,6 +1479,29 @@ const HostDashboard: React.FC = () => {
       amenities: updated.amenities || [],
       featured_amenity: updated.featuredAmenity || '',
       category: updated.category || 'villa',
+      blocked_periods: (() => {
+        const sorted = [...(updated.blockedDates || [])].sort();
+        if (!sorted.length) return [];
+        const ranges: string[] = [];
+        let start = sorted[0];
+        let current = sorted[0];
+        for (let i = 1; i <= sorted.length; i++) {
+          const next = sorted[i];
+          const expected = new Date(current);
+          expected.setDate(expected.getDate() + 1);
+          const expectedStr = expected.toISOString().split('T')[0];
+          if (next === expectedStr) {
+            current = next;
+          } else {
+            const end = new Date(current);
+            end.setDate(end.getDate() + 1);
+            ranges.push(`[${start}, ${end.toISOString().split('T')[0]})`);
+            start = next;
+            current = next;
+          }
+        }
+        return ranges;
+      })(),
       bedrooms: Number(updated.bedrooms) || 1,
       beds: Number(updated.beds) || 1,
       baths: Number(updated.baths) || 1,
@@ -1869,7 +1882,10 @@ const HostDashboard: React.FC = () => {
                   </div>
                   <div>
                     <p className="font-bold text-sm text-text-main leading-tight">{lead.name}</p>
-                    <p className="text-[10px] font-medium text-text-light mt-0.5">{lead.email}</p>
+                    <p className="text-[10px] font-bold text-primary mt-0.5">{lead.email}</p>
+                    {lead.message && (
+                      <p className="text-[10px] text-text-light mt-1 italic line-clamp-1">"{lead.message}"</p>
+                    )}
                   </div>
                 </div>
                 <button className="text-primary p-2 hover:bg-primary/5 rounded-full transition-all">
