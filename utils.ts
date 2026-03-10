@@ -1,5 +1,5 @@
 import { Property } from './types';
-import { PROPERTIES } from './constants';
+
 
 // 1. iCal Helpers - Precision & Robustness
 const parseICalDateStr = (raw: string): string => {

@@ -1330,41 +1330,8 @@ const HostDashboard: React.FC = () => {
 
       if (props && props.length > 0) {
         const mappedProps = props.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          description: p.description,
-          price: Number(p.price_per_night),
-          location: p.location,
-          images: p.images || [],
-          amenities: p.amenities || [],
-          guests: Number(p.max_guests),
-          isOffline: p.is_offline || false,
-          blockedDates: p.blocked_dates || [],
-          calendarSync: p.calendar_sync || [],
-          featuredAmenity: p.featured_amenity || p.amenities?.[0],
-          rating: p.rating || 4.8,
-          reviews: p.reviews_count || 12,
-          subtitle: p.subtitle || 'Villa Privada',
-          address: p.address || p.location,
-          category: p.category,
-          bedrooms: p.bedrooms || 2,
-          beds: p.beds || 2,
-          baths: p.baths || 1,
-          cleaning_fee: Number(p.cleaning_fee) || 0,
-          service_fee: Number(p.service_fee) || 0,
-          security_deposit: Number(p.security_deposit) || 0,
-          fees: p.fees || {},
-          policies: {
-            checkInTime: p.check_in_time || '4:00 PM',
-            checkOutTime: p.check_out_time || '11:00 AM',
-            maxGuests: p.max_guests_policy || p.max_guests,
-            wifiName: p.wifi_name || 'Villa_WiFi',
-            wifiPass: p.wifi_pass || 'familia123',
-            accessCode: p.access_code || '4532',
-            cancellationPolicy: p.cancellation_policy || 'firm',
-            houseRules: p.house_rules || []
-          },
-          host: {
+          ...p,
+          host: p.host || {
             name: user?.name || 'Anfitrión',
             image: user?.avatar || '',
             yearsHosting: user?.registeredAt ? new Date().getFullYear() - new Date(user.registeredAt).getFullYear() : 1,
@@ -1560,72 +1527,31 @@ const HostDashboard: React.FC = () => {
       }
     };
 
-    // 2. Exact Schema Mapping & Payload Cleanup (STRICT UPDATE PAYLOAD)
-    const propertyId = updated.id;
-
-    // We exclude 'id' and 'created_at' from the update body as per DB best practices / RLS
-    const payload: any = {
+    // 2. Direct Payload Mapping based on Unified Schema
+    const payload = {
+      ...updated,
       host_id: hostId,
-      title: updated.title,
-      description: updated.description || '',
-      price_per_night: Number(updated.price) || 0,
-      location: updated.location || 'Cabo Rojo, PR',
-      images: updated.images || [],
-      amenities: updated.amenities || [],
-      featured_amenity: updated.featuredAmenity || '',
-      category: updated.category || 'villa',
-      blocked_periods: (() => {
-        const sorted = [...(updated.blockedDates || [])].sort();
-        if (!sorted.length) return [];
-        const ranges: string[] = [];
-        let start = sorted[0];
-        let current = sorted[0];
-        for (let i = 1; i <= sorted.length; i++) {
-          const next = sorted[i];
-          const expected = new Date(current);
-          expected.setDate(expected.getDate() + 1);
-          const expectedStr = expected.toISOString().split('T')[0];
-          if (next === expectedStr) {
-            current = next;
-          } else {
-            const end = new Date(current);
-            end.setDate(end.getDate() + 1);
-            ranges.push(`[${start}, ${end.toISOString().split('T')[0]})`);
-            start = next;
-            current = next;
-          }
-        }
-        return ranges;
-      })(),
-      bedrooms: Number(updated.bedrooms) || 1,
-      beds: Number(updated.beds) || 1,
-      baths: Number(updated.baths) || 1,
-      max_guests: Number(updated.guests) || 2,
-      cleaning_fee: Number(updated.cleaning_fee) || 0,
-      service_fee: Number(updated.service_fee) || 0,
-      security_deposit: Number(updated.security_deposit) || 0,
-      fees: updated.fees || {},
-      cancellation_policy: updated.policies.cancellationPolicy || 'firm',
-      house_rules: updated.policies.houseRules || [],
-      check_in_time: formatTo24h(updated.policies.checkInTime),
-      check_out_time: formatTo24h(updated.policies.checkOutTime),
-      wifi_name: updated.policies.wifiName || '',
-      wifi_pass: updated.policies.wifiPass || '',
-      access_code: updated.policies.accessCode || ''
+      // Ensure specific fields that still use snake_case or specific DB logic (like host_id) are handled
     };
 
-    console.log("Sincronización iniciada...");
-    console.table(propertyId ? { ...payload, id_filter: propertyId } : payload);
+    // Clean up frontend-only fields or calculated fields if any
+    delete (payload as any).reviewsList;
+    delete (payload as any).offers;
 
-    const { error } = await supabase.from('properties').upsert({ ...payload, id: propertyId });
 
-    if (error) {
-      let errorMsg = `Error de sincronización: ${error.message}`;
-      if (error.code === '42703') {
+
+    const { error: updateError } = await supabase
+      .from('properties')
+      .update(payload)
+      .eq('id', updated.id);
+
+    if (updateError) {
+      let errorMsg = `Error de sincronización: ${updateError.message}`;
+      if (updateError.code === '42703') {
         errorMsg = "Error de Esquema: Al componente le faltan columnas en la base de datos. Por favor, ejecuta el script de Unificación SQL.";
       }
       showToast(errorMsg);
-      console.error("SUPABASE_SAVE_ERROR_CRITICAL:", error);
+      console.error("SUPABASE_SAVE_ERROR_CRITICAL:", updateError);
       setIsSaving(false);
       return;
     }
