@@ -43,7 +43,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchPropertiesFromDB = async (signal?: AbortSignal) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.from('properties').select('*').abortSignal(signal || new AbortController().signal);
+      const { data, error } = await supabase.from('properties').select('*').or('isOffline.eq.false,isOffline.is.null').abortSignal(signal || new AbortController().signal);
       if (error) throw error;
       if (data) {
         console.log('Propiedades recibidas del DB:', data);

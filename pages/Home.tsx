@@ -14,7 +14,7 @@ const Home: React.FC = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Advanced Guest State
-  const [adults, setAdults] = useState(2);
+  const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [pets, setPets] = useState(0);
 
@@ -44,22 +44,36 @@ const Home: React.FC = () => {
     setTimeout(scrollToResults, 100);
   };
 
+  console.log("FILTRO ACTIVO:", { adults, children, pets, activeCategory, propertiesCount: properties.length });
+
   // Filter Logic based on Guests (Adults + Kids) AND Pets AND Category
   const filteredProperties = properties.filter(property => {
+    // 0. Emergency Check: Don't show offline properties
     if (property.isOffline) return false;
+
     const totalHumans = adults + children;
-    if (Number(property.guests) < totalHumans) return false;
+
+    // 1. Check Capacity (Safeguard: if null/undefined, assume 1 as minimum)
+    const capacity = Number(property.guests) || 1;
+    if (capacity < totalHumans) return false;
+
+    // 2. Check Pets (Automatic filter if pets > 0)
     if (pets > 0) {
       const amenitiesText = (property.amenities || []).join(" ").toLowerCase();
       const isPetFriendly = amenitiesText.includes("pet") || amenitiesText.includes("mascota");
       if (!isPetFriendly) return false;
     }
+
+    // 3. Check Category
     if (activeCategory === "todo") return true;
+
     const amenitiesText = (property.amenities || []).join(" ").toLowerCase();
     const descText = (property.description || "").toLowerCase();
+
     if (activeCategory === "piscina") return amenitiesText.includes("piscina") || descText.includes("piscina");
     if (activeCategory === "playa") return descText.includes("playa") || descText.includes("mar") || descText.includes("beach");
     if (activeCategory === "mascotas") return amenitiesText.includes("pet") || amenitiesText.includes("mascota");
+
     return true;
   });
   const getSectionTitle = () => {
