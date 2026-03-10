@@ -21,6 +21,8 @@ const Booking: React.FC = () => {
   const [startDate, endDate] = dateRange;
   const [blockedDates, setBlockedDates] = useState<Date[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [guestMessage, setGuestMessage] = useState('');
   const [priceMismatch, setPriceMismatch] = useState(false);
 
   // 1. Fetch Fresh on Mount
@@ -111,7 +113,7 @@ const Booking: React.FC = () => {
       }
     }
 
-    const { error } = await supabase.from('bookings').insert({
+    const { error: bookingError } = await supabase.from('bookings').insert({
       user_id: user.id,
       property_id: id,
       check_in: format(startDate, 'yyyy-MM-dd'),
@@ -122,10 +124,44 @@ const Booking: React.FC = () => {
       payment_proof_url: proofUrl || null
     });
 
-    if (error) {
-      alert("Error en la reserva: " + error.message);
+    if (bookingError) {
+      alert("Error en la reserva: " + bookingError.message);
       setIsProcessing(false);
       return;
+    }
+
+    // Email Notification via Resend
+    try {
+      const response = await fetch('/api/send', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customer: {
+            name: user.name,
+            email: user.email,
+            phone: phone
+          },
+          booking: {
+            propertyName: property.title,
+            checkIn: format(startDate, 'dd MMM yyyy'),
+            checkOut: format(endDate, 'dd MMM yyyy'),
+            guests: property.guests,
+            total: total,
+            method: method,
+            message: guestMessage
+          }
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Email delivery failed');
+      }
+    } catch (err) {
+      console.error('Notification error:', err);
+      // Requirement: show warning if email fails but DB succeeded
+      alert('Reserva guardada, pero hubo un problema enviando el aviso. Te contactaremos pronto.');
     }
 
     // Navigar a success con los datos para WhatsApp
@@ -173,6 +209,29 @@ const Booking: React.FC = () => {
             onChange={(update) => setDateRange(update)}
             blockedDates={blockedDates}
           />
+
+          {/* Formulario de Contacto / Detalles */}
+          <div className="space-y-4 pt-4">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Tus Datos de Contacto</h3>
+            <div className="grid grid-cols-1 gap-3">
+              <div className="relative">
+                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">phone</span>
+                <input
+                  type="tel"
+                  placeholder="Teléfono (WhatsApp pref.)"
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:ring-2 ring-primary/20 outline-none font-bold"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <textarea
+                placeholder="¿Algún mensaje o petición especial?"
+                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:ring-2 ring-primary/20 outline-none min-h-[100px]"
+                value={guestMessage}
+                onChange={(e) => setGuestMessage(e.target.value)}
+              />
+            </div>
+          </div>
 
           {/* Desglose de Precios */}
           <div className="space-y-4 py-6 border-y border-gray-100 bg-gray-50/30 -mx-6 px-6">
