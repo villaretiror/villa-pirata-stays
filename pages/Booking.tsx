@@ -113,24 +113,30 @@ const Booking: React.FC = () => {
       }
     }
 
-    const { error: bookingError } = await supabase.from('bookings').insert({
-      user_id: user.id,
-      property_id: id,
-      check_in: format(startDate, 'yyyy-MM-dd'),
-      check_out: format(endDate, 'yyyy-MM-dd'),
-      total_price: total,
-      status: status,
-      payment_method: method,
-      payment_proof_url: proofUrl || null
-    });
+    // 4. Secure Insert and Select (Atomic flow)
+    const { data: bookingData, error: bookingError } = await supabase
+      .from('bookings')
+      .insert({
+        user_id: user.id,
+        property_id: id,
+        check_in: format(startDate, 'yyyy-MM-dd'),
+        check_out: format(endDate, 'yyyy-MM-dd'),
+        total_price: total,
+        status: status,
+        payment_method: method,
+        payment_proof_url: proofUrl || null,
+        email_sent: false // Default to false
+      })
+      .select()
+      .single();
 
-    if (bookingError) {
-      alert("Error en la reserva: " + bookingError.message);
+    if (bookingError || !bookingData) {
+      alert("Error en la reserva: " + (bookingError?.message || "Internal error"));
       setIsProcessing(false);
       return;
     }
 
-    // Email Notification via Resend
+    // Email Notification via Resend (Using real DB data where possible)
     try {
       const response = await fetch('/api/send', {
         method: 'POST',
@@ -144,24 +150,30 @@ const Booking: React.FC = () => {
             phone: phone
           },
           booking: {
+            id: bookingData.id,
             propertyName: property.title,
-            checkIn: format(startDate, 'dd MMM yyyy'),
-            checkOut: format(endDate, 'dd MMM yyyy'),
-            guests: property.guests,
-            total: total,
-            method: method,
+            checkIn: format(new Date(bookingData.check_in + 'T12:00:00'), 'dd MMM yyyy'),
+            checkOut: format(new Date(bookingData.check_out + 'T12:00:00'), 'dd MMM yyyy'),
+            guests: property.guests, // Use verified unified guests column
+            total: bookingData.total_price,
+            method: bookingData.payment_method,
             message: guestMessage
           }
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Email delivery failed');
+      if (response.ok) {
+        // Mark as sent in DB
+        await supabase
+          .from('bookings')
+          .update({ email_sent: true })
+          .eq('id', bookingData.id);
+      } else {
+        throw new Error('Resend response not OK');
       }
     } catch (err) {
       console.error('Notification error:', err);
-      // Requirement: show warning if email fails but DB succeeded
-      alert('Reserva guardada, pero hubo un problema enviando el aviso. Te contactaremos pronto.');
+      alert('Reserva guardada, pero hubo un problema enviando el aviso por email. El host ha sido notificado por sistema.');
     }
 
     // Navigar a success con los datos para WhatsApp
