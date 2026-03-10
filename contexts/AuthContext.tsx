@@ -89,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.error("AuthContext: Initialization Error:", err.message);
       } finally {
         if (isSubscribed) {
+          clearTimeout(safetyTimeout);
           setLoading(false);
         }
       }
@@ -100,9 +101,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (!isSubscribed) return;
 
-          if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
             if (session?.user) {
-              setLoading(true);
               const profile = await getExtendedProfile(session.user.id);
               if (isSubscribed) {
                 setUser(mapSupabaseUser(session.user, profile));
