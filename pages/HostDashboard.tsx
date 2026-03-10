@@ -1298,34 +1298,23 @@ const HostDashboard: React.FC = () => {
 
       // 1. Fetch Properties from DB (Own properties + Cohost properties)
       const userEmail = user?.email?.toLowerCase();
-      let hostPropertyIds: string[] = [];
 
-      if (userEmail === 'villaretiror@gmail.com') {
-        const { data: allProps } = await supabase.from('properties').select('id').abortSignal(signal || new AbortController().signal);
-        hostPropertyIds = allProps?.map((p: any) => p.id) || [];
-      } else {
-        // Find properties where user is host OR cohost
-        const [{ data: owned }, { data: cohosted }] = await Promise.all([
-          supabase.from('properties').select('id').eq('host_id', hostId).abortSignal(signal || new AbortController().signal),
-          supabase.from('property_cohosts').select('property_id').eq('email', userEmail).abortSignal(signal || new AbortController().signal)
-        ]);
+      const { data: props, error: propsError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('email', userEmail)
+        .abortSignal(signal || new AbortController().signal);
 
-        hostPropertyIds = [
-          ...(owned?.map((p: any) => p.id) || []),
-          ...(cohosted?.map((p: any) => p.property_id) || [])
-        ];
+      if (propsError) {
+        console.error("Error fetching properties by email:", propsError);
       }
+
+      const hostPropertyIds = props?.map((p: any) => p.id) || [];
 
       if (hostPropertyIds.length === 0) {
         setIsLoading(false);
         return;
       }
-
-      const { data: props } = await supabase
-        .from('properties')
-        .select('*')
-        .in('id', hostPropertyIds)
-        .abortSignal(signal || new AbortController().signal);
 
       if (props && props.length > 0) {
         const mappedProps = props.map((p: any) => ({
@@ -1336,7 +1325,7 @@ const HostDashboard: React.FC = () => {
           location: p.location,
           images: p.images || [],
           amenities: p.amenities || [],
-          guests: p.max_guests,
+          guests: Number(p.max_guests),
           isOffline: p.is_offline || false,
           blockedDates: p.blocked_dates || [],
           calendarSync: p.calendar_sync || [],
@@ -1349,7 +1338,10 @@ const HostDashboard: React.FC = () => {
           bedrooms: p.bedrooms || 2,
           beds: p.beds || 2,
           baths: p.baths || 1,
-          fees: p.fees || { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 200 },
+          cleaning_fee: Number(p.cleaning_fee) || 0,
+          service_fee: Number(p.service_fee) || 0,
+          security_deposit: Number(p.security_deposit) || 0,
+          fees: p.fees || {},
           policies: {
             checkInTime: p.check_in_time || '4:00 PM',
             checkOutTime: p.check_out_time || '11:00 AM',
@@ -2075,7 +2067,7 @@ const HostDashboard: React.FC = () => {
         return (
           <div key={p.id} className="bg-white rounded-[2rem] p-5 shadow-soft flex gap-5 border border-gray-100 group hover:border-black/10 transition-all">
             <div className="w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0 relative shadow-sm">
-              <img src={p.images[0] || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Listing" />
+              <img src={p.images?.[0] || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Listing" />
               <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[9px] font-black px-2 py-1 rounded-lg backdrop-blur-sm uppercase">
                 ★ {p.rating || 'N/A'}
               </div>
