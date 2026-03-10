@@ -42,6 +42,7 @@ const createMockClient = () => {
     order: () => handler,
     limit: () => handler,
     range: () => handler,
+    abortSignal: () => handler, // Soporte para abortSignal en mock
     single: () => Promise.resolve(mockResponse(null)),
     maybeSingle: () => Promise.resolve(mockResponse(null)),
     then: (resolve: any) => resolve(mockResponse()),
@@ -82,3 +83,10 @@ export const supabase = isConfigured
     }
   })
   : createMockClient();
+
+// Info para depuración (segura)
+if (!isConfigured) {
+  console.log("Supabase URL present:", !!SUPABASE_URL);
+  console.log("Supabase Key present:", !!SUPABASE_ANON_KEY);
+  if (SUPABASE_URL) console.log("URL start:", SUPABASE_URL.substring(0, 10));
+}
