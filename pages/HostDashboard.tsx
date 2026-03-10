@@ -1258,39 +1258,6 @@ const HostDashboard: React.FC = () => {
   };
 
   const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    if (!user) return;
-
-    const checkAccess = async () => {
-      // 1. Master Admin & Hardcoded Hosts
-      if (user.email === 'villaretiror@gmail.com' || user.role === 'host') {
-        setIsAuthorized(true);
-        return;
-      }
-
-      // 2. Co-host verification
-      const { data: cohostEntry } = await supabase
-        .from('property_cohosts')
-        .select('id')
-        .eq('email', user.email?.toLowerCase())
-        .limit(1);
-
-      if (cohostEntry && cohostEntry.length > 0) {
-        setIsAuthorized(true);
-      } else {
-        console.log(`HostDashboard Debug: Access denied. Email: ${user.email}`);
-        navigate('/profile');
-      }
-    };
-
-    checkAccess();
-  }, [user, navigate]);
-
-  if (!user || isAuthorized === null) {
-    return <div className="min-h-screen bg-sand flex items-center justify-center font-serif italic">Validando credenciales...</div>;
-  }
-
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [leads, setLeads] = useState<User[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -1310,27 +1277,33 @@ const HostDashboard: React.FC = () => {
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [propertyPerformance, setPropertyPerformance] = useState<any>({ performance: {}, chartData: [] });
 
+  // --- STABLE CALLBACKS ---
   const fetchPayments = useCallback(async (signal?: AbortSignal) => {
-    const { data } = await supabase
-      .from('bookings')
-      .select('*, profiles(full_name, avatar_url, phone), properties(title, images)')
-      .eq('status', 'waiting_approval')
-      .abortSignal(signal || new AbortController().signal);
-    if (data) setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+    try {
+      const { data } = await supabase
+        .from('bookings')
+        .select('*, profiles(full_name, avatar_url, phone), properties(title, images)')
+        .eq('status', 'waiting_approval')
+        .abortSignal(signal || new AbortController().signal);
+
+      if (data) {
+        setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+      }
+    } catch (e) {
+      console.warn("fetchPayments error:", e);
+    }
   }, []);
 
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     if (!user?.id) return;
     setIsLoading(true);
     try {
-      await fetchPayments(signal); // Initialize payments badge count
+      await fetchPayments(signal);
 
-      // 1. Fetch Properties from DB (OWNER + CO-HOST ACCESS)
       const userEmail = user.email?.toLowerCase();
       if (!userEmail) return;
 
       let hostPropertyIds: string[] = [];
-
       if (userEmail === 'villaretiror@gmail.com') {
         const { data: allProps } = await supabase.from('properties').select('id');
         hostPropertyIds = allProps?.map((p: any) => p.id) || [];
@@ -1339,7 +1312,6 @@ const HostDashboard: React.FC = () => {
           supabase.from('properties').select('id').eq('email', userEmail),
           supabase.from('property_cohosts').select('property_id').eq('email', userEmail)
         ]);
-
         const ownedIds = owned.data?.map((p: any) => p.id) || [];
         const cohostedIds = cohosted.data?.map((p: any) => p.property_id) || [];
         hostPropertyIds = Array.from(new Set([...ownedIds, ...cohostedIds]));
@@ -1370,7 +1342,6 @@ const HostDashboard: React.FC = () => {
         onUpdateProperties(mappedProps);
       }
 
-      // 2. Analytics Fetch
       const { data: allBookings } = await supabase
         .from('bookings')
         .select(`*, profiles(full_name, avatar_url, phone), properties(title, images)`)
@@ -1378,8 +1349,7 @@ const HostDashboard: React.FC = () => {
         .abortSignal(signal || new AbortController().signal);
 
       if (allBookings) {
-        let total = 0;
-        let monthly = 0;
+        let total = 0; let monthly = 0;
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         const performance: Record<string, number> = {};
@@ -1401,8 +1371,8 @@ const HostDashboard: React.FC = () => {
         const chartData = [];
         for (let i = 5; i >= 0; i--) {
           const d = new Date(); d.setMonth(d.getMonth() - i);
-          const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          chartData.push({ label: d.toLocaleString('es-PR', { month: 'short' }).toUpperCase(), val: monthsHistory[mKey] || 0 });
+          const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          chartData.push({ label: d.toLocaleString('es-PR', { month: 'short' }).toUpperCase(), val: monthsHistory[monthKey] || 0 });
         }
 
         setTotalRevenue(total);
@@ -1418,75 +1388,83 @@ const HostDashboard: React.FC = () => {
     }
   }, [user?.id, user?.email, user?.name, user?.avatar, user?.role, onUpdateProperties, fetchPayments]);
 
-  // --- INTEGRATED SYNC CYCLE ---
+  // --- EFFECTS ---
+
+  // 1. Authorization Check
+  useEffect(() => {
+    if (!user) return;
+    const checkAccess = async () => {
+      if (user.email === 'villaretiror@gmail.com' || user.role === 'host') {
+        setIsAuthorized(true);
+        return;
+      }
+      const { data: cohostEntry } = await supabase
+        .from('property_cohosts')
+        .select('id')
+        .eq('email', user.email?.toLowerCase())
+        .limit(1);
+
+      if (cohostEntry && cohostEntry.length > 0) {
+        setIsAuthorized(true);
+      } else {
+        navigate('/profile');
+      }
+    };
+    checkAccess();
+  }, [user, navigate]);
+
+  // 2. Data Load Cycle
   useEffect(() => {
     if (!user?.id || !isAuthorized) return;
-
     const controller = new AbortController();
     let isSubscribed = true;
 
-    const initializeDashboard = async () => {
-      try {
-        await fetchData(controller.signal);
+    const initialize = async () => {
+      await fetchData(controller.signal);
+      if (!isSubscribed) return;
 
-        if (!isSubscribed) return;
+      if (activeTab === 'leads') {
+        const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).abortSignal(controller.signal);
+        if (data && isSubscribed) setLeads(data as any);
+      }
 
-        // Leads Fetch (if active)
-        if (activeTab === 'leads') {
-          const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).abortSignal(controller.signal);
-          if (data && isSubscribed) setLeads(data as any);
+      const email = user.email?.toLowerCase();
+      if (email) {
+        const { data: pending } = await supabase.from('property_cohosts').select('id').eq('email', email).eq('status', 'pending');
+        if (pending && pending.length > 0 && isSubscribed) {
+          await supabase.from('property_cohosts').update({ status: 'active' }).in('id', pending.map((p: any) => p.id));
+          showToast("Accesos de Co-anfitrión activados ✨");
+          await fetchData(controller.signal);
         }
-
-        // Auto-confirm invitations for co-hosts
-        const email = user.email?.toLowerCase();
-        if (email) {
-          const { data: pending } = await supabase
-            .from('property_cohosts')
-            .select('id')
-            .eq('email', email)
-            .eq('status', 'pending');
-
-          if (pending && pending.length > 0 && isSubscribed) {
-            await supabase
-              .from('property_cohosts')
-              .update({ status: 'active' })
-              .in('id', pending.map((p: any) => p.id));
-
-            showToast("Accesos de Co-anfitrión activados ✨");
-            await fetchData(controller.signal);
-          }
-        }
-      } catch (err: any) {
-        if (err.name !== 'AbortError') console.error("Initialization Error:", err);
       }
     };
+    initialize();
+    return () => { isSubscribed = false; controller.abort(); };
+  }, [user?.id, user?.email, isAuthorized, activeTab, fetchData]);
 
-    initializeDashboard();
-
-    return () => {
-      isSubscribed = false;
-      controller.abort();
-    };
-  }, [user?.id, isAuthorized, activeTab, fetchData]);
-
-  // --- FETCH PENDING PAYMENTS ---
+  // 3. Payment Specific Sync
   useEffect(() => {
     const controller = new AbortController();
     if (activeTab === 'payments') fetchPayments(controller.signal);
     return () => controller.abort();
-  }, [activeTab]);
+  }, [activeTab, fetchPayments]);
 
+  // --- CONDITIONAL RETURN (SAFE AFTER ALL HOOKS) ---
+  if (!user || isAuthorized === null) {
+    return <div className="min-h-screen bg-sand flex items-center justify-center font-serif italic animate-pulse">Autenticando...</div>;
+  }
+
+  // --- HANDLERS ---
   const handleApprovePayment = async (bookingId: string) => {
     const { error } = await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', bookingId);
     if (!error) {
-      showToast("¡Reserva confirmada e ingresos actualizados! ✨");
+      showToast("¡Reserva confirmada! ✨");
       fetchData();
     }
   };
 
   const handleRejectPayment = async (bookingId: string) => {
-    const confirmReject = window.confirm("¿Rechazar este pago? Esto cancelará la reserva.");
-    if (!confirmReject) return;
+    if (!window.confirm("¿Rechazar este pago?")) return;
     const { error } = await supabase.from('bookings').update({ status: 'rejected' }).eq('id', bookingId);
     if (!error) {
       showToast("Pago Rechazado ❌");
@@ -1495,84 +1473,25 @@ const HostDashboard: React.FC = () => {
   };
 
   const handleSaveProperty = async (updated: Property) => {
-    // 0. Only admins can execute this operation + Debounce/Lock
-    if (isSaving) return;
-
-    if (user?.email !== 'villaretiror@gmail.com') {
-      showToast("Acceso denegado. Solo el administrador puede guardar cambios.");
-      return;
-    }
-
+    if (isSaving || user?.email !== 'villaretiror@gmail.com') return;
     setIsSaving(true);
-
-    // 1. Get hostId from Context. Strict enforcement.
     const hostId = user?.id;
+    if (!hostId) return;
 
-    // Helper to validate UUID
-    const isValidUUID = (id: string | undefined): boolean => {
-      if (!id) return false;
-      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-      return uuidRegex.test(id);
-    };
-
-    if (!hostId) {
-      console.error("Critical Auth Failure: Component missing valid host session.");
-      navigate('/login');
-      return;
-    }
-
-    // Helper to convert "04:00 PM" -> "16:00:00"
-    const formatTo24h = (timeStr: string | undefined): string | null => {
-      if (!timeStr) return null;
-      try {
-        const [time, modifier] = timeStr.split(' ');
-        let [hours, minutes] = time.split(':');
-        if (hours === '12') hours = '00';
-        if (modifier === 'PM') hours = (parseInt(hours, 10) + 12).toString();
-        return `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}:00`;
-      } catch (e) {
-        return null;
-      }
-    };
-
-    // 2. Direct Payload Mapping based on Unified Schema
-    const payload = {
-      ...updated,
-      host_id: hostId,
-      // Ensure specific fields that still use snake_case or specific DB logic (like host_id) are handled
-    };
-
-    // Clean up frontend-only fields or calculated fields if any
+    const payload = { ...updated, host_id: hostId };
     delete (payload as any).reviewsList;
     delete (payload as any).offers;
 
-
-
-    const { error: updateError } = await supabase
-      .from('properties')
-      .update(payload)
-      .eq('id', updated.id);
-
+    const { error: updateError } = await supabase.from('properties').update(payload).eq('id', updated.id);
     if (updateError) {
-      let errorMsg = `Error de sincronización: ${updateError.message}`;
-      if (updateError.code === '42703') {
-        errorMsg = "Error de Esquema: Al componente le faltan columnas en la base de datos. Por favor, ejecuta el script de Unificación SQL.";
-      }
-      showToast(errorMsg);
-      console.error("SUPABASE_SAVE_ERROR_CRITICAL:", updateError);
+      showToast(`Error al guardar: ${updateError.message}`);
       setIsSaving(false);
       return;
     }
 
-    showToast("¡Cambios guardados con éxito! ✅");
-
-    const exists = properties.find(p => p.id === updated.id);
-    if (exists) {
-      const updatedProperties = properties.map((p: Property) => p.id === updated.id ? updated : p);
-      onUpdateProperties(updatedProperties);
-    } else {
-      onUpdateProperties([...properties, updated]);
-    }
+    showToast("¡Cambios guardados! ✅");
+    const updatedProperties = properties.map((p: Property) => p.id === updated.id ? updated : p);
+    onUpdateProperties(updatedProperties);
     setIsEditing(null);
     setIsSaving(false);
   };
@@ -1591,76 +1510,56 @@ const HostDashboard: React.FC = () => {
   };
 
   const handleImport = async (url: string) => {
-    let importedData: Partial<Property> = {};
+    setShowImportModal(false);
+    const hostId = user?.id;
+    if (!hostId) return;
 
     try {
-      importedData = await importPropertyFromUrl(url);
-    } catch (e) {
-      console.warn("Import warning:", e);
-      showToast("No pudimos extraer todo automáticamente por las restricciones de Airbnb, pero hemos preparado el formulario para que lo completes manualmente en segundos.");
-      // Proveemos datos mínimos para no romper el flujo
-      importedData = {
-        title: "Nueva Villa (Manual)",
-        description: "Completa la descripción aquí...",
-        images: ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"]
-      };
-    }
-
-    setShowImportModal(false);
-
-    // Save to Database first to get a real ID
-    const hostId = user?.id;
-    if (!hostId) {
-      navigate('/login');
-      return;
-    }
-
-    const { data: dbItem, error } = await supabase.from('properties').insert({
-      host_id: hostId,
-      title: importedData.title || 'Nueva Propiedad',
-      description: importedData.description || '',
-      price: importedData.price || 150,
-      location: 'Isabela, PR',
-      images: importedData.images || [],
-      amenities: importedData.amenities || [],
-      guests: 4,
-      isOffline: false,
-      blockedDates: [],
-      calendarSync: [],
-      policies: {
-        checkInTime: '4:00 PM',
-        checkOutTime: '11:00 AM',
+      const importedData = await importPropertyFromUrl(url);
+      const { data: dbItem, error } = await supabase.from('properties').insert({
+        host_id: hostId,
+        title: importedData.title || 'Nueva Propiedad',
+        description: importedData.description || '',
+        price: importedData.price || 150,
+        email: user.email?.toLowerCase(),
+        location: 'Isabela, PR',
+        images: importedData.images || [],
+        amenities: importedData.amenities || [],
         guests: 4,
-        cancellationPolicy: 'firm',
-        houseRules: [],
-        wifiName: '',
-        wifiPass: '',
-        accessCode: ''
-      }
-    }).select().single();
+        isOffline: false,
+        blockedDates: [],
+        calendarSync: [],
+        policies: {
+          checkInTime: '4:00 PM',
+          checkOutTime: '11:00 AM',
+          guests: 4,
+          wifiPass: '',
+          accessCode: ''
+        }
+      }).select().single();
 
-    if (error || !dbItem) {
-      console.error('DB Import Error:', error);
-      showToast('Fallo al crear la propiedad en la base de datos.');
-      return;
+      if (error || !dbItem) throw error || new Error("Fallo al crear en DB");
+
+      const newProperty: Property = {
+        ...dbItem,
+        id: String(dbItem.id),
+        subtitle: 'Importada de plataforma',
+        rating: importedData.rating || 4.5,
+        reviews: importedData.reviews || 10,
+        bedrooms: 2,
+        beds: 2,
+        baths: 1,
+        fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 100 },
+        host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
+      };
+
+      onUpdateProperties([...properties, newProperty]);
+      setIsEditing(newProperty.id);
+      showToast('Importada con éxito ✨');
+    } catch (e) {
+      console.error("Import error:", e);
+      showToast("Error al importar. Intenta manualmente.");
     }
-
-    const newProperty: Property = {
-      ...dbItem,
-      id: String(dbItem.id),
-      subtitle: 'Importada de plataforma',
-      rating: importedData.rating || 4.5,
-      reviews: importedData.reviews || 10,
-      bedrooms: 2,
-      beds: 2,
-      baths: 1,
-      fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 100 },
-      host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
-    };
-
-    onUpdateProperties([...properties, newProperty]);
-    setIsEditing(newProperty.id);
-    showToast('Importada con éxito en Supabase.');
   };
 
   // Check if an offer is expired

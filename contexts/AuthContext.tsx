@@ -32,6 +32,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     registeredAt: sbUser.created_at,
   });
 
+  const updateUserState = useCallback((newUser: User | null) => {
+    setUser(prev => {
+      if (!prev && !newUser) return null;
+      if (!prev || !newUser) return newUser;
+      // Simple stability check
+      if (prev.id === newUser.id && prev.role === newUser.role && prev.email === newUser.email && prev.avatar === newUser.avatar && prev.name === newUser.name) {
+        return prev;
+      }
+      return newUser;
+    });
+  }, []);
+
   const getExtendedProfile = async (id: string): Promise<any> => {
     try {
       const { data: profile, error } = await supabase
@@ -78,11 +90,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             console.log(`AuthContext: Valid session for ${session.user.email}. Fetching profile...`);
             const profile = await getExtendedProfile(session.user.id);
             if (isSubscribed) {
-              setUser(mapSupabaseUser(session.user, profile));
+              updateUserState(mapSupabaseUser(session.user, profile));
             }
           } else {
             console.log("AuthContext: No initial session.");
-            setUser(null);
+            updateUserState(null);
           }
         }
       } catch (err: any) {
@@ -105,13 +117,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             if (session?.user) {
               const profile = await getExtendedProfile(session.user.id);
               if (isSubscribed) {
-                setUser(mapSupabaseUser(session.user, profile));
+                updateUserState(mapSupabaseUser(session.user, profile));
                 setLoading(false);
               }
             }
           } else if (event === 'SIGNED_OUT') {
             if (isSubscribed) {
-              setUser(null);
+              updateUserState(null);
               setLoading(false);
             }
           }
