@@ -1148,8 +1148,8 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
                     type="number"
                     min={1}
                     max={20}
-                    value={form.policies.maxGuests}
-                    onChange={e => setForm({ ...form, policies: { ...form.policies, maxGuests: parseInt(e.target.value) || 1 } })}
+                    value={form.policies.guests}
+                    onChange={e => setForm({ ...form, policies: { ...form.policies, guests: parseInt(e.target.value) || 1 } })}
                     className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
                   />
                 </div>
@@ -1622,7 +1622,7 @@ const HostDashboard: React.FC = () => {
       policies: {
         checkInTime: '4:00 PM',
         checkOutTime: '11:00 AM',
-        maxGuests: 4,
+        guests: 4,
         cancellationPolicy: 'firm',
         houseRules: [],
         wifiName: '',

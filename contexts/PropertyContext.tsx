@@ -50,10 +50,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const isAdmin = session?.user?.email === 'villaretiror@gmail.com';
         const mapped: Property[] = data.map((p: any) => ({
           ...p,
-          id: String(p.id), // Ensure ID is always a string to prevent large ID overflow in JS
-          // Minimal security spread while maintaining clean structural mapping
+          id: String(p.id),
+          guests: Number(p.guests) || 0,
+          price: Number(p.price) || 0,
           policies: {
             ...p.policies,
+            guests: Number(p.policies?.guests || p.guests) || 0,
             wifiPass: isAdmin ? p.policies?.wifiPass : '********',
             accessCode: isAdmin ? p.policies?.accessCode : 'CONFIDENCIAL'
           }

@@ -144,7 +144,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
             <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-0.5">{property.location}</p>
             <div className="flex items-center gap-1 text-secondary font-medium text-xs">
               <span className="material-icons text-sm">group</span>
-              {property.guests} Huéspedes
+              {Number(property.guests) || 1} Huéspedes
             </div>
           </div>
 

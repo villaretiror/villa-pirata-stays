@@ -22,7 +22,7 @@ export type CancellationPolicyType = 'flexible' | 'moderate' | 'firm' | 'strict'
 export interface Policies {
   checkInTime: string;
   checkOutTime: string;
-  maxGuests: number;
+  guests: number;
   wifiName: string;
   wifiPass: string;
   accessCode: string;

@@ -120,7 +120,7 @@ export const PROPERTIES: Property[] = [
     policies: {
       checkInTime: "4:00 PM",
       checkOutTime: "11:00 AM",
-      maxGuests: 8,
+      guests: 8,
       wifiName: "VillaRetiro_Starlink_Premium",
       wifiPass: "Tropical2024!",
       accessCode: "4829 #",
@@ -205,7 +205,7 @@ export const PROPERTIES: Property[] = [
     policies: {
       checkInTime: "4:00 PM",
       checkOutTime: "11:00 AM",
-      maxGuests: 6,
+      guests: 6,
       wifiName: "PirataHouse_WiFi",
       wifiPass: "Pirata2024!",
       accessCode: "1776 #",
