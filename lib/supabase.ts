@@ -89,4 +89,7 @@ if (!isConfigured) {
   console.log("Supabase URL present:", !!SUPABASE_URL);
   console.log("Supabase Key present:", !!SUPABASE_ANON_KEY);
   if (SUPABASE_URL) console.log("URL start:", SUPABASE_URL.substring(0, 10));
+
+  // Debug total de env (solo claves seguras)
+  console.log("Available VITE_ keys:", Object.keys(import.meta.env).filter(k => k.startsWith('VITE_')));
 }
