@@ -79,7 +79,7 @@ export const supabase = isConfigured
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
-      flowType: 'pkce'
+      // Switching to standard flow for better compatibility in production
     }
   })
   : createMockClient();

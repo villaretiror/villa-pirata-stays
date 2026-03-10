@@ -54,25 +54,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Audit: This ensures we have a singleton-like listener.
     let isSubscribed = true;
 
-    // 10s Safety fallback in case of connection drop
+    // 30s Safety fallback in case of connection drop
     const safetyTimeout = setTimeout(() => {
       if (isSubscribed && loading) {
-        console.warn("AuthContext: Safety timeout reached. Resolving loading.");
+        console.warn("AuthContext: Bootstrap SAFETY TIMEOUT (30s). Reclaiming UI thread.");
         setLoading(false);
       }
-    }, 10000);
+    }, 30000);
 
     const checkInitialSession = async () => {
       if (initialFetchRef.current) return;
       initialFetchRef.current = true;
 
       try {
+        console.log("AuthContext: Bootstrapping session...");
         const { data: { session } } = await supabase.auth.getSession();
         if (isSubscribed) {
           if (session?.user) {
+            console.time(`ProfileFetch-${session.user.id}`);
             const profile = await getExtendedProfile(session.user.id);
+            console.timeEnd(`ProfileFetch-${session.user.id}`);
             setUser(mapSupabaseUser(session.user, profile));
           } else {
+            console.log("AuthContext: No active session found.");
             setUser(null);
           }
         }
@@ -90,21 +94,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Audit: Unified listener to avoid race conditions. 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      console.log(`Auth Strategy [Audit]: Event type: ${event}`);
+      console.log(`Auth Strategy [Audit]: Event type: ${event} for ${session?.user?.email || 'Guest'}`);
 
       if (!isSubscribed) return;
 
       if (session?.user) {
-        // Debounce if already syncing? No, we need fresh profile.
+        // Force loading if we are fetching a profile
+        setLoading(true);
         const profile = await getExtendedProfile(session.user.id);
-        if (isSubscribed) setUser(mapSupabaseUser(session.user, profile));
+        if (isSubscribed) {
+          setUser(mapSupabaseUser(session.user, profile));
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       } else {
-        if (isSubscribed) setUser(null);
-      }
-
-      if (isSubscribed) {
-        setLoading(false);
-        clearTimeout(safetyTimeout);
+        if (isSubscribed) {
+          setUser(null);
+          setLoading(false);
+          clearTimeout(safetyTimeout);
+        }
       }
     });
 
@@ -116,9 +124,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    // 15s absolute timeout for Auth strategy
+    // 30s absolute timeout for Auth strategy
     const authTimeout = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error("Error de conexión, reintente")), 15000)
+      setTimeout(() => reject(new Error("Error de conexión, reintente")), 30000)
     );
 
     try {
