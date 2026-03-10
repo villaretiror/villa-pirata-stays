@@ -1611,18 +1611,24 @@ const HostDashboard: React.FC = () => {
       host_id: hostId,
       title: importedData.title || 'Nueva Propiedad',
       description: importedData.description || '',
-      price_per_night: importedData.price || 150,
+      price: importedData.price || 150,
       location: 'Isabela, PR',
       images: importedData.images || [],
       amenities: importedData.amenities || [],
-      max_guests: 4,
-      is_offline: false,
-      blocked_dates: [],
-      calendar_sync: [],
-      cancellation_policy: 'firm',
-      house_rules: [],
-      check_in_time: '16:00:00', // 24h format
-      check_out_time: '11:00:00' // 24h format
+      guests: 4,
+      isOffline: false,
+      blockedDates: [],
+      calendarSync: [],
+      policies: {
+        checkInTime: '4:00 PM',
+        checkOutTime: '11:00 AM',
+        maxGuests: 4,
+        cancellationPolicy: 'firm',
+        houseRules: [],
+        wifiName: '',
+        wifiPass: '',
+        accessCode: ''
+      }
     }).select().single();
 
     if (error || !dbItem) {
@@ -1632,38 +1638,15 @@ const HostDashboard: React.FC = () => {
     }
 
     const newProperty: Property = {
-      id: dbItem.id,
-      title: dbItem.title,
+      ...dbItem,
+      id: String(dbItem.id),
       subtitle: 'Importada de plataforma',
-      location: dbItem.location,
-      address: '',
-      description: dbItem.description,
-      price: Number(dbItem.price_per_night),
-      cleaning_fee: Number(dbItem.cleaning_fee) || 0,
-      service_fee: Number(dbItem.service_fee) || 0,
-      security_deposit: Number(dbItem.security_deposit) || 0,
       rating: importedData.rating || 4.5,
       reviews: importedData.reviews || 10,
-      images: dbItem.images,
-      amenities: dbItem.amenities,
-      guests: dbItem.max_guests,
-      isOffline: dbItem.is_offline,
-      blockedDates: dbItem.blocked_dates || [],
-      calendarSync: dbItem.calendar_sync || [],
       bedrooms: 2,
       beds: 2,
       baths: 1,
       fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 100 },
-      policies: {
-        checkInTime: dbItem.check_in_time || '4:00 PM',
-        checkOutTime: dbItem.check_out_time || '11:00 AM',
-        maxGuests: dbItem.max_guests_policy || 4,
-        wifiName: '',
-        wifiPass: '',
-        accessCode: '',
-        cancellationPolicy: dbItem.cancellation_policy || 'firm',
-        houseRules: dbItem.house_rules || []
-      },
       host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
     };
 

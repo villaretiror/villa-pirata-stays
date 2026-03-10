@@ -93,12 +93,12 @@ const Booking: React.FC = () => {
     // 3. Last-second Price Validation (Anti-Stale Cache)
     const { data: freshProperty } = await supabase
       .from('properties')
-      .select('price_per_night, fees')
+      .select('price, fees')
       .eq('id', id)
       .single();
 
     if (freshProperty) {
-      const freshPrice = Number(freshProperty.price_per_night);
+      const freshPrice = Number(freshProperty.price);
       const freshFees = Object.entries(freshProperty.fees || {}).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
       const freshTotal = (freshPrice * nights) + freshFees;
 

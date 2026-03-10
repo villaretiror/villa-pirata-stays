@@ -44,19 +44,24 @@ const Home: React.FC = () => {
     setTimeout(scrollToResults, 100);
   };
 
-  // Filter Logic - TEMPORARY BYPASS (PLAN DE CHOQUE)
+  // Filter Logic based on Guests (Adults + Kids) AND Pets AND Category
   const filteredProperties = properties.filter(property => {
-    // We are temporarily showing everything to debug the data flow
-    console.log(`Checking property ${property.id}: isOffline=${property.isOffline}`);
-
-    // Original filter (Commented out):
-    // if (property.isOffline) return false;
-    // const totalHumans = adults + children;
-    // if (property.guests < totalHumans) return false;
-
-    return true; // SHOW ALL
+    if (property.isOffline) return false;
+    const totalHumans = adults + children;
+    if (Number(property.guests) < totalHumans) return false;
+    if (pets > 0) {
+      const amenitiesText = (property.amenities || []).join(" ").toLowerCase();
+      const isPetFriendly = amenitiesText.includes("pet") || amenitiesText.includes("mascota");
+      if (!isPetFriendly) return false;
+    }
+    if (activeCategory === "todo") return true;
+    const amenitiesText = (property.amenities || []).join(" ").toLowerCase();
+    const descText = (property.description || "").toLowerCase();
+    if (activeCategory === "piscina") return amenitiesText.includes("piscina") || descText.includes("piscina");
+    if (activeCategory === "playa") return descText.includes("playa") || descText.includes("mar") || descText.includes("beach");
+    if (activeCategory === "mascotas") return amenitiesText.includes("pet") || amenitiesText.includes("mascota");
+    return true;
   });
-
   const getSectionTitle = () => {
     if (pets > 0) return 'Alojamientos Pet Friendly';
     switch (activeCategory) {
