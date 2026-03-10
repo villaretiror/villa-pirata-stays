@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, LocalGuideCategory, LocalGuideItem, Offer, CalendarSync, Review, User } from '../types';
 import GuideCard from '../components/GuideCard';
@@ -1310,36 +1310,31 @@ const HostDashboard: React.FC = () => {
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
   const [propertyPerformance, setPropertyPerformance] = useState<any>({ performance: {}, chartData: [] });
 
-  const fetchPayments = async (signal?: AbortSignal) => {
+  const fetchPayments = useCallback(async (signal?: AbortSignal) => {
     const { data } = await supabase
       .from('bookings')
       .select('*, profiles(full_name, avatar_url, phone), properties(title, images)')
       .eq('status', 'waiting_approval')
       .abortSignal(signal || new AbortController().signal);
-    if (data) setPendingPayments(data);
-  };
+    if (data) setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+  }, []);
 
-  const fetchData = async (signal?: AbortSignal) => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
+    if (!user?.id) return;
     setIsLoading(true);
     try {
       await fetchPayments(signal); // Initialize payments badge count
 
-      const hostId = user?.id;
-      if (!hostId) return;
-
-      // 1. Fetch Properties from DB (Own properties + Cohost properties)
       // 1. Fetch Properties from DB (OWNER + CO-HOST ACCESS)
-      const userEmail = user?.email?.toLowerCase();
+      const userEmail = user.email?.toLowerCase();
       if (!userEmail) return;
 
       let hostPropertyIds: string[] = [];
 
       if (userEmail === 'villaretiror@gmail.com') {
-        // Master Admin: All properties
         const { data: allProps } = await supabase.from('properties').select('id');
         hostPropertyIds = allProps?.map((p: any) => p.id) || [];
       } else {
-        // Regular user: Owned + Co-hosted
         const [owned, cohosted] = await Promise.all([
           supabase.from('properties').select('id').eq('email', userEmail),
           supabase.from('property_cohosts').select('property_id').eq('email', userEmail)
@@ -1347,8 +1342,6 @@ const HostDashboard: React.FC = () => {
 
         const ownedIds = owned.data?.map((p: any) => p.id) || [];
         const cohostedIds = cohosted.data?.map((p: any) => p.property_id) || [];
-
-        // Final unique IDs
         hostPropertyIds = Array.from(new Set([...ownedIds, ...cohostedIds]));
       }
 
@@ -1358,118 +1351,94 @@ const HostDashboard: React.FC = () => {
         return;
       }
 
-      const { data: props, error: propsError } = await supabase
+      const { data: props } = await supabase
         .from('properties')
         .select('*')
         .in('id', hostPropertyIds)
         .abortSignal(signal || new AbortController().signal);
 
       if (props && props.length > 0) {
-        const mappedProps = props.map((p: any) => ({
+        const mappedProps: Property[] = props.map((p: any) => ({
           ...p,
           host: p.host || {
-            name: user?.name || 'Anfitrión',
-            image: user?.avatar || '',
-            yearsHosting: user?.registeredAt ? new Date().getFullYear() - new Date(user.registeredAt).getFullYear() : 1,
-            badges: user?.role === 'host' ? ['Pro Host'] : []
+            name: user.name || 'Anfitrión',
+            image: user.avatar || '',
+            yearsHosting: 1,
+            badges: user.role === 'host' ? ['Pro Host'] : []
           }
-        } as Property));
+        }));
         onUpdateProperties(mappedProps);
       }
 
-      // 2. Fetch All Valid Bookings for Analytics (Cross properties table logic)
-      if (hostPropertyIds.length > 0) {
-        const { data: allBookings } = await supabase
-          .from('bookings')
-          .select(`
-            *,
-            profiles(full_name, avatar_url, phone),
-            properties(title, images)
-          `)
-          .in('property_id', hostPropertyIds)
-          .abortSignal(signal || new AbortController().signal);
+      // 2. Analytics Fetch
+      const { data: allBookings } = await supabase
+        .from('bookings')
+        .select(`*, profiles(full_name, avatar_url, phone), properties(title, images)`)
+        .in('property_id', hostPropertyIds)
+        .abortSignal(signal || new AbortController().signal);
 
-        if (allBookings) {
-          // Calculate Revenue (STRICT Number parsing)
-          let total = 0;
-          let monthly = 0;
-          const currentMonth = new Date().getMonth();
-          const currentYear = new Date().getFullYear();
-          const performance: Record<string, number> = {};
-          const monthsHistory: Record<string, number> = {};
+      if (allBookings) {
+        let total = 0;
+        let monthly = 0;
+        const currentMonth = new Date().getMonth();
+        const currentYear = new Date().getFullYear();
+        const performance: Record<string, number> = {};
+        const monthsHistory: Record<string, number> = {};
 
-          allBookings.forEach((b: any) => {
-            if (b.status === 'confirmed' || b.status === 'completed') {
-              const amount = Number(b.total_price) || 0;
-              total += amount;
-
-              // Prop performance
-              const propTitle = b.properties?.title || 'Villa Desconocida';
-              performance[propTitle] = (performance[propTitle] || 0) + amount;
-
-              // Monthly split based on created_at
-              const dateObj = new Date(b.created_at);
-              const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-              monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
-
-              if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) {
-                monthly += amount;
-              }
-            }
-          });
-
-          // Generate ordered arrays for charts (Last 6 months)
-          const chartData = [];
-          for (let i = 5; i >= 0; i--) {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i);
-            const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            const mLabel = d.toLocaleString('es-PR', { month: 'short' }).toUpperCase();
-            chartData.push({ label: mLabel, val: monthsHistory[mKey] || 0 });
+        allBookings.forEach((b: any) => {
+          if (b.status === 'confirmed' || b.status === 'completed') {
+            const amount = Number(b.total_price) || 0;
+            total += amount;
+            const propTitle = b.properties?.title || 'Villa Desconocida';
+            performance[propTitle] = (performance[propTitle] || 0) + amount;
+            const dateObj = new Date(b.created_at);
+            const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+            monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
+            if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) monthly += amount;
           }
+        });
 
-          setTotalRevenue(total);
-          setMonthlyRevenue(monthly);
-          setPropertyPerformance({ performance, chartData });
-
-          // Update realBookings (Active/Future stays)
-          const today = new Date().toISOString().split('T')[0];
-          setRealBookings(allBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected')));
+        const chartData = [];
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(); d.setMonth(d.getMonth() - i);
+          const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+          chartData.push({ label: d.toLocaleString('es-PR', { month: 'short' }).toUpperCase(), val: monthsHistory[mKey] || 0 });
         }
+
+        setTotalRevenue(total);
+        setMonthlyRevenue(monthly);
+        setPropertyPerformance({ performance, chartData });
+        const today = new Date().toISOString().split('T')[0];
+        setRealBookings(allBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected')));
       }
     } catch (err: any) {
-      if (err.name === 'AbortError') return;
-      console.error("--- SUPABASE FATAL ERROR [fetchData] ---");
-      console.error("Code:", err?.code);
-      console.error("Message:", err?.message);
-      console.error("Details:", err?.details);
-      console.error("Hint:", err?.hint);
-      console.error("Full Error:", err);
+      if (err.name !== 'AbortError') console.error("fetchData FATAL Error:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [user?.id, user?.email, user?.name, user?.avatar, user?.role, onUpdateProperties, fetchPayments]);
 
   // --- INTEGRATED SYNC CYCLE ---
   useEffect(() => {
-    if (!user) return;
+    if (!user?.id || !isAuthorized) return;
 
     const controller = new AbortController();
+    let isSubscribed = true;
 
     const initializeDashboard = async () => {
       try {
         await fetchData(controller.signal);
 
+        if (!isSubscribed) return;
+
         // Leads Fetch (if active)
         if (activeTab === 'leads') {
           const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).abortSignal(controller.signal);
-          if (data) {
-            setLeads(data as any);
-          }
+          if (data && isSubscribed) setLeads(data as any);
         }
 
-        // Auto-confirm invitations for co-hosts (Audited Singleton Logic)
-        const email = user?.email?.toLowerCase();
+        // Auto-confirm invitations for co-hosts
+        const email = user.email?.toLowerCase();
         if (email) {
           const { data: pending } = await supabase
             .from('property_cohosts')
@@ -1477,7 +1446,7 @@ const HostDashboard: React.FC = () => {
             .eq('email', email)
             .eq('status', 'pending');
 
-          if (pending && pending.length > 0) {
+          if (pending && pending.length > 0 && isSubscribed) {
             await supabase
               .from('property_cohosts')
               .update({ status: 'active' })
@@ -1494,8 +1463,11 @@ const HostDashboard: React.FC = () => {
 
     initializeDashboard();
 
-    return () => controller.abort();
-  }, [user, activeTab, activeTab]); // Unified trigger for better sync
+    return () => {
+      isSubscribed = false;
+      controller.abort();
+    };
+  }, [user?.id, isAuthorized, activeTab, fetchData]);
 
   // --- FETCH PENDING PAYMENTS ---
   useEffect(() => {

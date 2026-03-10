@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Property, LocalGuideCategory } from '../types';
 import { INITIAL_LOCAL_GUIDE } from '../constants';
-import { supabase } from '../lib/supabase';
+import { supabase, isConfigured } from '../lib/supabase';
 
 interface PropertyContextType {
   properties: Property[];
@@ -40,7 +40,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   });
 
   // 1. Initial Fresh Fetch & Realtime Subscription
-  const fetchPropertiesFromDB = async (signal?: AbortSignal) => {
+  const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       const { data, error } = await supabase.from('properties').select('*').or('isOffline.eq.false,isOffline.is.null').abortSignal(signal || new AbortController().signal);
@@ -51,7 +51,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mapped: Property[] = data.map((p: any) => ({
           ...p,
           id: String(p.id),
-          // Priority: p.guests (flat column) -> p.policies.guests -> p.policies.maxGuests
           guests: Number(p.guests || p.policies?.guests || p.policies?.maxGuests) || 1,
           price: Number(p.price) || 0,
           policies: {
@@ -61,41 +60,40 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             accessCode: isAdmin ? p.policies?.accessCode : 'CONFIDENCIAL'
           }
         })) as Property[];
-        setProperties(mapped);
+        setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
       }
     } catch (err: any) {
-      console.error("--- SUPABASE FETCH ERROR (CRITICAL) ---");
-      console.error("Message:", err?.message);
-      console.error("Details:", err?.details);
-      console.error("Hint:", err?.hint);
-      console.error("Full Error:", err);
+      if (err.name !== 'AbortError') console.error("fetchPropertiesFromDB Error:", err);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchPropertiesFromDB(controller.signal);
 
-    // 2. Realtime Subscription
-    const channel = supabase
-      .channel('schema-db-changes')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'properties' },
-        () => {
-          console.log("Realtime: Property update detected, refreshing state...");
-          fetchPropertiesFromDB();
-        }
-      )
-      .subscribe();
+    // 2. Realtime Subscription (Only if production keys present)
+    let channel: any = null;
+    if (isConfigured) {
+      channel = supabase
+        .channel('schema-db-changes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'properties' },
+          () => {
+            console.log("Realtime: Property update detected, refreshing state...");
+            fetchPropertiesFromDB();
+          }
+        )
+        .subscribe();
+    }
 
     return () => {
       controller.abort();
-      supabase.removeChannel(channel);
+      if (channel) supabase.removeChannel(channel);
     };
-  }, []);
+  }, [fetchPropertiesFromDB]);
 
   // Efectos de Sincronización Local (Backup)
   useEffect(() => {
@@ -110,24 +108,31 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('vp_guide', JSON.stringify(localGuideData));
   }, [localGuideData]);
 
-  const toggleFavorite = (id: string) => {
+  const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
-  };
+  }, []);
 
-  const updateProperties = (updated: Property[]) => setProperties(updated);
-  const updateGuide = (updated: LocalGuideCategory[]) => setLocalGuideData(updated);
+  const updateProperties = useCallback((updated: Property[]) => {
+    setProperties(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
+  }, []);
+
+  const updateGuide = useCallback((updated: LocalGuideCategory[]) => {
+    setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
+  }, []);
+
+  const value = useMemo(() => ({
+    properties,
+    localGuideData,
+    favorites,
+    isLoading,
+    toggleFavorite,
+    updateProperties,
+    updateGuide,
+    refreshProperties: fetchPropertiesFromDB
+  }), [properties, localGuideData, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, fetchPropertiesFromDB]);
 
   return (
-    <PropertyContext.Provider value={{
-      properties,
-      localGuideData,
-      favorites,
-      isLoading,
-      toggleFavorite,
-      updateProperties,
-      updateGuide,
-      refreshProperties: fetchPropertiesFromDB
-    }}>
+    <PropertyContext.Provider value={value}>
       {children}
     </PropertyContext.Provider>
   );

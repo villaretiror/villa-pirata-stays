@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
 
@@ -129,7 +129,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = useCallback(async (email: string, password: string) => {
     // 30s absolute timeout for Auth strategy
     const authTimeout = new Promise((_, reject) =>
       setTimeout(() => reject(new Error("Error de conexión, reintente")), 30000)
@@ -150,9 +150,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("AuthStrategy FAIL:", err.message);
       return { user: null, error: err.message || "Error al iniciar sesión" };
     }
-  };
+  }, []);
 
-  const register = async (email: string, password: string, name: string) => {
+  const register = useCallback(async (email: string, password: string, name: string) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -162,9 +162,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) return { user: null, error: error.message };
     const mappedUser = data.user ? mapSupabaseUser(data.user) : null;
     return { user: mappedUser, error: null };
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     setLoading(true);
     try {
       await supabase.auth.signOut();
@@ -172,9 +172,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateUser = async (updated: Partial<User>) => {
+  const updateUser = useCallback(async (updated: Partial<User>) => {
     const { data, error } = await supabase.auth.updateUser({ data: { ...updated } });
     if (!error && data.user) {
       await supabase.from('profiles').upsert({
@@ -189,10 +189,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(mapSupabaseUser(data.user, profile));
     }
     if (error) throw error;
-  };
+  }, []);
+
+  const value = React.useMemo(() => ({
+    user,
+    loading,
+    login,
+    register,
+    logout,
+    updateUser
+  }), [user, loading, login, register, logout, updateUser]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
