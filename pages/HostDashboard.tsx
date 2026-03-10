@@ -1526,7 +1526,7 @@ const HostDashboard: React.FC = () => {
       return uuidRegex.test(id);
     };
 
-    if (!hostId || !isValidUUID(hostId)) {
+    if (!hostId) {
       console.error("Critical Auth Failure: Component missing valid host session.");
       navigate('/login');
       return;
@@ -1547,7 +1547,7 @@ const HostDashboard: React.FC = () => {
     };
 
     // 2. Exact Schema Mapping & Payload Cleanup (STRICT UPDATE PAYLOAD)
-    const propertyId = isValidUUID(updated.id) ? updated.id : undefined;
+    const propertyId = updated.id;
 
     // We exclude 'id' and 'created_at' from the update body as per DB best practices / RLS
     const payload: any = {
@@ -1603,9 +1603,7 @@ const HostDashboard: React.FC = () => {
     console.log("Sincronización iniciada...");
     console.table(propertyId ? { ...payload, id_filter: propertyId } : payload);
 
-    const { error } = propertyId
-      ? await supabase.from('properties').update(payload).eq('id', propertyId)
-      : await supabase.from('properties').upsert({ ...payload, id: undefined });
+    const { error } = await supabase.from('properties').upsert({ ...payload, id: propertyId });
 
     if (error) {
       showToast(`Error de sincronización: ${error.message}`);
