@@ -177,21 +177,19 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     if (!trimmedEmail) return alert("Por favor ingresa un email válido.");
     if (!selectedPropertyForCoHost) return alert("Error: Debes seleccionar una propiedad.");
 
-    const payload = {
-      email: trimmedEmail,
-      property_id: selectedPropertyForCoHost,
-      status: 'pending'
-    };
-
     const { data, error } = await supabase
       .from('property_cohosts')
-      .insert([payload])
+      .insert({
+        email: trimmedEmail,
+        property_id: selectedPropertyForCoHost,
+        status: 'pending'
+      })
       .select();
 
     if (!error && data) {
       setCoHosts([data[0], ...coHosts]);
       setNewCoHostEmail("");
-      alert("Invitación enviada exitosamente.");
+      alert("Invitación enviada exitosamente ✨");
     } else {
       console.error('--- SUPABASE ERROR [inviteCoHost] ---', error);
       const detail = error?.details || '';
