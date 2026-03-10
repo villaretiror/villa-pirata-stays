@@ -49,8 +49,17 @@ export default async function handler(req: any, res: any) {
 
     console.log('Email sent successfully:', data);
     return res.status(200).json(data);
-  } catch (error) {
-    console.error('Email failed to send:', error);
-    return res.status(400).json(error);
+  } catch (error: any) {
+    console.error('RESEND ERROR DETAIL:', {
+      message: error.message,
+      name: error.name,
+      stack: error.stack,
+      raw: error
+    });
+    return res.status(400).json({
+      error: 'Failed to send email',
+      detail: error.message,
+      code: error.name
+    });
   }
 }
