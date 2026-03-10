@@ -3,18 +3,18 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export default async function handler(req: any, res: any) {
-    if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
-    }
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    const { customer, booking } = req.body;
+  const { customer, booking } = req.body;
 
-    try {
-        const data = await resend.emails.send({
-            from: 'Villa Retiro <onboarding@resend.dev>',
-            to: ['villaretiror@gmail.com'],
-            subject: `Nueva Solicitud de Reserva - ${customer.name}`,
-            html: `
+  try {
+    const data = await resend.emails.send({
+      from: 'Reservas Villa Retiro <reservas@villaretiror.com>',
+      to: ['villaretiror@gmail.com'],
+      subject: `Nueva Solicitud de Reserva - ${customer.name}`,
+      html: `
         <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px; border-radius: 10px;">
           <h2 style="color: #FF5A5F; border-bottom: 2px solid #FF5A5F; padding-bottom: 10px;">Nueva Solicitud de Reserva</h2>
           
@@ -45,10 +45,12 @@ export default async function handler(req: any, res: any) {
           </p>
         </div>
       `,
-        });
+    });
 
-        return res.status(200).json(data);
-    } catch (error) {
-        return res.status(400).json(error);
-    }
+    console.log('Email sent successfully:', data);
+    return res.status(200).json(data);
+  } catch (error) {
+    console.error('Email failed to send:', error);
+    return res.status(400).json(error);
+  }
 }
