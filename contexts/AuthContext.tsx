@@ -27,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     avatar: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || '',
     phone: dbProfile?.phone || sbUser.user_metadata?.phone || '',
     emergencyContact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
+    bio: dbProfile?.bio || '',
     verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
     registeredAt: sbUser.created_at,
   });
@@ -180,6 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: data.user.id,
         full_name: updated.name,
         phone: updated.phone,
+        bio: updated.bio,
         avatar_url: updated.avatar,
         emergency_contact: updated.emergencyContact
       });

@@ -123,6 +123,7 @@ export interface User {
   phone?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified';
   emergencyContact?: string;
+  bio?: string;
   registeredAt: string;
   favoriteProperties?: string[];
 }
