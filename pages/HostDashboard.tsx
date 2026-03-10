@@ -1310,12 +1310,14 @@ const HostDashboard: React.FC = () => {
 
       // 1. Fetch Properties from DB (Own properties + Cohost properties)
       const userEmail = user?.email?.toLowerCase();
+      let propsQuery = supabase.from('properties').select('*');
 
-      const { data: props, error: propsError } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('email', userEmail)
-        .abortSignal(signal || new AbortController().signal);
+      // If not admin, filter by email
+      if (userEmail !== 'villaretiror@gmail.com') {
+        propsQuery = propsQuery.eq('email', userEmail);
+      }
+
+      const { data: props, error: propsError } = await propsQuery.abortSignal(signal || new AbortController().signal);
 
       if (propsError) {
         console.error("Error fetching properties by email:", propsError);
