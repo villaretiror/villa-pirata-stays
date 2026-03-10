@@ -1620,7 +1620,11 @@ const HostDashboard: React.FC = () => {
     const { error } = await supabase.from('properties').upsert({ ...payload, id: propertyId });
 
     if (error) {
-      showToast(`Error de sincronización: ${error.message}`);
+      let errorMsg = `Error de sincronización: ${error.message}`;
+      if (error.code === '42703') {
+        errorMsg = "Error de Esquema: Al componente le faltan columnas en la base de datos. Por favor, ejecuta el script de Unificación SQL.";
+      }
+      showToast(errorMsg);
       console.error("SUPABASE_SAVE_ERROR_CRITICAL:", error);
       setIsSaving(false);
       return;
