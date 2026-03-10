@@ -11,6 +11,7 @@ import ReservationDetails from './pages/ReservationDetails';
 import Favorites from './pages/Favorites';
 import Messages from './pages/Messages';
 import Profile from './pages/Profile';
+import HostProfile from './pages/HostProfile';
 import Navbar from './components/Navbar';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -25,7 +26,8 @@ const App: React.FC = () => {
     isAuth: location.pathname.startsWith('/login'),
     isDetails: location.pathname.startsWith('/property/'),
     isBooking: location.pathname.startsWith('/booking/'),
-    isReservation: location.pathname.startsWith('/reservation/')
+    isReservation: location.pathname.startsWith('/reservation/'),
+    isHostProfile: location.pathname.startsWith('/host-profile/'),
   };
 
   const showNavbar = !uiConfig.isHost && !uiConfig.isDetails && !uiConfig.isBooking;
@@ -53,6 +55,7 @@ const App: React.FC = () => {
     if (uiConfig.isDetails) document.title = propertyTitle ? `${propertyTitle} | Cabo Rojo, PR` : 'Detalles | Villa & Pirata Stays';
     else if (uiConfig.isBooking) document.title = propertyTitle ? `Reservar ${propertyTitle}` : 'Reservar | Villa & Pirata Stays';
     else if (uiConfig.isReservation) document.title = 'Confirmación | Villa & Pirata Stays';
+    else if (uiConfig.isHostProfile) document.title = 'Perfil de Anfitrión | Villa & Pirata Stays';
     else document.title = pageTitles[location.pathname] || 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR';
   }, [location.pathname, uiConfig.isDetails, uiConfig.isBooking, uiConfig.isReservation, propertyTitle]);
 
@@ -76,6 +79,7 @@ const App: React.FC = () => {
             <Route path="/messages" element={<Messages />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+            <Route path="/host-profile/:id" element={<HostProfile />} />
             <Route path="/host" element={<ProtectedRoute role="host"><HostDashboard /></ProtectedRoute>} />
           </Routes>
         </motion.main>

@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 // Environment config
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://www.villaretiror.com';
+export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://villaretiror.com';
 
 export const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
 

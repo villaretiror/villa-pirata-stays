@@ -180,7 +180,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await supabase.auth.signOut();
+      localStorage.clear(); // Ensure absolute clean state
       setUser(null);
+      window.location.href = '/'; // Force fresh landing
     } finally {
       setLoading(false);
     }

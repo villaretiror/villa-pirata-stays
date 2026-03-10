@@ -112,11 +112,17 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
   };
 
   const fetchConfirmedBookings = async () => {
+    if (!properties || properties.length === 0) return;
     setLoadingEarnings(true);
+
+    // Filter bookings only for properties the host manages
+    const propIds = properties.map(p => p.id);
+
     const { data, error } = await supabase
       .from('bookings')
       .select('id, property_id, total_price, created_at')
-      .eq('status', 'confirmed');
+      .eq('status', 'confirmed')
+      .in('property_id', propIds);
 
     if (error) {
       console.error('--- SUPABASE ERROR [fetchConfirmed] ---', error);
@@ -461,11 +467,11 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
         <div className="flex-1">
           <div className="flex justify-between items-start">
             <h2 className="text-2xl font-black font-serif text-text-main leading-tight">{user?.name}</h2>
-            <div className="bg-primary/10 text-primary px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest">Host</div>
+            <div className="bg-primary/10 text-primary px-2 py-0.5 rounded-lg text-[9px] font-black uppercase tracking-widest">{user?.role === 'host' ? 'Admin' : 'Co-host'}</div>
           </div>
-          <p className="text-[11px] text-text-light font-medium uppercase tracking-widest mb-1">Superhost • 5 Años</p>
+          <p className="text-[11px] text-text-light font-medium uppercase tracking-widest mb-1">{user?.role === 'host' ? 'Host Principal' : 'Colaborador'} • {new Date().getFullYear() - new Date(user?.registeredAt || '').getFullYear()} Años</p>
           <button
-            onClick={(e) => { e.stopPropagation(); navigate('/profile'); }}
+            onClick={(e) => { e.stopPropagation(); navigate(`/host-profile/${user?.id}`); }}
             className="text-[10px] font-black text-secondary-light uppercase tracking-widest border-b border-secondary-light/30 pb-0.5"
           >
             Ver perfil público

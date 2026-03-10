@@ -40,6 +40,7 @@ export interface CalendarSync {
 
 export interface Property {
   id: string;
+  host_id?: string;
   title: string;
   subtitle: string;
   location: string;

@@ -2,9 +2,12 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase, SITE_URL } from '../lib/supabase';
+import { useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const isInvite = new URLSearchParams(location.search).get('invite') === 'true';
   const { login, register } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
@@ -53,7 +56,7 @@ const Login: React.FC = () => {
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin || SITE_URL
+          redirectTo: SITE_URL
         }
       });
       if (error) throw error;
@@ -78,10 +81,12 @@ const Login: React.FC = () => {
             <span className="material-icons text-[32px]">{isRegistering ? 'person_add' : 'cottage'}</span>
           </div>
           <h1 className="text-2xl font-serif text-text-main mb-1 transition-all duration-300">
-            {isRegistering ? 'Únete a la Familia' : 'Bienvenido a Villa Retiro R'}
+            {isInvite ? 'Invitación Especial' : (isRegistering ? 'Únete a la Familia' : 'Bienvenido a Villa Retiro R')}
           </h1>
           <p className="text-text-light text-xs transition-all duration-300">
-            {isRegistering ? 'Regístrate para gestionar tus estancias con nosotros' : 'Accede a tu portal seguro de Villa Retiro R LLC'}
+            {isInvite
+              ? 'Has sido invitado como co-anfitrión. Registra tu cuenta para aceptar.'
+              : (isRegistering ? 'Regístrate para gestionar tus estancias con nosotros' : 'Accede a tu portal seguro de Villa Retiro R LLC')}
           </p>
         </div>
 
