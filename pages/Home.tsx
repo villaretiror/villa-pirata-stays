@@ -53,7 +53,7 @@ const Home: React.FC = () => {
 
     const totalHumans = adults + children;
 
-    // 1. Check Capacity (Safeguard: if null/undefined, assume 1 as minimum)
+    // 1. Check Capacity (Robust check using the flat column)
     const capacity = Number(property.guests) || 1;
     if (capacity < totalHumans) return false;
 

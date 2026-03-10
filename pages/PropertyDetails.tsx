@@ -252,20 +252,27 @@ export const PropertyDetails: React.FC = () => {
         </div>
 
         {/* Stats Grid Boutique */}
-        <div className="flex divide-x divide-gray-100 bg-white rounded-3xl p-5 mb-8 shadow-float border border-gray-50">
-          <div className="flex-1 flex flex-col items-center justify-center">
+        <div className="grid grid-cols-4 gap-2 bg-white rounded-3xl p-5 mb-8 shadow-float border border-gray-50">
+          <div className="flex flex-col items-center justify-center border-r border-gray-100">
             <div className="font-serif font-bold text-2xl text-primary">{property.rating}</div>
             <div className="flex gap-0.5 text-orange-400 my-0.5">
               {[...Array(5)].map((_, i) => <span key={i} className="material-icons text-[12px]">star</span>)}
             </div>
             <div className={TAG_STYLE}>Valoración</div>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center px-2 relative">
-            <span className="material-icons text-secondary text-[24px] mb-1">workspace_premium</span>
-            <div className="font-serif font-bold text-base text-text-main leading-tight mb-0.5">Favorito</div>
-            <div className={`${TAG_STYLE} text-gray-400`}>Del Viajero</div>
+          <div className="flex flex-col items-center justify-center border-r border-gray-100">
+            <div className="font-serif font-bold text-2xl text-text-main">{property.guests}</div>
+            <div className="text-gray-400 mt-1">
+              <span className="material-icons text-[14px]">groups</span>
+            </div>
+            <div className={TAG_STYLE}>Huéspedes</div>
           </div>
-          <div className="flex-1 flex flex-col items-center justify-center">
+          <div className="flex flex-col items-center justify-center px-2 relative border-r border-gray-100">
+            <span className="material-icons text-secondary text-[24px] mb-1">workspace_premium</span>
+            <div className="font-serif font-bold text-sm text-text-main leading-tight mb-0.5">Favorito</div>
+            <div className={`${TAG_STYLE} text-gray-400`}>Viajero</div>
+          </div>
+          <div className="flex flex-col items-center justify-center">
             <div className="font-serif font-bold text-2xl text-text-main">{property.reviews}</div>
             <div className="text-gray-400 mt-1">
               <span className="material-icons text-[14px]">comment</span>

@@ -51,11 +51,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mapped: Property[] = data.map((p: any) => ({
           ...p,
           id: String(p.id),
-          guests: Number(p.guests) || 0,
+          // Priority: p.guests (flat column) -> p.policies.guests -> p.policies.maxGuests
+          guests: Number(p.guests || p.policies?.guests || p.policies?.maxGuests) || 1,
           price: Number(p.price) || 0,
           policies: {
             ...p.policies,
-            guests: Number(p.policies?.guests || p.guests) || 0,
+            guests: Number(p.policies?.guests || p.policies?.maxGuests || p.guests) || 1,
             wifiPass: isAdmin ? p.policies?.wifiPass : '********',
             accessCode: isAdmin ? p.policies?.accessCode : 'CONFIDENCIAL'
           }
