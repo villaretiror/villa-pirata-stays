@@ -44,42 +44,17 @@ const Home: React.FC = () => {
     setTimeout(scrollToResults, 100);
   };
 
-  // Filter Logic based on Guests (Adults + Kids) AND Pets AND Category
+  // Filter Logic - TEMPORARY BYPASS (PLAN DE CHOQUE)
   const filteredProperties = properties.filter(property => {
-    // 0. Emergency Check: Don't show offline properties
-    if (property.isOffline) return false;
+    // We are temporarily showing everything to debug the data flow
+    console.log(`Checking property ${property.id}: isOffline=${property.isOffline}`);
 
-    const totalHumans = adults + children;
+    // Original filter (Commented out):
+    // if (property.isOffline) return false;
+    // const totalHumans = adults + children;
+    // if (property.guests < totalHumans) return false;
 
-    // 1. Check Capacity
-    if (property.guests < totalHumans) return false;
-
-    // 2. Check Pets (Automatic filter if pets > 0)
-    if (pets > 0) {
-      const amenitiesText = property.amenities.join(' ').toLowerCase();
-      const isPetFriendly = amenitiesText.includes('pet') || amenitiesText.includes('mascota');
-      if (!isPetFriendly) return false;
-    }
-
-    // 3. Check Category
-    if (activeCategory === 'todo') return true;
-
-    const amenitiesText = property.amenities.join(' ').toLowerCase();
-    const descText = property.description.toLowerCase();
-
-    if (activeCategory === 'piscina') {
-      return amenitiesText.includes('piscina') || descText.includes('piscina');
-    }
-
-    if (activeCategory === 'playa') {
-      return descText.includes('playa') || descText.includes('mar') || descText.includes('beach') || descText.includes('buyé') || descText.includes('boquerón');
-    }
-
-    if (activeCategory === 'mascotas') {
-      return amenitiesText.includes('pet') || amenitiesText.includes('mascota');
-    }
-
-    return true;
+    return true; // SHOW ALL
   });
 
   const getSectionTitle = () => {

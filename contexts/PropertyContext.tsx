@@ -60,8 +60,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         })) as Property[];
         setProperties(mapped);
       }
-    } catch (err) {
-      console.error("Context Sync Error:", err);
+    } catch (err: any) {
+      console.error("--- SUPABASE FETCH ERROR (CRITICAL) ---");
+      console.error("Message:", err?.message);
+      console.error("Details:", err?.details);
+      console.error("Hint:", err?.hint);
+      console.error("Full Error:", err);
     } finally {
       setIsLoading(false);
     }
