@@ -51,8 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Audit: This ensures we have a singleton-like listener.
     let isSubscribed = true;
+    let authListener: { unsubscribe: () => void } | null = null;
 
     // 30s Safety fallback in case of connection drop
     const safetyTimeout = setTimeout(() => {
@@ -62,64 +62,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     }, 30000);
 
-    const checkInitialSession = async () => {
+    const initializeAuth = async () => {
       if (initialFetchRef.current) return;
       initialFetchRef.current = true;
 
       try {
-        console.log("AuthContext: Bootstrapping session...");
-        const { data: { session } } = await supabase.auth.getSession();
+        console.log("AuthContext: Initializing Session check...");
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+        if (sessionError) throw sessionError;
+
         if (isSubscribed) {
           if (session?.user) {
-            console.time(`ProfileFetch-${session.user.id}`);
+            console.log(`AuthContext: Valid session for ${session.user.email}. Fetching profile...`);
             const profile = await getExtendedProfile(session.user.id);
-            console.timeEnd(`ProfileFetch-${session.user.id}`);
-            setUser(mapSupabaseUser(session.user, profile));
+            if (isSubscribed) {
+              setUser(mapSupabaseUser(session.user, profile));
+            }
           } else {
-            console.log("AuthContext: No active session found.");
+            console.log("AuthContext: No initial session.");
             setUser(null);
           }
         }
-      } catch (err) {
-        console.error("AuthContext: Bootstrap session error:", err);
+      } catch (err: any) {
+        console.error("AuthContext: Initialization Error:", err.message);
       } finally {
         if (isSubscribed) {
           setLoading(false);
-          clearTimeout(safetyTimeout);
         }
+      }
+
+      // After initial check, set up listener
+      if (isSubscribed) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
+          console.log(`Auth Strategy [Audit]: Event type: ${event} for ${session?.user?.email || 'Guest'}`);
+
+          if (!isSubscribed) return;
+
+          if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED') {
+            if (session?.user) {
+              setLoading(true);
+              const profile = await getExtendedProfile(session.user.id);
+              if (isSubscribed) {
+                setUser(mapSupabaseUser(session.user, profile));
+                setLoading(false);
+              }
+            }
+          } else if (event === 'SIGNED_OUT') {
+            if (isSubscribed) {
+              setUser(null);
+              setLoading(false);
+            }
+          }
+        });
+        authListener = subscription;
       }
     };
 
-    checkInitialSession();
-
-    // Audit: Unified listener to avoid race conditions. 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-      console.log(`Auth Strategy [Audit]: Event type: ${event} for ${session?.user?.email || 'Guest'}`);
-
-      if (!isSubscribed) return;
-
-      if (session?.user) {
-        // Force loading if we are fetching a profile
-        setLoading(true);
-        const profile = await getExtendedProfile(session.user.id);
-        if (isSubscribed) {
-          setUser(mapSupabaseUser(session.user, profile));
-          setLoading(false);
-          clearTimeout(safetyTimeout);
-        }
-      } else {
-        if (isSubscribed) {
-          setUser(null);
-          setLoading(false);
-          clearTimeout(safetyTimeout);
-        }
-      }
-    });
+    initializeAuth();
 
     return () => {
       isSubscribed = false;
-      subscription.unsubscribe();
       clearTimeout(safetyTimeout);
+      if (authListener) authListener.unsubscribe();
     };
   }, []);
 
