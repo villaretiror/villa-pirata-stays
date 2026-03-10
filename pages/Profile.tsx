@@ -212,7 +212,7 @@ const Profile: React.FC = () => {
 
               {/* Security / Account Actions */}
               <div className="flex flex-col gap-3">
-                {user.email === 'admin@villaretiro.com' && (
+                {user.email === 'villaretiror@gmail.com' && (
                   <button
                     onClick={() => {
                       localStorage.setItem('host_mode_preferred', 'true');

@@ -90,13 +90,13 @@ const Navbar: React.FC = () => {
                 <div>
                   <p className="text-xs font-black text-text-main uppercase tracking-widest">{user?.name}</p>
                   <p className="text-[10px] font-bold text-primary">
-                    {user?.email === 'admin@villaretiro.com' ? 'Master Host' : 'Huésped VIP'}
+                    {user?.email === 'villaretiror@gmail.com' ? 'Master Host' : 'Huésped VIP'}
                   </p>
                 </div>
               </div>
 
               {/* MODO ADMIN DUAL: Persistent link if admin */}
-              {user?.email === 'admin@villaretiro.com' && (
+              {user?.email === 'villaretiror@gmail.com' && (
                 <Link
                   to="/host"
                   onClick={() => {

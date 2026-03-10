@@ -33,7 +33,7 @@ const Login: React.FC = () => {
         if (user) {
           console.log(`Login Debug: User authenticated successfully. Email: ${user.email}, Role: ${user.role}`);
           // Redirección condicionada por Rol
-          if (user.role === 'host' || user.email === 'admin@villaretiro.com') {
+          if (user.role === 'host' || user.email === 'villaretiror@gmail.com') {
             navigate('/host');
           } else {
             navigate('/profile');

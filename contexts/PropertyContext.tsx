@@ -78,8 +78,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             // SENSITIVE DATA PROTECTION: Solo se exponen si el usuario es el administrador
             // En una fase futura se activará para huéspedes con reserva confirmada
             wifiName: p.wifi_name || '',
-            wifiPass: (session?.user?.email === 'admin@villaretiro.com') ? (p.wifi_pass || '') : '********',
-            accessCode: (session?.user?.email === 'admin@villaretiro.com') ? (p.access_code || '') : 'CONFIDENCIAL'
+            wifiPass: (session?.user?.email === 'villaretiror@gmail.com') ? (p.wifi_pass || '') : '********',
+            accessCode: (session?.user?.email === 'villaretiror@gmail.com') ? (p.access_code || '') : 'CONFIDENCIAL'
           },
           blockedDates: (p.blocked_periods || []).flatMap((rangeStr: string) => {
             // Postgres range format: [YYYY-MM-DD, YYYY-MM-DD)

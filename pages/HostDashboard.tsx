@@ -1253,7 +1253,7 @@ const HostDashboard: React.FC = () => {
       return;
     }
 
-    if (user.role !== 'host' && user.email !== 'admin@villaretiro.com') {
+    if (user.role !== 'host' && user.email !== 'villaretiror@gmail.com') {
       console.log(`HostDashboard Debug: Access denied. Email: ${user.email}, Role: ${user.role}`);
       navigate('/profile');
     } else {
@@ -1300,7 +1300,7 @@ const HostDashboard: React.FC = () => {
       const userEmail = user?.email?.toLowerCase();
       let hostPropertyIds: string[] = [];
 
-      if (userEmail === 'admin@villaretiro.com') {
+      if (userEmail === 'villaretiror@gmail.com') {
         const { data: allProps } = await supabase.from('properties').select('id').abortSignal(signal || new AbortController().signal);
         hostPropertyIds = allProps?.map((p: any) => p.id) || [];
       } else {
@@ -1514,7 +1514,7 @@ const HostDashboard: React.FC = () => {
 
   const handleSaveProperty = async (updated: Property) => {
     // 0. Only admins can execute this operation
-    if (user?.email !== 'admin@villaretiro.com') {
+    if (user?.email !== 'villaretiror@gmail.com') {
       showToast("Acceso denegado. Solo el administrador puede guardar cambios.");
       return;
     }
