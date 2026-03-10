@@ -1432,7 +1432,12 @@ const HostDashboard: React.FC = () => {
       }
     } catch (err: any) {
       if (err.name === 'AbortError') return;
-      console.error("Fetch Data Error:", err);
+      console.error("--- SUPABASE FATAL ERROR [fetchData] ---");
+      console.error("Code:", err?.code);
+      console.error("Message:", err?.message);
+      console.error("Details:", err?.details);
+      console.error("Hint:", err?.hint);
+      console.error("Full Error:", err);
     } finally {
       setIsLoading(false);
     }
