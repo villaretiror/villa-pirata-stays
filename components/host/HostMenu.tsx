@@ -171,22 +171,34 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
   };
 
   const inviteCoHost = async () => {
-    if (!newCoHostEmail.trim() || !selectedPropertyForCoHost) return;
+    const trimmedEmail = newCoHostEmail.trim();
+
+    // Validaciones preventivas
+    if (!trimmedEmail) return alert("Por favor ingresa un email válido.");
+    if (!selectedPropertyForCoHost) return alert("Error: Debes seleccionar una propiedad.");
+
+    const payload = {
+      email: trimmedEmail,
+      property_id: selectedPropertyForCoHost,
+      status: 'pending'
+    };
 
     const { data, error } = await supabase
       .from('property_cohosts')
-      .insert([{
-        email: newCoHostEmail,
-        property_id: selectedPropertyForCoHost,
-        status: 'pending'
-      }])
+      .insert([payload])
       .select();
 
     if (!error && data) {
       setCoHosts([data[0], ...coHosts]);
       setNewCoHostEmail("");
+      alert("Invitación enviada exitosamente.");
     } else {
-      alert("Error invitando co-anfitrión: " + error?.message);
+      console.error('--- SUPABASE ERROR [inviteCoHost] ---', error);
+      const detail = error?.details || '';
+      const fieldMatch = error?.message?.match(/column "([^"]+)"/);
+      const field = fieldMatch ? ` en campo [${fieldMatch[1]}]` : "";
+
+      alert(`Error invitando anfitrión${field}: ${error?.message}\n\nDetalle: ${detail}`);
     }
   };
 
