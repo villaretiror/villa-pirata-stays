@@ -1294,7 +1294,7 @@ const HostDashboard: React.FC = () => {
   const fetchPayments = async (signal?: AbortSignal) => {
     const { data } = await supabase
       .from('bookings')
-      .select('*, profiles!user_id(full_name, avatar_url, phone), properties!property_id(title, images)')
+      .select('*, profiles(full_name, avatar_url, phone), properties(title, images)')
       .eq('status', 'waiting_approval')
       .abortSignal(signal || new AbortController().signal);
     if (data) setPendingPayments(data);
@@ -1349,8 +1349,8 @@ const HostDashboard: React.FC = () => {
           .from('bookings')
           .select(`
             *,
-            profiles!user_id (full_name, avatar_url, phone),
-            properties!property_id (title, images)
+            profiles(full_name, avatar_url, phone),
+            properties(title, images)
           `)
           .in('property_id', hostPropertyIds)
           .abortSignal(signal || new AbortController().signal);
