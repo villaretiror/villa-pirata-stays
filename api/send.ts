@@ -48,6 +48,71 @@ export default async function handler(req: any, res: any) {
           </div>
         </div>
       `;
+    } else if (type === 'contact') {
+      const { name, email, phone, message } = req.body.contactData;
+
+      // Email 1: For the Host (Notification)
+      const hostEmailOptions = {
+        from: 'Villa Retiro <reservas@villaretiror.com>',
+        to: 'villaretiror@gmail.com',
+        subject: `📩 Nueva Consulta de Cliente - Villa Retiro`,
+        html: `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; padding: 40px; border-radius: 24px; color: #1a1a1a;">
+            <div style="text-align: center; margin-bottom: 32px;">
+              <span style="font-size: 40px;">📩</span>
+              <h1 style="font-size: 20px; font-weight: 800; margin: 16px 0 8px;">Nueva Consulta Recibida</h1>
+              <p style="color: #666; font-size: 14px;">Un cliente tiene una consulta sobre tu propiedad.</p>
+            </div>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 32px; background-color: #fcfcfc; border-radius: 16px; overflow: hidden; border: 1px solid #f0f0f0;">
+              <tr>
+                <td style="padding: 20px; border-bottom: 1px solid #f0f0f0; width: 120px; color: #999; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Nombre</td>
+                <td style="padding: 20px; border-bottom: 1px solid #f0f0f0; font-size: 15px; font-weight: 600;">${name}</td>
+              </tr>
+              <tr>
+                <td style="padding: 20px; border-bottom: 1px solid #f0f0f0; color: #999; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Email</td>
+                <td style="padding: 20px; border-bottom: 1px solid #f0f0f0; font-size: 15px; color: #004E64; font-weight: 600;">${email}</td>
+              </tr>
+              <tr>
+                <td style="padding: 20px; border-bottom: 1px solid #f0f0f0; color: #999; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Teléfono</td>
+                <td style="padding: 20px; border-bottom: 1px solid #f0f0f0; font-size: 15px;">${phone || 'No provisto'}</td>
+              </tr>
+              <tr>
+                <td style="padding: 20px; color: #999; font-size: 11px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px;">Mensaje</td>
+                <td style="padding: 20px; font-size: 15px; line-height: 1.6;">${message}</td>
+              </tr>
+            </table>
+
+            <div style="text-align: center; padding-top: 24px; border-top: 1px solid #f0f0f0;">
+               <p style="font-size: 11px; color: #ccc;">Enviado desde el portal oficial villaretiror.com</p>
+            </div>
+          </div>
+        `
+      };
+
+      // Email 2: For the Client (Confirmation)
+      const clientEmailOptions = {
+        from: 'Villa Retiro <reservas@villaretiror.com>',
+        to: email,
+        subject: `Recibimos tu consulta - Villa Retiro 🌴`,
+        html: `
+          <div style="font-family: 'Playfair Display', serif; max-width: 600px; margin: auto; padding: 60px 40px; text-align: center; color: #1a1a1a;">
+            <p style="text-transform: uppercase; letter-spacing: 3px; font-size: 10px; font-weight: bold; color: #FF6633; margin-bottom: 24px;">Confirmación de Contacto</p>
+            <h1 style="font-size: 32px; margin-bottom: 24px; font-weight: 500;">Hola, ${name.split(' ')[0]}</h1>
+            <p style="font-size: 16px; line-height: 1.8; color: #666; margin-bottom: 40px;">
+              Gracias por interesarte en Villa Retiro & Pirata Stays. Hemos recibido tu mensaje y nuestro equipo lo revisará cuidadosamente para brindarte la mejor atención. <br><br>
+              Te contactaremos en las próximas 24 horas.
+            </p>
+            <div style="width: 40px; h-1px; bg-color: #f0f0f0; margin: 0 auto 40px;"></div>
+            <p style="font-size: 12px; font-style: italic; color: #999;">El paraíso te espera.</p>
+          </div>
+        `
+      };
+
+      await resend.emails.send(hostEmailOptions);
+      await resend.emails.send(clientEmailOptions);
+      return res.status(200).json({ success: true, message: 'Contact emails sent' });
+
     } else {
       // Default: Booking Notification
       emailOptions.subject = `Nueva Solicitud de Reserva - ${customer?.name || 'Cliente'}`;

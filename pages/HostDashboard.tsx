@@ -1424,7 +1424,7 @@ const HostDashboard: React.FC = () => {
       if (!isSubscribed) return;
 
       if (activeTab === 'leads') {
-        const { data } = await supabase.from('leads').select('*').order('created_at', { ascending: false }).abortSignal(controller.signal);
+        const { data } = await supabase.from('contact_leads').select('*').order('created_at', { ascending: false }).abortSignal(controller.signal);
         if (data && isSubscribed) setLeads(data as any);
       }
 

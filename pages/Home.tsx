@@ -12,6 +12,7 @@ const Home: React.FC = () => {
   const { properties, localGuideData, favorites, toggleFavorite } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Advanced Guest State
   const [adults, setAdults] = useState(1);
@@ -347,6 +348,7 @@ const Home: React.FC = () => {
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
+                setIsSubmitting(true);
                 const target = e.target as any;
                 const leadData = {
                   name: target.name.value,
@@ -355,21 +357,31 @@ const Home: React.FC = () => {
                   status: 'new'
                 };
 
-                const btn = target.querySelector('button[type="submit"]');
-                const originalText = btn.innerText;
-                btn.disabled = true;
-                btn.innerText = "Enviando...";
+                try {
+                  // 1. Save to Supabase (Backup)
+                  const { error: dbError } = await supabase.from('contact_leads').insert(leadData);
+                  if (dbError) throw dbError;
 
-                const { error } = await supabase.from('leads').insert(leadData);
+                  // 2. Send Emails via Resend
+                  const response = await fetch('/api/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      type: 'contact',
+                      contactData: leadData
+                    })
+                  });
 
-                if (error) {
-                  alert("Error al enviar mensaje: " + error.message);
-                } else {
-                  alert("¡Mensaje enviado con éxito! Nos comunicaremos pronto.");
+                  if (!response.ok) throw new Error('Error al enviar el correo');
+
+                  alert("¡Mensaje enviado con éxito! Recibirás una confirmación en tu email.");
                   target.reset();
+                } catch (error: any) {
+                  console.error("Contact Form Error:", error);
+                  alert("Ocurrió un error al procesar tu solicitud: " + error.message);
+                } finally {
+                  setIsSubmitting(false);
                 }
-                btn.disabled = false;
-                btn.innerText = originalText;
               }}
               className="space-y-4 bg-sand/30 p-6 lg:p-8 rounded-[2rem] border border-white"
             >
@@ -387,8 +399,17 @@ const Home: React.FC = () => {
                 <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Mensaje</label>
                 <textarea name="message" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none h-32" placeholder="¿En qué podemos ayudarte?"></textarea>
               </div>
-              <button type="submit" className="w-full bg-secondary text-white font-black py-4 rounded-xl shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-xs">
-                Enviar Mensaje Directo
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full bg-secondary text-white font-black py-4 rounded-xl shadow-lg shadow-secondary/20 hover:scale-[1.02] active:scale-[0.98] transition-all uppercase tracking-[0.2em] text-xs flex items-center justify-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                    PROCESANDO...
+                  </>
+                ) : 'Enviar Mensaje Directo'}
               </button>
             </form>
           </div>
