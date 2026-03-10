@@ -79,7 +79,7 @@ const Messages: React.FC = () => {
 
     // Lógica IA "Dudas Boricuas" integrada - Villa Retiro R LLC
     setTimeout(async () => {
-      let aiResponse = "¡Gracias por escribir! Carlos de Villa Retiro R LLC te contestará en breve. Si es sobre la llegada, tu código de acceso se activa a las 3:00 PM.";
+      let aiResponse = "¡Gracias por escribir! El equipo de Villa Retiro R LLC te contestará en breve. Si es sobre la llegada, tu código de acceso se activa a las 4:00 PM.";
 
       if (query.includes("playa") || query.includes("buye")) {
         aiResponse = "Playa Buyé está a solo 5 min en carro desde Villa Retiro R. ¡Es la favorita de la zona! Te recomendamos ir temprano los fines de semana para conseguir buen parking.";
@@ -113,7 +113,7 @@ const Messages: React.FC = () => {
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <span className="font-bold text-text-main">Carlos (Host)</span>
+              <span className="font-bold text-text-main">Host</span>
               <span className="text-[10px] text-gray-400">Hace 1h</span>
             </div>
             <p className="text-xs text-text-light truncate">¿Tienen alguna duda sobre la llegada?</p>
@@ -130,7 +130,7 @@ const Messages: React.FC = () => {
         <div className="flex items-center gap-3">
           <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEaokxH_ZWfMSA9DkAdNOrBrxi3UAC3m1h9TooqLj_sa6fh4ew_1GEq7EphFx7x52GRb0fdetzbcryLWpbnyFYxSBzPLbBL-ctobQpVyWXI4fufFaA6VVmEXXgBi65bCeU8mYihp1bgC2wXd1U6WzIhuUMplMFT1T8oQoNDb1ck7gYn6RXJ2v22QrDSbhg5zWWZ2MKrbczk4vtv5UgNP5oeK6EnQkGZ1doa_qAMIXcsXL0LLblW6GaPei8CMcSd50buW6udF5Uexg" className="w-10 h-10 rounded-full" />
           <div>
-            <p className="font-bold text-sm">Carlos (Host)</p>
+            <p className="font-bold text-sm">Host</p>
             <p className="text-[10px] text-green-500 font-bold uppercase">En Línea</p>
           </div>
         </div>

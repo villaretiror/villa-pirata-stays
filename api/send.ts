@@ -11,7 +11,7 @@ export default async function handler(req: any, res: any) {
 
   try {
     const data = await resend.emails.send({
-      from: 'Reservas Villa Retiro <reservas@villaretiror.com>',
+      from: 'Reservas <reservas@villaretiror.com>',
       to: ['villaretiror@gmail.com'],
       subject: `Nueva Solicitud de Reserva - ${customer.name}`,
       html: `

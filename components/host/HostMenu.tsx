@@ -384,7 +384,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
           </div>
         </div>
         <div>
-          <h2 className="text-xl font-bold font-serif text-text-main">Carlos</h2>
+          <h2 className="text-xl font-bold font-serif text-text-main">Brian</h2>
           <p className="text-sm text-text-light">Superhost • 5 Años</p>
           <button className="text-xs font-bold text-secondary mt-1 underline">Ver perfil público</button>
         </div>

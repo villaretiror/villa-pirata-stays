@@ -339,7 +339,7 @@ const Home: React.FC = () => {
                   <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
                     <span className="material-icons">email</span>
                   </div>
-                  carlos@villaretiror.com
+                  villaretiror@gmail.com
                 </div>
               </div>
             </div>
