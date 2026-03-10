@@ -46,9 +46,11 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const { data, error } = await supabase.from('properties').select('*').abortSignal(signal || new AbortController().signal);
       if (error) throw error;
       if (data) {
+        console.log('Propiedades recibidas del DB:', data);
         const isAdmin = session?.user?.email === 'villaretiror@gmail.com';
         const mapped: Property[] = data.map((p: any) => ({
           ...p,
+          id: String(p.id), // Ensure ID is always a string to prevent large ID overflow in JS
           // Minimal security spread while maintaining clean structural mapping
           policies: {
             ...p.policies,
