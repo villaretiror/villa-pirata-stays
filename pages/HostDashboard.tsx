@@ -356,7 +356,7 @@ const CohostManager = ({ propertyId, onShowToast }: { propertyId: string, onShow
   );
 };
 
-const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void }) => {
+const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void, isSaving: boolean }) => {
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
   const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'fees' | 'offers' | 'policies' | 'emergency' | 'cohosts'>('info');
@@ -1225,7 +1225,18 @@ const Editor = ({ property, bookings, onSave, onCancel }: { property: Property, 
 
         <div className="flex gap-3 pt-6 mt-6 border-t border-gray-100">
           <button onClick={onCancel} className="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-50 rounded-xl">Cancelar</button>
-          <button onClick={() => onSave(form)} className="flex-1 py-3 text-sm font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20">Guardar Cambios</button>
+          <button
+            onClick={() => !isSaving && onSave(form)}
+            disabled={isSaving}
+            className={`flex-1 py-3 text-sm font-bold text-white rounded-xl shadow-lg transition-all ${isSaving ? 'bg-gray-400 cursor-not-allowed shadow-none' : 'bg-primary shadow-primary/20 hover:scale-[1.02] active:scale-[0.98]'}`}
+          >
+            {isSaving ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>
+                Sincronizando...
+              </div>
+            ) : "Guardar Cambios"}
+          </button>
         </div>
       </div>
     </div>
@@ -1268,6 +1279,7 @@ const HostDashboard: React.FC = () => {
   const [showImportModal, setShowImportModal] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Real-time Database State
   const [realBookings, setRealBookings] = useState<any[]>([]);
@@ -1507,14 +1519,16 @@ const HostDashboard: React.FC = () => {
     }
   };
 
-  // --- HANDLERS ---
-
   const handleSaveProperty = async (updated: Property) => {
-    // 0. Only admins can execute this operation
+    // 0. Only admins can execute this operation + Debounce/Lock
+    if (isSaving) return;
+
     if (user?.email !== 'villaretiror@gmail.com') {
       showToast("Acceso denegado. Solo el administrador puede guardar cambios.");
       return;
     }
+
+    setIsSaving(true);
 
     // 1. Get hostId from Context. Strict enforcement.
     const hostId = user?.id;
@@ -1608,6 +1622,7 @@ const HostDashboard: React.FC = () => {
     if (error) {
       showToast(`Error de sincronización: ${error.message}`);
       console.error("SUPABASE_SAVE_ERROR_CRITICAL:", error);
+      setIsSaving(false);
       return;
     }
 
@@ -1621,6 +1636,7 @@ const HostDashboard: React.FC = () => {
       onUpdateProperties([...properties, updated]);
     }
     setIsEditing(null);
+    setIsSaving(false);
   };
 
   const handleSaveGuideItem = (updatedItem: LocalGuideItem, catId: string, itemIdx: number) => {
@@ -2202,7 +2218,7 @@ const HostDashboard: React.FC = () => {
 
       {/* Overlays */}
       <HostChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
-      {editingProperty && <Editor property={editingProperty} bookings={realBookings} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} />}
+      {editingProperty && <Editor property={editingProperty} bookings={realBookings} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} />}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
 
       {isEditingGuide && (
