@@ -1257,20 +1257,39 @@ const HostDashboard: React.FC = () => {
     else navigate(path);
   };
 
-  useEffect(() => {
-    if (!user) {
-      console.log("HostDashboard Debug: No user found, redirecting to login");
-      navigate('/login');
-      return;
-    }
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
 
-    if (user.role !== 'host' && user.email !== 'villaretiror@gmail.com') {
-      console.log(`HostDashboard Debug: Access denied. Email: ${user.email}, Role: ${user.role}`);
-      navigate('/profile');
-    } else {
-      console.log(`HostDashboard Debug: Access granted for ${user.email}`);
-    }
+  useEffect(() => {
+    if (!user) return;
+
+    const checkAccess = async () => {
+      // 1. Master Admin & Hardcoded Hosts
+      if (user.email === 'villaretiror@gmail.com' || user.role === 'host') {
+        setIsAuthorized(true);
+        return;
+      }
+
+      // 2. Co-host verification
+      const { data: cohostEntry } = await supabase
+        .from('property_cohosts')
+        .select('id')
+        .eq('email', user.email?.toLowerCase())
+        .limit(1);
+
+      if (cohostEntry && cohostEntry.length > 0) {
+        setIsAuthorized(true);
+      } else {
+        console.log(`HostDashboard Debug: Access denied. Email: ${user.email}`);
+        navigate('/profile');
+      }
+    };
+
+    checkAccess();
   }, [user, navigate]);
+
+  if (!user || isAuthorized === null) {
+    return <div className="min-h-screen bg-sand flex items-center justify-center font-serif italic">Validando credenciales...</div>;
+  }
 
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [leads, setLeads] = useState<User[]>([]);
@@ -1309,26 +1328,41 @@ const HostDashboard: React.FC = () => {
       if (!hostId) return;
 
       // 1. Fetch Properties from DB (Own properties + Cohost properties)
+      // 1. Fetch Properties from DB (OWNER + CO-HOST ACCESS)
       const userEmail = user?.email?.toLowerCase();
-      let propsQuery = supabase.from('properties').select('*');
+      if (!userEmail) return;
 
-      // If not admin, filter by email
-      if (userEmail !== 'villaretiror@gmail.com') {
-        propsQuery = propsQuery.eq('email', userEmail);
+      let hostPropertyIds: string[] = [];
+
+      if (userEmail === 'villaretiror@gmail.com') {
+        // Master Admin: All properties
+        const { data: allProps } = await supabase.from('properties').select('id');
+        hostPropertyIds = allProps?.map((p: any) => p.id) || [];
+      } else {
+        // Regular user: Owned + Co-hosted
+        const [owned, cohosted] = await Promise.all([
+          supabase.from('properties').select('id').eq('email', userEmail),
+          supabase.from('property_cohosts').select('property_id').eq('email', userEmail)
+        ]);
+
+        const ownedIds = owned.data?.map((p: any) => p.id) || [];
+        const cohostedIds = cohosted.data?.map((p: any) => p.property_id) || [];
+
+        // Final unique IDs
+        hostPropertyIds = Array.from(new Set([...ownedIds, ...cohostedIds]));
       }
-
-      const { data: props, error: propsError } = await propsQuery.abortSignal(signal || new AbortController().signal);
-
-      if (propsError) {
-        console.error("Error fetching properties by email:", propsError);
-      }
-
-      const hostPropertyIds = props?.map((p: any) => p.id) || [];
 
       if (hostPropertyIds.length === 0) {
         setIsLoading(false);
+        onUpdateProperties([]);
         return;
       }
+
+      const { data: props, error: propsError } = await supabase
+        .from('properties')
+        .select('*')
+        .in('id', hostPropertyIds)
+        .abortSignal(signal || new AbortController().signal);
 
       if (props && props.length > 0) {
         const mappedProps = props.map((p: any) => ({

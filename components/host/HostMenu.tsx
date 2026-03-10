@@ -189,6 +189,23 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     if (!error && data) {
       setCoHosts([data[0], ...coHosts]);
       setNewCoHostEmail("");
+
+      // TRIGGER RE-SEND EMAIL
+      try {
+        const prop = properties.find(p => p.id === selectedPropertyForCoHost);
+        await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'invite',
+            to: [trimmedEmail],
+            propertyTitle: prop?.title || 'Villa Retiro'
+          })
+        });
+      } catch (e) {
+        console.error("Resend Trigger Error:", e);
+      }
+
       alert("Invitación enviada exitosamente ✨");
     } else {
       console.error('--- SUPABASE ERROR [inviteCoHost] ---', error);
