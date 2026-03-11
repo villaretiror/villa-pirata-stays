@@ -1,274 +1,158 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
-// CRÍTICO: En Vercel Serverless, las vars pueden llamarse VITE_* o sin prefijo
-// Aceptamos ambas formas para máxima compatibilidad
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+// ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
-// Debug silencioso en producción para diagnosticar vars faltantes
-if (!GEMINI_API_KEY) console.error('[chat] GEMINI_API_KEY no encontrada en process.env');
-if (!SUPABASE_URL) console.error('[chat] SUPABASE_URL no encontrada en process.env');
+// ─── CONOCIMIENTO EMBEBIDO (sin imports externos) ─────────────────────────────
+const VILLA_INFO = `
+PROPIEDADES:
+- Villa Pirata Family House (ID: 42839458) | Cabo Rojo PR | Hasta 6 huéspedes
+- Villa Retiro R (ID: 1081171030449673920) | Cabo Rojo PR | Hasta 8 huéspedes
 
-// URLs reales de Airbnb iCal — también configuradas en Vercel como ENV VARS
-const ICAL_URLS: Record<string, string> = {
-    '42839458': process.env.AIRBNB_ICAL_VILLA_1 || 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331',  // Pirata Family House
-    '1081171030449673920': process.env.AIRBNB_ICAL_VILLA_2 || 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae' // Villa Retiro R
-};
+REGLAS OPERATIVAS:
+- Check-in: 4:00 PM | Check-out: 11:00 AM
+- Self Check-in con Lockbox: Pirata → código 2197 | Retiro R → código 0895
+- Wi-Fi: Wifivacacional (misma clave en ambas propiedades)
+- No fiestas ni eventos masivos. Silencio 10 PM – 8 AM.
+- Mascotas pequeñas con aprobación previa.
+- Prohibido fumar adentro.
+- Depósito de seguridad: $200 USD (devuelto 48h post-checkout sin daños).
+- Cancelación gratuita hasta 5 días antes. Después: 50% del total retenido.
+- Ubicación: Cabo Rojo, Puerto Rico — 5 min de Playa Buyé, 10 min de Boquerón.
+- Emergencias: Host Meliza vía WhatsApp. Hospital Bella Vista a 20 min. 911.
 
-// Conocimiento operativo embebido directamente (elimina dependencia de import en runtime)
-const VILLA_KNOWLEDGE_INLINE = {
-    checkIn: 'Check-in: 4:00 PM',
-    checkOut: 'Check-out: 11:00 AM',
-    rules: '1. No se permiten fiestas ni eventos masivos. 2. Horario de silencio de 10:00 PM a 8:00 AM. 3. Se admiten mascotas pequeñas con tarifa adicional aprobada. 4. Prohibido fumar dentro de las instalaciones. 5. Capacidad máxima estricta según reservación.',
-    cancellation: 'Cancelación Gratuita hasta 5 días antes de llegada. Después se retiene el 50% del total.',
-    deposit: 'Depósito de seguridad de $200 USD devuelto 48 hrs post-checkout sin daños.',
-    location: 'Cabo Rojo, Puerto Rico. A 5 minutos de Playa Buyé, 10 minutos del Poblado de Boquerón.',
-    wifi: 'Red Wi-Fi: Wifivacacional (misma clave para ambas propiedades).',
-    selfCheckin: 'Self Check-in mediante Lockbox. Villa Pirata: código 2197. Villa Retiro R: código 0895.',
-    emergencies: 'Host Meliza disponible por WhatsApp. Hospital Bella Vista a 20 mins. Emergencias: 911.'
-};
+TRANSPARENCIA: Aplicamos las mismas políticas de Airbnb, garantizando su reserva legalmente.
+`.trim();
 
-// Sincronización silenciosa de iCal en segundo plano (máx 5 segundos, no bloquea la respuesta)
-async function syncExternalCalendars(supabase: any): Promise<string[]> {
-    const blockedDates: string[] = [];
+// ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
+const SYSTEM_PROMPT = `
+Eres el Concierge Premium de Villa Retiro — trato respetuoso (de Usted), cordial, con calidez caribeña.
+Tu misión: convertir consultas en reservas confirmadas.
+NUNCA inventes datos. Si no sabes algo, pide el email del cliente para contactarlo.
 
-    const syncPromises = Object.entries(ICAL_URLS).map(async ([propertyId, url]) => {
-        if (!url || url.includes('placeholder')) return;
+${VILLA_INFO}
 
-        try {
-            const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000);
+CIERRE DE VENTA (MUY IMPORTANTE):
+Cuando el cliente confirme reservar ("quiero reservar", "las tomo", "reservemos"), calcula:
+Total = Noches × Precio por noche de la villa correspondiente.
+Incluye AL FINAL de tu respuesta, literalmente así:
+[PAYMENT_REQUEST: {property_id}, {total}, {YYYY-MM-DD}, {YYYY-MM-DD}, {huespedes}]
+Ejemplo: [PAYMENT_REQUEST: 42839458, 900, 2025-05-01, 2025-05-04, 4]
 
-            const response = await fetch(url, { signal: controller.signal });
-            clearTimeout(timeout);
+DISPONIBILIDAD: Si te preguntan fechas, consulta las RESERVAS que te paso abajo.
+Si no hay datos de Airbnb disponibles, menciona que verificas en vivo y usas disponibilidad interna.
+`.trim();
 
-            if (!response.ok) {
-                console.warn(`iCal fetch no OK para propiedad ${propertyId}: ${response.status}`);
-                return;
-            }
-
-            const icsText = await response.text();
-
-            // Parsear iCal manualmente para evitar dependencias de módulos pesados en runtime
-            const lines = icsText.split('\n');
-            let inEvent = false;
-            let dtStart = '';
-            let dtEnd = '';
-
-            for (const line of lines) {
-                const trimmed = line.trim();
-                if (trimmed === 'BEGIN:VEVENT') { inEvent = true; dtStart = ''; dtEnd = ''; }
-                if (trimmed === 'END:VEVENT' && inEvent) {
-                    inEvent = false;
-                    if (dtStart && dtEnd) {
-                        const checkIn = dtStart.substring(0, 4) + '-' + dtStart.substring(4, 6) + '-' + dtStart.substring(6, 8);
-                        const checkOut = dtEnd.substring(0, 4) + '-' + dtEnd.substring(4, 6) + '-' + dtEnd.substring(6, 8);
-                        blockedDates.push(`${propertyId}: ${checkIn} → ${checkOut}`);
-
-                        // Insertar bloqueo silenciosamente (ignora duplicados si hay error)
-                        try {
-                            const { data: existing } = await supabase
-                                .from('bookings')
-                                .select('id')
-                                .eq('property_id', propertyId)
-                                .eq('check_in', checkIn)
-                                .eq('status', 'external_block')
-                                .limit(1);
-
-                            if (!existing || existing.length === 0) {
-                                await supabase.from('bookings').insert({
-                                    property_id: propertyId,
-                                    status: 'external_block',
-                                    check_in: checkIn,
-                                    check_out: checkOut,
-                                    guests: 1,
-                                    total_price: 0
-                                });
-                            }
-                        } catch (_) { /* silencioso */ }
-                    }
-                }
-                if (inEvent && trimmed.startsWith('DTSTART')) {
-                    const val = trimmed.split(':').pop() || '';
-                    dtStart = val.replace(/T.*/, ''); // Solo fecha YYYYMMDD
-                }
-                if (inEvent && trimmed.startsWith('DTEND')) {
-                    const val = trimmed.split(':').pop() || '';
-                    dtEnd = val.replace(/T.*/, '');
-                }
-            }
-        } catch (err: any) {
-            if (err.name === 'AbortError') {
-                console.warn(`iCal timeout (>5s) para propiedad ${propertyId}. Usando cache Supabase.`);
-            } else {
-                console.warn(`iCal sync error para propiedad ${propertyId}:`, err.message);
-            }
-        }
-    });
-
-    // Esperar máx 5.5s en total sin bloquear
-    await Promise.allSettled(syncPromises);
-    return blockedDates;
-}
-
+// ─── HANDLER PRINCIPAL ────────────────────────────────────────────────────────
 export default async function handler(req: any, res: any) {
-    // Garantizar siempre Content-Type JSON
     res.setHeader('Content-Type', 'application/json');
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed', status: 405 });
+        return res.status(405).json({ error: 'Method not allowed' });
     }
-
-    let messages: any[] = [];
-    let sessionId = 'anonymous';
 
     try {
-        const body = req.body;
-        messages = body?.messages || [];
-        sessionId = body?.sessionId || 'anonymous';
-    } catch (_) {
-        return res.status(400).json({ error: 'Invalid request body', status: 400 });
-    }
+        // 1. Parsear body de forma segura
+        const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
+        const msgs = Array.isArray(body.messages) ? body.messages : [];
+        const session = String(body.sessionId || 'anon');
 
-    if (!messages || messages.length === 0) {
-        return res.status(400).json({ error: 'Messages are required', status: 400 });
-    }
-
-    const userMessage = messages[messages.length - 1]?.content || '';
-
-    try {
-        let aiResponse = '';
-
-        if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-            const missing = [
-                !GEMINI_API_KEY && 'GEMINI_API_KEY',
-                !SUPABASE_URL && 'SUPABASE_URL/VITE_SUPABASE_URL',
-                !SUPABASE_ANON_KEY && 'SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY'
-            ].filter(Boolean).join(', ');
-            console.error(`[chat] MODO SIN API - Variables faltantes en Vercel: ${missing}`);
-            aiResponse = '¡Bienvenido a Villa Retiro! Mi sistema está recibiendo mantenimiento final. Por favor escríbanos directamente al WhatsApp del Host para asistencia inmediata.';
-            return res.status(200).json({ response: aiResponse, _missing: missing });
+        if (msgs.length === 0) {
+            return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
         }
 
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-
-        // 1. Sincronización silenciosa de Airbnb (no bloquea la respuesta del chat)
-        const externalBlockedDates = await syncExternalCalendars(supabase);
-
-        // 2. Obtener todos los bloqueos (Airbnb + directos) de Supabase
-        const [propertiesResult, bookingsResult, externalBlocksResult] = await Promise.allSettled([
-            supabase.from('properties').select('id, title, capacity, price, description, amenities, location'),
-            supabase.from('bookings').select('property_id, check_in, check_out, status').eq('status', 'confirmed'),
-            supabase.from('bookings').select('property_id, check_in, check_out').eq('status', 'external_block')
-        ]);
-
-        const properties = propertiesResult.status === 'fulfilled' ? propertiesResult.value.data : [];
-        const bookings = bookingsResult.status === 'fulfilled' ? bookingsResult.value.data : [];
-        const externalBlocks = externalBlocksResult.status === 'fulfilled' ? externalBlocksResult.value.data : [];
-
-        // 3. Construir System Prompt robusto
-        const systemPrompt = `
-Eres el "Concierge Premium de Villa Retiro" — identidad firme, trato respetuoso (de Usted), sin saludos mecanizados.
-Meta: Convertir dudas en reservas con tono profesional, cordial, hospitalidad caribeña. Lenguaje que evoque paz, relajación y exclusividad.
-PROHIBIDO INVENTAR datos. Si algo no está aquí: "Con gusto consulto con el equipo. ¿Me brinda su correo para notificarle?"
-Al mencionar reglas o depósito: "Para su seguridad y la nuestra, aplicamos las mismas políticas de transparencia que en Airbnb, garantizando su reserva legalmente."
-Si una fecha está BLOQUEADA, sugiere alternativas: "Esa fecha ya está reservada, pero con gusto le busco el siguiente fin de semana disponible..."
-
-MANUAL OPERATIVO DE LA CASA:
-- Ubicación: ${VILLA_KNOWLEDGE_INLINE.location}
-- ${VILLA_KNOWLEDGE_INLINE.checkIn} / ${VILLA_KNOWLEDGE_INLINE.checkOut}
-- Acceso: ${VILLA_KNOWLEDGE_INLINE.selfCheckin}
-- WiFi: ${VILLA_KNOWLEDGE_INLINE.wifi}
-- Reglas: ${VILLA_KNOWLEDGE_INLINE.rules}
-- Cancelación: ${VILLA_KNOWLEDGE_INLINE.cancellation}
-- Depósito: ${VILLA_KNOWLEDGE_INLINE.deposit}
-- Emergencias: ${VILLA_KNOWLEDGE_INLINE.emergencies}
-
-PROPIEDADES EN SISTEMA:
-${JSON.stringify(properties || [], null, 2)}
-
-RESERVAS CONFIRMADAS (fechas NO disponibles):
-${JSON.stringify(bookings || [], null, 2)}
-
-BLOQUEOS EXTERNOS DE AIRBNB (fechas también NO disponibles):
-${JSON.stringify(externalBlocks || [], null, 2)}
-
-DIRECTRIZ DE CIERRE DE VENTA (CRÍTICO):
-Si el cliente confirma que desea reservar (dice "Quiero reservar", "las tomo", "reservemos"), calcula el total (Noches × Precio por Noche) y al FINAL de tu mensaje incluye EXACTAMENTE:
-[PAYMENT_REQUEST: {property_id}, {total_calculado}, {YYYY-MM-DD_checkin}, {YYYY-MM-DD_checkout}, {numero_huespedes}]
-Ejemplo: [PAYMENT_REQUEST: 42839458, 750, 2025-04-01, 2025-04-04, 4]
-
-NOTA DE DISPONIBILIDAD:
-Si los bloqueos de Airbnb arriba están vacíos, menciona elegantemente: "Estoy verificando el calendario de Airbnb en vivo, pero por ahora basaré mi respuesta en nuestra disponibilidad interna. Le confirmaré cualquier ajuste."
-    `;
-
-        // 4. Construir historial para Gemini — CRÍTICO: primer item DEBE ser role:user
-        // Gemini lanza error si history[0].role === 'model'
-        let rawHistory = messages.slice(0, -1).map((m: any) => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: String(m.content || '').trim() }]
-        })).filter(m => m.parts[0].text.length > 0); // eliminar entradas vacías
-
-        // Descartar mensajes de modelo al inicio hasta encontrar el primer user
-        while (rawHistory.length > 0 && rawHistory[0].role !== 'user') {
-            rawHistory.shift();
+        // 2. Validar keys
+        if (!GEMINI_API_KEY) {
+            console.error('[chat] GEMINI_API_KEY no configurada en Vercel.');
+            return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
         }
 
-        // Normalizar: no pueden haber dos consecutivos del mismo rol
+        // 3. Mensaje actual del usuario
+        const userMessage = String(msgs[msgs.length - 1]?.content || '').trim();
+        if (!userMessage) {
+            return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
+        }
+
+        // 4. Contexto de Supabase (silencioso si falla)
+        let bookingContext = '';
+        if (SUPABASE_URL && SUPABASE_KEY) {
+            try {
+                const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+                const [{ data: props }, { data: books }] = await Promise.all([
+                    db.from('properties').select('id, title, price, capacity').limit(10),
+                    db.from('bookings').select('property_id, check_in, check_out, status')
+                        .in('status', ['confirmed', 'external_block']).limit(50)
+                ]);
+                if (props?.length) bookingContext += `\nPRECIOS ACTUALES:\n${JSON.stringify(props)}`;
+                if (books?.length) bookingContext += `\nFECHAS NO DISPONIBLES:\n${JSON.stringify(books)}`;
+            } catch (_) { /* silencioso — continúa sin contexto DB */ }
+        }
+
+        // 5. Construir historial limpio para Gemini
+        //    REGLA DURA: history[0].role DEBE ser 'user' — sin excepciones
+        const raw = msgs
+            .slice(0, -1)                                          // sin el último (se envía aparte)
+            .map((m: any) => ({
+                role: m.role === 'user' ? 'user' : 'model',
+                parts: [{ text: String(m.content || '').trim() }]
+            }))
+            .filter((m: any) => m.parts[0].text.length > 0);     // sin entradas vacías
+
+        // Eliminar turns 'model' del inicio
+        while (raw.length > 0 && raw[0].role !== 'user') raw.shift();
+
+        // Eliminar turns consecutivos del mismo rol (fusionar)
         const history: { role: string; parts: { text: string }[] }[] = [];
-        for (const turn of rawHistory) {
-            if (history.length === 0 || history[history.length - 1].role !== turn.role) {
-                history.push(turn);
+        for (const t of raw) {
+            if (!history.length || history[history.length - 1].role !== t.role) {
+                history.push(t);
             } else {
-                // Fusionar con el anterior si son del mismo rol
-                history[history.length - 1].parts[0].text += ' ' + turn.parts[0].text;
+                history[history.length - 1].parts[0].text += ' ' + t.parts[0].text;
             }
         }
 
-        // Historia limpia para Gemini: si queda vacia luego del sanitizado → enviar solo el userMessage directamente
-        const model = genAI.getGenerativeModel({
+        // 6. Llamar a Gemini
+        const ai = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = ai.getGenerativeModel({
             model: 'gemini-2.0-flash',
-            systemInstruction: systemPrompt
+            systemInstruction: SYSTEM_PROMPT + (bookingContext ? `\n\nDATOS EN TIEMPO REAL:${bookingContext}` : '')
         });
 
-        let aiResponse404 = '';
+        let aiText = '';
         try {
             const chat = model.startChat({ history });
             const result = await chat.sendMessage(userMessage);
-            aiResponse = result.response.text();
-        } catch (geminiError: any) {
-            console.error('[chat] Gemini API error:', geminiError?.message);
-            const status = geminiError?.status || geminiError?.statusCode || 0;
-
-            // Si es un error de role (historial mal formado) — reintento sin historial
-            if (geminiError?.message?.includes('role') || geminiError?.message?.includes('content')) {
-                console.warn('[chat] Role error detectado — reintentando sin historial...');
-                const freshChat = model.startChat({ history: [] });
-                const freshResult = await freshChat.sendMessage(userMessage);
-                aiResponse = freshResult.response.text();
-            } else if (status === 404 || geminiError?.message?.includes('404') || geminiError?.message?.includes('not found')) {
-                aiResponse = 'Estoy ajustando mis sistemas de inteligencia, pero puedo ayudarle con la reserva de forma directa. ¿Qué fechas está buscando y para cuántos huéspedes?';
+            aiText = result.response.text();
+        } catch (geminiErr: any) {
+            console.warn('[chat] Gemini error →', geminiErr?.message);
+            // Auto-retry sin historial si es error de role/content
+            if (/role|content|first/i.test(geminiErr?.message || '')) {
+                console.warn('[chat] Reintentando sin historial...');
+                const chat2 = model.startChat({ history: [] });
+                const result2 = await chat2.sendMessage(userMessage);
+                aiText = result2.response.text();
             } else {
-                aiResponse = 'Estoy ajustando mis sistemas de inteligencia, pero puedo ayudarle con la reserva manualmente. ¿Qué fechas busca?';
+                aiText = 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?';
             }
         }
 
-        // 5. Log asíncrono (no bloquea respuesta)
-        Promise.allSettled([
-            supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'guest', text: userMessage }),
-            supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'ai', text: aiResponse })
-        ]).catch(() => { }); // silencioso
+        // 7. Log asíncrono (no bloquea la respuesta)
+        if (SUPABASE_URL && SUPABASE_KEY) {
+            const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+            Promise.allSettled([
+                db.from('ai_chat_logs').insert({ session_id: session, sender: 'guest', text: userMessage }),
+                db.from('ai_chat_logs').insert({ session_id: session, sender: 'ai', text: aiText })
+            ]).catch(() => { });
+        }
 
-        return res.status(200).json({ response: aiResponse });
+        return res.status(200).json({ response: aiText });
 
-    } catch (error: any) {
-        console.error('API CHAT FATAL ERROR:', error?.message || error);
-        return res.status(200).json({
-            response: 'Estoy ajustando mis sistemas de inteligencia, pero puedo ayudarle con la reserva manualmente. ¿Qué fechas busca?',
-            _debug: process.env.NODE_ENV === 'development' ? error?.message : undefined
-        });
+    } catch (fatal: any) {
+        // Catch-all: NUNCA devolver texto plano
+        console.error('[chat] FATAL:', fatal?.message || fatal);
+        return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
     }
 }
