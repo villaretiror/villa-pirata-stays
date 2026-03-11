@@ -228,14 +228,33 @@ Si los bloqueos de Airbnb arriba están vacíos, menciona elegantemente: "Estoy 
             }
         }
 
+        // Historia limpia para Gemini: si queda vacia luego del sanitizado → enviar solo el userMessage directamente
         const model = genAI.getGenerativeModel({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-2.0-flash',
             systemInstruction: systemPrompt
         });
 
-        const chat = model.startChat({ history });
-        const result = await chat.sendMessage(userMessage);
-        aiResponse = result.response.text();
+        let aiResponse404 = '';
+        try {
+            const chat = model.startChat({ history });
+            const result = await chat.sendMessage(userMessage);
+            aiResponse = result.response.text();
+        } catch (geminiError: any) {
+            console.error('[chat] Gemini API error:', geminiError?.message);
+            const status = geminiError?.status || geminiError?.statusCode || 0;
+
+            // Si es un error de role (historial mal formado) — reintento sin historial
+            if (geminiError?.message?.includes('role') || geminiError?.message?.includes('content')) {
+                console.warn('[chat] Role error detectado — reintentando sin historial...');
+                const freshChat = model.startChat({ history: [] });
+                const freshResult = await freshChat.sendMessage(userMessage);
+                aiResponse = freshResult.response.text();
+            } else if (status === 404 || geminiError?.message?.includes('404') || geminiError?.message?.includes('not found')) {
+                aiResponse = 'Estoy ajustando mis sistemas de inteligencia, pero puedo ayudarle con la reserva de forma directa. ¿Qué fechas está buscando y para cuántos huéspedes?';
+            } else {
+                aiResponse = 'Estoy ajustando mis sistemas de inteligencia, pero puedo ayudarle con la reserva manualmente. ¿Qué fechas busca?';
+            }
+        }
 
         // 5. Log asíncrono (no bloquea respuesta)
         Promise.allSettled([
@@ -247,9 +266,8 @@ Si los bloqueos de Airbnb arriba están vacíos, menciona elegantemente: "Estoy 
 
     } catch (error: any) {
         console.error('API CHAT FATAL ERROR:', error?.message || error);
-        // SIEMPRE devolver JSON válido — nunca texto plano
         return res.status(200).json({
-            response: 'Mil disculpas, estoy experimentando dificultades técnicas momentáneas. Por favor contáctenos por WhatsApp o brinde su email y le responderemos de inmediato.',
+            response: 'Estoy ajustando mis sistemas de inteligencia, pero puedo ayudarle con la reserva manualmente. ¿Qué fechas busca?',
             _debug: process.env.NODE_ENV === 'development' ? error?.message : undefined
         });
     }
