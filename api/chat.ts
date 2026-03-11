@@ -200,6 +200,9 @@ DIRECTRIZ DE CIERRE DE VENTA (CRÍTICO):
 Si el cliente confirma que desea reservar (dice "Quiero reservar", "las tomo", "reservemos"), calcula el total (Noches × Precio por Noche) y al FINAL de tu mensaje incluye EXACTAMENTE:
 [PAYMENT_REQUEST: {property_id}, {total_calculado}, {YYYY-MM-DD_checkin}, {YYYY-MM-DD_checkout}, {numero_huespedes}]
 Ejemplo: [PAYMENT_REQUEST: 42839458, 750, 2025-04-01, 2025-04-04, 4]
+
+NOTA DE DISPONIBILIDAD:
+Si los bloqueos de Airbnb arriba están vacíos, menciona elegantemente: "Estoy verificando el calendario de Airbnb en vivo, pero por ahora basaré mi respuesta en nuestra disponibilidad interna. Le confirmaré cualquier ajuste."
     `;
 
         // 4. Construir historial para Gemini — CRÍTICO: primer item DEBE ser role:user
