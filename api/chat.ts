@@ -1,53 +1,49 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
-// ─── CONFIGURACIÓN ───────────────────────────────────────────────────────────
+// ─── CONFIGURACIÓN DE LLAVES ───────────────────────────────────────────────
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
-// ─── CONOCIMIENTO EMBEBIDO (sin imports externos) ─────────────────────────────
-const VILLA_INFO = `
-PROPIEDADES:
-- Villa Pirata Family House (ID: 42839458) | Cabo Rojo PR | Hasta 6 huéspedes
-- Villa Retiro R (ID: 1081171030449673920) | Cabo Rojo PR | Hasta 8 huéspedes
+if (!GEMINI_API_KEY) {
+    console.error('ERROR: NO API KEY FOUND');
+}
 
-REGLAS OPERATIVAS:
+// ─── CONOCIMIENTO DE LAS VILLAS (HARDCODED) ────────────────────────────────
+const VILLA_KNOWLEDGE = `
+VILLA PIRATA FAMILY HOUSE (ID: 42839458)
+- Capacidad: 6 huéspedes
+- Precio: $225 USD por noche (Base)
+- Descripción: Espaciosa, ideal para familias, cerca de la playa.
+
+VILLA RETIRO R (ID: 1081171030449673920)
+- Capacidad: 8 huéspedes
+- Precio: $275 USD por noche (Base)
+- Descripción: Moderna, lujosa, con amenidades premium.
+
+REGLAS GENERALES:
 - Check-in: 4:00 PM | Check-out: 11:00 AM
-- Self Check-in con Lockbox: Pirata → código 2197 | Retiro R → código 0895
-- Wi-Fi: Wifivacacional (misma clave en ambas propiedades)
-- No fiestas ni eventos masivos. Silencio 10 PM – 8 AM.
-- Mascotas pequeñas con aprobación previa.
-- Prohibido fumar adentro.
-- Depósito de seguridad: $200 USD (devuelto 48h post-checkout sin daños).
-- Cancelación gratuita hasta 5 días antes. Después: 50% del total retenido.
-- Ubicación: Cabo Rojo, Puerto Rico — 5 min de Playa Buyé, 10 min de Boquerón.
-- Emergencias: Host Meliza vía WhatsApp. Hospital Bella Vista a 20 min. 911.
+- No fiestas ni ruidos excesivos después de las 10:00 PM.
+- Código Lockbox: Pirata (2197), Retiro R (0895).
+- Wi-Fi: Wifivacacional (Pass: Wifivacacional).
+- Depósito de seguridad: $200 USD.
+- Política de Cancelación: Igual a Airbnb (Transparencia Total).
+`;
 
-TRANSPARENCIA: Aplicamos las mismas políticas de Airbnb, garantizando su reserva legalmente.
-`.trim();
+const SYSTEM_INSTRUCTION = `
+Eres el Concierge Premium de Villa Retiro. Tu tono es profesional, cálido y caribeño.
+Usa los siguientes datos para responder a los huéspedes. No inventes información.
 
-// ─── SYSTEM PROMPT ────────────────────────────────────────────────────────────
-const SYSTEM_PROMPT = `
-Eres el Concierge Premium de Villa Retiro — trato respetuoso (de Usted), cordial, con calidez caribeña.
-Tu misión: convertir consultas en reservas confirmadas.
-NUNCA inventes datos. Si no sabes algo, pide el email del cliente para contactarlo.
+${VILLA_KNOWLEDGE}
 
-${VILLA_INFO}
+CIERRE DE VENTAS:
+Si el cliente quiere reservar, calcula el total (Noches x Precio) e incluye esta etiqueta:
+[PAYMENT_REQUEST: {property_id}, {total_price}, {check_in}, {check_out}, {guests}]
+`;
 
-CIERRE DE VENTA (MUY IMPORTANTE):
-Cuando el cliente confirme reservar ("quiero reservar", "las tomo", "reservemos"), calcula:
-Total = Noches × Precio por noche de la villa correspondiente.
-Incluye AL FINAL de tu respuesta, literalmente así:
-[PAYMENT_REQUEST: {property_id}, {total}, {YYYY-MM-DD}, {YYYY-MM-DD}, {huespedes}]
-Ejemplo: [PAYMENT_REQUEST: 42839458, 900, 2025-05-01, 2025-05-04, 4]
-
-DISPONIBILIDAD: Si te preguntan fechas, consulta las RESERVAS que te paso abajo.
-Si no hay datos de Airbnb disponibles, menciona que verificas en vivo y usas disponibilidad interna.
-`.trim();
-
-// ─── HANDLER PRINCIPAL ────────────────────────────────────────────────────────
 export default async function handler(req: any, res: any) {
+    // Garantizar respuesta JSON
     res.setHeader('Content-Type', 'application/json');
 
     if (req.method !== 'POST') {
@@ -55,104 +51,63 @@ export default async function handler(req: any, res: any) {
     }
 
     try {
-        // 1. Parsear body de forma segura
-        const body = typeof req.body === 'string' ? JSON.parse(req.body) : (req.body || {});
-        const msgs = Array.isArray(body.messages) ? body.messages : [];
-        const session = String(body.sessionId || 'anon');
+        const { messages = [], sessionId = 'anonymous' } = req.body;
 
-        if (msgs.length === 0) {
-            return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
+        if (messages.length === 0) {
+            return res.status(200).json({ response: "¡Hola! Soy el Concierge de Villa Retiro. ¿En qué puedo ayudarle hoy?" });
         }
 
-        // 2. Validar keys
+        // 1. SANEAMIENTO FORZADO DE HISTORIAL
+        let cleanHistory = messages.slice(0, -1).map((m: any) => ({
+            role: m.role === 'user' ? 'user' : 'model',
+            parts: [{ text: String(m.content || '').trim() }]
+        })).filter((m: any) => m.parts[0].text && m.role);
+
+        // Gemini EXIGE que el primer mensaje sea 'user'. Si es 'model', elimínalo.
+        while (cleanHistory.length > 0 && cleanHistory[0].role !== 'user') {
+            cleanHistory.shift();
+        }
+
+        const userMessage = String(messages[messages.length - 1]?.content || '').trim();
+
+        // 2. LLAMADA A GEMINI (A PRUEBA DE BALAS)
         if (!GEMINI_API_KEY) {
-            console.error('[chat] GEMINI_API_KEY no configurada en Vercel.');
-            return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
+            throw new Error('Missing API Key');
         }
 
-        // 3. Mensaje actual del usuario
-        const userMessage = String(msgs[msgs.length - 1]?.content || '').trim();
-        if (!userMessage) {
-            return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
-        }
-
-        // 4. Contexto de Supabase (silencioso si falla)
-        let bookingContext = '';
-        if (SUPABASE_URL && SUPABASE_KEY) {
-            try {
-                const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-                const [{ data: props }, { data: books }] = await Promise.all([
-                    db.from('properties').select('id, title, price, capacity').limit(10),
-                    db.from('bookings').select('property_id, check_in, check_out, status')
-                        .in('status', ['confirmed', 'external_block']).limit(50)
-                ]);
-                if (props?.length) bookingContext += `\nPRECIOS ACTUALES:\n${JSON.stringify(props)}`;
-                if (books?.length) bookingContext += `\nFECHAS NO DISPONIBLES:\n${JSON.stringify(books)}`;
-            } catch (_) { /* silencioso — continúa sin contexto DB */ }
-        }
-
-        // 5. Construir historial limpio para Gemini
-        //    REGLA DURA: history[0].role DEBE ser 'user' — sin excepciones
-        const raw = msgs
-            .slice(0, -1)                                          // sin el último (se envía aparte)
-            .map((m: any) => ({
-                role: m.role === 'user' ? 'user' : 'model',
-                parts: [{ text: String(m.content || '').trim() }]
-            }))
-            .filter((m: any) => m.parts[0].text.length > 0);     // sin entradas vacías
-
-        // Eliminar turns 'model' del inicio
-        while (raw.length > 0 && raw[0].role !== 'user') raw.shift();
-
-        // Eliminar turns consecutivos del mismo rol (fusionar)
-        const history: { role: string; parts: { text: string }[] }[] = [];
-        for (const t of raw) {
-            if (!history.length || history[history.length - 1].role !== t.role) {
-                history.push(t);
-            } else {
-                history[history.length - 1].parts[0].text += ' ' + t.parts[0].text;
-            }
-        }
-
-        // 6. Llamar a Gemini
-        const ai = new GoogleGenerativeAI(GEMINI_API_KEY);
-        const model = ai.getGenerativeModel({
-            model: 'gemini-2.0-flash',
-            systemInstruction: SYSTEM_PROMPT + (bookingContext ? `\n\nDATOS EN TIEMPO REAL:${bookingContext}` : '')
+        const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+        const model = genAI.getGenerativeModel({
+            model: "gemini-1.5-flash",
+            systemInstruction: SYSTEM_INSTRUCTION
         });
 
-        let aiText = '';
-        try {
-            const chat = model.startChat({ history });
-            const result = await chat.sendMessage(userMessage);
-            aiText = result.response.text();
-        } catch (geminiErr: any) {
-            console.warn('[chat] Gemini error →', geminiErr?.message);
-            // Auto-retry sin historial si es error de role/content
-            if (/role|content|first/i.test(geminiErr?.message || '')) {
-                console.warn('[chat] Reintentando sin historial...');
-                const chat2 = model.startChat({ history: [] });
-                const result2 = await chat2.sendMessage(userMessage);
-                aiText = result2.response.text();
-            } else {
-                aiText = 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?';
+        const chat = model.startChat({
+            history: cleanHistory
+        });
+
+        const result = await chat.sendMessage(userMessage);
+        const aiResponse = result.response.text();
+
+        // 3. REGISTRO EN SUPABASE (OPCIONAL/SILENCIOSO)
+        if (SUPABASE_URL && SUPABASE_KEY) {
+            try {
+                const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+                await supabase.from('ai_chat_logs').insert([
+                    { session_id: sessionId, sender: 'guest', text: userMessage },
+                    { session_id: sessionId, sender: 'ai', text: aiResponse }
+                ]);
+            } catch (err) {
+                console.warn('Silent log error:', err);
             }
         }
 
-        // 7. Log asíncrono (no bloquea la respuesta)
-        if (SUPABASE_URL && SUPABASE_KEY) {
-            const db = createClient(SUPABASE_URL, SUPABASE_KEY);
-            Promise.allSettled([
-                db.from('ai_chat_logs').insert({ session_id: session, sender: 'guest', text: userMessage }),
-                db.from('ai_chat_logs').insert({ session_id: session, sender: 'ai', text: aiText })
-            ]).catch(() => { });
-        }
+        return res.status(200).json({ response: aiResponse });
 
-        return res.status(200).json({ response: aiText });
-
-    } catch (fatal: any) {
-        // Catch-all: NUNCA devolver texto plano
-        console.error('[chat] FATAL:', fatal?.message || fatal);
-        return res.status(200).json({ response: 'Hola, estoy actualizando mi información, ¿en qué puedo ayudarle?' });
+    } catch (error: any) {
+        console.error('API CHAT ERROR:', error.message);
+        // RESPUESTA DE CORTESÍA PREDEFINIDA EN CASO DE FALLO
+        return res.status(200).json({
+            response: "¡Hola! Soy el Concierge de Villa Retiro. Estoy actualizando mis sistemas de reserva en vivo, pero puedo ayudarte. ¿Qué fechas tienes en mente?"
+        });
     }
 }
