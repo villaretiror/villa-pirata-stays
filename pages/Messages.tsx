@@ -37,17 +37,39 @@ const Messages: React.FC = () => {
 
   useEffect(() => {
     const savedMessages = localStorage.getItem(STORAGE_KEY);
+    // Limpiar historial si tiene mensajes de error o de demo mode (reinicio limpio)
     if (savedMessages) {
-      setMessages(JSON.parse(savedMessages));
-    } else {
-      setMessages([
-        {
-          id: crypto.randomUUID(),
-          text: "¡Bienvenidos a Villa Retiro! Soy su conserje virtual. ¿Cómo puedo hacer que su estancia soñada comience hoy mismo?",
-          sender: 'ai',
-          created_at: new Date().toISOString()
+      try {
+        const parsed: Message[] = JSON.parse(savedMessages);
+        const hasErrorMessages = parsed.some(m =>
+          m.sender === 'ai' && (
+            m.text.includes('inicializando') ||
+            m.text.includes('se ha interrumpido') ||
+            m.text.includes('mantenimiento final')
+          )
+        );
+        if (!hasErrorMessages) {
+          setMessages(parsed);
+        } else {
+          // Limpiar = fresh start con la IA activa
+          localStorage.removeItem(STORAGE_KEY);
+          setMessages([{
+            id: crypto.randomUUID(),
+            text: '¡Buenas! Soy el Concierge Premium de Villa Retiro. ¿Está pensando en una estadía especial en Cabo Rojo, Puerto Rico? Puedo ayudarle con disponibilidad, precios y completar su reserva directamente aquí. ¿En qué le sirvo?',
+            sender: 'ai',
+            created_at: new Date().toISOString()
+          }]);
         }
-      ]);
+      } catch (_) {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    } else {
+      setMessages([{
+        id: crypto.randomUUID(),
+        text: '¡Buenas! Soy el Concierge Premium de Villa Retiro. ¿Está pensando en una estadía especial en Cabo Rojo, Puerto Rico? Puedo ayudarle con disponibilidad, precios y completar su reserva directamente aquí. ¿En qué le sirvo?',
+        sender: 'ai',
+        created_at: new Date().toISOString()
+      }]);
     }
   }, []);
 
@@ -98,34 +120,50 @@ const Messages: React.FC = () => {
         content: m.text
       }));
 
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: apiMessages,
-          sessionId
-        }),
-      });
+      // Timeout de 8 segundos
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      let response;
+      try {
+        response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: apiMessages, sessionId }),
+          signal: controller.signal
+        });
+      } catch (fetchErr: any) {
+        clearTimeout(timeoutId);
+        if (fetchErr.name === 'AbortError') {
+          setMessages(prev => [...prev, {
+            id: crypto.randomUUID(),
+            text: 'Mi respuesta está tardando más de lo habitual. Si desea reservar, puede escribirnos en el WhatsApp o simplemente dígame: «Quiero reservar» cuando esté listo.',
+            sender: 'ai',
+            created_at: new Date().toISOString()
+          }]);
+          setIsTyping(false);
+          return;
+        }
+        throw fetchErr;
+      }
+      clearTimeout(timeoutId);
 
       const data = await response.json();
 
       const aiMsg: Message = {
         id: crypto.randomUUID(),
-        text: data.response || "Mil disculpas, tuve un problema al procesar su solicitud. ¿Gusta que contacte al Host?",
+        text: data.response || 'Mil disculpas, tuve un problema al procesar su solicitud. ¿Gusta que contacte al Host?',
         sender: 'ai',
         created_at: new Date().toISOString()
       };
 
       setMessages(prev => [...prev, aiMsg]);
 
-      if (aiMsg.text.toLowerCase().includes('email') || aiMsg.text.toLowerCase().includes('correo')) {
-        console.log("Hand-off sugerido por la IA");
-      }
     } catch (error) {
       console.error('Chat error:', error);
       setMessages(prev => [...prev, {
         id: crypto.randomUUID(),
-        text: "¡Un placer saludarle! Parece que mi conexión se ha interrumpido. Por favor contáctenos directamente al WhatsApp si tiene dudas urgentes.",
+        text: 'Disculpe la demora. Nuestro concierge tendrá respuesta en breve. Mientras tanto, puede escribirnos por WhatsApp o decirme «Quiero reservar» para iniciar el proceso de pago.',
         sender: 'ai',
         created_at: new Date().toISOString()
       }]);

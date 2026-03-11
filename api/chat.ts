@@ -1,9 +1,15 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { createClient } from '@supabase/supabase-js';
 
+// CRÍTICO: En Vercel Serverless, las vars pueden llamarse VITE_* o sin prefijo
+// Aceptamos ambas formas para máxima compatibilidad
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || '';
+
+// Debug silencioso en producción para diagnosticar vars faltantes
+if (!GEMINI_API_KEY) console.error('[chat] GEMINI_API_KEY no encontrada en process.env');
+if (!SUPABASE_URL) console.error('[chat] SUPABASE_URL no encontrada en process.env');
 
 // URLs reales de Airbnb iCal — también configuradas en Vercel como ENV VARS
 const ICAL_URLS: Record<string, string> = {
@@ -136,9 +142,14 @@ export default async function handler(req: any, res: any) {
         let aiResponse = '';
 
         if (!GEMINI_API_KEY || !SUPABASE_URL || !SUPABASE_ANON_KEY) {
-            console.warn('DEMO MODE: Faltan API keys.');
-            aiResponse = '¡Un placer saludarle! Estoy inicializando mi conexión con la base de datos. Por favor intente en un momento o escríbame al WhatsApp del Host.';
-            return res.status(200).json({ response: aiResponse });
+            const missing = [
+                !GEMINI_API_KEY && 'GEMINI_API_KEY',
+                !SUPABASE_URL && 'SUPABASE_URL/VITE_SUPABASE_URL',
+                !SUPABASE_ANON_KEY && 'SUPABASE_ANON_KEY/VITE_SUPABASE_ANON_KEY'
+            ].filter(Boolean).join(', ');
+            console.error(`[chat] MODO SIN API - Variables faltantes en Vercel: ${missing}`);
+            aiResponse = '¡Bienvenido a Villa Retiro! Mi sistema está recibiendo mantenimiento final. Por favor escríbanos directamente al WhatsApp del Host para asistencia inmediata.';
+            return res.status(200).json({ response: aiResponse, _missing: missing });
         }
 
         const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
