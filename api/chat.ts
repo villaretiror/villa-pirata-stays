@@ -202,11 +202,28 @@ Si el cliente confirma que desea reservar (dice "Quiero reservar", "las tomo", "
 Ejemplo: [PAYMENT_REQUEST: 42839458, 750, 2025-04-01, 2025-04-04, 4]
     `;
 
-        // 4. Construir historial para Gemini (sin el último mensaje)
-        const history = messages.slice(0, -1).map((m: any) => ({
+        // 4. Construir historial para Gemini — CRÍTICO: primer item DEBE ser role:user
+        // Gemini lanza error si history[0].role === 'model'
+        let rawHistory = messages.slice(0, -1).map((m: any) => ({
             role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: String(m.content || '') }]
-        }));
+            parts: [{ text: String(m.content || '').trim() }]
+        })).filter(m => m.parts[0].text.length > 0); // eliminar entradas vacías
+
+        // Descartar mensajes de modelo al inicio hasta encontrar el primer user
+        while (rawHistory.length > 0 && rawHistory[0].role !== 'user') {
+            rawHistory.shift();
+        }
+
+        // Normalizar: no pueden haber dos consecutivos del mismo rol
+        const history: { role: string; parts: { text: string }[] }[] = [];
+        for (const turn of rawHistory) {
+            if (history.length === 0 || history[history.length - 1].role !== turn.role) {
+                history.push(turn);
+            } else {
+                // Fusionar con el anterior si son del mismo rol
+                history[history.length - 1].parts[0].text += ' ' + turn.parts[0].text;
+            }
+        }
 
         const model = genAI.getGenerativeModel({
             model: 'gemini-1.5-flash',
