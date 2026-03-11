@@ -8,9 +8,8 @@ interface PayPalPaymentProps {
 }
 
 const PayPalPayment: React.FC<PayPalPaymentProps> = ({ amount, onSuccess, onError }) => {
-    // En un entorno real, usarías una variable de entorno para el Client ID
     const initialOptions = {
-        clientId: "test", // Cambiar por Client ID real en producción
+        clientId: import.meta.env.VITE_PAYPAL_CLIENT_ID || "test",
         currency: "USD",
         intent: "capture",
     };

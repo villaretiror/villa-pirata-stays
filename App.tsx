@@ -9,10 +9,11 @@ import Login from './pages/Login';
 import HostDashboard from './pages/HostDashboard';
 import ReservationDetails from './pages/ReservationDetails';
 import Favorites from './pages/Favorites';
-import Messages from './pages/Messages';
+import Message from './pages/Messages';
 import Profile from './pages/Profile';
 import HostProfile from './pages/HostProfile';
 import Navbar from './components/Navbar';
+import StayDashboard from './pages/StayDashboard';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
@@ -75,8 +76,9 @@ const App: React.FC = () => {
             <Route path="/booking/:id" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
             <Route path="/success" element={<Success />} />
             <Route path="/reservation/:id" element={<ReservationDetails />} />
+            <Route path="/stay/:id" element={<StayDashboard />} />
             <Route path="/favorites" element={<Favorites />} />
-            <Route path="/messages" element={<Messages />} />
+            <Route path="/messages" element={<Message />} />
             <Route path="/login" element={<Login />} />
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/host-profile/:id" element={<HostProfile />} />

@@ -1,122 +1,239 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import PayPalPayment from '../components/PayPalPayment';
+import jsPDF from 'jspdf';
+import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
 
 interface Message {
-  id: number;
+  id: string;
   text: string;
-  sender: string;
+  sender: 'guest' | 'ai';
   created_at: string;
 }
+
+const STORAGE_KEY = 'villa_retiro_ai_chat_history';
+const SESSION_KEY = 'villa_retiro_ai_session_id';
 
 const Messages: React.FC = () => {
   const navigate = useNavigate();
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
-  const [loading, setLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchMessages = async () => {
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('messages')
-      .select('*')
-      .order('created_at', { ascending: true });
-
-    if (!error && data) {
-      setMessages(data);
+  const getSessionId = () => {
+    let id = localStorage.getItem(SESSION_KEY);
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem(SESSION_KEY, id);
     }
-    setLoading(false);
+    return id;
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const sessionId = getSessionId();
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isTyping]);
-
-  useEffect(() => {
-    fetchMessages();
-
-    // Suscribirse a cambios en tiempo real
-    const channel = supabase
-      .channel('public:messages')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload: any) => {
-        setMessages(prev => [...prev, payload.new as Message]);
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    const savedMessages = localStorage.getItem(STORAGE_KEY);
+    if (savedMessages) {
+      setMessages(JSON.parse(savedMessages));
+    } else {
+      setMessages([
+        {
+          id: crypto.randomUUID(),
+          text: "¡Bienvenidos a Villa Retiro! Soy su conserje virtual. ¿Cómo puedo hacer que su estancia soñada comience hoy mismo?",
+          sender: 'ai',
+          created_at: new Date().toISOString()
+        }
+      ]);
+    }
   }, []);
+
+  useEffect(() => {
+    if (messages.length > 0) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages, isTyping]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputText.trim()) return;
 
-    const query = inputText.toLowerCase();
-    const messageText = inputText;
-    setInputText("");
+    const userMsg: Message = {
+      id: crypto.randomUUID(),
+      text: inputText.trim(),
+      sender: 'guest',
+      created_at: new Date().toISOString()
+    };
 
-    // Guardar en Supabase
-    const { error } = await supabase.from('messages').insert({
-      text: messageText,
-      sender: 'guest'
-    });
-
-    if (error) {
-      console.error("Error sending message:", error);
-      return;
+    const emailRegex = /([a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6})/g;
+    const emailMatch = inputText.match(emailRegex);
+    if (emailMatch) {
+      try {
+        fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'contact',
+            contactData: {
+              name: 'Usuario de Chat IA',
+              email: emailMatch[0],
+              message: `El cliente ha proporcionado su correo solicitando soporte humano desde el Asistente AI. Mensaje: "${inputText.trim()}"`
+            }
+          })
+        });
+      } catch (e) { }
     }
 
+    setMessages(prev => [...prev, userMsg]);
+    setInputText("");
     setIsTyping(true);
 
-    // Lógica IA "Dudas Boricuas" integrada - Villa Retiro R LLC
-    setTimeout(async () => {
-      let aiResponse = "¡Gracias por escribir! El equipo de Villa Retiro R LLC te contestará en breve. Si es sobre la llegada, tu código de acceso se activa a las 4:00 PM.";
+    try {
+      const apiMessages = messages.concat(userMsg).map(m => ({
+        role: m.sender === 'guest' ? 'user' : 'model',
+        content: m.text
+      }));
 
-      if (query.includes("playa") || query.includes("buye")) {
-        aiResponse = "Playa Buyé está a solo 5 min en carro desde Villa Retiro R. ¡Es la favorita de la zona! Te recomendamos ir temprano los fines de semana para conseguir buen parking.";
-      } else if (query.includes("luz") || query.includes("planta") || query.includes("energia")) {
-        aiResponse = "¡Tranquilo/a! Villa Retiro R LLC cuenta con generador eléctrico automático y cisterna industrial. Aquí tus vacaciones no se interrumpen por nada.";
-      } else if (query.includes("comida") || query.includes("poblado") || query.includes("comer")) {
-        aiResponse = "El Poblado de Boquerón está a solo 10 minutos. Allí tienes los mejores ostiones, mariscos frescos y música en vivo. ¡100% recomendado!";
-      }
-
-      // Guardar respuesta de la IA/Host en Supabase
-      await supabase.from('messages').insert({
-        text: aiResponse,
-        sender: 'host'
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: apiMessages,
+          sessionId
+        }),
       });
 
+      const data = await response.json();
+
+      const aiMsg: Message = {
+        id: crypto.randomUUID(),
+        text: data.response || "Mil disculpas, tuve un problema al procesar su solicitud. ¿Gusta que contacte al Host?",
+        sender: 'ai',
+        created_at: new Date().toISOString()
+      };
+
+      setMessages(prev => [...prev, aiMsg]);
+
+      if (aiMsg.text.toLowerCase().includes('email') || aiMsg.text.toLowerCase().includes('correo')) {
+        console.log("Hand-off sugerido por la IA");
+      }
+    } catch (error) {
+      console.error('Chat error:', error);
+      setMessages(prev => [...prev, {
+        id: crypto.randomUUID(),
+        text: "¡Un placer saludarle! Parece que mi conexión se ha interrumpido. Por favor contáctenos directamente al WhatsApp si tiene dudas urgentes.",
+        sender: 'ai',
+        created_at: new Date().toISOString()
+      }]);
       setIsTyping(false);
-    }, 1800);
+    }
+  };
+
+  const handlePaymentSuccess = async (details: any, propertyId: string, checkIn: string, checkOut: string, guests: number, total: number) => {
+    try {
+      // 1. Crear Reserva Confirmada en Supabase
+      const { data: insertedBooking, error } = await supabase.from('bookings').insert({
+        property_id: propertyId,
+        guest_id: null,
+        check_in: checkIn,
+        check_out: checkOut,
+        guests: guests,
+        total_price: total,
+        status: 'confirmed'
+      }).select().single();
+
+      if (error || !insertedBooking) {
+        console.error("Booking error:", error);
+        alert("Hubo un problema registrando su reserva. Su pago está seguro, por favor contáctenos con su número de recibo: " + details.id);
+        return;
+      }
+
+      // Generate PDF Contract
+      try {
+        const doc = new jsPDF();
+        doc.setFontSize(22);
+        doc.text(`CONTRATO DE ALQUILER - VILLA RETIRO R LLC`, 20, 20);
+        doc.setFontSize(12);
+        doc.text(`ID Reserva: ${insertedBooking.id} | Fecha: ${new Date().toLocaleDateString()}`, 20, 30);
+        doc.text(`Propiedad ID: ${propertyId}`, 20, 40);
+        doc.text(`Fechas: ${checkIn} al ${checkOut}`, 20, 50);
+        doc.text(`Huéspedes: ${guests}`, 20, 60);
+        doc.text(`Total Pagado: $${total} USD (PayPal)`, 20, 70);
+        doc.text(`Términos y Condiciones:`, 20, 90);
+        doc.setFontSize(10);
+        const splitRules = doc.splitTextToSize(VILLA_KNOWLEDGE.policies.rules + ' ' + VILLA_KNOWLEDGE.policies.cancellation, 170);
+        doc.text(splitRules, 20, 100);
+        doc.text(`Firma Digital (Términos Aceptados en Checkout)`, 20, 200);
+
+        const pdfBlob = doc.output('blob');
+        const fileName = `contrato_${insertedBooking.id}_${Date.now()}.pdf`;
+
+        await supabase.storage.from('contracts').upload(fileName, pdfBlob, {
+          contentType: 'application/pdf'
+        });
+      } catch (pdfErr) {
+        console.error("No se pudo generar/subir el PDF", pdfErr);
+      }
+
+      // 2. Enviar Confirmación por Correo vía Resend
+      const customerEmail = details.payer?.email_address || 'Sin correo';
+      const customerName = details.payer?.name?.given_name || 'Huésped';
+
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'booking',
+          customer: { name: customerName, email: customerEmail },
+          booking: { propertyName: "Propiedad " + propertyId, checkIn, checkOut, guests, total, method: 'PayPal Smart Buttons' }
+        })
+      });
+
+      // 3. Respuesta de Éxito en el Chat
+      const successMsg: Message = {
+        id: crypto.randomUUID(),
+        text: `¡Pago confirmado! Sus instrucciones de llegada y claves de acceso ya están disponibles en su Portal de Huésped.`,
+        sender: 'ai',
+        created_at: new Date().toISOString()
+      };
+
+      const updatedMessages = [...messages, successMsg];
+      setMessages(updatedMessages);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedMessages));
+
+      // Redirigir al Guest Dashboard VIP
+      navigate(`/stay/${insertedBooking.id}`);
+
+    } catch (e) {
+      console.error(e);
+      alert("Error procesando los detalles finales.");
+    }
   };
 
   if (!activeChatId) {
     return (
       <div className="min-h-screen bg-sand px-4 pt-12 pb-24 animate-fade-in">
-        <h1 className="text-3xl font-serif font-bold mb-8">Mensajes</h1>
+        <h1 className="text-3xl font-serif font-bold mb-8">Asistencia Premium</h1>
         <div
-          onClick={() => setActiveChatId('host-chat')}
-          className="bg-white p-5 rounded-[2rem] shadow-card border border-gray-100 flex gap-4 items-center cursor-pointer active:scale-95 transition-all"
+          onClick={() => setActiveChatId('ai-chat')}
+          className="bg-white p-5 rounded-[2rem] shadow-card border border-gray-100 flex gap-4 items-center cursor-pointer hover:shadow-lg active:scale-95 transition-all"
         >
           <div className="relative">
-            <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEaokxH_ZWfMSA9DkAdNOrBrxi3UAC3m1h9TooqLj_sa6fh4ew_1GEq7EphFx7x52GRb0fdetzbcryLWpbnyFYxSBzPLbBL-ctobQpVyWXI4fufFaA6VVmEXXgBi65bCeU8mYihp1bgC2wXd1U6WzIhuUMplMFT1T8oQoNDb1ck7gYn6RXJ2v22QrDSbhg5zWWZ2MKrbczk4vtv5UgNP5oeK6EnQkGZ1doa_qAMIXcsXL0LLblW6GaPei8CMcSd50buW6udF5Uexg" className="w-14 h-14 rounded-full object-cover" />
+            <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white">
+              <span className="material-icons">smart_toy</span>
+            </div>
             <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <span className="font-bold text-text-main">Host</span>
-              <span className="text-[10px] text-gray-400">Hace 1h</span>
+              <span className="font-bold text-text-main">Concierge Virtual</span>
+              <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full">En Vivo</span>
             </div>
-            <p className="text-xs text-text-light truncate">¿Tienen alguna duda sobre la llegada?</p>
+            <p className="text-xs text-text-light truncate">¿Cómo puedo ayudarle a planear su visita?</p>
           </div>
         </div>
       </div>
@@ -125,49 +242,119 @@ const Messages: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-white z-[60] flex flex-col animate-slide-up">
-      <header className="px-4 py-4 border-b border-gray-100 flex items-center gap-4">
-        <button onClick={() => setActiveChatId(null)} className="material-icons text-text-main">arrow_back</button>
-        <div className="flex items-center gap-3">
-          <img src="https://lh3.googleusercontent.com/aida-public/AB6AXuBEaokxH_ZWfMSA9DkAdNOrBrxi3UAC3m1h9TooqLj_sa6fh4ew_1GEq7EphFx7x52GRb0fdetzbcryLWpbnyFYxSBzPLbBL-ctobQpVyWXI4fufFaA6VVmEXXgBi65bCeU8mYihp1bgC2wXd1U6WzIhuUMplMFT1T8oQoNDb1ck7gYn6RXJ2v22QrDSbhg5zWWZ2MKrbczk4vtv5UgNP5oeK6EnQkGZ1doa_qAMIXcsXL0LLblW6GaPei8CMcSd50buW6udF5Uexg" className="w-10 h-10 rounded-full" />
-          <div>
-            <p className="font-bold text-sm">Host</p>
-            <p className="text-[10px] text-green-500 font-bold uppercase">En Línea</p>
+      <header className="px-4 py-4 border-b border-gray-50 flex items-center justify-between bg-white shadow-sm">
+        <div className="flex items-center gap-4">
+          <button onClick={() => setActiveChatId(null)} className="material-icons text-text-main hover:bg-gray-100 p-2 rounded-full -ml-2 transition-colors">arrow_back_ios_new</button>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-md">
+              <span className="material-icons text-lg">hotel_class</span>
+            </div>
+            <div>
+              <p className="font-bold text-sm text-text-main">Concierge de Lujo</p>
+              <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                <span className="w-1.5 h-1.5 bg-green-500 rounded-full relative"><span className="absolute inset-0 bg-green-500 rounded-full animate-ping"></span></span>
+                En Línea
+              </p>
+            </div>
           </div>
         </div>
       </header>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-sand/30 scroll-smooth pb-10">
-        <div className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest my-4">Hoy</div>
-        {messages.map(m => (
-          <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end animate-slide-up' : 'justify-start animate-fade-in'}`}>
-            <div className={`max-w-[85%] p-4 text-[13px] leading-relaxed relative ${m.sender === 'guest' ? 'bg-primary text-white rounded-2xl rounded-tr-sm shadow-sm' : 'bg-white text-text-main rounded-2xl rounded-tl-sm shadow-sm border border-gray-100'}`}>
-              {m.text}
-              <span className={`text-[8px] absolute -bottom-5 ${m.sender === 'guest' ? 'right-1 text-gray-400' : 'left-1 text-gray-400'}`}>
-                {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fbfaf8] scroll-smooth pb-10">
+        <div className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest my-6">Villa Retiro R LLC - Soporte 24/7</div>
+        {messages.map((m, i) => {
+          // Extraer la etiqueta de pago
+          const paymentMatch = m.text.match(/\[PAYMENT_REQUEST:\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^\]]+)\]/);
+          let displayText = m.text;
+          let paymentData = null;
+
+          if (paymentMatch) {
+            displayText = m.text.replace(paymentMatch[0], '');
+            paymentData = {
+              propertyId: paymentMatch[1].trim(),
+              total: parseFloat(paymentMatch[2].trim()),
+              checkIn: paymentMatch[3].trim(),
+              checkOut: paymentMatch[4].trim(),
+              guests: parseInt(paymentMatch[5].trim())
+            };
+          }
+
+          return (
+            <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end animate-slide-up' : 'justify-start animate-fade-in'}`}>
+              <div className={`max-w-[85%] p-4 text-[14px] leading-relaxed relative ${m.sender === 'guest' ? 'bg-primary text-white rounded-[20px] rounded-br-[4px] shadow-md shadow-primary/20' : 'bg-white text-text-main rounded-[20px] rounded-tl-[4px] shadow-sm border border-gray-100'}`}>
+                <div className={`flex items-center gap-1 mb-1 text-[10px] font-bold uppercase tracking-wider ${m.sender === 'guest' ? 'text-white/60' : 'text-primary/70'}`}>
+                  {m.sender === 'guest' ? 'Usted' : <><span className="material-icons text-[10px]">auto_awesome</span> Asistente</>}
+                </div>
+
+                <div>{displayText}</div>
+
+                {/* Mostrar Botón de PayPal si hay Payment Request */}
+                {paymentData && m.sender === 'ai' && (
+                  <div className="mt-4 p-5 bg-orange-50/80 rounded-2xl border border-orange-200 animate-slide-up shadow-sm">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Desglose de Inversión</p>
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs text-orange-900 font-bold">Total Final:</span>
+                      <span className="text-lg font-black text-black">${paymentData.total}</span>
+                    </div>
+                    <p className="text-[10px] text-orange-800 mb-4 opacity-80 leading-tight">Estancia: {paymentData.checkIn} al {paymentData.checkOut}<br />Huéspedes: {paymentData.guests}</p>
+
+                    <div className="mb-4 bg-white/50 p-3 rounded-xl">
+                      <label className="flex items-start gap-2 cursor-pointer text-[10px] text-orange-900 leading-tight">
+                        <input type="checkbox" className="mt-0.5 accent-orange-600" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
+                        <span>He leído y acepto firmar el <span className="font-bold underline">Contrato de Alquiler Digital</span> y las reglas de la casa.</span>
+                      </label>
+                    </div>
+
+                    {acceptedTerms ? (
+                      <div className="bg-white p-2 rounded-xl shadow-sm animate-fade-in">
+                        <PayPalPayment
+                          amount={paymentData.total}
+                          onSuccess={(details) => handlePaymentSuccess(details, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total)}
+                          onError={(err) => alert("Error con PayPal: " + err)}
+                        />
+                      </div>
+                    ) : (
+                      <div className="bg-orange-100/50 p-3 rounded-xl border border-dashed border-orange-300 text-center">
+                        <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest">Acepte los términos para pagar</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <span className={`text-[9px] font-medium absolute -bottom-5 ${m.sender === 'guest' ? 'right-2 text-gray-400' : 'left-2 text-gray-400'}`}>
+                  {new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
         {isTyping && (
-          <div className="flex justify-start animate-fade-in">
-            <div className="max-w-[85%] px-4 py-3 bg-white border border-gray-100 rounded-2xl rounded-tl-sm shadow-sm flex gap-1.5 items-center">
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.3s]"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:-0.15s]"></div>
-              <div className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"></div>
+          <div className="flex justify-start animate-fade-in mt-6">
+            <div className="max-w-[85%] px-5 py-4 bg-white border border-gray-100 rounded-[20px] rounded-tl-[4px] shadow-sm flex gap-1.5 items-center">
+              <span className="material-icons text-primary/40 mr-1 animate-pulse">edit</span>
+              <div className="flex gap-1">
+                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }}></div>
+                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }}></div>
+                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
+              </div>
             </div>
           </div>
         )}
-        <div ref={messagesEndRef} />
+        <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-100 flex gap-2">
+      <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
         <input
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          placeholder="Pregunta sobre la playa, luz, comida..."
-          className="flex-1 bg-gray-50 border-none rounded-xl p-3 text-sm focus:ring-2 focus:ring-primary/20"
+          placeholder="Ej: ¿Qué fechas hay disponibles?"
+          className="flex-1 bg-[#f4f3f0] border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all text-text-main placeholder:text-gray-400"
         />
-        <button type="submit" className="bg-primary text-white w-12 h-12 rounded-xl flex items-center justify-center shadow-lg active:scale-90 transition-all">
+        <button
+          type="submit"
+          disabled={!inputText.trim() || isTyping}
+          className="bg-primary text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-50 disabled:active:scale-100"
+        >
           <span className="material-icons">send</span>
         </button>
       </form>
@@ -176,4 +363,3 @@ const Messages: React.FC = () => {
 };
 
 export default Messages;
-
