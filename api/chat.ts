@@ -80,7 +80,7 @@ export default async function handler(req: any, res: any) {
         const model = genAI.getGenerativeModel({
             model: "gemini-1.5-flash-latest",
             systemInstruction: VILLA_RET_KNOWLEDGE
-        });
+        }, { apiVersion: "v1" });
 
         // 4. EJECUCIÓN SIN BUCLES DE REINTENTO
         const chat = model.startChat({
