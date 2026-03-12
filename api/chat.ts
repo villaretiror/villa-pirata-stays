@@ -10,64 +10,58 @@ export async function POST(req: Request) {
     try {
         const { messages } = await req.json();
 
-        // 1. CAPTURA LIMPIA DE API KEY (TRIMMED)
+        // 1. CAPTURA Y SANITIZACIÓN DE API KEY
         const rawKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
         const apiKey = rawKey.replace(/["']/g, '').trim();
 
         if (!apiKey) {
-            console.error('CRITICAL: API Key is missing or empty');
-            return new Response('Configuración de IA pendiente.', { status: 500 });
+            console.error('CRITICAL: API Key is missing');
+            return new Response('Auth Error', { status: 500 });
         }
 
-        // 2. FORZADO A VERSIÓN V1 ESTABLE (Evita el 404 del endpoint v1beta)
+        // 2. CONFIGURACIÓN COMPREHENSIVE (v1beta + gemini-1.5-flash-latest)
+        // Se utiliza v1beta para asegurar soporte del campo systemInstruction
         const googleProvider = createGoogleGenerativeAI({
             apiKey: apiKey,
-            baseURL: 'https://generativelanguage.googleapis.com/v1',
+            baseURL: 'https://generativelanguage.googleapis.com/v1beta',
             headers: {
                 'x-goog-api-key': apiKey,
             }
         });
 
-        // 3. BASE DE CONOCIMIENTO (STRICT CONTEXT)
+        // 3. BASE DE CONOCIMIENTO (CONCIERGE)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title}
 Precio: $${p.price}/noche | Capacidad: ${p.guests}
 Check-in: ${p.policies.checkInTime} | Check-out: ${p.policies.checkOutTime}
+WiFi: ${p.policies.wifiName}
 `).join('\n---\n');
 
         const systemsPrompt = `
 Eres el Concierge experto de Villa Retiro y Villa Pirata Stays. 
-Usa solo esta base de datos:
+Responde basándote en esta base de datos:
 ${propertyInfo}
 
 Políticas: ${VILLA_KNOWLEDGE.policies.cancellation}
-Contacto: ${HOST_PHONE}
+Contacto Host: ${HOST_PHONE}
 
-Regla: Responde con brevedad y calidez. No inventes datos.
+Regla: No inventes datos. Tono profesional, cálido y conciso.
 `.trim();
 
-        // 4. EJECUCIÓN CON WORKAROUND DE MENSAJES (Soporte total en v1)
-        // Prependemos el prompt del sistema como el primer mensaje del usuario para evitar errores de validación de campos
-        const finalMessages = [
-            {
-                role: 'user',
-                content: `INSTRUCCIONES DE SISTEMA (CONSERVAR SIEMPRE):\n${systemsPrompt}\n--- (FIN DE INSTRUCCIONES) ---`
-            },
-            ...messages.map((m: any) => ({
+        // 4. EJECUCIÓN CON MODELO LATEST Y SYSTEM PROPERTY
+        const result = await streamText({
+            model: googleProvider('gemini-1.5-flash-latest'),
+            system: systemsPrompt,
+            messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
                 content: m.content
-            }))
-        ];
-
-        const result = await streamText({
-            model: googleProvider('gemini-1.5-flash'),
-            messages: finalMessages,
+            })),
         });
 
-        // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON LECTOR MANUAL DEL FRONTEND)
+        // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON FRONTEND)
         return result.toTextStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_V1_ERROR:', error.message);
-        return new Response('Servicio temporalmente fuera de línea.', { status: 500 });
+        console.error('CHAT_AUDIT_ERROR:', error.message);
+        return new Response('Error de conexión con el servicio de IA.', { status: 500 });
     }
 }
