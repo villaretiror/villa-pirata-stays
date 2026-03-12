@@ -2,43 +2,51 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export default async function handler(req: any, res: any) {
+// ✅ Versión Modernizada para Vercel Functions (Web Standard)
+export default async function handler(req: Request) {
+  // Manejo de CORS Preflight (Opcional pero recomendado para evitar 405)
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204 });
+  }
+
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
   }
 
   // 1. Validaciones Críticas
   if (!process.env.RESEND_API_KEY) {
     console.error("[Email API] CRITICAL: RESEND_API_KEY missing");
-    return res.status(500).json({ error: 'Server configuration incomplete' });
+    return new Response(JSON.stringify({ error: 'Server configuration incomplete' }), { status: 500 });
   }
 
-  const { type, to, customer, contactData, booking, propertyId } = req.body;
-  const userData = customer || contactData || {};
-
-  // Log de Auditoría Master
-  console.log(`[Email API] Event: ${type} | UserAgent: ${req.headers['user-agent']}`);
-  console.log(`[Email API] Full Payload:`, JSON.stringify(req.body, null, 2));
-
-  const resend = new Resend(process.env.RESEND_API_KEY);
-  const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
-  const hostEmail = 'villaretiror@gmail.com';
-
-  const LOGOS: Record<string, string> = {
-    '1081171030449673920': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/villa_retiro_logo.png',
-    '42839458': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/pirata_family_logo.png'
-  };
-
-  const currentLogo = LOGOS[propertyId] || LOGOS['1081171030449673920'];
-
-  const emailFooter = `
-    <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f0f0f0; text-align: center;">
-      <a href="https://wa.me/17873560895" style="background-color: #25D366; color: #fff; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">📲 Hablar con el Host</a>
-      <p style="font-size: 11px; color: #999; margin-top: 20px;">Mensaje de villaretiror.com</p>
-    </div>
-  `;
-
   try {
+    // Parseo manual del cuerpo (Web standard)
+    const body = await req.json();
+    const { type, to, customer, contactData, booking, propertyId } = body;
+    const userData = customer || contactData || {};
+
+    // Log de Auditoría Master (Usa headers.get)
+    console.log(`[Email API] Event: ${type} | UserAgent: ${req.headers.get('user-agent')}`);
+    console.log(`[Email API] Full Payload:`, JSON.stringify(body, null, 2));
+
+    const resendClient = new Resend(process.env.RESEND_API_KEY);
+    const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
+    const hostEmail = 'villaretiror@gmail.com';
+
+    const LOGOS: Record<string, string> = {
+      '1081171030449673920': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/villa_retiro_logo.png',
+      '42839458': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/pirata_family_logo.png'
+    };
+
+    const currentLogo = LOGOS[propertyId] || LOGOS['1081171030449673920'];
+
+    const emailFooter = `
+      <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f0f0f0; text-align: center;">
+        <a href="https://wa.me/17873560895" style="background-color: #25D366; color: #fff; padding: 12px 24px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">📲 Hablar con el Host</a>
+        <p style="font-size: 11px; color: #999; margin-top: 20px;">Mensaje de villaretiror.com</p>
+      </div>
+    `;
+
     let emails: any[] = [];
 
     // 📩 CASO: CONTACTO / LEADS
@@ -64,7 +72,7 @@ export default async function handler(req: any, res: any) {
           subject: 'Recibimos tu consulta - Villa Retiro 🌴',
           html: `<div style="font-family: sans-serif; text-align: center; padding: 30px;">
             <img src="${currentLogo}" width="100" />
-            <h2>¡Hola ${name.split(' ')[0]}!</h2>
+            <h2>¡Hola ${name?.split(' ')[0]}!</h2>
             <p>Gracias por tu interés. Te contactaremos pronto.</p>
             ${emailFooter}
           </div>`
@@ -87,7 +95,7 @@ export default async function handler(req: any, res: any) {
           <p><strong>Mensaje:</strong> ${message}</p>
           <p><strong>Contacto:</strong> ${contact}</p>
           <div style="margin-top: 20px;">
-            <a href="https://wa.me/${contact.replace(/\D/g, '')}" style="background: #25D366; color: white; padding: 15px 25px; text-decoration: none; border-radius: 10px; font-weight: bold;">WhatsApp Directo</a>
+            <a href="https://wa.me/${contact?.replace(/\D/g, '')}" style="background: #25D366; color: white; padding: 15px 25px; text-decoration: none; border-radius: 10px; font-weight: bold;">WhatsApp Directo</a>
           </div>
           ${emailFooter}
         </div>`
@@ -96,7 +104,7 @@ export default async function handler(req: any, res: any) {
 
     // 📩 CASO: PAGO EXITOSO
     else if (type === 'payment_success') {
-      const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body;
+      const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = body;
       emails.push({
         from: fromAddress,
         to: customerEmail,
@@ -117,13 +125,19 @@ export default async function handler(req: any, res: any) {
     }
 
     // Ejecución de envíos
-    const results = await Promise.allSettled(emails.map(e => resend.emails.send(e)));
+    const results = await Promise.allSettled(emails.map(e => resendClient.emails.send(e)));
     console.log(`[Email API] Dispatch Results:`, JSON.stringify(results, null, 2));
 
-    return res.status(200).json({ success: true, results });
+    return new Response(JSON.stringify({ success: true, results }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    });
 
   } catch (err: any) {
     console.error("[Email API] FATAL ERROR:", err.message);
-    return res.status(500).json({ error: err.message });
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' }
+    });
   }
 }

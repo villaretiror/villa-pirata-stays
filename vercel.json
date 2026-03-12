@@ -59,7 +59,7 @@
             "destination": "/api/$1"
         },
         {
-            "source": "/((?!assets/|auth/|.*\\.).*)",
+            "source": "/((?!api/|assets/|auth/|.*\\.).*)",
             "destination": "/index.html"
         }
     ]
