@@ -16,12 +16,13 @@ export async function POST(req: Request) {
 
         if (!apiKey) {
             console.error('CRITICAL: API Key is missing');
-            return new Response('Configuración de IA pendiente.', { status: 500 });
+            return new Response('Auth Error', { status: 500 });
         }
 
-        // 2. CONFIGURACIÓN DEL PROVEEDOR (Dejamos que el SDK maneje el endpoint automáticamente)
+        // 2. FORZADO A VERSIÓN V1 ESTABLE (Mata el 404 de v1beta)
         const google = createGoogleGenerativeAI({
             apiKey: apiKey,
+            baseURL: 'https://generativelanguage.googleapis.com/v1',
             headers: {
                 'x-goog-api-key': apiKey,
             }
@@ -42,10 +43,10 @@ ${propertyInfo}
 Políticas: ${VILLA_KNOWLEDGE.policies.cancellation}
 Contacto: ${HOST_PHONE}
 
-Regla: Responde con brevedad y calidez. No inventes datos.
+Regla: No inventes datos. Tono profesional y cálido.
 `.trim();
 
-        // 4. PREVENCIÓN DE CARGA CORRUPTA (Limitamos a los últimos 20 mensajes)
+        // 4. PREVENCIÓN DE CARGA CORRUPTA
         const chatHistory = messages
             .slice(-20)
             .map((m: any) => ({
@@ -53,9 +54,9 @@ Regla: Responde con brevedad y calidez. No inventes datos.
                 content: m.content
             }));
 
-        // 5. EJECUCIÓN CON ID DE MODELO EXACTO (Recomendado por Google Cloud)
+        // 5. MODELO ESTABLE SIN 'LATEST'
         const result = await streamText({
-            model: google('models/gemini-1.5-flash-latest'),
+            model: google('gemini-1.5-flash'),
             system: systemsPrompt,
             messages: chatHistory,
         });
@@ -63,7 +64,7 @@ Regla: Responde con brevedad y calidez. No inventes datos.
         // 6. RESPUESTA TEXT STREAM (COMPATIBLE CON FRONTEND)
         return result.toTextStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_AUDIT_ERROR:', error.message);
-        return new Response('El servicio de chat está experimentando una alta demanda. Por favor, refresque la página.', { status: 500 });
+        console.error('CHAT_V1_ERROR:', error.message);
+        return new Response('Mantenimiento', { status: 500 });
     }
 }
