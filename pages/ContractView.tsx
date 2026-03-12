@@ -11,8 +11,23 @@ const ContractView = () => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        const CACHE_KEY = `cached_property_${propertyId}`;
+
         async function fetchProperty() {
-            setLoading(true);
+            // 1. STALE: Cargar desde cache local si existe para mostrar instantáneamente
+            const cached = localStorage.getItem(CACHE_KEY);
+            if (cached) {
+                const { data, timestamp } = JSON.parse(cached);
+                setProperty(data);
+                setLoading(false);
+
+                // Si el cache tiene menos de 5 minutos, no revalidamos inmediatamente
+                if (Date.now() - timestamp < 300000) return;
+            } else {
+                setLoading(true);
+            }
+
+            // 2. REVALIDATE: Fetch real desde Supabase en background
             const { data, error } = await supabase
                 .from('properties')
                 .select('*')
@@ -21,6 +36,8 @@ const ContractView = () => {
 
             if (!error && data) {
                 setProperty(data);
+                // Guardamos en cache con timestamp
+                localStorage.setItem(CACHE_KEY, JSON.stringify({ data, timestamp: Date.now() }));
             }
             setLoading(false);
         }

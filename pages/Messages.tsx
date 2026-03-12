@@ -23,7 +23,22 @@ const Messages: React.FC = () => {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setIsAuthenticated(!!session);
+    };
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setIsAuthenticated(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const getSessionId = () => {
     let id = localStorage.getItem(SESSION_KEY);
@@ -114,10 +129,17 @@ const Messages: React.FC = () => {
 
       let response;
       try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session?.user?.id;
+
         response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ messages: apiMessages, sessionId }),
+          body: JSON.stringify({
+            messages: apiMessages,
+            sessionId: getSessionId(),
+            userId
+          }),
           signal: controller.signal
         });
       } catch (fetchErr: any) {
@@ -375,25 +397,40 @@ const Messages: React.FC = () => {
                     </div>
                     <p className="text-[10px] text-orange-800 mb-4 opacity-80 leading-tight">Estancia: {paymentData.checkIn} al {paymentData.checkOut}<br />Huéspedes: {paymentData.guests}</p>
 
-                    <div className="mb-4 bg-white/50 p-3 rounded-xl">
-                      <label className="flex items-start gap-2 cursor-pointer text-[10px] text-orange-900 leading-tight">
-                        <input type="checkbox" className="mt-0.5 accent-orange-600" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
-                        <span>He leído y acepto firmar el <Link to={`/contrato?id=${paymentData.propertyId}`} target="_blank" className="font-bold underline hover:text-orange-600">Contrato de Alquiler Digital</Link> y las reglas de la casa.</span>
-                      </label>
-                    </div>
-
-                    {acceptedTerms ? (
-                      <div className="bg-white p-2 rounded-xl shadow-sm animate-fade-in">
-                        <PayPalPayment
-                          amount={paymentData.total}
-                          onSuccess={(details) => handlePaymentSuccess(details, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total)}
-                          onError={(err) => alert("Error con PayPal: " + err)}
-                        />
+                    {isAuthenticated === false ? (
+                      <div className="bg-white p-6 rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in shadow-sm">
+                        <span className="material-icons text-orange-400 mb-2">lock</span>
+                        <p className="text-[12px] font-bold text-gray-800 mb-4 uppercase tracking-tighter">Inicie sesión para completar su reserva</p>
+                        <button
+                          onClick={() => navigate('/login?redirect=messages')}
+                          className="w-full bg-[#FF6633] text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-200 transition-transform active:scale-95"
+                        >
+                          Acceder / Registrarse
+                        </button>
                       </div>
                     ) : (
-                      <div className="bg-orange-100/50 p-3 rounded-xl border border-dashed border-orange-300 text-center">
-                        <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest">Acepte los términos para pagar</p>
-                      </div>
+                      <>
+                        <div className="mb-4 bg-white/50 p-3 rounded-xl">
+                          <label className="flex items-start gap-2 cursor-pointer text-[10px] text-orange-900 leading-tight">
+                            <input type="checkbox" className="mt-0.5 accent-orange-600" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
+                            <span>He leído y acepto firmar el <Link to={`/contrato?id=${paymentData.propertyId}`} target="_blank" className="font-bold underline hover:text-orange-600">Contrato de Alquiler Digital</Link> y las reglas de la casa.</span>
+                          </label>
+                        </div>
+
+                        {acceptedTerms ? (
+                          <div className="bg-white p-2 rounded-xl shadow-sm animate-fade-in">
+                            <PayPalPayment
+                              amount={paymentData.total}
+                              onSuccess={(details) => handlePaymentSuccess(details, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total)}
+                              onError={(err) => alert("Error con PayPal: " + err)}
+                            />
+                          </div>
+                        ) : (
+                          <div className="bg-orange-100/50 p-3 rounded-xl border border-dashed border-orange-300 text-center">
+                            <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest">Acepte los términos para pagar</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                 )}

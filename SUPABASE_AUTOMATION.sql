@@ -72,7 +72,12 @@ ON CONFLICT (id) DO NOTHING;
 -- 5. [AUDIT LOGS] PARA EL CHAT
 CREATE TABLE IF NOT EXISTS public.chat_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id TEXT,
+    session_id TEXT UNIQUE,
+    user_id UUID REFERENCES public.profiles(id),
     message_count INT DEFAULT 0,
     last_interaction TIMESTAMPTZ DEFAULT NOW()
 );
+
+ALTER TABLE public.chat_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Users can view their own chat logs" ON public.chat_logs;
+CREATE POLICY "Users can view their own chat logs" ON public.chat_logs FOR SELECT USING (auth.uid() = user_id);

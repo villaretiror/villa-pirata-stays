@@ -50,9 +50,25 @@ const google = createGoogleGenerativeAI({
 
 export async function POST(req: Request) {
     try {
-        const { messages: rawMessages } = await req.json();
+        const { messages: rawMessages, sessionId, userId } = await req.json();
 
-        // 1. Sanitización de mensajes para forzar contexto en Edge Runtime
+        // 1. Limite de Memoria: Solo enviamos los últimos 20 mensajes para optimizar costos y latencia
+        const recentMessages = (rawMessages || []).slice(-20);
+
+        // 2. Persistencia y Auditoría de Sesión (chat_logs)
+        if (sessionId) {
+            // Actualizamos contadores en segundo plano para no bloquear al usuario
+            supabase.from('chat_logs').upsert({
+                session_id: sessionId,
+                user_id: userId || null,
+                message_count: (rawMessages || []).length,
+                last_interaction: new Date().toISOString()
+            }, { onConflict: 'session_id' }).then(({ error }) => {
+                if (error) console.error('[CHAT_LOG_ERROR]:', error.message);
+            });
+        }
+
+        // 3. Sanitización de mensajes para forzar contexto en Edge Runtime
         const finalMessages: CoreMessage[] = [
             {
                 role: 'user',
@@ -62,7 +78,7 @@ export async function POST(req: Request) {
                 role: 'assistant',
                 content: "Entendido. Iniciando protocolo de Concierge de lujo para Villa Retiro y Villa Pirata. Mi éxito hoy depende de sus reservas y satisfacción."
             },
-            ...(rawMessages || []).map((m: any): CoreMessage => ({
+            ...recentMessages.map((m: any): CoreMessage => ({
                 role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
                 content: String(m.content || m.text || ''),
             }))
