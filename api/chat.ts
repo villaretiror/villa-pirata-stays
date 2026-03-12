@@ -56,8 +56,8 @@ Regla: Responde con brevedad y calidez. No inventes datos.
             })),
         });
 
-        // 5. RESPUESTA DATA STREAM (COMPATIBLE SDK v4)
-        return result.toDataStreamResponse();
+        // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON LECTOR MANUAL DEL FRONTEND)
+        return result.toTextStreamResponse();
     } catch (error: any) {
         console.error('CHAT_V1BETA_ERROR:', error.message);
         return new Response('Servicio temporalmente fuera de línea.', { status: 500 });
