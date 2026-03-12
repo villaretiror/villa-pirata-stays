@@ -66,7 +66,7 @@ export async function POST(req: Request) {
 
         // 3. EJECUCIÓN (Sin parámetro 'system' para evitar systemInstruction bug)
         const result = await streamText({
-            model: google('gemini-2.0-flash'),
+            model: google('gemini-3-flash'),
             messages: finalMessages,
             temperature: 0.7,
         });
