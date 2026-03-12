@@ -48,9 +48,9 @@ Contacto Host: ${HOST_PHONE}
 Regla: No inventes datos. Tono profesional, cálido y conciso.
 `.trim();
 
-        // 4. EJECUCIÓN CON MODELO LATEST Y SYSTEM PROPERTY
+        // 4. EJECUCIÓN CON MODELO ESPECÍFICO (v1beta reconoce 001 con mayor estabilidad)
         const result = await streamText({
-            model: googleProvider('gemini-1.5-flash-latest'),
+            model: googleProvider('gemini-1.5-flash-001'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
