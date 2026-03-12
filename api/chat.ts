@@ -63,8 +63,8 @@ Usa un tono de lujo, profesional y cálido. Si no tienes la información, ofrece
             })),
         });
 
-        // 5. RESPUESTA DATA STREAM (REQUERIDO POR VERCEL AI SDK LATEST)
-        return result.toDataStreamResponse();
+        // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON EL FRONTEND ACTUAL)
+        return result.toTextStreamResponse();
     } catch (error: any) {
         console.error('CHAT_EDGE_ERROR:', error.message);
         return new Response('Error en el servicio de chat. Por favor, intente de nuevo.', { status: 500 });
