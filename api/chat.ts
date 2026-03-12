@@ -69,7 +69,7 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
 `.trim();
 
         const result = await streamText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-1.5-flash-latest'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
