@@ -62,9 +62,10 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+      const origin = window.location.origin;
       const redirectUrl = redirectToParam === 'messages'
-        ? `${SITE_URL}/messages`
-        : SITE_URL;
+        ? `${origin}/messages`
+        : origin;
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
