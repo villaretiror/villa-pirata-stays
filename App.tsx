@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+// Deploy trigger: 2026-03-12-1400
+import React, { useState, useEffect } from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import Home from './pages/Home';
