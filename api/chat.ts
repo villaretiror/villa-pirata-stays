@@ -4,10 +4,10 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
 
 /**
  * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE
- * Model: Gemini 2.0 Flash
+ * Model: Gemini 2.5 Flash
  * Personality: Senior Luxury Concierge
  * Bypass: SDK v1.1.9 systemInstruction Fix
- * Last Deploy: 2026-03-12T12:13
+ * Last Deploy: 2026-03-12T12:32
  */
 
 // 1. DEFINICIÓN DEL MASTER PROMPT
@@ -31,7 +31,6 @@ export const maxDuration = 30;
 // EL ENCHUFE (Provider con Billing)
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-    baseURL: 'https://generativelanguage.googleapis.com', // Force stable v1
 });
 
 export async function POST(req: Request) {
@@ -64,9 +63,9 @@ export async function POST(req: Request) {
             })
         ];
 
-        // 3. EJECUCIÓN (Bypass de bug del SDK usando el alias "latest")
+        // 3. EJECUCIÓN (Bypass de bug del SDK usando modelo estable de 2026)
         const result = await streamText({
-            model: google('gemini-1.5-flash-latest'),
+            model: google('gemini-2.5-flash'),
             messages: finalMessages,
             temperature: 0.7,
         });
