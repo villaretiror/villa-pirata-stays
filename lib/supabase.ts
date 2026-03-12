@@ -42,6 +42,7 @@ const createMockClient = () => {
     order: () => handler,
     limit: () => handler,
     range: () => handler,
+    or: () => handler,
     abortSignal: () => handler, // Soporte para abortSignal en mock
     single: () => Promise.resolve(mockResponse(null)),
     maybeSingle: () => Promise.resolve(mockResponse(null)),

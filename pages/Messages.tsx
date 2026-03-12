@@ -148,16 +148,39 @@ const Messages: React.FC = () => {
       }
       clearTimeout(timeoutId);
 
-      const data = await response.json();
+      // --- CABLEADO DE STREAMING ---
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || 'Error en el chat');
+      }
 
-      const aiMsg: Message = {
-        id: crypto.randomUUID(),
-        text: data.response || 'Mil disculpas, tuve un problema al procesar su solicitud. ¿Gusta que contacte al Host?',
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error('No se pudo inicializar el lector de stream');
+
+      const decoder = new TextDecoder();
+      let aiResponseText = "";
+      const aiMsgId = crypto.randomUUID();
+
+      // Agregar mensaje inicial vacío para la IA
+      setMessages(prev => [...prev, {
+        id: aiMsgId,
+        text: "",
         sender: 'ai',
         created_at: new Date().toISOString()
-      };
+      }]);
 
-      setMessages(prev => [...prev, aiMsg]);
+      setIsTyping(false);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        aiResponseText += chunk;
+        setMessages(prev => prev.map(m =>
+          m.id === aiMsgId ? { ...m, text: aiResponseText } : m
+        ));
+      }
 
     } catch (error) {
       console.error('Chat error:', error);

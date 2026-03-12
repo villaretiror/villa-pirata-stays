@@ -21,7 +21,6 @@ const SmartImage: React.FC<SmartImageProps> = ({
             onError={() => {
                 if (!error) {
                     setError(true);
-                    console.warn(`SmartImage: Fallback triggered for ${src}`);
                 }
             }}
             {...props}

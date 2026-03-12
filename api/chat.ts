@@ -1,96 +1,89 @@
-// ─── DESPLIEGUE DEFINITIVO V1 (SIN BETA) ───────────────────────────────────
-// Forzado manual de la ruta estable para evitar Error 404 en Vercel.
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { streamText } from 'ai';
+import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants';
+import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
 
-export default async function handler(req: any, res: any) {
-    res.setHeader('Content-Type', 'application/json');
+// Configuración de proveedor para usar la llave existente
+const google = createGoogleGenerativeAI({
+    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+});
 
+// Configuración de duración para evitar timeouts en Vercel
+export const maxDuration = 30;
+
+export default async function handler(req: Request) {
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method not allowed' });
+        return new Response('Method not allowed', { status: 405 });
     }
 
-    const API_KEY = process.env.GEMINI_API_KEY || '';
-
     try {
-        if (!API_KEY) {
+        const { messages } = await req.json();
+
+        if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+            console.error('MISSING API KEY: GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY');
             throw new Error('MISSING_API_KEY');
         }
 
-        const { messages = [] } = req.body;
-        if (messages.length === 0) {
-            return res.status(200).json({ response: "¡Hola! ¿En qué puedo ayudarle?" });
-        }
+        // Consolidación de conocimiento del proyecto
+        const propertyInfo = PROPERTIES.map(p => `
+Propiedad: ${p.title} (ID: ${p.id})
+Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
+Capacidad: ${p.guests} huéspedes | ${p.bedrooms} habs | ${p.beds} camas | ${p.baths} baños
+Ubicación: ${p.location} (${p.address})
+WiFi: ${p.policies.wifiName}
+Check-in: ${p.policies.checkInTime} | Check-out: ${p.policies.checkOutTime}
+Reglas clave: ${p.policies.houseRules?.join(', ') || 'Consultar al llegar'}
+Descripción: ${p.description}
+Amenidades: ${p.amenities.join(', ')}
+`).join('\n---\n');
 
-        // 1. CONOCIMIENTO DEL SISTEMA (SYSTEM PROMPT)
-        const systemInstruction = `
-Eres el Concierge Premium de Villa Retiro (Cabo Rojo, PR). 
-Tu misión es convertir consultas en reservas confirmadas.
-Trato: Respetuoso (Usted), cordial y cálido.
+        const guideInfo = INITIAL_LOCAL_GUIDE.map(cat => `
+${cat.category}:
+${cat.items.map(item => `- ${item.name} (${item.distance}): ${item.desc}`).join('\n')}
+`).join('\n');
 
-VILLAS:
-- Villa Pirata Family (ID: 42839458) | $225/noche | 6 huéspedes.
-- Villa Retiro R (ID: 1081171030449673920) | $275/noche | 8 huéspedes.
+        const systemsPrompt = `
+Eres el experto absoluto y Concierge Digital de Villa Retiro y Villa Pirata Stays. 
+Tu misión es brindar un servicio de lujo, cálido y eficiente para convertir consultas en reservas.
 
-LOGÍSTICA:
-- Check-in: 4:00 PM | Check-out: 11:00 AM.
-- Wi-Fi: Wifivacacional.
-- Ubicación: Sector Samán, Cabo Rojo.
-- No fiestas. Respeto absoluto.
+REGLA DE ORO DE CONOCIMIENTO:
+Usa estrictamente esta base de datos del proyecto. No inventes precios, ubicaciones ni servicios.
+Si la información no está aquí, indica que consultarás con el equipo humano (Host Brian: ${HOST_PHONE}).
 
-CIERRE DE RESERVA:
-Calcula el total e incluye SIEMPRE:
-[PAYMENT_REQUEST: {property_id}, {total}, {checkin}, {checkout}, {guests}]
-        `.trim();
+INFORMACIÓN DE PROPIEDADES:
+${propertyInfo}
 
-        // 2. SANEAMIENTO DE HISTORIAL (Garantizar primer mensaje sea USER)
-        const userMessage = String(messages[messages.length - 1]?.content || '').trim();
-        let contents = messages.slice(0, -1).map((m: any) => ({
-            role: m.role === 'user' ? 'user' : 'model',
-            parts: [{ text: String(m.content || '').trim() }]
-        })).filter((m: any) => m.parts[0].text);
+GUÍA LOCAL (RECOMENDACIONES):
+${guideInfo}
 
-        // Poda estratégica: Primer mensaje DEBE ser user
-        while (contents.length > 0 && contents[0].role !== 'user') {
-            contents.shift();
-        }
+POLÍTICAS ADICIONALES:
+- Cancelación: ${VILLA_KNOWLEDGE.policies.cancellation}
+- Mascotas: ${VILLA_KNOWLEDGE.policies.rules.includes('mascotas') ? 'Permitidas con fee adicional' : 'Consultar'}
+- Emergencias: ${VILLA_KNOWLEDGE.emergencies.contact} | Policía/Ambulancia: 911
 
-        // Agregar mensaje actual
-        contents.push({ role: 'user', parts: [{ text: userMessage }] });
+CAPACIDADES Y TONO:
+1. Responde preguntas frecuentes basándote estrictamente en el contenido arriba.
+2. Guía al usuario hacia la reserva directa. 
+3. Mantén un tono de lujo: profesional (Usted), cálido y experto.
+4. Si el usuario está listo para reservar, calcula el total (Noches * Precio + Limpieza) y genera la etiqueta de pago EXACTAMENTE así:
+[PAYMENT_REQUEST: {id_vendedor_string}, {total_decimal}, {checkin_fecha}, {checkout_fecha}, {num_huespedes}]
 
-        // 3. LLAMADA MANUAL V1 (BYPASS SDK)
-        // Usamos fetch directo a la versión /v1/ para eliminar el 404 de v1beta
-        const API_URL = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${API_KEY}`;
+MANEJO DE ERRORES:
+Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una excelente pregunta. Permítame confirmarlo con nuestro equipo para darle una respuesta precisa." y ofrece el contacto oficial.
+`.trim();
 
-        const response = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                system_instruction: {
-                    parts: [{ text: systemInstruction }]
-                },
-                contents: contents,
-                generationConfig: {
-                    temperature: 0.7,
-                    topP: 0.8,
-                    maxOutputTokens: 1000,
-                }
-            })
+        const result = await streamText({
+            model: google('gemini-1.5-flash'), // Conexión estable v1 con Tier 1
+            system: systemsPrompt,
+            messages: messages.map((m: any) => ({
+                role: m.role === 'model' ? 'assistant' : m.role,
+                content: m.content
+            })),
         });
 
-        const data = await response.json();
-
-        if (!response.ok) {
-            console.error('Gemini API Error:', data);
-            throw new Error(data.error?.message || 'Gemini API Error');
-        }
-
-        const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "¡Hola! Estoy terminando de preparar los detalles de tu estancia. ¿En qué puedo ayudarte mientras tanto?";
-
-        return res.status(200).json({ response: aiText });
-
+        return result.toTextStreamResponse();
     } catch (error: any) {
-        console.error('CHAT RUNTIME ERROR:', error.message);
-        return res.status(200).json({
-            response: "¡Hola! Estoy terminando de preparar los detalles de tu estancia. ¿En qué puedo ayudarte mientras tanto?"
-        });
+        console.error('ERROR_CRÍTICO_CHAT_TIER1:', error.message);
+        return new Response('Estamos actualizando nuestra información de disponibilidad. Por favor, escribe de nuevo en unos segundos.', { status: 500 });
     }
 }
