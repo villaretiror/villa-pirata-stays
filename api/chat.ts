@@ -46,19 +46,25 @@ Contacto: ${HOST_PHONE}
 Regla: No inventes datos. Tono profesional y cálido.
 `.trim();
 
-        // 4. PREVENCIÓN DE CARGA CORRUPTA
-        const chatHistory = messages
-            .slice(-20)
-            .map((m: any) => ({
+        // 4. PREVENCIÓN DE CARGA CORRUPTA + WORKAROUND DE SISTEMA (Soporte v1)
+        // La versión v1 no acepta 'systemInstruction' nativamente vía SDK en algunas versiones críticas.
+        // Prependemos el prompt como el primer mensaje del usuario.
+        const chatHistory = [
+            {
+                role: 'user',
+                content: `INSTRUCCIONES DE SISTEMA (CONSERVAR SIEMPRE):\n${systemsPrompt}\n--- (FIN DE INSTRUCCIONES) ---`
+            },
+            ...messages.slice(-20).map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
                 content: m.content
-            }));
+            }))
+        ];
 
         // 5. MODELO ESTABLE SIN 'LATEST'
         const result = await streamText({
             model: google('gemini-1.5-flash'),
-            system: systemsPrompt,
-            messages: chatHistory,
+            // system: systemsPrompt, // Eliminado para evitar error 400 en v1
+            messages: chatHistory as any,
         });
 
         // 6. RESPUESTA TEXT STREAM (COMPATIBLE CON FRONTEND)
