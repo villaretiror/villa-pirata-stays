@@ -12,11 +12,18 @@ export default async function handler(req: any, res: any) {
     return res.status(500).json({ error: 'Configuración de servidor incompleta (API Key missing)' });
   }
 
-  const { customer, booking, type, to, propertyId, propertyTitle } = req.body;
+  // Extracción robusta: Priorizamos req.body pero buscamos en sub-objetos si es necesario
+  const body = req.body;
+  const type = body.type;
+  const to = body.to;
+  const customer = body.customer || body.contactData || {};
+  const booking = body.booking || {};
+  const propertyId = body.propertyId || body.property_id || '1081171030449673920';
+  const propertyTitle = body.propertyTitle || body.property_title;
 
   // Log de Auditoría Maestro
   console.log(`[Email API] Event: ${type} | To: ${to || 'Host'} | Origin: ${req.headers['user-agent'] || 'Supabase/Vercel'}`);
-  console.log(`[Email API] Payload Snapshot:`, JSON.stringify(req.body, null, 2));
+  console.log(`[Email API] Full Body:`, JSON.stringify(body, null, 2));
 
   // URLs de Logos (Public Storage)
   const LOGOS: Record<string, string> = {
@@ -75,7 +82,7 @@ export default async function handler(req: any, res: any) {
         </div>
       `;
     } else if (type === 'contact') {
-      const { name, email, phone, message } = req.body.contactData;
+      const { name, email, phone, message } = customer;
 
       const hostEmailOptions = {
         from: 'Villa Retiro <reservas@villaretiror.com>',
@@ -141,10 +148,9 @@ export default async function handler(req: any, res: any) {
         </div>
       `;
     } else if (type === 'urgent_alert') {
-      const data = req.body.contactData || req.body;
-      const name = data.name || 'Cliente';
-      const message = data.message || 'Sin mensaje';
-      const contact = data.contact || data.phone || data.email || 'No provisto';
+      const name = customer.name || 'Cliente';
+      const message = customer.message || 'Soporte solicitado';
+      const contact = customer.contact || customer.phone || customer.email || 'No provisto';
 
       emailOptions.subject = `🚨 URGENTE: Soporte solicitado - ${name}`;
       emailOptions.to = 'villaretiror@gmail.com';
