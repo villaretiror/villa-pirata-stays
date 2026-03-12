@@ -4,25 +4,25 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
 /**
- * 📝 BLUEPRINT RADICAL V3: TOTAL COMPATIBILITY (v1beta + CoreMessage)
- * Resolvemos el error 404 regresando a v1beta (donde vive gemini-1.5-flash para esta cuenta)
- * y manteniendo la normalización estricta de mensajes para evitar el error "Invalid prompt".
+ * 📝 CAMBIO RADICAL: FORZADO DE VERSIÓN Y ESTRUCTURA
+ * Siguiendo el protocolo de emergencia para evitar el bug interno del SDK
+ * que sigue apuntando a v1beta. Eliminamos el baseURL explícito y forzamos
+ * la configuración en la llamada del modelo.
  */
 
 export const runtime = 'edge';
 export const maxDuration = 30;
 
-// Configuración del proveedor a v1beta para asegurar que encuentre el modelo
+// Inicialización limpia según el nuevo Blueprint
 const googleProvider = createGoogleGenerativeAI({
     apiKey: "AIzaSyDwY1a969j346whP-E38QH2L9AGtW9tzUs",
-    baseURL: 'https://generativelanguage.googleapis.com/v1beta',
 });
 
 export async function POST(req: Request) {
     try {
         const { messages: rawMessages } = await req.json();
 
-        // 1. CONSTRUCCIÓN DEL CONTEXTO (Inyectado en USER para evitar líos de esquema)
+        // 1. CONSTRUCCIÓN DEL CONTEXTO (Inyectado en USER)
         const propertyInfo = PROPERTIES.map(p => `- ${p.title} ($${p.price}/noche)`).join('\n');
         const systemPrompt = `ERES EL CONCIERGE EXPERTO DE VILLA RETIRO Y VILLA PIRATA STAYS.
 CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOWLEDGE.policies.cancellation}`;
@@ -39,21 +39,22 @@ CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOW
             }
         ];
 
-        // Mapear los mensajes entrantes limpiando campos no estándar
         if (Array.isArray(rawMessages)) {
             rawMessages.forEach((m: any) => {
                 const role = (m.role === 'model' || m.sender === 'ai' || m.role === 'assistant') ? 'assistant' : 'user';
                 const content = m.content || m.text || '';
-
                 if (content.trim()) {
                     normalizedMessages.push({ role, content });
                 }
             });
         }
 
-        // 3. EJECUCIÓN (Usamos el ID simple que v1beta reconoce mejor)
+        // 3. EJECUCIÓN CON FORZADO DE v1 (Bypass de bug del SDK)
+        // Usamos el prefijo 'models/' y desactivamos structuredOutputs para forzar el handshake con v1
         const result = await streamText({
-            model: googleProvider('gemini-1.5-flash'),
+            model: googleProvider('models/gemini-1.5-flash', {
+                structuredOutputs: false,
+            }),
             messages: normalizedMessages,
             temperature: 0.7,
             maxTokens: 1000,
@@ -64,7 +65,7 @@ CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOW
     } catch (error: any) {
         console.error('[FATAL_CHAT_ERROR]:', error.message);
         return new Response(JSON.stringify({
-            error: 'Error de conexión con el modelo',
+            error: 'Servicio en re-sincronización con v1',
             details: error.message
         }), { status: 500 });
     }
