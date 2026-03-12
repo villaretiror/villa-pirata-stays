@@ -113,6 +113,44 @@ export default async function handler(req: any, res: any) {
       await resend.emails.send(clientEmailOptions);
       return res.status(200).json({ success: true, message: 'Contact emails sent' });
 
+    } else if (type === 'payment_success') {
+      const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body;
+
+      emailOptions.to = customerEmail;
+      emailOptions.subject = `🏝️ ¡Todo listo! Tu Guía de Acceso para ${propertyName}`;
+      emailOptions.html = `
+        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #f0f0f0; padding: 40px; border-radius: 24px; color: #1a1a1a; background-color: #fff;">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <h1 style="font-size: 24px; font-weight: 800; margin: 0 0 16px;">¡Bienvenido al Paraíso, ${customerName}!</h1>
+            <p style="color: #666; font-size: 16px;">Tu reserva en <strong>${propertyName}</strong> está confirmada y pagada.</p>
+          </div>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; margin-bottom: 32px;">
+            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin: 0 0 16px;">🔑 Instrucciones de Acceso</h2>
+            <div style="background-color: #fff; padding: 16px; border-radius: 12px; border: 1px solid #e2e8f0;">
+              <p style="margin: 0 0 8px; font-size: 14px;"><strong>Código Lockbox:</strong> <span style="font-size: 18px; color: #FF6633; font-weight: 800;">${accessCode || 'XXXX'}</span></p>
+              <p style="margin: 0; font-size: 12px; color: #64748b;">(Use este código para retirar la llave física en la entrada)</p>
+            </div>
+          </div>
+
+          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 24px; border-radius: 16px; margin-bottom: 32px;">
+            <h2 style="font-size: 14px; text-transform: uppercase; letter-spacing: 1px; color: #64748b; margin: 0 0 16px;">📶 Conectividad Premium</h2>
+            <p style="margin: 0 0 8px; font-size: 14px;"><strong>Red:</strong> ${wifiName || 'VillaRetiro_Starlink'}</p>
+            <p style="margin: 0; font-size: 14px;"><strong>Clave:</strong> ${wifiPass || 'Tropical2024!'}</p>
+          </div>
+
+          <div style="text-align: center; margin-bottom: 32px;">
+            <p style="font-size: 14px; line-height: 1.6; color: #666;">
+              <strong>Check-in:</strong> ${checkIn} (15:00)<br>
+              <strong>Check-out:</strong> ${checkOut} (11:00)
+            </p>
+          </div>
+
+          <div style="text-align: center; padding-top: 24px; border-top: 1px solid #f0f0f0;">
+               <p style="font-size: 12px; color: #999;">Si necesita asistencia inmediata, escríbanos por WhatsApp al +1 787-356-0895.</p>
+          </div>
+        </div>
+      `;
     } else {
       // Default: Booking Notification
       emailOptions.subject = `Nueva Solicitud de Reserva - ${customer?.name || 'Cliente'}`;

@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
 import jsPDF from 'jspdf';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
+import { PROPERTIES } from '../constants';
 
 interface Message {
   id: string;
@@ -37,40 +38,27 @@ const Messages: React.FC = () => {
 
   useEffect(() => {
     const savedMessages = localStorage.getItem(STORAGE_KEY);
-    // Limpiar historial si tiene mensajes de error o de demo mode (reinicio limpio)
     if (savedMessages) {
       try {
         const parsed: Message[] = JSON.parse(savedMessages);
-        const hasErrorMessages = parsed.some(m =>
-          m.sender === 'ai' && (
-            m.text.includes('inicializando') ||
-            m.text.includes('se ha interrumpido') ||
-            m.text.includes('mantenimiento final')
-          )
-        );
-        if (!hasErrorMessages) {
+        // Filtramos solo mensajes realmente inválidos o corruptos, 
+        // pero mantenemos el historial para persistencia post-refresh.
+        if (Array.isArray(parsed) && parsed.length > 0) {
           setMessages(parsed);
-        } else {
-          // Limpiar = fresh start con la IA activa
-          localStorage.removeItem(STORAGE_KEY);
-          setMessages([{
-            id: crypto.randomUUID(),
-            text: '¡Buenas! Soy el Concierge Premium de Villa Retiro. ¿Está pensando en una estadía especial en Cabo Rojo, Puerto Rico? Puedo ayudarle con disponibilidad, precios y completar su reserva directamente aquí. ¿En qué le sirvo?',
-            sender: 'ai',
-            created_at: new Date().toISOString()
-          }]);
+          return;
         }
-      } catch (_) {
-        localStorage.removeItem(STORAGE_KEY);
+      } catch (e) {
+        console.error("Error parsing chat history:", e);
       }
-    } else {
-      setMessages([{
-        id: crypto.randomUUID(),
-        text: '¡Buenas! Soy el Concierge Premium de Villa Retiro. ¿Está pensando en una estadía especial en Cabo Rojo, Puerto Rico? Puedo ayudarle con disponibilidad, precios y completar su reserva directamente aquí. ¿En qué le sirvo?',
-        sender: 'ai',
-        created_at: new Date().toISOString()
-      }]);
     }
+
+    // Si no hay historial o falló el parseo, iniciamos con el mensaje de bienvenida
+    setMessages([{
+      id: crypto.randomUUID(),
+      text: '¡Buenas! Soy el Concierge Premium de Villa Retiro. ¿Está pensando en una estadía especial en Cabo Rojo, Puerto Rico? Puedo ayudarle con disponibilidad, precios y completar su reserva directamente aquí. ¿En qué le sirvo?',
+      sender: 'ai',
+      created_at: new Date().toISOString()
+    }]);
   }, []);
 
   useEffect(() => {
@@ -240,17 +228,26 @@ const Messages: React.FC = () => {
         console.error("No se pudo generar/subir el PDF", pdfErr);
       }
 
-      // 2. Enviar Confirmación por Correo vía Resend
+      // 2. Enviar Confirmación y Guía de Acceso por Correo vía Resend
       const customerEmail = details.payer?.email_address || 'Sin correo';
       const customerName = details.payer?.name?.given_name || 'Huésped';
+
+      // Buscamos las credenciales de la propiedad en nuestras constantes
+      const property = PROPERTIES.find((p: any) => p.id === propertyId);
 
       await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          type: 'booking',
-          customer: { name: customerName, email: customerEmail },
-          booking: { propertyName: "Propiedad " + propertyId, checkIn, checkOut, guests, total, method: 'PayPal Smart Buttons' }
+          type: 'payment_success',
+          customerName,
+          customerEmail,
+          propertyName: property?.title || "Tu Villa",
+          checkIn,
+          checkOut,
+          accessCode: property?.policies?.accessCode,
+          wifiName: property?.policies?.wifiName,
+          wifiPass: property?.policies?.wifiPass
         })
       });
 
