@@ -46,14 +46,22 @@ Contacto: ${HOST_PHONE}
 Regla: Responde con brevedad y calidez. No inventes datos.
 `.trim();
 
-        // 4. MODELO ESTABLE (gemini-1.5-flash)
-        const result = await streamText({
-            model: googleProvider('gemini-1.5-flash'),
-            system: systemsPrompt,
-            messages: messages.map((m: any) => ({
+        // 4. EJECUCIÓN CON WORKAROUND DE MENSAJES (Soporte total en v1)
+        // Prependemos el prompt del sistema como el primer mensaje del usuario para evitar errores de validación de campos
+        const finalMessages = [
+            {
+                role: 'user',
+                content: `INSTRUCCIONES DE SISTEMA (CONSERVAR SIEMPRE):\n${systemsPrompt}\n--- (FIN DE INSTRUCCIONES) ---`
+            },
+            ...messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
                 content: m.content
-            })),
+            }))
+        ];
+
+        const result = await streamText({
+            model: googleProvider('gemini-1.5-flash'),
+            messages: finalMessages,
         });
 
         // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON LECTOR MANUAL DEL FRONTEND)
