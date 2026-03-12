@@ -30,7 +30,7 @@ export default async function handler(req: Request) {
     console.log(`[Email API] Full Payload:`, JSON.stringify(body, null, 2));
 
     const resendClient = new Resend(process.env.RESEND_API_KEY);
-    const fromAddress = 'onboarding@resend.dev';
+    const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
     const hostEmail = 'villaretiror@gmail.com';
 
     const LOGOS: Record<string, string> = {
@@ -124,28 +124,30 @@ export default async function handler(req: Request) {
       });
     }
 
-    // 🚀 ENVÍO CON ESPERA CONTROLADA (2 Segundos)
-    // Iniciamos el envío y esperamos máximo 2 segundos para que Resend responda.
-    // Esto es suficiente para la mayoría de los casos y evita el timeout de Supabase.
-    const sendPromise = Promise.all(emails.map(e => resendClient.emails.send(e)));
+    // 🚀 ENVÍO GARANTIZADO (Guaranteed Delivery)
+    // Usamos 'await' para cada envío. La función NO responderá 200 hasta que Resend termine.
+    // Si falla, el catch devolverá 500 para que Supabase reintente.
+    const results = [];
+    for (const emailData of emails) {
+      const { data, error } = await resendClient.emails.send(emailData);
+      if (error) {
+        throw new Error(`Resend Error: ${JSON.stringify(error)}`);
+      }
+      results.push(data);
+    }
 
-    await Promise.race([
-      sendPromise,
-      new Promise(resolve => setTimeout(resolve, 2000))
-    ]);
+    console.log("[Email API] Despacho exitoso y confirmado.");
 
-    console.log("[Email API] Despacho completado o tiempo límite (2s) alcanzado.");
-
-    return new Response(JSON.stringify({ success: true, message: 'Process completed or timed out at 2s' }), {
+    return new Response(JSON.stringify({ success: true, results }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (err: any) {
     console.error("[Email API] FATAL ERROR:", err.message);
-    // Devolvemos 200 para liberar la cola de Supabase pase lo que pase
-    return new Response(JSON.stringify({ error: err.message, status: 'acknowledged' }), {
-      status: 200,
+    // Devolvemos 500 para que Supabase sepa que falló y reintente el trigger
+    return new Response(JSON.stringify({ error: err.message, status: 'failed' }), {
+      status: 500,
       headers: { 'Content-Type': 'application/json' }
     });
   }
