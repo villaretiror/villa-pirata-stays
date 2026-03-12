@@ -124,27 +124,26 @@ export default async function handler(req: Request) {
       });
     }
 
-    // 🚀 DISPARO MAESTRO (Fire & Forget)
-    // No usamos 'await' para que la función responda instantáneamente a Supabase
-    // y la cola de la DB no se bloquee ni de timeout.
-    emails.forEach(e => {
-      resendClient.emails.send(e).catch(err => {
-        console.error("[Email API] Deferred Error:", err.message);
-      });
-    });
+    // 🚀 ENVÍO CON ESPERA CONTROLADA (2 Segundos)
+    // Iniciamos el envío y esperamos máximo 2 segundos para que Resend responda.
+    // Esto es suficiente para la mayoría de los casos y evita el timeout de Supabase.
+    const sendPromise = Promise.all(emails.map(e => resendClient.emails.send(e)));
 
-    // 2. Respondemos inmediatamente a Supabase
-    return new Response(JSON.stringify({
-      success: true,
-      message: 'Dispatch started (Fire & Forget active)'
-    }), {
+    await Promise.race([
+      sendPromise,
+      new Promise(resolve => setTimeout(resolve, 2000))
+    ]);
+
+    console.log("[Email API] Despacho completado o tiempo límite (2s) alcanzado.");
+
+    return new Response(JSON.stringify({ success: true, message: 'Process completed or timed out at 2s' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (err: any) {
     console.error("[Email API] FATAL ERROR:", err.message);
-    // Devolvemos 200 para liberar la cola de Supabase
+    // Devolvemos 200 para liberar la cola de Supabase pase lo que pase
     return new Response(JSON.stringify({ error: err.message, status: 'acknowledged' }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
