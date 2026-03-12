@@ -58,8 +58,8 @@ Regla: Responde con elegancia y precisión. No inventes datos.
             messages: finalMessages,
         });
 
-        // Current directive requires DataStreamResponse for SDK v4 stability
-        return result.toDataStreamResponse();
+        // Usamos TextStream para que el frontend (con decoder manual) pueda leerlo sin prefijos de protocolo.
+        return result.toTextStreamResponse();
     } catch (error: any) {
         console.error('[CHAT_ERROR]:', error.message);
         return new Response(JSON.stringify({ error: 'Endpoint resolution failed' }), { status: 500 });
