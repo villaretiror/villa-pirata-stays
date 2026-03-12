@@ -124,19 +124,29 @@ export default async function handler(req: Request) {
       });
     }
 
-    // Ejecución de envíos
-    const results = await Promise.allSettled(emails.map(e => resendClient.emails.send(e)));
-    console.log(`[Email API] Dispatch Results:`, JSON.stringify(results, null, 2));
+    // 🚀 EJECUCIÓN CON RACE (Timeout de 8s para evitar fallos de Vercel)
+    const sendPromises = emails.map(e => resendClient.emails.send(e));
 
-    return new Response(JSON.stringify({ success: true, results }), {
+    try {
+      await Promise.race([
+        Promise.all(sendPromises),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('Email Timeout')), 8000))
+      ]);
+    } catch (sendError: any) {
+      console.error("[Email API] Partial Failure or Timeout:", sendError.message);
+      // Continuamos para devolver 200 y evitar que Supabase reintente infinitamente
+    }
+
+    return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
 
   } catch (err: any) {
     console.error("[Email API] FATAL ERROR:", err.message);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
+    // IMPORTANTE: Devolvemos 200 para que Supabase no reintente y sature la cola
+    return new Response(JSON.stringify({ error: err.message, status: 'acknowledged' }), {
+      status: 200,
       headers: { 'Content-Type': 'application/json' }
     });
   }
