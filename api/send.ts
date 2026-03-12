@@ -7,10 +7,16 @@ export default async function handler(req: any, res: any) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  if (!process.env.RESEND_API_KEY) {
+    console.error("[Email API] CRITICAL ERROR: RESEND_API_KEY is missing in environment variables.");
+    return res.status(500).json({ error: 'Configuración de servidor incompleta (API Key missing)' });
+  }
+
   const { customer, booking, type, to, propertyId, propertyTitle } = req.body;
 
-  // Log para depuración en Vercel
-  console.log(`[Email API] Request Type: ${type}`, JSON.stringify(req.body, null, 2));
+  // Log de Auditoría Maestro
+  console.log(`[Email API] Event: ${type} | To: ${to || 'Host'} | Origin: ${req.headers['user-agent'] || 'Supabase/Vercel'}`);
+  console.log(`[Email API] Payload Snapshot:`, JSON.stringify(req.body, null, 2));
 
   // URLs de Logos (Public Storage)
   const LOGOS: Record<string, string> = {
