@@ -40,11 +40,15 @@ export async function POST(req: Request) {
 
         // 2. LIMPIEZA TOTAL (Sanitización 360) - BYPASS DE SYSTEM INSTRUCTION
         const finalMessages: CoreMessage[] = [
-            // Primer mensaje: El Concierge se presenta a sí mismo con sus reglas (rol assistant)
-            // Esto evita que el SDK inyecte 'systemInstruction' y rompa la API v1
+            // Inyectamos el contexto como 'user' para evitar que el SDK genere 'systemInstruction' (Error 400)
+            {
+                role: 'user',
+                content: `INSTRUCCIONES DE SERVICIO (LEER PRIORITARIAMENTE): ${VILLA_CONCIERGE_PROMPT}.`
+            },
+            // Confirmación del asistente para establecer el tono
             {
                 role: 'assistant',
-                content: `CONTEXTO DE SERVICIO: ${VILLA_CONCIERGE_PROMPT}. Entendido, actuaré como el Concierge de lujo para Villa Retiro.`
+                content: "Entendido. Iniciando protocolo de Concierge de lujo para Villa Retiro y Villa Pirata."
             },
             ...(rawMessages || []).map((m: any): CoreMessage => {
                 // Asegura que solo pasen 'role' y 'content', nada más.
