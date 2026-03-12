@@ -39,6 +39,7 @@ export default async function handler(req: any, res: any) {
     let emailOptions: any = {
       from: 'Villa Retiro <reservas@villaretiror.com>',
       to: to || ['villaretiror@gmail.com'],
+      bcc: ['villaretiror@gmail.com'], // Respaldo de seguridad para el Host
     };
 
     if (type === 'invite') {
