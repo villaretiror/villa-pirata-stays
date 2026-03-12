@@ -30,7 +30,7 @@ export const maxDuration = 30;
 
 // EL ENCHUFE (Provider con Billing)
 const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || "AIzaSyDwY1a969j346whP-E38QH2L9AGtW9tzUs",
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
     baseURL: 'https://generativelanguage.googleapis.com/v1',
 });
 
