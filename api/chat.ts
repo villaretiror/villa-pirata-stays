@@ -19,8 +19,13 @@ export async function POST(req: Request) {
             return new Response('Configuración de IA pendiente.', { status: 500 });
         }
 
-        const google = createGoogleGenerativeAI({ apiKey });
+        // 2. INICIALIZACIÓN DEL PROVEEDOR (FORZANDO V1 ESTABLE)
+        const google = createGoogleGenerativeAI({
+            apiKey: apiKey,
+            baseURL: 'https://generativelanguage.googleapis.com/v1'
+        });
 
+        // 3. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title} (ID: ${p.id})
 Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
@@ -69,7 +74,7 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
 `.trim();
 
         const result = await streamText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-1.5-pro'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
