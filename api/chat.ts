@@ -31,6 +31,7 @@ export const maxDuration = 30;
 // EL ENCHUFE (Provider con Billing)
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    baseURL: 'https://generativelanguage.googleapis.com', // Force stable v1
 });
 
 export async function POST(req: Request) {
@@ -63,9 +64,9 @@ export async function POST(req: Request) {
             })
         ];
 
-        // 3. EJECUCIÓN (Bypass de bug del SDK usando modelo estable y sin /v1 forzado)
+        // 3. EJECUCIÓN (Bypass de bug del SDK usando el alias "latest")
         const result = await streamText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-1.5-flash-latest'),
             messages: finalMessages,
             temperature: 0.7,
         });
