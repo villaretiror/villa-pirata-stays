@@ -19,11 +19,9 @@ export async function POST(req: Request) {
             return new Response('Auth Error', { status: 500 });
         }
 
-        // 2. CONFIGURACIÓN COMPREHENSIVE (v1beta + gemini-1.5-flash-latest)
-        // Se utiliza v1beta para asegurar soporte del campo systemInstruction
+        // 2. CONFIGURACIÓN LIMPIA DEL PROVEEDOR
         const googleProvider = createGoogleGenerativeAI({
             apiKey: apiKey,
-            baseURL: 'https://generativelanguage.googleapis.com/v1beta',
             headers: {
                 'x-goog-api-key': apiKey,
             }
@@ -48,9 +46,9 @@ Contacto Host: ${HOST_PHONE}
 Regla: No inventes datos. Tono profesional, cálido y conciso.
 `.trim();
 
-        // 4. EJECUCIÓN CON MODELO ESPECÍFICO (v1beta reconoce 001 con mayor estabilidad)
+        // 4. EJECUCIÓN CON PREFIJO PARA ESTABILIDAD
         const result = await streamText({
-            model: googleProvider('gemini-1.5-flash-001'),
+            model: googleProvider('models/gemini-1.5-flash'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
