@@ -2,8 +2,8 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText, CoreMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import { PROPERTIES, HOST_PHONE } from '../constants.ts';
-import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.ts';
+import { PROPERTIES, HOST_PHONE } from '../constants';
+import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
 
 /**
  * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE (MASTER v3.0)
