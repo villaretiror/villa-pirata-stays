@@ -12,6 +12,7 @@ import ReservationDetails from './pages/ReservationDetails';
 import Favorites from './pages/Favorites';
 import Message from './pages/Messages';
 import Profile from './pages/Profile';
+import ContractView from './pages/ContractView';
 import HostProfile from './pages/HostProfile';
 import Navbar from './components/Navbar';
 import StayDashboard from './pages/StayDashboard';
@@ -84,6 +85,7 @@ const App: React.FC = () => {
             <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/host-profile/:id" element={<HostProfile />} />
             <Route path="/host" element={<ProtectedRoute role="host"><HostDashboard /></ProtectedRoute>} />
+            <Route path="/contrato" element={<ContractView />} />
           </Routes>
         </motion.main>
       </AnimatePresence>

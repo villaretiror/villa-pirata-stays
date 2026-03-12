@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
 import jsPDF from 'jspdf';
@@ -337,6 +337,24 @@ const Messages: React.FC = () => {
               guests: parseInt(paymentMatch[5].trim())
             };
           }
+          const propertyId = paymentData?.propertyId;
+
+          // Helper para procesar links en el texto (sin tocar la lógica del bot)
+          const formatMessageText = (text: string, pId?: string) => {
+            if (!text.includes('/contrato')) return text;
+            const parts = text.split(/((?:https?:\/\/villaretiror\.com)?\/contrato\??[^\s]*)/g);
+            return parts.map((part, index) => {
+              if (part.includes('/contrato')) {
+                const finalId = pId || propertyId || '1081171030449673920';
+                return (
+                  <Link key={index} to={`/contrato?id=${finalId}`} className="text-orange-600 font-bold underline hover:text-orange-700">
+                    Contrato de Alquiler
+                  </Link>
+                );
+              }
+              return part;
+            });
+          };
 
           return (
             <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end animate-slide-up' : 'justify-start animate-fade-in'}`}>
@@ -345,7 +363,7 @@ const Messages: React.FC = () => {
                   {m.sender === 'guest' ? 'Usted' : <><span className="material-icons text-[10px]">auto_awesome</span> Asistente</>}
                 </div>
 
-                <div>{displayText}</div>
+                <div>{formatMessageText(displayText, propertyId)}</div>
 
                 {/* Mostrar Botón de PayPal si hay Payment Request */}
                 {paymentData && m.sender === 'ai' && (
@@ -360,7 +378,7 @@ const Messages: React.FC = () => {
                     <div className="mb-4 bg-white/50 p-3 rounded-xl">
                       <label className="flex items-start gap-2 cursor-pointer text-[10px] text-orange-900 leading-tight">
                         <input type="checkbox" className="mt-0.5 accent-orange-600" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
-                        <span>He leído y acepto firmar el <span className="font-bold underline">Contrato de Alquiler Digital</span> y las reglas de la casa.</span>
+                        <span>He leído y acepto firmar el <Link to={`/contrato?id=${paymentData.propertyId}`} target="_blank" className="font-bold underline hover:text-orange-600">Contrato de Alquiler Digital</Link> y las reglas de la casa.</span>
                       </label>
                     </div>
 
