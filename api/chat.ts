@@ -3,76 +3,59 @@ import { streamText } from 'ai';
 import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
-// Activación del motor Edge para soporte nativo de req.json() y streaming
+// 1. FORZAR RUNTIME EDGE
 export const runtime = 'edge';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
     try {
-        // En el Edge Runtime, req.json() es nativo
         const { messages } = await req.json();
 
-        // 1. CAPTURA Y LOG DE API KEY (Runtime Safe)
+        // 2. VALIDACIÓN DE API KEY (Prioridad GOOGLE_GENERATIVE_AI_API_KEY)
         const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
 
-        console.log("DEBUG_CHAT: Usando API KEY:", apiKey ? (apiKey.slice(0, 5) + "...") : "MISSING");
-
         if (!apiKey) {
-            console.error('CRITICAL_ERROR: No se detectó ninguna API Key.');
-            return new Response('Configuración de IA pendiente.', { status: 500 });
+            console.error('CRITICAL: GOOGLE_GENERATIVE_AI_API_KEY is undefined in Edge Runtime');
+            return new Response('Configuración de IA incompleta.', { status: 500 });
         }
 
-        // 2. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
+        // 3. BASE DE CONOCIMIENTO (STRICT CONTEXT)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title} (ID: ${p.id})
 Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
 Capacidad: ${p.guests} huéspedes | ${p.bedrooms} habs | ${p.beds} camas | ${p.baths} baños
 Ubicación: ${p.location} (${p.address})
-WiFi: ${p.policies.wifiName}
 Check-in: ${p.policies.checkInTime} | Check-out: ${p.policies.checkOutTime}
-Reglas clave: ${p.policies.houseRules?.join(', ') || 'Consultar al llegar'}
+Reglas: ${p.policies.houseRules?.join(', ') || 'Consultar'}
 Descripción: ${p.description}
-Amenidades: ${p.amenities.join(', ')}
 `).join('\n---\n');
 
         const guideInfo = INITIAL_LOCAL_GUIDE.map(cat => `
 ${cat.category}:
-${cat.items.map(item => `- ${item.name} (${item.distance}): ${item.desc}`).join('\n')}
+${cat.items.map(item => `- ${item.name}: ${item.desc}`).join('\n')}
 `).join('\n');
 
         const systemsPrompt = `
-Eres el experto absoluto y Concierge Digital de Villa Retiro y Villa Pirata Stays. 
-Tu misión es brindar un servicio de lujo, cálido y eficiente para convertir consultas en reservas.
+Eres el Concierge Digital experto de Villa Retiro y Villa Pirata Stays. 
+Responde siempre basándote en esta información oficial:
 
-REGLA DE ORO DE CONOCIMIENTO:
-Usa estrictamente esta base de datos del proyecto. No inventes precios, ubicaciones ni servicios.
-Si la información no está aquí, indica que consultarás con el equipo humano (Host Brian: ${HOST_PHONE}).
-
-INFORMACIÓN DE PROPIEDADES:
+PROPIEDADES:
 ${propertyInfo}
 
-GUÍA LOCAL (RECOMENDACIONES):
+GUÍA LOCAL:
 ${guideInfo}
 
-POLÍTICAS ADICIONALES:
+POLÍTICAS:
 - Cancelación: ${VILLA_KNOWLEDGE.policies.cancellation}
-- Mascotas: ${VILLA_KNOWLEDGE.policies.rules.includes('mascotas') ? 'Permitidas con fee adicional' : 'Consultar'}
-- Emergencias: ${VILLA_KNOWLEDGE.emergencies.contact} | Policía/Ambulancia: 911
+- Emergencias: ${VILLA_KNOWLEDGE.emergencies.contact}
+- Contacto Host: ${HOST_PHONE}
 
-CAPACIDADES Y TONO:
-1. Responde preguntas frecuentes basándote estrictamente en el contenido arriba.
-2. Guía al usuario hacia la reserva directa. 
-3. Mantén un tono de lujo: profesional (Usted), cálido y experto.
-4. Si el usuario está listo para reservar, calcula el total (Noches * Precio + Limpieza) y genera la etiqueta de pago EXACTAMENTE así:
-[PAYMENT_REQUEST: {id_vendedor_string}, {total_decimal}, {checkin_fecha}, {checkout_fecha}, {num_huespedes}]
-
-MANEJO DE ERRORES:
-Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una excelente pregunta. Permítame confirmarlo con nuestro equipo para darle una respuesta precisa." y ofrece el contacto oficial.
+Usa un tono de lujo, profesional y cálido. Si no tienes la información, ofrece contactar al host.
 `.trim();
 
-        // 3. GENERACIÓN DE RESPUESTA CON IMPORTACIÓN DIRECTA
+        // 4. EJECUCIÓN CON ESTRUCTURA ESTÁNDAR (v1beta automática por el SDK)
         const result = await streamText({
-            model: google('gemini-1.5-flash'), // El SDK asume automáticamente la API Key de las variables de entorno si no se provee un constructor personalizado
+            model: google('gemini-1.5-flash'), // El SDK maneja el mapeo correcto internamente
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
@@ -80,9 +63,10 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
             })),
         });
 
-        return result.toTextStreamResponse();
+        // 5. RESPUESTA DATA STREAM (REQUERIDO POR VERCEL AI SDK LATEST)
+        return result.toDataStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_RUNTIME_ERROR:', error.message);
-        return new Response('Estamos preparando los detalles de su estancia.', { status: 500 });
+        console.error('CHAT_EDGE_ERROR:', error.message);
+        return new Response('Error en el servicio de chat. Por favor, intente de nuevo.', { status: 500 });
     }
 }
