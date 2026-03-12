@@ -9,6 +9,9 @@ export default async function handler(req: any, res: any) {
 
   const { customer, booking, type, to, propertyId, propertyTitle } = req.body;
 
+  // Log para depuración en Vercel
+  console.log(`[Email API] Request Type: ${type}`, JSON.stringify(req.body, null, 2));
+
   // URLs de Logos (Public Storage)
   const LOGOS: Record<string, string> = {
     '1081171030449673920': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/villa_retiro_logo.png',
@@ -132,7 +135,11 @@ export default async function handler(req: any, res: any) {
         </div>
       `;
     } else if (type === 'urgent_alert') {
-      const { name, message, contact } = req.body.contactData || req.body;
+      const data = req.body.contactData || req.body;
+      const name = data.name || 'Cliente';
+      const message = data.message || 'Sin mensaje';
+      const contact = data.contact || data.phone || data.email || 'No provisto';
+
       emailOptions.subject = `🚨 URGENTE: Soporte solicitado - ${name}`;
       emailOptions.to = 'villaretiror@gmail.com';
       emailOptions.html = `

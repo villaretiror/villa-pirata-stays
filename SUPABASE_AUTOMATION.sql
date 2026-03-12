@@ -42,10 +42,9 @@ BEGIN
       body := json_build_object(
         'type', 'urgent_alert',
         'contactData', json_build_object(
-          'name', '🚨 URGENTE: ' || NEW.name,
-          'email', NEW.contact,
-          'phone', NEW.contact,
-          'message', NEW.message
+          'name', NEW.name,
+          'message', NEW.message,
+          'contact', NEW.contact
         )
       )::jsonb
     );
