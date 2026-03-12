@@ -6,7 +6,7 @@ RETURNS trigger AS $$
 BEGIN
   PERFORM
     net.http_post(
-      url := 'https://' || current_setting('app.settings.vercel_domain', true) || '/api/send',
+      url := 'https://villaretiror.com/api/send',
       headers := '{"Content-Type": "application/json"}'::jsonb,
       body := json_build_object(
         'type', 'contact',
