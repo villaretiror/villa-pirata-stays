@@ -1,4 +1,4 @@
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { google } from '@ai-sdk/google';
 import { streamText } from 'ai';
 import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
@@ -12,19 +12,17 @@ export async function POST(req: Request) {
         // En el Edge Runtime, req.json() es nativo
         const { messages } = await req.json();
 
+        // 1. CAPTURA Y LOG DE API KEY (Runtime Safe)
         const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+
+        console.log("DEBUG_CHAT: Usando API KEY:", apiKey ? (apiKey.slice(0, 5) + "...") : "MISSING");
 
         if (!apiKey) {
             console.error('CRITICAL_ERROR: No se detectó ninguna API Key.');
             return new Response('Configuración de IA pendiente.', { status: 500 });
         }
 
-        // 2. INICIALIZACIÓN LIMPIA (Dejamos que el SDK elija v1beta automáticamente)
-        const google = createGoogleGenerativeAI({
-            apiKey: apiKey,
-        });
-
-        // 3. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
+        // 2. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title} (ID: ${p.id})
 Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
@@ -72,8 +70,9 @@ MANEJO DE ERRORES:
 Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una excelente pregunta. Permítame confirmarlo con nuestro equipo para darle una respuesta precisa." y ofrece el contacto oficial.
 `.trim();
 
+        // 3. GENERACIÓN DE RESPUESTA CON IMPORTACIÓN DIRECTA
         const result = await streamText({
-            model: google('models/gemini-1.5-flash-latest'),
+            model: google('gemini-1.5-flash'), // El SDK asume automáticamente la API Key de las variables de entorno si no se provee un constructor personalizado
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
