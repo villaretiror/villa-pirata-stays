@@ -12,7 +12,9 @@ const googleProvider = createGoogleGenerativeAI({
     baseURL: 'https://generativelanguage.googleapis.com/v1',
 });
 
-export const runtime = 'edge';
+// Cambiamos a Node.js runtime y forzamos región para evitar bloqueos geográficos
+export const runtime = 'nodejs';
+export const preferredRegion = 'fra1';
 export const maxDuration = 30;
 
 export async function POST(req: Request) {
