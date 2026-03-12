@@ -30,7 +30,7 @@ export default async function handler(req: Request) {
     console.log(`[Email API] Full Payload:`, JSON.stringify(body, null, 2));
 
     const resendClient = new Resend(process.env.RESEND_API_KEY);
-    const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
+    const fromAddress = 'onboarding@resend.dev';
     const hostEmail = 'villaretiror@gmail.com';
 
     const LOGOS: Record<string, string> = {
