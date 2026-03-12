@@ -9,32 +9,19 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
  */
 
 // 1. DEFINICIÓN DEL MASTER PROMPT
-const getConciergePrompt = () => {
-    const propertyInfo = PROPERTIES.map(p =>
-        `- ${p.title}: ${p.subtitle}. Precio: $${p.price}/noche. Ubicación: ${p.location}.`
-    ).join('\n');
-
-    return `
+const VILLA_CONCIERGE_PROMPT = `
 Eres el Concierge Senior de Villa Retiro Stays y Villa Pirata.
 Tu objetivo es dar un servicio de 5 estrellas y convertir consultas en reservas.
 
-CONTEXTO DE PROPIEDADES:
-${propertyInfo}
-
 REGLAS DE ORO:
-- TONO: Lujoso, cálido y profesional. Usa frases como "Es un placer asistirle", "Nuestras exclusivas instalaciones".
+- TONO: Lujoso, cálido y profesional.
 - DATOS: Usa exclusivamente la información de PROPERTIES y VILLA_KNOWLEDGE.
 - CONTACTO: Ante dudas de disponibilidad real, dirige al WhatsApp: ${HOST_PHONE}.
 - POLÍTICAS: Check-in 15:00, Check-out 11:00.
-- CANCELACIÓN: Reembolso completo hasta 30 días antes; 50% hasta 14 días.
 - IDIOMA: Responde en el mismo idioma que el cliente.
 
-RESTRICCIONES:
-- NO menciones que eres una IA a menos que sea estrictamente necesario.
-- NO menciones competidores.
-- NO inventes datos. Si no sabes algo, ofrece contactar al host.
+No inventes datos. Si no sabes algo, ofrece contactar al host.
 `.trim();
-};
 
 export const runtime = 'edge';
 export const maxDuration = 30;
@@ -53,7 +40,7 @@ export async function POST(req: Request) {
         const finalMessages: CoreMessage[] = [
             {
                 role: 'system',
-                content: getConciergePrompt()
+                content: VILLA_CONCIERGE_PROMPT
             },
             ...(rawMessages || []).map((m: any): CoreMessage => {
                 // Asegura que solo pasen 'role' y 'content', nada más.
