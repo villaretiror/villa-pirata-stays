@@ -2,31 +2,31 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ Versión Modernizada para Vercel Functions (Web Standard)
-export default async function handler(req: Request) {
-  // Manejo de CORS Preflight (Opcional pero recomendado para evitar 405)
+// ✅ Versión Node.js para Vercel Functions (req, res)
+export default async function handler(req: any, res: any) {
+  // Manejo de CORS Preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 204 });
+    return res.status(204).end();
   }
 
   if (req.method !== 'POST') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   // 1. Validaciones Críticas
   if (!process.env.RESEND_API_KEY) {
     console.error("[Email API] CRITICAL: RESEND_API_KEY missing");
-    return new Response(JSON.stringify({ error: 'Server configuration incomplete' }), { status: 500 });
+    return res.status(500).json({ error: 'Server configuration incomplete' });
   }
 
   try {
-    // Parseo manual del cuerpo (Web standard)
-    const body = await req.json();
+    // En Node.js, Vercel ya parsea el body si viene como JSON
+    const body = req.body;
     const { type, to, customer, contactData, booking, propertyId } = body;
     const userData = customer || contactData || {};
 
-    // Log de Auditoría Master (Usa headers.get)
-    console.log(`[Email API] Event: ${type} | UserAgent: ${req.headers.get('user-agent')}`);
+    // Log de Auditoría Master
+    console.log(`[Email API] Event: ${type} | UserAgent: ${req.headers['user-agent']}`);
     console.log(`[Email API] Full Payload:`, JSON.stringify(body, null, 2));
 
     const resendClient = new Resend(process.env.RESEND_API_KEY);
@@ -125,8 +125,6 @@ export default async function handler(req: Request) {
     }
 
     // 🚀 ENVÍO GARANTIZADO (Guaranteed Delivery)
-    // Usamos 'await' para cada envío. La función NO responderá 200 hasta que Resend termine.
-    // Si falla, el catch devolverá 500 para que Supabase reintente.
     const results = [];
     for (const emailData of emails) {
       const { data, error } = await resendClient.emails.send(emailData);
@@ -137,18 +135,11 @@ export default async function handler(req: Request) {
     }
 
     console.log("[Email API] Despacho exitoso y confirmado.");
-
-    return new Response(JSON.stringify({ success: true, results }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json({ success: true, results });
 
   } catch (err: any) {
     console.error("[Email API] FATAL ERROR:", err.message);
     // Devolvemos 500 para que Supabase sepa que falló y reintente el trigger
-    return new Response(JSON.stringify({ error: err.message, status: 'failed' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: err.message, status: 'failed' });
   }
 }

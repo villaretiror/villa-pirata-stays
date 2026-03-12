@@ -48,20 +48,27 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-export async function POST(req: Request) {
-    try {
-        const { messages: rawMessages, sessionId, userId } = await req.json();
+// ✅ Versión Node.js para Vercel Functions (req, res)
+export default async function handler(req: any, res: any) {
+    if (req.method === 'OPTIONS') {
+        return res.status(204).end();
+    }
 
-        // 1. Limite de Memoria: Solo enviamos los últimos 20 mensajes para optimizar costos y latencia
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    try {
+        const { messages: rawMessages, sessionId, userId } = req.body;
+
+        // 1. Limite de Memoria: Solo enviamos los últimos 20 mensajes
         const recentMessages = (rawMessages || []).slice(-20);
 
         // 2. Persistencia y Auditoría de Sesión (chat_logs)
         if (sessionId) {
-            // Validamos que el userId sea un UUID válido para evitar errores en Postgres
             const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
             const validUserId = (userId && isUUID(userId)) ? userId : null;
 
-            // Actualizamos contadores en segundo plano
             supabase.from('chat_logs').upsert({
                 session_id: sessionId,
                 user_id: validUserId,
@@ -72,7 +79,7 @@ export async function POST(req: Request) {
             });
         }
 
-        // 3. Sanitización de mensajes para forzar contexto en Edge Runtime
+        // 3. Sanitización de mensajes
         const finalMessages: CoreMessage[] = [
             {
                 role: 'user',
@@ -80,7 +87,7 @@ export async function POST(req: Request) {
             },
             {
                 role: 'assistant',
-                content: "Entendido. Iniciando protocolo de Concierge de lujo para Villa Retiro y Villa Pirata. Mi éxito hoy depende de sus reservas y satisfacción."
+                content: "Entendido. Iniciando protocolo de Concierge de lujo para Villa Retiro y Villa Pirata."
             },
             ...recentMessages.map((m: any): CoreMessage => ({
                 role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
@@ -88,19 +95,19 @@ export async function POST(req: Request) {
             }))
         ];
 
-        // 2. EJECUCIÓN CON TOOL CALLING (Autonomous Mode)
+        // 4. EJECUCIÓN CON TOOL CALLING
         const result = await streamText({
             model: google('gemini-2.5-flash'),
             messages: finalMessages,
-            maxSteps: 5, // Permite que Gemini ejecute herramientas y las procese antes de responder
+            maxSteps: 5,
             temperature: 0.7,
             tools: {
                 check_availability: tool({
-                    description: 'Busca reservas que se solapen con las fechas solicitadas para una o ambas villas.',
+                    description: 'Busca reservas que se solapen con las fechas solicitadas.',
                     parameters: z.object({
-                        villa_ids: z.array(z.string()).describe('Lista de IDs de villas a consultar'),
-                        check_in: z.string().describe('Fecha de inicio YYYY-MM-DD'),
-                        check_out: z.string().describe('Fecha de fin YYYY-MM-DD'),
+                        villa_ids: z.array(z.string()),
+                        check_in: z.string(),
+                        check_out: z.string(),
                     }),
                     execute: async ({ villa_ids, check_in, check_out }) => {
                         const { data: bookings, error } = await supabase
@@ -128,22 +135,22 @@ export async function POST(req: Request) {
                     },
                 }),
                 create_lead: tool({
-                    description: 'Guarda un prospecto interesado en el CRM de Supabase.',
+                    description: 'Guarda un prospecto interesado en el CRM.',
                     parameters: z.object({
                         name: z.string(),
                         email: z.string().optional(),
                         phone: z.string().optional(),
-                        interest: z.string().describe('Descripción breve de lo que busca el cliente (ej: fechas, propiedad)'),
+                        interest: z.string(),
                     }),
                     execute: async ({ name, email, phone, interest }) => {
                         const { error } = await supabase.from('leads').insert({
                             name, email, phone, message: interest, status: 'new'
                         });
-                        return error ? { status: 'error' } : { status: 'success', message: 'Lead generado para seguimiento del Host.' };
+                        return error ? { status: 'error' } : { status: 'success', message: 'Lead generado.' };
                     },
                 }),
                 generate_booking_pattern: tool({
-                    description: 'Genera el patrón de texto exacto que activa el botón de PayPal en el sitio.',
+                    description: 'Genera el patrón de pago PayPal.',
                     parameters: z.object({
                         villa_id: z.string(),
                         total: z.number(),
@@ -156,7 +163,7 @@ export async function POST(req: Request) {
                     },
                 }),
                 notify_host_urgent: tool({
-                    description: 'Envía una alerta inmediata al Host por problemas con reservas pagadas o soporte urgente.',
+                    description: 'Notifica al host sobre soporte urgente.',
                     parameters: z.object({
                         client_name: z.string(),
                         issue_description: z.string(),
@@ -168,19 +175,20 @@ export async function POST(req: Request) {
                             message: issue_description,
                             contact: contact_info
                         });
-                        return error ? { status: 'error' } : { status: 'success', message: 'Alerta enviada al celular del Host.' };
+                        return error ? { status: 'error' } : { status: 'success', message: 'Alerta enviada.' };
                     },
                 }),
             },
         });
 
-        return result.toTextStreamResponse();
+        // Tubería de streaming para Node.js
+        return result.pipeTextStreamToResponse(res);
 
     } catch (error: any) {
         console.error('[FATAL_CHAT_ERROR]:', error.message);
-        return new Response(JSON.stringify({
+        return res.status(500).json({
             error: 'Servicio en re-sincronización',
             details: error.message
-        }), { status: 500 });
+        });
     }
 }
