@@ -19,10 +19,10 @@ export async function POST(req: Request) {
             return new Response('Configuración de IA pendiente.', { status: 500 });
         }
 
-        // 2. CONFIGURACIÓN REAL CONFIRMADA (v1beta + Header Explícito)
+        // 2. FORZADO A VERSIÓN V1 ESTABLE (Evita el 404 del endpoint v1beta)
         const googleProvider = createGoogleGenerativeAI({
             apiKey: apiKey,
-            baseURL: 'https://generativelanguage.googleapis.com/v1beta',
+            baseURL: 'https://generativelanguage.googleapis.com/v1',
             headers: {
                 'x-goog-api-key': apiKey,
             }
@@ -59,7 +59,7 @@ Regla: Responde con brevedad y calidez. No inventes datos.
         // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON LECTOR MANUAL DEL FRONTEND)
         return result.toTextStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_V1BETA_ERROR:', error.message);
+        console.error('CHAT_V1_ERROR:', error.message);
         return new Response('Servicio temporalmente fuera de línea.', { status: 500 });
     }
 }
