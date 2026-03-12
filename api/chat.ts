@@ -4,30 +4,30 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
 /**
- * 📝 BLUEPRINT ESTABILIZADO: CORE MESSAGE COMPLIANCE
- * Resolvemos el error "Invalid prompt" asegurando que el array de mensajes 
- * cumpla estrictamente con la interfaz CoreMessage de la SDK ai@4.1.20.
+ * 📝 BLUEPRINT RADICAL V3: TOTAL COMPATIBILITY (v1beta + CoreMessage)
+ * Resolvemos el error 404 regresando a v1beta (donde vive gemini-1.5-flash para esta cuenta)
+ * y manteniendo la normalización estricta de mensajes para evitar el error "Invalid prompt".
  */
 
 export const runtime = 'edge';
 export const maxDuration = 30;
 
+// Configuración del proveedor a v1beta para asegurar que encuentre el modelo
 const googleProvider = createGoogleGenerativeAI({
     apiKey: "AIzaSyDwY1a969j346whP-E38QH2L9AGtW9tzUs",
-    baseURL: 'https://generativelanguage.googleapis.com/v1',
+    baseURL: 'https://generativelanguage.googleapis.com/v1beta',
 });
 
 export async function POST(req: Request) {
     try {
         const { messages: rawMessages } = await req.json();
 
-        // 1. CONSTRUCCIÓN DEL CONTEXTO (Inyectado como primer mensaje USER)
+        // 1. CONSTRUCCIÓN DEL CONTEXTO (Inyectado en USER para evitar líos de esquema)
         const propertyInfo = PROPERTIES.map(p => `- ${p.title} ($${p.price}/noche)`).join('\n');
         const systemPrompt = `ERES EL CONCIERGE EXPERTO DE VILLA RETIRO Y VILLA PIRATA STAYS.
 CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOWLEDGE.policies.cancellation}`;
 
         // 2. NORMALIZACIÓN ESTRICTA A CoreMessage[]
-        // El SDK requiere un array de objetos con { role: 'user' | 'assistant', content: string }
         const normalizedMessages: any[] = [
             {
                 role: 'user',
@@ -39,22 +39,21 @@ CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOW
             }
         ];
 
-        // Mapear los mensajes entrantes limpiando cualquier campo no estándar (como 'sender' o 'text')
+        // Mapear los mensajes entrantes limpiando campos no estándar
         if (Array.isArray(rawMessages)) {
             rawMessages.forEach((m: any) => {
                 const role = (m.role === 'model' || m.sender === 'ai' || m.role === 'assistant') ? 'assistant' : 'user';
                 const content = m.content || m.text || '';
 
-                // Solo añadir si tiene contenido para evitar errores de validación de la SDK
                 if (content.trim()) {
                     normalizedMessages.push({ role, content });
                 }
             });
         }
 
-        // 3. EJECUCIÓN CON HANDSHAKE V1 (Sin parámetro 'system')
+        // 3. EJECUCIÓN (Usamos el ID simple que v1beta reconoce mejor)
         const result = await streamText({
-            model: googleProvider('models/gemini-1.5-flash'),
+            model: googleProvider('gemini-1.5-flash'),
             messages: normalizedMessages,
             temperature: 0.7,
             maxTokens: 1000,
@@ -65,7 +64,7 @@ CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOW
     } catch (error: any) {
         console.error('[FATAL_CHAT_ERROR]:', error.message);
         return new Response(JSON.stringify({
-            error: 'Error de validación en mensajes',
+            error: 'Error de conexión con el modelo',
             details: error.message
         }), { status: 500 });
     }
