@@ -57,6 +57,5 @@
             "source": "/((?!assets/.*|api/.*|.*\\..*|auth/v1/.*).*)",
             "destination": "/index.html"
         }
-    ],
-    "buildId": "2026-03-12T13:50"
+    ]
 }
