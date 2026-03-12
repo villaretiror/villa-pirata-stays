@@ -19,10 +19,9 @@ export async function POST(req: Request) {
             return new Response('Configuración de IA pendiente.', { status: 500 });
         }
 
-        // 2. INICIALIZACIÓN DEL PROVEEDOR (FORZANDO V1 ESTABLE)
+        // 2. INICIALIZACIÓN LIMPIA (Dejamos que el SDK elija v1beta automáticamente)
         const google = createGoogleGenerativeAI({
             apiKey: apiKey,
-            baseURL: 'https://generativelanguage.googleapis.com/v1'
         });
 
         // 3. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
@@ -74,7 +73,7 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
 `.trim();
 
         const result = await streamText({
-            model: google('gemini-1.5-pro'),
+            model: google('gemini-1.5-flash'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
