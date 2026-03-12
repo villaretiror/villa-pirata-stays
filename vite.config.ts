@@ -32,3 +32,4 @@ export default defineConfig({
     host: '0.0.0.0',
   },
 });
+// Build trigger: 2026-03-12T13:58
