@@ -40,7 +40,7 @@ BEGIN
       url := 'https://villaretiror.com/api/send',
       headers := '{"Content-Type": "application/json"}'::jsonb,
       body := json_build_object(
-        'type', 'contact', -- Reutilizamos el template de contacto para rapidez
+        'type', 'urgent_alert',
         'contactData', json_build_object(
           'name', '🚨 URGENTE: ' || NEW.name,
           'email', NEW.contact,

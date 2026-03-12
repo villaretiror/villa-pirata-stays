@@ -130,6 +130,27 @@ export default async function handler(req: any, res: any) {
           ${emailFooter}
         </div>
       `;
+    } else if (type === 'urgent_alert') {
+      const { name, message, contact } = req.body.contactData || req.body;
+      emailOptions.subject = `🚨 URGENTE: Soporte solicitado - ${name}`;
+      emailOptions.to = 'villaretiror@gmail.com';
+      emailOptions.html = `
+        <div style="font-family: sans-serif; border: 2px solid red; padding: 30px; border-radius: 20px; color: #1a1a1a;">
+          <h1 style="color: red; margin-top: 0;">⚠️ Alerta Prioritaria del Chat</h1>
+          <p style="font-size: 16px;">Un cliente ha solicitado asistencia urgente a través del Concierge.</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <p><strong>Cliente:</strong> ${name}</p>
+          <p><strong>Problema:</strong> ${message}</p>
+          <p><strong>Contacto:</strong> ${contact}</p>
+          <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;">
+          <div style="text-align: center; margin-top: 30px;">
+            <a href="https://wa.me/${contact?.replace(/\D/g, '')}" 
+               style="background: #25D366; color: white; padding: 15px 30px; text-decoration: none; border-radius: 12px; font-weight: bold; display: inline-block;">
+               REACCIONAR POR WHATSAPP
+            </a>
+          </div>
+        </div>
+      `;
     } else if (type === 'review_request') {
       const { customerName, customerEmail, propertyName } = req.body;
       emailOptions.to = customerEmail;
