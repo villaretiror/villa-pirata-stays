@@ -3,7 +3,6 @@ import { streamText } from 'ai';
 import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
-// 1. FORZAR RUNTIME EDGE
 export const runtime = 'edge';
 export const maxDuration = 30;
 
@@ -11,51 +10,34 @@ export async function POST(req: Request) {
     try {
         const { messages } = await req.json();
 
-        // 2. VALIDACIÓN DE API KEY (Prioridad GOOGLE_GENERATIVE_AI_API_KEY)
         const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
-            console.error('CRITICAL: GOOGLE_GENERATIVE_AI_API_KEY is undefined in Edge Runtime');
-            return new Response('Configuración de IA incompleta.', { status: 500 });
+            console.error('CRITICAL: API Key missing');
+            return new Response('Auth Error', { status: 500 });
         }
 
-        // 3. BASE DE CONOCIMIENTO (STRICT CONTEXT)
+        // Sistema de conocimiento (Concierge)
         const propertyInfo = PROPERTIES.map(p => `
-Propiedad: ${p.title} (ID: ${p.id})
-Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
-Capacidad: ${p.guests} huéspedes | ${p.bedrooms} habs | ${p.beds} camas | ${p.baths} baños
-Ubicación: ${p.location} (${p.address})
+Propiedad: ${p.title}
+Precio: $${p.price}/noche | Capacidad: ${p.guests}
 Check-in: ${p.policies.checkInTime} | Check-out: ${p.policies.checkOutTime}
-Reglas: ${p.policies.houseRules?.join(', ') || 'Consultar'}
-Descripción: ${p.description}
+WiFi: ${p.policies.wifiName}
 `).join('\n---\n');
 
-        const guideInfo = INITIAL_LOCAL_GUIDE.map(cat => `
-${cat.category}:
-${cat.items.map(item => `- ${item.name}: ${item.desc}`).join('\n')}
-`).join('\n');
-
         const systemsPrompt = `
-Eres el Concierge Digital experto de Villa Retiro y Villa Pirata Stays. 
-Responde siempre basándote en esta información oficial:
-
-PROPIEDADES:
+Eres el Concierge experto de Villa Retiro y Villa Pirata Stays. 
+Usa solo esta base de datos:
 ${propertyInfo}
 
-GUÍA LOCAL:
-${guideInfo}
+Políticas: ${VILLA_KNOWLEDGE.policies.cancellation}
+Contacto: ${HOST_PHONE}
 
-POLÍTICAS:
-- Cancelación: ${VILLA_KNOWLEDGE.policies.cancellation}
-- Emergencias: ${VILLA_KNOWLEDGE.emergencies.contact}
-- Contacto Host: ${HOST_PHONE}
-
-Usa un tono de lujo, profesional y cálido. Si no tienes la información, ofrece contactar al host.
+Regla: No inventes datos. Tono profesional y cálido.
 `.trim();
 
-        // 4. EJECUCIÓN CON ESTRUCTURA ESTÁNDAR (v1beta automática por el SDK)
         const result = await streamText({
-            model: google('gemini-1.5-flash'), // El SDK maneja el mapeo correcto internamente
+            model: google('gemini-1.5-flash'), // El SDK estable maneja esto correctamente
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
@@ -63,10 +45,10 @@ Usa un tono de lujo, profesional y cálido. Si no tienes la información, ofrece
             })),
         });
 
-        // 5. RESPUESTA TEXT STREAM (COMPATIBLE CON EL FRONTEND ACTUAL)
-        return result.toTextStreamResponse();
+        // Usamos toDataStreamResponse como solicitaste para mayor estabilidad del SDK v4
+        return result.toDataStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_EDGE_ERROR:', error.message);
-        return new Response('Error en el servicio de chat. Por favor, intente de nuevo.', { status: 500 });
+        console.error('CHAT_ERROR:', error.message);
+        return new Response('Error', { status: 500 });
     }
 }
