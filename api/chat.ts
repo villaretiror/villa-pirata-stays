@@ -3,11 +3,6 @@ import { streamText } from 'ai';
 import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
 
-// Configuración de proveedor para usar la llave existente
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GEMINI_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-});
-
 // Configuración de duración para evitar timeouts en Vercel
 export const maxDuration = 30;
 
@@ -19,12 +14,21 @@ export default async function handler(req: Request) {
     try {
         const { messages } = await req.json();
 
-        if (!process.env.GEMINI_API_KEY && !process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-            console.error('MISSING API KEY: GEMINI_API_KEY or GOOGLE_GENERATIVE_AI_API_KEY');
-            throw new Error('MISSING_API_KEY');
+        // 1. CAPTURA DINÁMICA DE API KEY (Runtime Safe)
+        // Intentamos ambas variables para máxima compatibilidad
+        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+
+        if (!apiKey) {
+            console.error('CRITICAL_ERROR: No se detectó ninguna API Key (GOOGLE_GENERATIVE_AI_API_KEY o GEMINI_API_KEY) en el entorno de Vercel.');
+            return new Response('Error de configuración: API Key faltante.', { status: 500 });
         }
 
-        // Consolidación de conocimiento del proyecto
+        // 2. INICIALIZACIÓN DEL PROVEEDOR DENTRO DEL HANDLER
+        const google = createGoogleGenerativeAI({
+            apiKey: apiKey,
+        });
+
+        // 3. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title} (ID: ${p.id})
 Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
@@ -81,9 +85,10 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
             })),
         });
 
+        // Retornamos stream text compatible con el cliente
         return result.toTextStreamResponse();
     } catch (error: any) {
-        console.error('ERROR_CRÍTICO_CHAT_TIER1:', error.message);
-        return new Response('Estamos actualizando nuestra información de disponibilidad. Por favor, escribe de nuevo en unos segundos.', { status: 500 });
+        console.error('CHAT_RUNTIME_ERROR:', error.message);
+        return new Response('Estamos preparando los detalles de tu estancia. Por favor, intenta de nuevo en un momento.', { status: 500 });
     }
 }
