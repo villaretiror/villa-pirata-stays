@@ -7,7 +7,7 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
  * Model: Gemini 2.0 Flash
  * Personality: Senior Luxury Concierge
  * Bypass: SDK v1.1.9 systemInstruction Fix
- * Last Deploy: 2026-03-12T11:47
+ * Last Deploy: 2026-03-12T12:13
  */
 
 // 1. DEFINICIÓN DEL MASTER PROMPT
