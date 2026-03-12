@@ -6,7 +6,8 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
  * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE
  * Model: Gemini 2.0 Flash
  * Personality: Senior Luxury Concierge
- * Last Deploy: 2026-03-12T11:38
+ * Bypass: SDK v1.1.9 systemInstruction Fix
+ * Last Deploy: 2026-03-12T11:47
  */
 
 // 1. DEFINICIÓN DEL MASTER PROMPT
@@ -37,11 +38,13 @@ export async function POST(req: Request) {
     try {
         const { messages: rawMessages } = await req.json();
 
-        // 2. LIMPIEZA TOTAL (Sanitización 360) e IMPLEMENTACIÓN CoreMessage
+        // 2. LIMPIEZA TOTAL (Sanitización 360) - BYPASS DE SYSTEM INSTRUCTION
         const finalMessages: CoreMessage[] = [
+            // Primer mensaje: El Concierge se presenta a sí mismo con sus reglas (rol assistant)
+            // Esto evita que el SDK inyecte 'systemInstruction' y rompa la API v1
             {
-                role: 'system',
-                content: VILLA_CONCIERGE_PROMPT
+                role: 'assistant',
+                content: `CONTEXTO DE SERVICIO: ${VILLA_CONCIERGE_PROMPT}. Entendido, actuaré como el Concierge de lujo para Villa Retiro.`
             },
             ...(rawMessages || []).map((m: any): CoreMessage => {
                 // Asegura que solo pasen 'role' y 'content', nada más.
@@ -57,7 +60,7 @@ export async function POST(req: Request) {
             })
         ];
 
-        // 3. EJECUCIÓN
+        // 3. EJECUCIÓN (Sin parámetro 'system' para evitar systemInstruction bug)
         const result = await streamText({
             model: google('gemini-2.0-flash'),
             messages: finalMessages,
