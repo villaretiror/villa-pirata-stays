@@ -7,7 +7,9 @@ import { useLocation } from 'react-router-dom';
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const isInvite = new URLSearchParams(location.search).get('invite') === 'true';
+  const searchParams = new URLSearchParams(location.search);
+  const isInvite = searchParams.get('invite') === 'true';
+  const redirectToParam = searchParams.get('redirect');
   const { login, register } = useAuth();
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
@@ -35,7 +37,14 @@ const Login: React.FC = () => {
         if (error) throw new Error(error);
         if (user) {
           console.log(`Login Debug: User authenticated successfully. Email: ${user.email}, Role: ${user.role}`);
-          // Redirección condicionada por Rol
+
+          // Redirección Prioritaria por parámetro
+          if (redirectToParam === 'messages') {
+            navigate('/messages');
+            return;
+          }
+
+          // Redirección por Rol (Fallback)
           if (user.role === 'host' || user.email === 'villaretiror@gmail.com') {
             navigate('/host');
           } else {
@@ -53,10 +62,14 @@ const Login: React.FC = () => {
   const handleGoogleLogin = async () => {
     try {
       setLoading(true);
+      const redirectUrl = redirectToParam === 'messages'
+        ? `${SITE_URL}/messages`
+        : SITE_URL;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: SITE_URL
+          redirectTo: redirectUrl
         }
       });
       if (error) throw error;
