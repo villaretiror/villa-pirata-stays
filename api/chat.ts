@@ -1,7 +1,7 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants';
-import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
+import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants.js';
+import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
 // Configuración de duración para evitar timeouts en Vercel
 export const maxDuration = 30;
