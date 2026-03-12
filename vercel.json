@@ -1,13 +1,10 @@
 {
-    "buildCommand": "npm run build",
-    "outputDirectory": "dist",
-    "framework": "vite",
     "cleanUrls": true,
     "trailingSlash": false,
     "functions": {
-        "api/chat.ts": {
-            "maxDuration": 45,
-            "memory": 1024
+        "api/**/*.ts": {
+            "memory": 1024,
+            "maxDuration": 10
         }
     },
     "crons": [
