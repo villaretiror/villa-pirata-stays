@@ -4,16 +4,14 @@ import { PROPERTIES, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
 /**
- * 📝 BLUEPRINT MAESTRO: NORMALIZACIÓN TOTAL DE PAYLOAD
- * Resolvemos el error 400 'systemInstruction' moviendo las instrucciones 
- * a un mensaje de tipo 'user' al inicio de la conversación.
- * Esto evita que el SDK intente usar el campo rechazado por el endpoint v1.
+ * 📝 BLUEPRINT ESTABILIZADO: CORE MESSAGE COMPLIANCE
+ * Resolvemos el error "Invalid prompt" asegurando que el array de mensajes 
+ * cumpla estrictamente con la interfaz CoreMessage de la SDK ai@4.1.20.
  */
 
 export const runtime = 'edge';
 export const maxDuration = 30;
 
-// Configuración de blindaje para el proveedor (v1 Estable)
 const googleProvider = createGoogleGenerativeAI({
     apiKey: "AIzaSyDwY1a969j346whP-E38QH2L9AGtW9tzUs",
     baseURL: 'https://generativelanguage.googleapis.com/v1',
@@ -21,52 +19,53 @@ const googleProvider = createGoogleGenerativeAI({
 
 export async function POST(req: Request) {
     try {
-        const { messages } = await req.json();
+        const { messages: rawMessages } = await req.json();
 
-        // 1. CONSTRUCCIÓN DEL CONTEXTO
+        // 1. CONSTRUCCIÓN DEL CONTEXTO (Inyectado como primer mensaje USER)
         const propertyInfo = PROPERTIES.map(p => `- ${p.title} ($${p.price}/noche)`).join('\n');
-        const systemPrompt = `
-ERES EL CONCIERGE EXPERTO DE VILLA RETIRO Y VILLA PIRATA STAYS.
-INSTRUCCIONES CRÍTICAS:
-- Bases de conocimiento: ${propertyInfo}
-- Contacto: ${HOST_PHONE}
-- Políticas: ${VILLA_KNOWLEDGE.policies.cancellation}
-- Tono: Lujoso, cálido y profesional.
-- Regla: No inventes datos. Si no sabes, ofrece el contacto del host.
-`.trim();
+        const systemPrompt = `ERES EL CONCIERGE EXPERTO DE VILLA RETIRO Y VILLA PIRATA STAYS.
+CONOCIMIENTO: ${propertyInfo}. CONTACTO: ${HOST_PHONE}. POLÍTICAS: ${VILLA_KNOWLEDGE.policies.cancellation}`;
 
-        // 2. NORMALIZACIÓN DE MENSAJES (BYPASS ERROR 400)
-        // Eliminamos el rol 'system' completamente para evitar que el SDK genere el campo 'systemInstruction'.
-        const normalizedMessages = [
+        // 2. NORMALIZACIÓN ESTRICTA A CoreMessage[]
+        // El SDK requiere un array de objetos con { role: 'user' | 'assistant', content: string }
+        const normalizedMessages: any[] = [
             {
                 role: 'user',
-                content: `[SISTEMA]: ${systemPrompt}\n\n[MENSAJE DEL HUÉSPED]: Empecemos la conversación. Preséntate brevemente.`
+                content: `[CONFIG]: ${systemPrompt}\n\n¡Hola! Por favor actúa como mi concierge.`
             },
             {
                 role: 'assistant',
-                content: '¡Hola! Es un placer saludarte. Soy el Concierge de Villa Retiro y Villa Pirata Stays. ¿En qué puedo ayudarte hoy con tu estancia?'
-            },
-            ...messages.map((m: any) => ({
-                role: m.role === 'model' || m.sender === 'ai' ? 'assistant' : 'user',
-                content: m.content || m.text
-            }))
+                content: '¡Hola! Es un placer saludarte. Soy el Concierge de Villa Retiro y Villa Pirata Stays. ¿En qué puedo ayudarte hoy?'
+            }
         ];
 
-        // 3. EJECUCIÓN (Uso de models/gemini-1.5-flash para máxima precisión en v1)
+        // Mapear los mensajes entrantes limpiando cualquier campo no estándar (como 'sender' o 'text')
+        if (Array.isArray(rawMessages)) {
+            rawMessages.forEach((m: any) => {
+                const role = (m.role === 'model' || m.sender === 'ai' || m.role === 'assistant') ? 'assistant' : 'user';
+                const content = m.content || m.text || '';
+
+                // Solo añadir si tiene contenido para evitar errores de validación de la SDK
+                if (content.trim()) {
+                    normalizedMessages.push({ role, content });
+                }
+            });
+        }
+
+        // 3. EJECUCIÓN CON HANDSHAKE V1 (Sin parámetro 'system')
         const result = await streamText({
             model: googleProvider('models/gemini-1.5-flash'),
-            messages: normalizedMessages as any,
+            messages: normalizedMessages,
             temperature: 0.7,
             maxTokens: 1000,
         });
 
-        // 4. RETORNO DE STREAM LIMPIO
         return result.toTextStreamResponse();
 
     } catch (error: any) {
         console.error('[FATAL_CHAT_ERROR]:', error.message);
         return new Response(JSON.stringify({
-            error: 'Incompatibilidad de esquema resuelta. Reintentando...',
+            error: 'Error de validación en mensajes',
             details: error.message
         }), { status: 500 });
     }
