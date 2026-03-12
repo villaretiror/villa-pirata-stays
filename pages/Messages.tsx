@@ -247,7 +247,8 @@ const Messages: React.FC = () => {
           checkOut,
           accessCode: property?.policies?.accessCode,
           wifiName: property?.policies?.wifiName,
-          wifiPass: property?.policies?.wifiPass
+          wifiPass: property?.policies?.wifiPass,
+          propertyId: propertyId
         })
       });
 

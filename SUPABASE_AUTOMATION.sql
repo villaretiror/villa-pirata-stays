@@ -31,11 +31,18 @@ CREATE TRIGGER on_lead_inserted
   AFTER INSERT ON public.leads
   FOR EACH ROW EXECUTE FUNCTION public.notify_new_lead();
 
--- 2. [SYNC/BOOKINGS] INDEXES FOR PERFORMANCE
--- Esto acelera la función check_availability del Concierge
+-- 3. [SYNC/BOOKINGS] INFRASTRUCTURE ENHANCEMENT
+ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS email_sent_feedback BOOLEAN DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_bookings_dates ON public.bookings(check_in, check_out);
 
--- 3. [AUDIT LOGS] PARA EL CHAT
+-- 4. [STORAGE] BRANDING BUCKET PREP
+-- Asegúrate de que el bucket 'villas' sea público en el dashboard.
+-- Este SQL intenta crearlo si tienes permisos.
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('villas', 'villas', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- 5. [AUDIT LOGS] PARA EL CHAT
 CREATE TABLE IF NOT EXISTS public.chat_logs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id TEXT,

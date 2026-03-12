@@ -62,7 +62,7 @@ DO $$ BEGIN
   ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'waiting_approval';
   ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS payment_method TEXT;
   ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS payment_proof_url TEXT;
-  ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS email_sent BOOLEAN DEFAULT false;
+  ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS email_sent_feedback BOOLEAN DEFAULT false;
   ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 END $$;
 
