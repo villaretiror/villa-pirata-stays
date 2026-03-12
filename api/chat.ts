@@ -3,6 +3,15 @@ import { streamText } from 'ai';
 import { PROPERTIES, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
+/**
+ * FORCED HANDSHAKE CONFIGURATION
+ * Direct targeting of the v1 stable endpoint to resolve 404/v1beta issues.
+ */
+const googleProvider = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
+    baseURL: 'https://generativelanguage.googleapis.com/v1',
+});
+
 export const runtime = 'edge';
 export const maxDuration = 30;
 
@@ -10,67 +19,47 @@ export async function POST(req: Request) {
     try {
         const { messages } = await req.json();
 
-        // 1. CAPTURA Y SANITIZACIÓN DE API KEY (TRIMMED)
-        const rawKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
-        const apiKey = rawKey.replace(/["']/g, '').trim();
-
-        if (!apiKey) {
-            console.error('CRITICAL: API Key is missing');
-            return new Response('Auth Error', { status: 500 });
+        // Check if API Key exists
+        if (!(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY)) {
+            console.error('[CHAT_ERROR]: API Key is missing');
+            return new Response(JSON.stringify({ error: 'Authentication missing' }), { status: 500 });
         }
 
-        // 2. FORZADO A VERSIÓN V1 ESTABLE (Mata el 404 de v1beta)
-        const google = createGoogleGenerativeAI({
-            apiKey: apiKey,
-            baseURL: 'https://generativelanguage.googleapis.com/v1',
-            headers: {
-                'x-goog-api-key': apiKey,
-            }
-        });
-
-        // 3. BASE DE CONOCIMIENTO (STRICT CONTEXT)
+        // Base de Conocimiento (Concierge)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title}
 Precio: $${p.price}/noche | Capacidad: ${p.guests}
-Check-in: ${p.policies.checkInTime} | Check-out: ${p.policies.checkOutTime}
 `).join('\n---\n');
 
         const systemsPrompt = `
 Eres el Concierge experto de Villa Retiro y Villa Pirata Stays. 
-Usa solo esta base de datos:
+Básate siempre en esta información:
 ${propertyInfo}
-
+Contacto Host: ${HOST_PHONE}
 Políticas: ${VILLA_KNOWLEDGE.policies.cancellation}
-Contacto: ${HOST_PHONE}
 
-Regla: No inventes datos. Tono profesional y cálido.
+Regla: Responde con elegancia y precisión. No inventes datos.
 `.trim();
 
-        // 4. PREVENCIÓN DE CARGA CORRUPTA + WORKAROUND DE SISTEMA (Soporte v1)
-        // La versión v1 no acepta 'systemInstruction' nativamente vía SDK en algunas versiones críticas.
-        // Prependemos el prompt como el primer mensaje del usuario.
-        const chatHistory = [
-            {
-                role: 'user',
-                content: `INSTRUCCIONES DE SISTEMA (CONSERVAR SIEMPRE):\n${systemsPrompt}\n--- (FIN DE INSTRUCCIONES) ---`
-            },
-            ...messages.slice(-20).map((m: any) => ({
+        // Inyectar contexto en los mensajes para compatibilidad total con v1
+        const finalMessages = [
+            { role: 'user', content: `Contexto del sistema:\n${systemsPrompt}` },
+            ...messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
                 content: m.content
             }))
         ];
 
-        // 5. MODELO ESTABLE SIN 'LATEST'
         const result = await streamText({
-            model: google('gemini-1.5-flash'),
-            // system: systemsPrompt, // Eliminado para evitar error 400 en v1
-            messages: chatHistory as any,
+            // Forced stable model identifier
+            model: googleProvider('gemini-1.5-flash'),
+            messages: finalMessages,
         });
 
-        // 6. RESPUESTA TEXT STREAM (COMPATIBLE CON FRONTEND)
-        return result.toTextStreamResponse();
+        // Current directive requires DataStreamResponse for SDK v4 stability
+        return result.toDataStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_V1_ERROR:', error.message);
-        return new Response('Mantenimiento', { status: 500 });
+        console.error('[CHAT_ERROR]:', error.message);
+        return new Response(JSON.stringify({ error: 'Endpoint resolution failed' }), { status: 500 });
     }
 }
