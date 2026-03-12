@@ -28,7 +28,7 @@ Tu tono es Lujoso, cálido y profesional.
 4. EL CIERRE (CHECKOUT): Cuando el cliente elija villa y fechas, indícale: "Excelente elección. He preparado su solicitud de reserva. Puede completar el pago de forma segura aquí mismo:". INMEDIATAMENTE incluye el formato [PAYMENT_REQUEST: ...] usando 'generate_booking_pattern'.
 
 ### MANEJO DE POST-VENTA
-Si el usuario YA TIENE una reserva o ya pagó, dile que has notificado al Host para atención prioritaria y detén la venta.
+Si el usuario YA TIENE una reserva o ya pagó y reporta algún problema, duda o necesita soporte, EJECUTA INMEDIATAMENTE la herramienta 'notify_host_urgent' para alertar al Host. Dile al cliente que has enviado una alerta prioritaria y que será contactado brevemente.
 
 ### DATOS ADICIONALES
 Usa VILLA_KNOWLEDGE para políticas y amenidades:
@@ -133,6 +133,22 @@ export async function POST(req: Request) {
                     }),
                     execute: async ({ villa_id, total, check_in, check_out, guests }) => {
                         return `[PAYMENT_REQUEST: ${villa_id}, ${total}, ${check_in}, ${check_out}, ${guests}]`;
+                    },
+                }),
+                notify_host_urgent: tool({
+                    description: 'Envía una alerta inmediata al Host por problemas con reservas pagadas o soporte urgente.',
+                    parameters: z.object({
+                        client_name: z.string(),
+                        issue_description: z.string(),
+                        contact_info: z.string()
+                    }),
+                    execute: async ({ client_name, issue_description, contact_info }) => {
+                        const { error } = await supabase.from('urgent_alerts').insert({
+                            name: client_name,
+                            message: issue_description,
+                            contact: contact_info
+                        });
+                        return error ? { status: 'error' } : { status: 'success', message: 'Alerta enviada al celular del Host.' };
                     },
                 }),
             },

@@ -95,7 +95,19 @@ END $$;
 
 ALTER TABLE public.leads ENABLE ROW LEVEL SECURITY;
 
--- 6. [RLS POLICIES] SECURITY MASTER PLAN
+-- 6. [URGENT_ALERTS] TABLE
+CREATE TABLE IF NOT EXISTS public.urgent_alerts (id UUID PRIMARY KEY DEFAULT gen_random_uuid());
+DO $$ BEGIN
+  ALTER TABLE public.urgent_alerts ADD COLUMN IF NOT EXISTS name TEXT;
+  ALTER TABLE public.urgent_alerts ADD COLUMN IF NOT EXISTS message TEXT;
+  ALTER TABLE public.urgent_alerts ADD COLUMN IF NOT EXISTS contact TEXT;
+  ALTER TABLE public.urgent_alerts ADD COLUMN IF NOT EXISTS status TEXT DEFAULT 'new';
+  ALTER TABLE public.urgent_alerts ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+END $$;
+
+ALTER TABLE public.urgent_alerts ENABLE ROW LEVEL SECURITY;
+
+-- 7. [RLS POLICIES] SECURITY MASTER PLAN
 -- Profiles: Users can see all profiles (for joins), but update only their own.
 DROP POLICY IF EXISTS "Profiles are public for joins" ON public.profiles;
 CREATE POLICY "Profiles are public for joins" ON public.profiles FOR SELECT USING (true);
@@ -134,6 +146,14 @@ USING (auth.jwt() ->> 'email' = 'villaretiror@gmail.com');
 DROP POLICY IF EXISTS "Cohosts can see their own status" ON public.property_cohosts;
 CREATE POLICY "Cohosts can see their own status" ON public.property_cohosts FOR SELECT 
 USING (email = auth.jwt() ->> 'email');
+
+-- Urgent Alerts: Public can insert. Host can see.
+DROP POLICY IF EXISTS "Public can submit alerts" ON public.urgent_alerts;
+CREATE POLICY "Public can submit alerts" ON public.urgent_alerts FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Host can see alerts" ON public.urgent_alerts;
+CREATE POLICY "Host can see alerts" ON public.urgent_alerts FOR SELECT 
+USING (auth.jwt() ->> 'email' = 'villaretiror@gmail.com');
 
 -- Special Property Policies
 DROP POLICY IF EXISTS "Admin manages all properties" ON public.properties;

@@ -31,7 +31,34 @@ CREATE TRIGGER on_lead_inserted
   AFTER INSERT ON public.leads
   FOR EACH ROW EXECUTE FUNCTION public.notify_new_lead();
 
--- 3. [SYNC/BOOKINGS] INFRASTRUCTURE ENHANCEMENT
+-- 3. [URGENT ALERTS] WEBHOOK AUTOMATION
+CREATE OR REPLACE FUNCTION public.notify_urgent_alert()
+RETURNS trigger AS $$
+BEGIN
+  PERFORM
+    net.http_post(
+      url := 'https://villaretiror.com/api/send',
+      headers := '{"Content-Type": "application/json"}'::jsonb,
+      body := json_build_object(
+        'type', 'contact', -- Reutilizamos el template de contacto para rapidez
+        'contactData', json_build_object(
+          'name', '🚨 URGENTE: ' || NEW.name,
+          'email', NEW.contact,
+          'phone', NEW.contact,
+          'message', NEW.message
+        )
+      )::jsonb
+    );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+DROP TRIGGER IF EXISTS on_urgent_alert_inserted ON public.urgent_alerts;
+CREATE TRIGGER on_urgent_alert_inserted
+  AFTER INSERT ON public.urgent_alerts
+  FOR EACH ROW EXECUTE FUNCTION public.notify_urgent_alert();
+
+-- 4. [SYNC/BOOKINGS] INFRASTRUCTURE ENHANCEMENT
 ALTER TABLE public.bookings ADD COLUMN IF NOT EXISTS email_sent_feedback BOOLEAN DEFAULT false;
 CREATE INDEX IF NOT EXISTS idx_bookings_dates ON public.bookings(check_in, check_out);
 
