@@ -1,4 +1,7 @@
--- 1. [LEADS] WEBHOOK AUTOMATION
+-- 1. INFRAESTRUCTURA DE RED (Activa pg_net para Webhooks)
+CREATE EXTENSION IF NOT EXISTS "pg_net" WITH SCHEMA "extensions";
+
+-- 2. [LEADS] WEBHOOK AUTOMATION
 -- Al insertar un nuevo Lead, notificamos a nuestro backend para enviar el email de bienvenida.
 
 CREATE OR REPLACE FUNCTION public.notify_new_lead()
