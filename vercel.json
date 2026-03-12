@@ -1,5 +1,5 @@
 {
-    "cleanUrls": true,
+    "cleanUrls": false,
     "trailingSlash": false,
     "functions": {
         "api/**/*.ts": {
@@ -51,7 +51,11 @@
     ],
     "rewrites": [
         {
-            "source": "/((?!assets/.*|api/.*|.*\\..*|auth/v1/.*).*)",
+            "source": "/api/(.*)",
+            "destination": "/api/$1"
+        },
+        {
+            "source": "/((?!assets/|auth/|.*\\.).*)",
             "destination": "/index.html"
         }
     ]
