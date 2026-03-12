@@ -10,7 +10,7 @@
     "crons": [
         {
             "path": "/api/sync-ical",
-            "schedule": "0 * * * *"
+            "schedule": "0 9 * * *"
         },
         {
             "path": "/api/feedback-cron",
