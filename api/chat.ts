@@ -35,7 +35,7 @@ Usa VILLA_KNOWLEDGE para políticas y amenidades:
 ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
 `.trim();
 
-export const runtime = 'edge';
+// export const runtime = 'edge'; // Cambiado a Node.js por estabilidad de conexión con Supabase
 export const maxDuration = 30;
 
 // Configuración de Supabase para Servidor (Usando Service Role si está disponible o Anon como fallback)
@@ -57,10 +57,14 @@ export async function POST(req: Request) {
 
         // 2. Persistencia y Auditoría de Sesión (chat_logs)
         if (sessionId) {
-            // Actualizamos contadores en segundo plano para no bloquear al usuario
+            // Validamos que el userId sea un UUID válido para evitar errores en Postgres
+            const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+            const validUserId = (userId && isUUID(userId)) ? userId : null;
+
+            // Actualizamos contadores en segundo plano
             supabase.from('chat_logs').upsert({
                 session_id: sessionId,
-                user_id: userId || null,
+                user_id: validUserId,
                 message_count: (rawMessages || []).length,
                 last_interaction: new Date().toISOString()
             }, { onConflict: 'session_id' }).then(({ error }) => {
