@@ -1,6 +1,6 @@
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText } from 'ai';
-import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants.js';
+import { PROPERTIES, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
 export const runtime = 'edge';
@@ -10,29 +10,29 @@ export async function POST(req: Request) {
     try {
         const { messages } = await req.json();
 
-        // VALIDACIÓN DE API KEY (Buscamos ambas posibles variables)
-        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+        // 1. CAPTURA LIMPIA DE API KEY (TRIMMED)
+        const rawKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '';
+        const apiKey = rawKey.replace(/["']/g, '').trim();
 
         if (!apiKey) {
-            console.error('CRITICAL: GOOGLE_GENERATIVE_AI_API_KEY is undefined');
-            return new Response('Configuración de IA pendiente en Vercel.', { status: 500 });
+            console.error('CRITICAL: API Key is missing or empty');
+            return new Response('Configuración de IA pendiente.', { status: 500 });
         }
 
-        // 1. CONFIGURACIÓN BLINDADA (FORZANDO V1 Y HEADER DE SEGURIDAD)
-        const google = createGoogleGenerativeAI({
+        // 2. CONFIGURACIÓN REAL CONFIRMADA (v1beta + Header Explícito)
+        const googleProvider = createGoogleGenerativeAI({
             apiKey: apiKey,
-            baseURL: 'https://generativelanguage.googleapis.com/v1',
+            baseURL: 'https://generativelanguage.googleapis.com/v1beta',
             headers: {
                 'x-goog-api-key': apiKey,
             }
         });
 
-        // Sistema de conocimiento (Concierge)
+        // 3. BASE DE CONOCIMIENTO (STRICT CONTEXT)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title}
 Precio: $${p.price}/noche | Capacidad: ${p.guests}
 Check-in: ${p.policies.checkInTime} | Check-out: ${p.policies.checkOutTime}
-WiFi: ${p.policies.wifiName}
 `).join('\n---\n');
 
         const systemsPrompt = `
@@ -43,12 +43,12 @@ ${propertyInfo}
 Políticas: ${VILLA_KNOWLEDGE.policies.cancellation}
 Contacto: ${HOST_PHONE}
 
-Regla: No inventes datos. Tono profesional y cálido. Si no tienes la info, ofrece contactar al host.
+Regla: Responde con brevedad y calidez. No inventes datos.
 `.trim();
 
-        // 2. PRUEBA DE FUEGO CON MODELO PRO (Más capacidad y estabilidad en iad1)
+        // 4. MODELO ESTABLE (gemini-1.5-flash)
         const result = await streamText({
-            model: google('gemini-1.5-pro'),
+            model: googleProvider('gemini-1.5-flash'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
@@ -56,10 +56,10 @@ Regla: No inventes datos. Tono profesional y cálido. Si no tienes la info, ofre
             })),
         });
 
-        // 3. RESPUESTA DATA STREAM (ESTÁNDAR SDK V4)
+        // 5. RESPUESTA DATA STREAM (COMPATIBLE SDK v4)
         return result.toDataStreamResponse();
     } catch (error: any) {
-        console.error('CHAT_V1_ERROR:', error.message);
-        return new Response('El servicio de chat está en mantenimiento técnico. Por favor, intente de nuevo en unos minutos.', { status: 500 });
+        console.error('CHAT_V1BETA_ERROR:', error.message);
+        return new Response('Servicio temporalmente fuera de línea.', { status: 500 });
     }
 }
