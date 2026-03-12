@@ -3,32 +3,24 @@ import { streamText } from 'ai';
 import { PROPERTIES, INITIAL_LOCAL_GUIDE, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
 
-// Configuración de duración para evitar timeouts en Vercel
+// Activación del motor Edge para soporte nativo de req.json() y streaming
+export const runtime = 'edge';
 export const maxDuration = 30;
 
-export default async function handler(req: Request) {
-    if (req.method !== 'POST') {
-        return new Response('Method not allowed', { status: 405 });
-    }
-
+export async function POST(req: Request) {
     try {
+        // En el Edge Runtime, req.json() es nativo
         const { messages } = await req.json();
 
-        // 1. CAPTURA DINÁMICA DE API KEY (Runtime Safe)
-        // Intentamos ambas variables para máxima compatibilidad
         const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
 
         if (!apiKey) {
-            console.error('CRITICAL_ERROR: No se detectó ninguna API Key (GOOGLE_GENERATIVE_AI_API_KEY o GEMINI_API_KEY) en el entorno de Vercel.');
-            return new Response('Error de configuración: API Key faltante.', { status: 500 });
+            console.error('CRITICAL_ERROR: No se detectó ninguna API Key.');
+            return new Response('Configuración de IA pendiente.', { status: 500 });
         }
 
-        // 2. INICIALIZACIÓN DEL PROVEEDOR DENTRO DEL HANDLER
-        const google = createGoogleGenerativeAI({
-            apiKey: apiKey,
-        });
+        const google = createGoogleGenerativeAI({ apiKey });
 
-        // 3. CONSOLIDACIÓN DE CONOCIMIENTO (STRICT CONTEXT)
         const propertyInfo = PROPERTIES.map(p => `
 Propiedad: ${p.title} (ID: ${p.id})
 Precio: $${p.price}/noche | Limpieza: $${p.cleaning_fee} | Depósito: $${p.security_deposit}
@@ -77,7 +69,7 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
 `.trim();
 
         const result = await streamText({
-            model: google('gemini-1.5-flash'), // Conexión estable v1 con Tier 1
+            model: google('gemini-1.5-flash'),
             system: systemsPrompt,
             messages: messages.map((m: any) => ({
                 role: m.role === 'model' ? 'assistant' : m.role,
@@ -85,10 +77,9 @@ Si no sabes la respuesta o no está en el contexto, di amablemente: "Esa es una 
             })),
         });
 
-        // Retornamos stream text compatible con el cliente
         return result.toTextStreamResponse();
     } catch (error: any) {
         console.error('CHAT_RUNTIME_ERROR:', error.message);
-        return new Response('Estamos preparando los detalles de tu estancia. Por favor, intenta de nuevo en un momento.', { status: 500 });
+        return new Response('Estamos preparando los detalles de su estancia.', { status: 500 });
     }
 }
