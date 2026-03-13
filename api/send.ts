@@ -26,9 +26,10 @@ export default async function handler(req: any, res: any) {
     const { type, to, customer, contactData, booking, propertyId } = req.body || {};
     const userData = customer || contactData || {};
 
-    // Log de Auditoría Master
-    console.log(`[Email API] Event: ${type} | UserAgent: ${req.headers['user-agent']}`);
-    console.log(`[Email API] Full Payload:`, JSON.stringify(req.body, null, 2));
+    // Log de Auditoría Master Consolidado
+    const clientName = userData.name || (req.body || {}).customerName || 'Cliente Indefinido';
+    console.log(`[Email System] Enviando tipo: ${type} para el cliente: ${clientName}`);
+    console.log(`[Email API] UserAgent: ${req.headers['user-agent']}`);
 
     const resendClient = new Resend(process.env.RESEND_API_KEY);
     const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
@@ -81,17 +82,17 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    // 📩 CASO: ALERTA URGENTE CHAT
-    else if (type === 'urgent_alert') {
+    // 📩 CASO: ALERTA URGENTE CHAT / CHAT NOTIFICATION
+    else if (type === 'urgent_alert' || type === 'chat_notification') {
       const name = userData.name || 'Cliente';
-      const message = userData.message || 'SoporteUrgent';
+      const message = userData.message || 'Soporte Urgente';
       const contact = userData.contact || userData.phone || userData.email || 'No Provisto';
       emails.push({
         from: fromAddress,
         to: hostEmail,
-        subject: `🚨 URGENTE: Soporte Chat - ${name}`,
-        html: `<div style="font-family: sans-serif; border: 4px solid red; padding: 30px; border-radius: 20px;">
-          <h1 style="color: red;">⚠️ Alerta Prioritaria</h1>
+        subject: `🚨 ${type === 'urgent_alert' ? 'URGENTE' : 'Notificación'}: Soporte Chat - ${name}`,
+        html: `<div style="font-family: sans-serif; border: 4px solid #F63; padding: 30px; border-radius: 20px;">
+          <h1 style="color: #F63;">⚠️ Solicitud de Soporte</h1>
           <p><strong>Cliente:</strong> ${name}</p>
           <p><strong>Mensaje:</strong> ${message}</p>
           <p><strong>Contacto:</strong> ${contact}</p>
@@ -103,23 +104,24 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 📩 CASO: PAGO EXITOSO
-    else if (type === 'payment_success') {
+    // 📩 CASO: PAGO EXITOSO / RESERVA CONFIRMADA
+    else if (type === 'payment_success' || type === 'reservation_confirmed') {
       const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body || {};
       emails.push({
         from: fromAddress,
         to: customerEmail,
         bcc: hostEmail,
-        subject: `🏝️ Guía de Acceso: ${propertyName}`,
+        subject: `🏝️ Reserva Confirmada: ${propertyName}`,
         html: `<div style="font-family: sans-serif; padding: 40px; border: 1px solid #eee; border-radius: 20px;">
           <img src="${currentLogo}" width="120" />
           <h1>¡Bienvenido, ${customerName}!</h1>
-          <p>Reserva confirmada en <strong>${propertyName}</strong>.</p>
+          <p>Tu estancia en <strong>${propertyName}</strong> ha sido confirmada con éxito.</p>
           <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin: 24px 0;">
-            <p><strong>Lockbox:</strong> <span style="font-size: 20px; color: #F63; font-weight: bold;">${accessCode || 'XXXX'}</span></p>
-            <p><strong>WiFi:</strong> ${wifiName} / ${wifiPass}</p>
+            <p><strong>Código de Acceso:</strong> <span style="font-size: 20px; color: #F63; font-weight: bold;">${accessCode || 'Pendiente de asignar'}</span></p>
+            <p><strong>WiFi:</strong> ${wifiName || 'Ver en propiedad'} / ${wifiPass || ''}</p>
           </div>
           <p><strong>Check-in:</strong> ${checkIn} | <strong>Check-out:</strong> ${checkOut}</p>
+          <p>En breve recibirás un PDF con tu contrato digital y guía detallada.</p>
           ${emailFooter}
         </div>`
       });
@@ -135,12 +137,11 @@ export default async function handler(req: any, res: any) {
       results.push(data);
     }
 
-    console.log("[Email API] Despacho exitoso y confirmado.");
+    console.log(`[Email System] Despacho exitoso para tipo: ${type}`);
     return res.status(200).json({ success: true, results });
 
   } catch (err: any) {
-    console.error("[Email API] FATAL ERROR:", err.message);
-    // Devolvemos 500 para que Supabase sepa que falló y reintente el trigger
+    console.error("[Email System] FATAL ERROR:", err.message);
     return res.status(500).json({ error: err.message, status: 'failed' });
   }
 }
