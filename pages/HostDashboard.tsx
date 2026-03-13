@@ -516,6 +516,12 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
       return;
     }
 
+    // Check for duplicates
+    if (cohosts.some(c => c.email.toLowerCase() === trimmedEmail)) {
+      onShowToast("Ese email ya está invitado o activo para esta villa. 👥");
+      return;
+    }
+
     const { error } = await supabase.from('property_cohosts').insert({
       property_id: propertyId,
       email: trimmedEmail,

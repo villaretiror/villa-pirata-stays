@@ -187,11 +187,21 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
   };
 
   const inviteCoHost = async () => {
-    const trimmedEmail = newCoHostEmail.trim();
+    const trimmedEmail = newCoHostEmail.trim().toLowerCase();
 
     // Validaciones preventivas
-    if (!trimmedEmail) return alert("Por favor ingresa un email válido.");
+    if (!trimmedEmail || !trimmedEmail.includes('@')) return alert("Por favor ingresa un email válido.");
     if (!selectedPropertyForCoHost) return alert("Error: Debes seleccionar una propiedad.");
+
+    // Check for duplicates
+    const isDuplicate = coHosts.some(ch =>
+      ch.email.toLowerCase() === trimmedEmail &&
+      ch.property_id === selectedPropertyForCoHost
+    );
+
+    if (isDuplicate) {
+      return alert("Este email ya ha sido invitado a esta propiedad.");
+    }
 
     const { data, error } = await supabase
       .from('property_cohosts')
@@ -206,16 +216,17 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
       setCoHosts([data[0], ...coHosts]);
       setNewCoHostEmail("");
 
-      // TRIGGER RE-SEND EMAIL
+      // TRIGGER RE-SEND EMAIL (Corrected Payload)
       try {
         const prop = properties.find(p => p.id === selectedPropertyForCoHost);
         await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'invite',
-            to: [trimmedEmail],
-            propertyTitle: prop?.title || 'Villa Retiro'
+            type: 'cohost_invitation',
+            email: trimmedEmail,
+            propertyName: prop?.title || 'Villa Retiro',
+            propertyId: selectedPropertyForCoHost
           })
         });
       } catch (e) {
@@ -226,10 +237,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     } else {
       console.error('--- SUPABASE ERROR [inviteCoHost] ---', error);
       const detail = error?.details || '';
-      const fieldMatch = error?.message?.match(/column "([^"]+)"/);
-      const field = fieldMatch ? ` en campo [${fieldMatch[1]}]` : "";
-
-      alert(`Error invitando anfitrión${field}: ${error?.message}\n\nDetalle: ${detail}`);
+      alert(`Error invitando anfitrión: ${error?.message}\n\nDetalle: ${detail}`);
     }
   };
 
@@ -248,7 +256,9 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
 
   // --- MODALS RENDER ---
 
-  const TaskModal = () => (
+  // --- MODALS RENDER (As functions to avoid Focus issues) ---
+
+  const renderTaskModal = () => (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
         <h2 className="font-bold text-xl mb-4">Agregar Tarea</h2>
@@ -282,7 +292,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     </div>
   );
 
-  const AlertsModal = () => (
+  const renderAlertsModal = () => (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
         <h2 className="font-bold text-xl mb-1">Notificaciones</h2>
@@ -305,7 +315,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     </div>
   );
 
-  const AccountModal = () => (
+  const renderAccountModal = () => (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border border-white/20">
         <h2 className="font-serif font-bold text-2xl mb-1">Mi Cuenta</h2>
@@ -352,59 +362,59 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     </div>
   );
 
-  const CoHostModal = () => (
+  const renderCoHostModal = () => (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-        <h2 className="font-bold text-xl mb-1 text-text-main">Co-Anfitriones</h2>
+      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border border-white/5 shadow-card">
+        <h2 className="font-serif font-bold text-2xl mb-1 text-text-main">Co-Anfitriones</h2>
         <p className="text-xs text-text-light mb-4 text-balanced">Otorga el control de tus villas a tu equipo.</p>
 
-        <div className="space-y-2 mb-6 max-h-48 overflow-y-auto pr-1">
+        <div className="space-y-2 mb-6 max-h-48 overflow-y-auto pr-1 no-scrollbar">
           {loadingCoHosts ? <p className="text-center py-4 animate-pulse text-[10px] font-bold text-gray-400 uppercase">Cargando...</p> :
             coHosts.map((host, i) => (
-              <div key={i} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+              <div key={host.id || i} className="flex justify-between items-center p-3 bg-gray-50 rounded-2xl border border-gray-100/50">
                 <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-secondary/10 text-secondary flex items-center justify-center text-xs font-bold border border-secondary/20">
+                  <div className="w-8 h-8 rounded-full bg-sand text-primary flex items-center justify-center text-xs font-bold border border-gray-200">
                     {host.email[0].toUpperCase()}
                   </div>
-                  <div>
-                    <p className="text-[11px] font-black text-text-main leading-tight">{host.email.split('@')[0]}</p>
-                    <p className="text-[9px] text-text-light font-bold truncate opacity-60">{host.email}</p>
+                  <div className="min-w-0">
+                    <p className="text-[11px] font-black text-text-main leading-tight truncate">{host.email.split('@')[0]}</p>
+                    <p className="text-[9px] text-text-light font-bold truncate opacity-60 italic">{host.email}</p>
                   </div>
                 </div>
-                <span className={`text-[10px] font-black px-2 py-0.5 rounded-full border ${host.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
+                <span className={`text-[10px] font-black px-3 py-1 rounded-full border ${host.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
                   {host.status === 'active' ? 'ACTIVO' : 'PENDIENTE'}
                 </span>
               </div>
             ))}
-          {!loadingCoHosts && coHosts.length === 0 && <p className="text-center py-4 text-[10px] text-gray-400 uppercase font-black tracking-widest">Sin equipo asignado</p>}
+          {!loadingCoHosts && coHosts.length === 0 && <p className="text-center py-4 text-[10px] text-gray-400 uppercase font-black tracking-widest opacity-40">Sin equipo asignado</p>}
         </div>
 
         <div className="pt-4 border-t border-gray-100">
-          <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest">Invitar Nuevo Miembro</label>
+          <label className="text-[10px] font-black uppercase text-gray-400 mb-2 block tracking-widest ml-1">Invitar Nuevo Miembro</label>
           <div className="space-y-2">
             <input
               value={newCoHostEmail}
               onChange={(e) => setNewCoHostEmail(e.target.value)}
               placeholder="email@ejemplo.com"
-              className="w-full p-3 border border-gray-100 rounded-xl text-xs bg-gray-50 outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full p-3.5 border border-gray-200 rounded-2xl text-xs bg-white outline-none focus:ring-2 focus:ring-primary/20 font-medium"
             />
             <select
               value={selectedPropertyForCoHost}
               onChange={e => setSelectedPropertyForCoHost(e.target.value)}
-              className="w-full p-3 border border-gray-100 rounded-xl text-xs bg-gray-50 outline-none"
+              className="w-full p-3.5 border border-gray-200 rounded-2xl text-xs bg-white outline-none font-bold text-text-main"
             >
               {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
             </select>
-            <button onClick={inviteCoHost} disabled={!newCoHostEmail} className="w-full bg-black text-white py-3 rounded-xl text-xs font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all">Invitar</button>
+            <button onClick={inviteCoHost} disabled={!newCoHostEmail} className="w-full bg-black text-white py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all disabled:opacity-30">INVITAR</button>
           </div>
         </div>
 
-        <button onClick={() => setActiveModal('none')} className="w-full mt-4 py-2 text-[10px] font-black uppercase text-gray-400 tracking-widest">Cerrar</button>
+        <button onClick={() => setActiveModal('none')} className="w-full mt-4 py-2 text-[10px] font-black uppercase text-gray-400 tracking-widest hover:text-text-main transition-colors">Cerrar</button>
       </div>
     </div>
   );
 
-  const PayoutsModal = () => (
+  const renderPayoutsModal = () => (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl">
         <h2 className="font-serif font-bold text-2xl mb-1">Ingresos & Pagos</h2>
@@ -600,11 +610,11 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
       </div>
 
       {/* Modals injection */}
-      {activeModal === 'task' && <TaskModal />}
-      {activeModal === 'cohost' && <CoHostModal />}
-      {activeModal === 'payouts' && <PayoutsModal />}
-      {activeModal === 'alerts' && <AlertsModal />}
-      {activeModal === 'account' && <AccountModal />}
+      {activeModal === 'task' && renderTaskModal()}
+      {activeModal === 'cohost' && renderCoHostModal()}
+      {activeModal === 'payouts' && renderPayoutsModal()}
+      {activeModal === 'alerts' && renderAlertsModal()}
+      {activeModal === 'account' && renderAccountModal()}
     </div>
   );
 };
