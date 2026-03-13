@@ -63,13 +63,13 @@ export const PropertyDetails: React.FC = () => {
         <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
           <span className="material-icons text-4xl text-gray-300">search_off</span>
         </div>
-        <h2 className="text-2xl font-serif font-bold text-text-main mb-2">Refugio No Encontrado</h2>
-        <p className="text-sm text-text-light mb-8 max-w-xs">Lo sentimos, esta propiedad no está disponible o el enlace es incorrecto.</p>
+        <h2 className="text-2xl font-serif font-bold text-text-main mb-2">Estancia No Encontrada</h2>
+        <p className="text-sm text-text-light mb-8 max-w-xs">Lo sentimos, esta propiedad no está disponible en este momento.</p>
         <button
           onClick={() => navigate('/')}
           className="bg-primary hover:bg-primary-dark text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
-          Explorar Villas
+          Explorar Collections
         </button>
       </div>
     );
@@ -336,7 +336,7 @@ export const PropertyDetails: React.FC = () => {
 
         {/* Description */}
         <div className="py-6 border-b border-gray-100">
-          <h2 className={SECTION_TITLE_STYLE}>Sobre el Refugio</h2>
+          <h2 className={SECTION_TITLE_STYLE}>Modern Sanctuary</h2>
           <p className="text-text-main leading-[1.8] text-[15px] font-medium text-gray-700">
             {property.description}
           </p>

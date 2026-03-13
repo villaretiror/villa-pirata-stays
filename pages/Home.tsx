@@ -80,10 +80,10 @@ const Home: React.FC = () => {
   const getSectionTitle = () => {
     if (pets > 0) return 'Alojamientos Pet Friendly';
     switch (activeCategory) {
-      case 'piscina': return 'Oasis con Piscina';
-      case 'playa': return 'Escapadas cerca del Mar';
-      case 'mascotas': return 'Pet Friendly';
-      default: return 'Recomendado para ti';
+      case 'piscina': return 'Modern Tropical Retreats';
+      case 'playa': return 'Strategic Beach Access';
+      case 'mascotas': return 'Pet Friendly Collections';
+      default: return 'Exclusive Boutique Stays';
     }
   };
 
@@ -96,10 +96,10 @@ const Home: React.FC = () => {
   };
 
   const categories: { id: Category; label: string; icon: string }[] = [
-    { id: 'todo', label: 'Todo', icon: 'grid_view' },
-    { id: 'piscina', label: 'Piscina', icon: 'pool' },
-    { id: 'playa', label: 'Playa', icon: 'beach_access' },
-    { id: 'mascotas', label: 'Mascotas', icon: 'pets' },
+    { id: 'todo', label: 'Designer Villas', icon: 'grid_view' },
+    { id: 'piscina', label: 'Pool Retreats', icon: 'pool' },
+    { id: 'playa', label: 'Coastal Stays', icon: 'beach_access' },
+    { id: 'mascotas', label: 'Pet Friendly', icon: 'pets' },
   ];
 
   // Helper Component for the Search Modal
@@ -173,8 +173,8 @@ const Home: React.FC = () => {
           <div>
             <p className="text-text-light text-sm font-medium mb-1">¡Hola, Viajero! 👋</p>
             <h1 className="text-3xl font-serif font-bold text-text-main leading-tight">
-              Descubre tu <br />
-              <span className="text-primary italic">paraíso privado.</span>
+              Exclusive <br />
+              <span className="text-primary italic">Boutique Stays.</span>
             </h1>
           </div>
           <div
