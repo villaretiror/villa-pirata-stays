@@ -5,6 +5,7 @@ import GuideCard from '../components/GuideCard';
 import { fetchICalData, parseICalData, importPropertyFromUrl, generateWhatsAppLink, getHostInstructionMessage, formatDateLong } from '../utils';
 import HostMenu from '../components/host/HostMenu';
 import HostChat from '../components/host/HostChat';
+import HostMessageCenter from '../components/host/HostMessageCenter';
 import HostNavbar from '../components/host/HostNavbar';
 import SavingsInsights from '../components/host/SavingsInsights';
 import { useAuth } from '../contexts/AuthContext';
@@ -3175,7 +3176,7 @@ const HostDashboard: React.FC = () => {
             onFilterChange={setAnalyticsFilter}
           />
         )}
-        {activeTab === 'messages' && <div className="text-center py-10 text-gray-400">Centro de mensajes (Próximamente)</div>}
+        {activeTab === 'messages' && <HostMessageCenter />}
       </main>
 
       {/* Overlays */}
