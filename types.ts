@@ -15,6 +15,27 @@ export interface Offer {
   expiresAt: string;
 }
 
+export interface SeasonalPrice {
+  id: string;
+  startDate: string;
+  endDate: string;
+  price: number;
+  label: string;
+}
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  discount_percent: number;
+  min_stay_nights: number;
+  valid_from: string;
+  valid_to: string;
+  active: boolean;
+  max_uses?: number;
+  current_uses?: number;
+  allow_on_seasonal_prices: boolean;
+}
+
 export type FeeStructure = Record<string, number>;
 
 export type CancellationPolicyType = 'flexible' | 'moderate' | 'firm' | 'strict' | 'non-refundable';
@@ -67,6 +88,7 @@ export interface Property {
   blockedDates: string[];
   calendarSync: CalendarSync[];
   isOffline?: boolean;
+  seasonal_prices?: SeasonalPrice[];
   host: {
     name: string;
     image: string;
@@ -83,7 +105,7 @@ export interface Booking {
   guestImage: string;
   checkIn: string;
   checkOut: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'pending_ai_validation' | 'emergency_support' | 'expired';
   guests: number;
   paymentDetails: {
     method: 'Credit Card' | 'ATH Movil' | 'Cash';
@@ -127,6 +149,7 @@ export interface User {
   bio?: string;
   registeredAt: string;
   favoriteProperties?: string[];
+  given_concessions?: { date: string; type: string; discount: number }[];
 }
 
 export interface Lead {
@@ -137,5 +160,16 @@ export interface Lead {
   message: string;
   date_of_interest?: string;
   status: 'new' | 'contacted' | 'converted' | 'closed';
+  created_at: string;
+}
+
+export interface UrgentAlert {
+  id: string;
+  name: string;
+  message: string;
+  contact: string;
+  status: 'new' | 'resolved';
+  severity: number;
+  sentiment_score?: number;
   created_at: string;
 }

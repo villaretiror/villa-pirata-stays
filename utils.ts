@@ -154,3 +154,50 @@ export const getHostInstructionMessage = (data: {
 }): string => {
   return `¡Hola ${data.guestName}! Gracias por elegir ${data.propertyName}. Aquí tus instrucciones de llegada: \n\n📍 Ubicación: ${data.googleMapsLink} \n🔑 Código de puerta: ${data.accessCode} \n\n¡Cualquier duda, estamos a tu orden!`;
 };
+
+// 5. Revenue Optimization Helpers
+export const validatePromoCode = (promo: any, nights: number, hasSeasonalNight: boolean = false): { valid: boolean; message?: string } => {
+  if (!promo.active) return { valid: false, message: "Código inactivo." };
+
+  const now = new Date();
+  if (now < new Date(promo.valid_from) || now > new Date(promo.valid_to)) {
+    return { valid: false, message: "Código fuera de fecha." };
+  }
+
+  if (nights < promo.min_stay_nights) {
+    return { valid: false, message: `Estancia mínima de ${promo.min_stay_nights} noches.` };
+  }
+
+  // 1. Anti-Abuse: Max uses
+  if (promo.max_uses && promo.current_uses >= promo.max_uses) {
+    return { valid: false, message: "Límite de usos alcanzado para este código." };
+  }
+
+  // 2. Anti-Abuse: Seasonal Exclusion
+  if (hasSeasonalNight && !promo.allow_on_seasonal_prices) {
+    return { valid: false, message: "Este cupón no es válido durante temporadas altas (Precios Especiales)." };
+  }
+
+  return { valid: true };
+};
+
+export const isSeasonalDate = (dateStr: string, seasonalPrices: any[] = []): boolean => {
+  const checkDate = new Date(`${dateStr}T12:00:00`);
+  return seasonalPrices.some(s => {
+    const start = new Date(`${s.startDate}T12:00:00`);
+    const end = new Date(`${s.endDate}T12:00:00`);
+    return checkDate >= start && checkDate <= end;
+  });
+};
+
+export const getNightlyPrice = (basePrice: number, dateStr: string, seasonalPrices: any[] = []): number => {
+  const checkDate = new Date(`${dateStr}T12:00:00`);
+
+  const activeSeason = seasonalPrices.find(s => {
+    const start = new Date(`${s.startDate}T12:00:00`);
+    const end = new Date(`${s.endDate}T12:00:00`);
+    return checkDate >= start && checkDate <= end;
+  });
+
+  return activeSeason ? activeSeason.price : basePrice;
+};

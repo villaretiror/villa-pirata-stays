@@ -4,6 +4,16 @@ import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { PROPERTIES, HOST_PHONE } from '../constants.js';
 import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
+import {
+    checkAvailabilityWithICal,
+    logAbandonmentLead,
+    getPaymentVerificationStatus,
+    findCalendarGaps,
+    handleCrisisAlert,
+    applyAIQuote,
+    createTemporaryHold,
+    checkUserConcessions
+} from '../aiServices.js';
 
 /**
  * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE (MASTER v3.0)
@@ -13,25 +23,32 @@ import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
  */
 
 const VILLA_CONCIERGE_PROMPT = `
-Eres el Concierge Senior de Cierre de Villa Retiro Stays y Villa Pirata.
-Tu éxito se mide por reservas completadas y leads generados. 
-Tu tono es Lujoso, cálido y profesional.
+Eres el "Cerebro Ejecutivo" de Villa Retiro Stays y Villa Pirata.
+Tu misión: Maximizar conversiones, garantizar seguridad (Sentinel) y optimizar ingresos.
 
-### CONOCIMIENTO DE PROPIEDADES
-- VILLA RETIRO R (ID: 1081171030449673920): $285/noche + $85 Limpieza + $20 Service + $250 Depósito.
-- PIRATA FAMILY HOUSE (ID: 42839458): $145/noche + $85 Limpieza + $25 Piscina + $250 Depósito.
+### RECONOCIMIENTO 360° & LOYALTY
+- Tono: Lujo, cálido, resolutivo.
+- Cliente Recurrente: Usa "Bienvenida de nuevo".
+- Cupón FIDELIDAD (10% OFF): Solo si el historial muestra estancias completadas.
+- Trigger Pre-Checkout: 24h antes de la salida, pregunta por la experiencia. Si es positiva, ofrece cupón 'PROXIMA_VISITA'.
 
-### PROTOCOLO DE ACTUACIÓN (STRICT)
-1. IDENTIFICACIÓN: Consigue el nombre y fechas tentativas del cliente en los primeros 3 mensajes.
-2. DISPONIBILIDAD: Si preguntan por fechas, EJECUTA la herramienta 'check_availability'. Si una villa está ocupada, ofrece la otra inmediatamente.
-3. LEADS (CRM): Si el cliente muestra interés serio pero no reserva, EJECUTA 'create_lead' para guardar su contacto. Solicita WhatsApp/Email amablemente.
-4. EL CIERRE (CHECKOUT): Cuando el cliente elija villa y fechas, indícale: "Excelente elección. He preparado su solicitud de reserva. Puede completar el pago de forma segura aquí mismo:". INMEDIATAMENTE incluye el formato [PAYMENT_REQUEST: ...] usando 'generate_booking_pattern'.
+### PROTOCOLO SENTINEL & CRISIS
+1. ALERTA GRAVEDAD: Clasifica incidencias de 1 a 5. 
+   - 1-2 (Info): Registro normal.
+   - 3 (Atención): Alerta en Dashboard.
+   - 4-5 (Crítico): Emergencia real (fallos agua/luz, acceso). EJECUTA 'notify_host_urgent' con severity 5.
+2. ANTI-MANIPULACIÓN: Antes de ofrecer un "descuento de cortesía" por problemas, verifica 'check_user_concessions'. Si ya recibió uno en los últimos 12 meses, DENIEGA y escala al Host.
 
-### MANEJO DE POST-VENTA
-Si el usuario YA TIENE una reserva o ya pagó y reporta algún problema, duda o necesita soporte, EJECUTA INMEDIATAMENTE la herramienta 'notify_host_urgent' para alertar al Host. Dile al cliente que has enviado una alerta prioritaria y que será contactado brevemente.
+### OPTIMIZACIÓN DE INGRESOS (UPSELLING)
+- UPSELLING: Si mencionan "familia", "niños" o "pareja", destaca amenidades reales (EJ: Cuna, jacuzzi, BBQ, zona romántica). No inventes.
+- AI-HOLD: Si el usuario confirma fechas y villa, EJECUTA 'create_temporary_hold' para bloquear la fecha por 15 mins mientras procesa el pago.
 
-### DATOS ADICIONALES
-Usa VILLA_KNOWLEDGE para políticas y amenidades:
+### GUARDRAILS
+- No apliques descuentos > 15%.
+- No inventes amenidades.
+- Respeta 'seasonal_prices'.
+
+### CONOCIMIENTO DINÁMICO
 ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
 `.trim();
 
@@ -64,7 +81,18 @@ export default async function handler(req: any, res: any) {
         // 1. Limite de Memoria: Solo enviamos los últimos 20 mensajes
         const recentMessages = (rawMessages || []).slice(-20);
 
-        // 2. Persistencia y Auditoría de Sesión (chat_logs)
+        // 2. Persistencia y Auditoría de Sesión + Contexto 360°
+        let userContext = "";
+        if (userId) {
+            const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+            const { data: history } = await supabase.from('bookings').select('status, check_in, property_id').eq('user_id', userId).limit(3);
+
+            if (profile) userContext += `Huésped: ${profile.full_name}. `;
+            if (history && history.length > 0) {
+                userContext += `Historial: ${history.map(b => `${b.status} en ${b.check_in}`).join(', ')}. `;
+            }
+        }
+
         if (sessionId) {
             const isUUID = (id: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
             const validUserId = (userId && isUUID(userId)) ? userId : null;
@@ -83,7 +111,7 @@ export default async function handler(req: any, res: any) {
         const finalMessages: CoreMessage[] = [
             {
                 role: 'user',
-                content: `INSTRUCCIONES DE SERVICIO (LEER PRIORITARIAMENTE): ${VILLA_CONCIERGE_PROMPT}.`
+                content: `INSTRUCCIONES DE SERVICIO (LEER PRIORITARIAMENTE): ${VILLA_CONCIERGE_PROMPT}. \nCONTEXTO USUARIO: ${userContext || "Anónimo"}.`
             },
             {
                 role: 'assistant',
@@ -110,27 +138,23 @@ export default async function handler(req: any, res: any) {
                         check_out: z.string(),
                     }),
                     execute: async ({ villa_ids, check_in, check_out }) => {
-                        const { data: bookings, error } = await supabase
-                            .from('bookings')
-                            .select('property_id, check_in, check_out')
-                            .in('property_id', villa_ids)
-                            .neq('status', 'cancelled');
+                        const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
+                        const available = villa_ids.filter((_, i) => results[i].available);
 
-                        if (error) return { status: 'error', message: 'No pudimos conectar con el calendario.' };
+                        // Check for Gaps if not available
+                        let gapMessage = "";
+                        if (available.length === 0) {
+                            const gaps = await Promise.all(villa_ids.map(id => findCalendarGaps(id)));
+                            const validGaps = gaps.flat().filter(g => g.nights > 0);
+                            if (validGaps.length > 0) {
+                                gapMessage = `\nTip: Hay huecos cortos disponibles: ${validGaps.map(g => `${g.start} al ${g.end}`).join(', ')}.`;
+                            }
+                        }
 
-                        const busyVillas = (bookings || []).filter(b => {
-                            const bIn = new Date(b.check_in);
-                            const bOut = new Date(b.check_out);
-                            const qIn = new Date(check_in);
-                            const qOut = new Date(check_out);
-                            return (qIn < bOut && qOut > bIn);
-                        }).map(b => b.property_id);
-
-                        const available = villa_ids.filter(id => !busyVillas.includes(id));
                         return {
                             status: 'success',
                             available_ids: available,
-                            message: available.length > 0 ? "Estas villas están libres." : "Lo sentimos, ambas están ocupadas en esas fechas."
+                            message: (available.length > 0 ? "Villas libres encontradas." : "Sin disponibilidad exacta.") + gapMessage
                         };
                     },
                 }),
@@ -143,41 +167,70 @@ export default async function handler(req: any, res: any) {
                         interest: z.string(),
                     }),
                     execute: async ({ name, email, phone, interest }) => {
-                        const { error } = await supabase.from('leads').insert({
-                            name, email, phone, message: interest, status: 'new'
-                        });
-                        return error ? { status: 'error' } : { status: 'success', message: 'Lead generado.' };
+                        const success = await logAbandonmentLead({ name, email, phone, interest });
+                        return success ? { status: 'success', message: 'Lead generado.' } : { status: 'error' };
                     },
                 }),
                 generate_booking_pattern: tool({
-                    description: 'Genera el patrón de pago PayPal.',
+                    description: 'Genera el presupuesto detallado y el patrón de pago PayPal.',
                     parameters: z.object({
                         villa_id: z.string(),
-                        total: z.number(),
                         check_in: z.string(),
                         check_out: z.string(),
-                        guests: z.number(),
+                        promo_code: z.string().optional(),
                     }),
-                    execute: async ({ villa_id, total, check_in, check_out, guests }) => {
-                        return `[PAYMENT_REQUEST: ${villa_id}, ${total}, ${check_in}, ${check_out}, ${guests}]`;
+                    execute: async ({ villa_id, check_in, check_out, promo_code }) => {
+                        const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
+                        return `[PAYMENT_REQUEST: ${villa_id}, ${quote.total}, ${check_in}, ${check_out}, ${quote.nights}, ${quote.discount}] (Desglose: Base $${quote.basePrice} + Tasas $${quote.fees})`;
                     },
                 }),
+                check_payment_status: tool({
+                    description: 'Verifica si una reserva tiene comprobante de pago subido.',
+                    parameters: z.object({
+                        booking_id: z.string()
+                    }),
+                    execute: async ({ booking_id }) => {
+                        const message = await getPaymentVerificationStatus(booking_id);
+                        return { status: 'success', message };
+                    }
+                }),
                 notify_host_urgent: tool({
-                    description: 'Notifica al host sobre soporte urgente.',
+                    description: 'Notifica al host sobre soporte urgente o incidencias graves.',
                     parameters: z.object({
                         client_name: z.string(),
                         issue_description: z.string(),
-                        contact_info: z.string()
+                        contact_info: z.string(),
+                        severity: z.number().min(1).max(5).default(1)
                     }),
-                    execute: async ({ client_name, issue_description, contact_info }) => {
-                        const { error } = await supabase.from('urgent_alerts').insert({
-                            name: client_name,
-                            message: issue_description,
-                            contact: contact_info
-                        });
-                        return error ? { status: 'error' } : { status: 'success', message: 'Alerta enviada.' };
+                    execute: async ({ client_name, issue_description, contact_info, severity }) => {
+                        const success = await handleCrisisAlert(client_name, issue_description, contact_info, severity);
+                        return success ? { status: 'success', message: 'Alerta enviada.' } : { status: 'error' };
                     },
                 }),
+                create_temporary_hold: tool({
+                    description: 'Bloquea temporalmente fechas para evitar overbooking (15 mins).',
+                    parameters: z.object({
+                        villa_id: z.string(),
+                        check_in: z.string(),
+                        check_out: z.string(),
+                    }),
+                    execute: async ({ villa_id, check_in, check_out }) => {
+                        const success = await createTemporaryHold(villa_id, check_in, check_out, userId);
+                        return success ? { status: 'success', message: 'Bloqueo temporal activo (15 mins).' } : { status: 'error' };
+                    }
+                }),
+                check_user_concessions: tool({
+                    description: 'Verifica si el usuario ya ha recibido descuentos por cortesía recientemente.',
+                    parameters: z.object({
+                        user_id: z.string().optional()
+                    }),
+                    execute: async ({ user_id }) => {
+                        const id = user_id || userId;
+                        if (!id) return { status: 'error', message: 'Usuario no identificado.' };
+                        const { allowed, lastGrant } = await checkUserConcessions(id);
+                        return { status: 'success', allowed, lastGrant };
+                    }
+                })
             },
         });
 

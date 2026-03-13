@@ -49,6 +49,39 @@ export const PropertyDetails: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
+  // 2. Dynamic SEO & OG Tags
+  useEffect(() => {
+    if (property) {
+      document.title = `${property.title} · Boutique Stays`;
+
+      const updateMeta = (name: string, content: string, isProperty = false) => {
+        const attr = isProperty ? 'property' : 'name';
+        let el = document.querySelector(`meta[${attr}="${name}"]`);
+        if (!el) {
+          el = document.createElement('meta');
+          el.setAttribute(attr, name);
+          document.head.appendChild(el);
+        }
+        el.setAttribute('content', content);
+      };
+
+      updateMeta('og:title', `${property.title} · Boutique Stays`, true);
+      updateMeta('og:description', property.description.slice(0, 160), true);
+      updateMeta('og:image', property.images[0], true);
+      updateMeta('og:url', window.location.href, true);
+      updateMeta('og:image:width', '1200', true);
+      updateMeta('og:image:height', '630', true);
+      updateMeta('theme-color', '#CBB28A');
+
+      // 3. Privacy Protection (SEO/Robots)
+      if (property.isOffline) {
+        updateMeta('robots', 'noindex');
+      } else {
+        updateMeta('robots', 'index, follow');
+      }
+    }
+  }, [property]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#FDFCFB]">

@@ -7,7 +7,7 @@ import SmartImage from '../components/SmartImage';
 import { addDays, format, differenceInDays } from 'date-fns';
 import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
-import { fetchICalData, parseICalData } from '../utils';
+import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +25,10 @@ const Booking: React.FC = () => {
   const [guestMessage, setGuestMessage] = useState('');
   const [priceMismatch, setPriceMismatch] = useState(false);
 
+  const [promoCode, setPromoCode] = useState('');
+  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [promoError, setPromoError] = useState('');
+
   // 1. Fetch Fresh on Mount
   useEffect(() => {
     refreshProperties();
@@ -36,12 +40,17 @@ const Booking: React.FC = () => {
       const manualBlocked = property.blockedDates.map((d: string) => new Date(d)) || [];
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('check_in, check_out')
+        .select('check_in, check_out, status, hold_expires_at')
         .eq('property_id', id)
-        .eq('status', 'confirmed');
+        .or('status.in.(confirmed,waiting_approval,emergency_support),status.eq.pending_ai_validation');
 
       const bookingDates: Date[] = [];
       bookings?.forEach((b: any) => {
+        // Skip if it's an expired AI hold
+        if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < new Date()) {
+          return;
+        }
+
         let start = new Date(b.check_in);
         const end = new Date(b.check_out);
         while (start < end) {
@@ -50,17 +59,24 @@ const Booking: React.FC = () => {
         }
       });
 
-      // Fetch iCal feeds from Airbnb/Booking.com
-      const icalDates: Date[] = [];
+      // Fetch iCal feeds from Airbnb/Booking.com (Parallel)
+      let icalDates: Date[] = [];
       if (property.calendarSync && property.calendarSync.length > 0) {
-        for (const sync of property.calendarSync) {
-          try {
-            const icalData = await fetchICalData(sync.url);
-            const dateStrings = parseICalData(icalData);
-            dateStrings.forEach(ds => icalDates.push(new Date(`${ds}T12:00:00`)));
-          } catch (err) {
-            console.warn(`iCal sync failed for ${sync.platform}:`, err);
-          }
+        try {
+          const syncPromises = property.calendarSync.map(async (sync: any) => {
+            try {
+              const icalData = await fetchICalData(sync.url);
+              return parseICalData(icalData);
+            } catch (err) {
+              console.warn(`iCal sync failed for ${sync.platform}:`, err);
+              return [];
+            }
+          });
+
+          const results = await Promise.all(syncPromises);
+          results.flat().forEach(ds => icalDates.push(new Date(`${ds}T12:00:00`)));
+        } catch (err) {
+          console.error("Critical Multichannel Sync Error:", err);
         }
       }
 
@@ -80,37 +96,126 @@ const Booking: React.FC = () => {
 
   const nights = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
   const isTooShort = nights > 0 && nights < 2;
-  const basePrice = property.price * (nights || 0);
+
+  // Calculate Base Price night by night for Seasonal Pricing
+  let basePrice = 0;
+  let hasSeasonalNight = false;
+  if (startDate && endDate) {
+    let current = new Date(startDate);
+    while (current < endDate) {
+      const dateStr = format(current, 'yyyy-MM-dd');
+      if (isSeasonalDate(dateStr, property.seasonal_prices)) hasSeasonalNight = true;
+      basePrice += getNightlyPrice(property.price, dateStr, property.seasonal_prices);
+      current = addDays(current, 1);
+    }
+  }
+
+  const handleApplyPromo = async () => {
+    setPromoError('');
+    if (!promoCode) return;
+    try {
+      const { data: promo, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('code', promoCode.toUpperCase())
+        .eq('active', true)
+        .single();
+
+      if (error || !promo) {
+        setPromoError('Código no encontrado o inválido.');
+        return;
+      }
+
+      const validation = validatePromoCode(promo, nights, hasSeasonalNight);
+      if (!validation.valid) {
+        setPromoError(validation.message || 'Error validando código.');
+        return;
+      }
+
+      setAppliedPromo(promo);
+      setPromoError('');
+    } catch (err) {
+      setPromoError('Error al validar el código.');
+    }
+  };
 
   // Dynamic fees summation (SAFE NUMBER PARSING)
   const feesList = Object.entries(property.fees || {});
   const totalFees = feesList.reduce((sum, [_, value]) => sum + (Number(value) || 0), 0);
-  const total = basePrice + totalFees;
+
+  let total = basePrice + totalFees;
+  let discountAmount = 0;
+  if (appliedPromo) {
+    discountAmount = (basePrice * appliedPromo.discount_percent) / 100;
+    total -= discountAmount;
+  }
 
   const handlePaymentSuccess = async (status: string, proofUrl?: string, method?: string) => {
     if (!startDate || !endDate || !user) return;
 
     setIsProcessing(true);
 
-    // 3. Last-second Price Validation (Anti-Stale Cache)
+    // 3. Double Check: Refresh everything to avoid stale prices or expired promos
     const { data: freshProperty } = await supabase
       .from('properties')
-      .select('price, fees')
+      .select('price, fees, seasonal_prices')
       .eq('id', id)
       .single();
 
-    if (freshProperty) {
-      const freshPrice = Number(freshProperty.price);
-      const freshFees = Object.entries(freshProperty.fees || {}).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
-      const freshTotal = (freshPrice * nights) + freshFees;
+    if (!freshProperty) {
+      alert("Error al validar datos frescos.");
+      setIsProcessing(false);
+      return;
+    }
 
-      if (Math.abs(freshTotal - total) > 0.01) {
-        setPriceMismatch(true);
+    // Re-calculate Base Price
+    let reBasePrice = 0;
+    let reHasSeasonal = false;
+    let curr = new Date(startDate);
+    while (curr < endDate) {
+      const dStr = format(curr, 'yyyy-MM-dd');
+      if (isSeasonalDate(dStr, freshProperty.seasonal_prices)) reHasSeasonal = true;
+      reBasePrice += getNightlyPrice(freshProperty.price, dStr, freshProperty.seasonal_prices);
+      curr = addDays(curr, 1);
+    }
+
+    const reFees = Object.entries(freshProperty.fees || {}).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
+    let reTotal = reBasePrice + reFees;
+
+    // Re-validate Promo if any
+    let finalPromoId = null;
+    if (appliedPromo) {
+      const { data: freshPromo } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .eq('id', appliedPromo.id)
+        .single();
+
+      const v = freshPromo ? validatePromoCode(freshPromo, nights, reHasSeasonal) : { valid: false };
+      if (v.valid && freshPromo) {
+        const disc = (reBasePrice * freshPromo.discount_percent) / 100;
+        reTotal -= disc;
+        finalPromoId = freshPromo.id;
+      } else {
+        alert("El cupón ya no es válido o ha expirado. El total ha sido recalculado.");
+        setAppliedPromo(null);
         setIsProcessing(false);
-        refreshProperties(); // Update the local state
-        setTimeout(() => setPriceMismatch(false), 5000);
         return;
       }
+    }
+
+    // Final total validation check
+    if (Math.abs(reTotal - total) > 0.01) {
+      alert("⚠️ Los precios han cambiado. Por favor revisa el nuevo total.");
+      setPriceMismatch(true);
+      setIsProcessing(false);
+      refreshProperties();
+      return;
+    }
+
+    // Update Promo usage if valid
+    if (finalPromoId) {
+      await supabase.rpc('increment_promo_usage', { promo_id: finalPromoId });
     }
 
     // 4. Secure Insert and Select (Atomic flow)
@@ -210,7 +315,16 @@ const Booking: React.FC = () => {
             <div>
               <h3 className="font-bold text-text-main text-sm">{property.title}</h3>
               <p className="text-xs text-text-light">{nights || '--'} noches • {property.guests} huéspedes máx</p>
-              <p className="text-primary font-bold mt-1 text-sm">${property.price} / noche</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-primary font-bold text-sm">
+                  ${nights > 0 ? (basePrice / nights).toFixed(2) : property.price} / noche
+                </p>
+                {/* Direct Booking Advantage UI */}
+                <div className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-[8px] font-black uppercase flex items-center gap-1 border border-green-100">
+                  <span className="material-icons text-[10px]">verified</span>
+                  Mejor Tarifa Directa
+                </div>
+              </div>
             </div>
           </div>
 
@@ -245,6 +359,37 @@ const Booking: React.FC = () => {
             </div>
           </div>
 
+          {/* Promo Code UI */}
+          <div className="space-y-3 pt-2">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Código Promocional</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Ej: VERANO2024"
+                className="flex-1 p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:ring-2 ring-primary/20 outline-none uppercase font-bold"
+                value={promoCode}
+                onChange={(e) => setPromoCode(e.target.value)}
+              />
+              <button
+                onClick={handleApplyPromo}
+                className="bg-black text-white px-6 rounded-2xl text-xs font-bold hover:bg-gray-900 transition-all uppercase tracking-widest"
+              >
+                Aplicar
+              </button>
+            </div>
+            {promoError && <p className="text-[10px] text-red-500 font-bold ml-2 italic">{promoError}</p>}
+            {appliedPromo && (
+              <div className="bg-green-50 p-2 rounded-xl flex justify-between items-center border border-green-100">
+                <p className="text-[10px] text-green-700 font-black uppercase tracking-widest pl-2">
+                  ¡Descuento {appliedPromo.discount_percent}% Aplicado!
+                </p>
+                <button onClick={() => setAppliedPromo(null)} className="text-green-800 p-1">
+                  <span className="material-icons text-xs">close</span>
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Desglose de Precios */}
           <div className="space-y-4 py-6 border-y border-gray-100 bg-gray-50/30 -mx-6 px-6">
             <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Resumen de Inversión</h3>
@@ -259,6 +404,12 @@ const Booking: React.FC = () => {
                   <span className="font-medium">${Number(value) || 0}</span>
                 </div>
               ))}
+              {appliedPromo && (
+                <div className="flex justify-between text-sm text-green-600 font-bold animate-fade-in">
+                  <span>Descuento Directo ({appliedPromo.discount_percent}%)</span>
+                  <span>-${discountAmount.toFixed(2)}</span>
+                </div>
+              )}
               <div className="flex justify-between items-end pt-4 border-t border-dashed border-gray-200 mt-2">
                 <span className="font-bold text-base text-text-main">Inversión Final</span>
                 <div className="text-right">

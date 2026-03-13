@@ -27,6 +27,23 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, onSuccess, i
 
     const handleATHUpload = async () => {
         if (!screenshot) return null;
+
+        // 1. Validación de Tipo
+        const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedTypes.includes(screenshot.type)) {
+            alert("⚠️ Formato inválido. Solo se permiten imágenes (.jpg, .png, .webp)");
+            setScreenshot(null);
+            return null;
+        }
+
+        // 2. Validación de Tamaño (5MB)
+        const maxSize = 5 * 1024 * 1024;
+        if (screenshot.size > maxSize) {
+            alert("⚠️ Archivo demasiado grande. El límite es de 5MB. Por favor, toma una captura de pantalla (screenshot) más pequeña.");
+            setScreenshot(null);
+            return null;
+        }
+
         setIsUploading(true);
         const fileExt = screenshot.name.split('.').pop();
         const fileName = `${user?.id}-${Date.now()}.${fileExt}`;
