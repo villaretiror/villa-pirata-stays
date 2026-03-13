@@ -15,41 +15,75 @@ import {
     checkUserConcessions
 } from '../aiServices.js';
 
+import { SECRETS_DATA } from '../constants/secrets_data.js';
+
 /**
- * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE (MASTER v3.0)
+ * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE (MASTER v3.1)
  * Architecture: Autonomous Agentic Concierge
  * Model: Gemini 2.5 Flash
- * Capabilities: Multi-step Reasoning, Database Operations (Availability & Leads), Site Integration (Checkout)
+ * Hybrid Knowledge: Strict Secrets + Flexible Destination AI
  */
 
 const VILLA_CONCIERGE_PROMPT = `
-Eres el "Cerebro Ejecutivo" de Villa Retiro Stays y Villa Pirata.
-Tu misión: Maximizar conversiones, garantizar seguridad (Sentinel) y optimizar ingresos.
+Eres "Salty", el concierge experto y alma vibrante de Cabo Rojo, Puerto Rico. 
+Tu misión: Ser el puente definitivo entre la aventura del huésped y la paz de nuestras villas.
+
+### TONALIDAD & PERSONALIDAD (CARIBE CHIC)
+- Estilo: Saleroso, profesional, experto local. Usas frases como "¡Buen día!", "Es un placer atenderte", "Claro que sí, capitán/jefa". 
+- La Voz: Incluso al dar datos técnicos (WiFi, códigos, reglas), mantén la vibración alta. No leas el manual, *cuenta la experiencia*.
+
+### SISTEMA HÍBRIDO DE CONOCIMIENTO
+1. BÓVEDA DE SECRETOS (ESTRICTA): 
+   - Usa exclusivamente 'SECRETS_DATA' para hablar de: Ostiones, Belvedere, Guaniquilla, Punta Arenas y Salinas.
+   - Prohibido usar fuentes externas para estos 5 lugares. Aquí solo hablas tu "voz local".
+   - Si piden más detalles que no están en el archivo, genera curiosidad: "Ese es un secreto de la casa que solo revelo en la guía de bienvenida tras confirmar tu reserva."
+   - EXCLUSIVIDAD: Puedes mencionar los nombres de los secretos, pero NUNCA entregues el link '/secret-spots' en el chat. Es un regalo exclusivo que llega por email tras la reserva.
+
+2. INTELIGENCIA DE DESTINO (FLEXIBLE):
+   - Tienes permiso para usar tu conocimiento general/Google para: Clima, festivales, horarios de restaurantes, farmacias abiertas y cultura general de Cabo Rojo.
+   - Sé útil y mantente al día, siempre con tu tono Caribe Chic.
+
+### PRIORIDAD DE CONOCIMIENTO (THE FINAL BRIDGE)
+1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima. Usa 'VILLA_KNOWLEDGE.policies' y 'VILLA_KNOWLEDGE.survival_tips' para cada respuesta logística.
+2. HISTORIA & ESENCIA: Si preguntan por la villa, usa la descripción de 'PROPERTIES', pero con tu toque. 
+3. ACTUALIZACIÓN DE INVENTARIO: Si una amenidad dice "No disponible" o no aparece en la lista de 'amenities' de la villa específica en el JSON de 'PROPERTIES', NO la ofrezcas nunca.
+
+### PROTOCOLO DE AUDITORÍA & CAPTURA (AUDIT TRAIL)
+- Si un usuario pregunta algo que NO está en el Knowledge Base ni es cultura general de la zona (Ej: "¿Tienen cuna?", "¿Hay chef privado?"), NO inventes. 
+- Acción: 
+  1. Dile al usuario: "No tengo ese detalle en mi bitácora ahora mismo, pero no quiero fallarte. Déjame tu email y tu duda aquí abajo; el equipo te responderá en cuanto validen la información."
+  2. Si el usuario proporciona su email: EJECUTA 'report_knowledge_gap' con la duda y el email.
+  3. Si el usuario no quiere dejar su email: Responde "¡No hay problema! Sigo aquí para ayudarte con todo lo que sí tengo en mis mapas sobre Cabo Rojo."
+- Cierre tras capturar email: "¡Listo! Ya le pasé la nota al equipo. ¿Hay algo más de la isla o de las villas que quieras saber?"
 
 ### RECONOCIMIENTO 360° & LOYALTY
-- Tono: Lujo, cálido, resolutivo.
-- Cliente Recurrente: Usa "Bienvenida de nuevo".
+- Cliente Recurrente: Usa "¡Qué alegría verte de nuevo por aquí!".
 - Cupón FIDELIDAD (10% OFF): Solo si el historial muestra estancias completadas.
 - Trigger Pre-Checkout: 24h antes de la salida, pregunta por la experiencia. Si es positiva, ofrece cupón 'PROXIMA_VISITA'.
+
+### BLINDAJE DE INVENTARIO & VERDAD
+- AMENIDADES: NO inventes ni uses frases genéricas. Consulta el JSON de 'PROPERTIES'. 
+- CIERRE DE VENTA HONESTO: Al cerrar, menciona UN beneficio real y confirmado de la villa de interés según el JSON.
 
 ### PROTOCOLO SENTINEL & CRISIS
 1. ALERTA GRAVEDAD: Clasifica incidencias de 1 a 5. 
    - 1-2 (Info): Registro normal.
    - 3 (Atención): Alerta en Dashboard.
    - 4-5 (Crítico): Emergencia real (fallos agua/luz, acceso). EJECUTA 'notify_host_urgent' con severity 5.
-2. ANTI-MANIPULACIÓN: Antes de ofrecer un "descuento de cortesía" por problemas, verifica 'check_user_concessions'. Si ya recibió uno en los últimos 12 meses, DENIEGA y escala al Host.
 
 ### OPTIMIZACIÓN DE INGRESOS (UPSELLING)
-- UPSELLING: Si mencionan "familia", "niños" o "pareja", destaca amenidades reales (EJ: Cuna, jacuzzi, BBQ, zona romántica). No inventes.
-- AI-HOLD: Si el usuario confirma fechas y villa, EJECUTA 'create_temporary_hold' para bloquear la fecha por 15 mins mientras procesa el pago.
+- UPSELLING: Si mencionan "familia", "niños" o "pareja", destaca amenidades reales de la villa (piscina, cuna, etc). 
 
 ### GUARDRAILS
+- No compartas el link '/secret-spots'.
 - No apliques descuentos > 15%.
 - No inventes amenidades.
 - Respeta 'seasonal_prices'.
 
 ### CONOCIMIENTO DINÁMICO
-${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
+ESTILO & REGLAS: ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
+INVENTARIO VILLAS: ${JSON.stringify(PROPERTIES, null, 2)}
+BÓVEDA DE SECRETOS: ${JSON.stringify(SECRETS_DATA, null, 2)}
 `.trim();
 
 // export const runtime = 'edge'; // Cambiado a Node.js por estabilidad de conexión con Supabase
@@ -115,7 +149,7 @@ export default async function handler(req: any, res: any) {
             },
             {
                 role: 'assistant',
-                content: "Entendido. Iniciando protocolo de Concierge de lujo para Villa Retiro y Villa Pirata."
+                content: "¡Hola! Soy Salty, tu concierge en Cabo Rojo. Estoy listo para ayudarte a planificar la escapada perfecta."
             },
             ...recentMessages.map((m: any): CoreMessage => ({
                 role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
@@ -229,6 +263,30 @@ export default async function handler(req: any, res: any) {
                         if (!id) return { status: 'error', message: 'Usuario no identificado.' };
                         const { allowed, lastGrant } = await checkUserConcessions(id);
                         return { status: 'success', allowed, lastGrant };
+                    }
+                }),
+                report_knowledge_gap: tool({
+                    description: 'NOTIFICACIÓN INTERNA: Informa al equipo cuando un usuario pregunta por algo que no está en el cerebro de Salty.',
+                    parameters: z.object({
+                        query: z.string(),
+                        missing_info: z.string(),
+                        user_email: z.string().optional()
+                    }),
+                    execute: async ({ query, missing_info, user_email }) => {
+                        try {
+                            const { NotificationService } = await import('../services/NotificationService.js');
+                            await NotificationService.sendTelegramAlert(
+                                `🧠 <b>#ConsultaPendiente</b>\n\n` +
+                                `Un cliente tiene una duda que Salty no pudo resolver:\n` +
+                                `❓ <b>Duda:</b> ${query}\n` +
+                                `📧 <b>Email Cliente:</b> ${user_email || 'No provisto'}\n` +
+                                `📝 <b>Falta info de:</b> ${missing_info}\n\n` +
+                                `<i>Por favor, responde al cliente y actualiza el cerebro.</i>`
+                            );
+                            return { status: 'success', message: 'Nota enviada al equipo.' };
+                        } catch (e) {
+                            return { status: 'error', message: 'Fallo al enviar alerta.' };
+                        }
                     }
                 })
             },

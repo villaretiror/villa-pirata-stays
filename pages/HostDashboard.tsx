@@ -5,6 +5,8 @@ import GuideCard from '../components/GuideCard';
 import { fetchICalData, parseICalData, importPropertyFromUrl, generateWhatsAppLink, getHostInstructionMessage, formatDateLong } from '../utils';
 import HostMenu from '../components/host/HostMenu';
 import HostChat from '../components/host/HostChat';
+import HostNavbar from '../components/host/HostNavbar';
+import SavingsInsights from '../components/host/SavingsInsights';
 import { useAuth } from '../contexts/AuthContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
@@ -12,7 +14,7 @@ import { HOST_PHONE } from '../constants';
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, PieChart, Pie, Cell
+  AreaChart, Area
 } from 'recharts';
 
 // --- CUSTOM TOAST ---
@@ -2125,8 +2127,30 @@ const HostDashboard: React.FC = () => {
     }
   }, []);
 
+  // --- SWR ENGINE (Stale-While-Revalidate) ---
+  const DASH_CACHE_KEY = `host_dash_cache_${user?.id}`;
+
+  const restoreCache = useCallback(() => {
+    const cached = localStorage.getItem(DASH_CACHE_KEY);
+    if (cached) {
+      try {
+        const { totalRevenue, monthlyRevenue, realBookings, globalExpenses } = JSON.parse(cached);
+        setTotalRevenue(totalRevenue);
+        setMonthlyRevenue(monthlyRevenue);
+        setRealBookings(realBookings);
+        setGlobalExpenses(globalExpenses);
+      } catch (e) {
+        console.warn("Error restoring dashboard cache:", e);
+      }
+    }
+  }, [DASH_CACHE_KEY]);
+
   const fetchData = useCallback(async (signal?: AbortSignal) => {
     if (!user?.id) return;
+
+    // SWR: Restaurar cache antes de empezar la carga real
+    restoreCache();
+
     setIsLoading(true);
     try {
       await fetchPayments(signal);
@@ -2210,7 +2234,16 @@ const HostDashboard: React.FC = () => {
         setMonthlyRevenue(monthly);
         setPropertyPerformance({ performance, chartData });
         const today = new Date().toISOString().split('T')[0];
-        setRealBookings(allBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected')));
+        const filteredBookings = allBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected'));
+        setRealBookings(filteredBookings);
+
+        // SWR: Persistir cache para carga instantánea futura
+        localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({
+          totalRevenue: total,
+          monthlyRevenue: monthly,
+          realBookings: filteredBookings,
+          globalExpenses: [] // Se actualizará en el siguiente bloque
+        }));
       }
 
       const { data: allExpenses } = await supabase
@@ -2219,7 +2252,12 @@ const HostDashboard: React.FC = () => {
         .in('property_id', hostPropertyIds.map(id => String(id)))
         .abortSignal(signal || new AbortController().signal);
 
-      if (allExpenses) setGlobalExpenses(allExpenses);
+      if (allExpenses) {
+        setGlobalExpenses(allExpenses);
+        // Actualizar cache con los gastos incluidos
+        const cached = JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || '{}');
+        localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({ ...cached, globalExpenses: allExpenses }));
+      }
 
       // --- ANTI-ZOMBIE ENGINE: Auto-expire old waiting_approval bookings (> 4h) ---
       const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
@@ -2345,7 +2383,8 @@ const HostDashboard: React.FC = () => {
             accessCode: booking.properties?.policies?.accessCode || "C-" + bookingId.slice(-4),
             wifiName: booking.properties?.policies?.wifiName || 'Villa Retiro Guest',
             wifiPass: booking.properties?.policies?.wifiPass || 'vacaciones2024',
-            propertyId: booking.property_id
+            propertyId: booking.property_id,
+            totalPrice: booking.total_price
           })
         });
       } catch (err) {
@@ -2372,7 +2411,8 @@ const HostDashboard: React.FC = () => {
           accessCode: booking.properties?.policies?.accessCode || "C-" + (booking.id || '').slice(-4),
           wifiName: booking.properties?.policies?.wifiName || 'Villa Retiro Guest',
           wifiPass: booking.properties?.policies?.wifiPass || 'vacaciones2024',
-          propertyId: booking.property_id
+          propertyId: booking.property_id,
+          totalPrice: booking.total_price
         })
       });
       const { error } = await supabase.from('bookings').update({
@@ -2619,6 +2659,8 @@ const HostDashboard: React.FC = () => {
           )}
         </div>
       </div>
+      <SavingsInsights bookings={realBookings} />
+
       {/* Quick Summary Dashboard */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-black p-5 rounded-[2rem] text-white shadow-soft relative overflow-hidden">
@@ -3058,26 +3100,10 @@ const HostDashboard: React.FC = () => {
     <div className="bg-sand min-h-screen pb-24 font-display text-text-main">
       {isLoading && <LoadingSpinner />}
       <CustomToast />
-      {/* Header */}
-      <header className="sticky top-0 z-30 bg-sand/95 backdrop-blur-md px-6 pt-12 pb-2 flex justify-between items-center print:hidden">
-        <h1 className="text-3xl font-bold tracking-tight text-text-main capitalize">
-          {activeTab === 'today' && 'Hoy'}
-          {activeTab === 'listings' && 'Listados'}
-          {activeTab === 'guidebook' && 'Guía'}
-          {activeTab === 'menu' && 'Menú'}
-          {activeTab === 'reviews' && 'Reseñas'}
-          {activeTab === 'messages' && 'Mensajes'}
-          {activeTab === 'leads' && 'Clientes'}
-          {activeTab === 'payments' && 'Pagos'}
-          {activeTab === 'analytics' && 'Estadísticas'}
-        </h1>
-        <button
-          onClick={() => onNavigate && onNavigate('home')}
-          className="text-xs font-bold text-text-main border border-gray-300 bg-white px-3 py-1.5 rounded-full hover:bg-gray-50 transition-colors shadow-sm"
-        >
-          Modo Viajero
-        </button>
-      </header>
+      <HostNavbar
+        activeTab={activeTab}
+        onNavigateHome={() => onNavigate && onNavigate('home')}
+      />
 
       <main className="px-6 mt-4">
         {activeTab === 'today' && renderToday()}

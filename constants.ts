@@ -16,28 +16,28 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
       {
         name: 'Balneario de Boquerón & El Poblado',
         distance: '5-7 min',
-        desc: 'El epicentro de la vida nocturna del suroeste. Ostiones frescos en la calle, bares con música en vivo, y un malecón vibrante. Camina entre colores, sabores y la mejor energía de Cabo Rojo.',
+        desc: '¡M spot favorito para el "chinchorreo" nocturno! No puedes irte sin probar los ostiones frescos en la calle mientras escuchas música en vivo. El ambiente en el Poblado es pura energía boricua. Después de tanta fiesta, el silencio de Pirata Family House te abrazará como un capitán en su puerto.',
         image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200',
         mapUrl: mapRoute('Balneario de Boquerón, Cabo Rojo, Puerto Rico')
       },
       {
         name: 'Playa Buyé',
         distance: '12-15 min',
-        desc: 'La favorita de Instagram. Arena blanca, aguas color turquesa cristalino y un ambiente tranquilo. Perfecta para snorkeling, kayak o simplemente desconectar del mundo con un atardecer eterno.',
+        desc: 'Si buscas ese azul turquesa de postal, Buyé es tu lugar. Yo suelo ir temprano con mi kayak para ver el fondo clarito. Es el sitio perfecto para desconectar del resto del mundo. Al regresar, date un chapuzón en la piscina de Villa Retiro para cerrar el día con broche de oro.',
         image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaBuye.jpeg',
         mapUrl: mapRoute('Playa Buyé, Cabo Rojo, Puerto Rico')
       },
       {
         name: 'Playa Sucia (La Playuela) & El Faro',
         distance: '20-25 min',
-        desc: 'Reserva natural virgen e indispensable. Acantilados dramáticos, el icónico Faro Los Morrillos, y una playa sin igual. La joya de la corona del suroeste boricua. ¡Imperdible!',
+        desc: '¡La joya de mi corona! Camina hasta el Faro Los Morrillos para unas fotos de película en los acantilados, y luego baja a La Playuela a refrescarte. Es una reserva virgen que te robará el aliento. Luego de esta aventura salvaje, la paz de Villa Retiro te sabrá a gloria.',
         image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaSucia.jpeg',
         mapUrl: mapRoute('Playa Sucia La Playuela, Cabo Rojo, Puerto Rico')
       },
       {
         name: 'Playa Combate',
         distance: '15-18 min',
-        desc: 'Los atardeceres más épicos del Caribe. Restaurantes frente al mar, ambiente familiar de día y romántico al caer el sol. El kilómetro más fotogénico de la costa oeste.',
+        desc: 'Para mí, no hay atardecer más épico que el de Combate. Me encanta sentarme frente al mar con una bebida fría y ver cómo el sol se esconde. Es el cierre perfecto para cualquier día. Disfruta ese último rayo de luz sabiendo que Pirata Family House te espera a solo minutos.',
         image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/CombateBeach.jpeg',
         mapUrl: mapRoute('Playa Combate, Cabo Rojo, Puerto Rico')
       }
@@ -177,6 +177,7 @@ export const PROPERTIES: Property[] = [
       'Pet Friendly (Patio Cerrado)',
       'TV con Smart Streaming',
       'Lavadora Disponible',
+      'Toallas de Playa',
       'Cámaras de Seguridad (Exterior)',
       'Detector de Humo y CO'
     ],

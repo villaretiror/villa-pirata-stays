@@ -10,8 +10,8 @@ const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ propertyTitle }) =>
 
   // Dynamic message based on context
   const message = propertyTitle
-    ? `Hola Villa Retiro R LLC, estoy viendo la propiedad "${propertyTitle}" y me gustaría saber si tienen disponibilidad o aclarar algunas dudas.`
-    : "Hola Villa Retiro R LLC, me interesa reservar una estancia con ustedes. ¿Qué fechas tienen disponibles?";
+    ? `¡Hola! Salty me recomendó la propiedad "${propertyTitle}". Me encantaría saber más sobre la disponibilidad.`
+    : "¡Hola! Quisiera vivir la experiencia en Cabo Rojo con la ayuda de Salty. ¿Qué fechas tienen disponibles?";
 
   const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
 

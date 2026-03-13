@@ -116,6 +116,18 @@ const Booking: React.FC = () => {
     }
   }
 
+  // 15s Abandonment Push from Salty
+  useEffect(() => {
+    if (startDate && endDate && !isProcessing) {
+      const timer = setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('salty-push', {
+          detail: { message: "¡Buenas fechas! ¿Tienes alguna duda con el proceso de pago o la política de cancelación? Estoy aquí para aclararlo." }
+        }));
+      }, 15000);
+      return () => clearTimeout(timer);
+    }
+  }, [startDate, endDate, isProcessing]);
+
   const handleApplyPromo = async () => {
     setPromoError('');
     if (!promoCode) return;

@@ -173,8 +173,8 @@ const Home: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif font-bold text-text-main leading-tight">
-              Exclusive <br />
-              <span className="text-primary italic">Boutique Stays.</span>
+              Villa & Pirata Stays: <br />
+              <span className="text-primary italic">Donde la vida tiene sabor a sal y libertad.</span>
             </h1>
           </div>
           <div
@@ -252,7 +252,11 @@ const Home: React.FC = () => {
 
           <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
             {localGuideData[activeGuideTab].items.map((item, i) => (
-              <GuideCard key={i} item={item} />
+              <GuideCard
+                key={i}
+                item={item}
+                onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })}
+              />
             ))}
           </div>
         </div>
@@ -333,12 +337,11 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-serif font-bold text-text-main mb-4 leading-tight">
-                ¿Tienes planes para <br />
-                <span className="text-primary italic">tu próxima escapada?</span>
+                Reserva con <span className="text-primary italic">Salty.</span>
               </h2>
               <p className="text-sm text-text-light mb-8 leading-relaxed">
-                Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales,
-                déjanos un mensaje. Villa Retiro R LLC te responderá en menos de 24 horas.
+                Sin comisiones de plataforma, solo el mejor trato directo garantizado.
+                Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales, déjanos un mensaje.
               </p>
 
               <div className="space-y-4">

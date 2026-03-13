@@ -1,4 +1,5 @@
 import { Resend } from 'resend';
+import { NotificationService } from '../services/NotificationService.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -107,24 +108,64 @@ export default async function handler(req: any, res: any) {
     // 📩 CASO: PAGO EXITOSO / RESERVA CONFIRMADA
     else if (type === 'payment_success' || type === 'reservation_confirmed') {
       const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body || {};
+      const firstName = customerName?.split(' ')[0] || 'Viajero';
+
       emails.push({
         from: fromAddress,
         to: customerEmail,
         bcc: hostEmail,
-        subject: `🏝️ Reserva Confirmada: ${propertyName}`,
-        html: `<div style="font-family: sans-serif; padding: 40px; border: 1px solid #eee; border-radius: 20px;">
-          <img src="${currentLogo}" width="120" />
-          <h1>¡Bienvenido, ${customerName}!</h1>
-          <p>Tu estancia en <strong>${propertyName}</strong> ha sido confirmada con éxito.</p>
-          <div style="background: #f8fafc; padding: 24px; border-radius: 12px; margin: 24px 0;">
-            <p><strong>Código de Acceso:</strong> <span style="font-size: 20px; color: #F63; font-weight: bold;">${accessCode || 'Pendiente de asignar'}</span></p>
-            <p><strong>WiFi:</strong> ${wifiName || 'Ver en propiedad'} / ${wifiPass || ''}</p>
+        subject: `🏝️ ¡Todo listo! Salty te da la bienvenida a ${propertyName}`,
+        html: `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 30px; overflow: hidden; background-color: #ffffff;">
+            <div style="background-color: #FDFCFB; padding: 40px; text-align: center; border-bottom: 2px dashed #f0f0f0;">
+              <img src="${currentLogo}" width="140" style="margin-bottom: 20px;" />
+              <h1 style="color: #2C2B29; font-size: 28px; margin: 0; font-family: serif;">¡Confirmado, ${firstName}!</h1>
+              <p style="color: #FF7F3F; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 12px; margin-top: 10px;">Prepárate para la experiencia Caribe Chic</p>
+            </div>
+            
+            <div style="padding: 40px; color: #4A4A4A; line-height: 1.6;">
+              <p style="font-size: 16px;">
+                ¡Hola! Soy <strong>Salty</strong>, tu concierge personal. Estoy saltando de alegría porque has elegido <strong>${propertyName}</strong> para tu descanso. Te aseguro que los atardeceres aquí tienen un sabor especial.
+              </p>
+              
+              <div style="background-color: #FFF8F4; padding: 30px; border-radius: 20px; margin: 30px 0; border: 1px solid #FFEDE2;">
+                <h3 style="color: #FF7F3F; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Tu Guía de Acceso</h3>
+                <p style="margin: 10px 0;"><strong>Código de Entrada:</strong> <span style="font-size: 24px; color: #2C2B29; font-weight: black; letter-spacing: 2px;">${accessCode || '1234#'}</span></p>
+                <p style="margin: 5px 0; font-size: 14px;"><strong>WiFi:</strong> ${wifiName || 'Villa_Guest'} / <code>${wifiPass || 'pirata2024'}</code></p>
+                <p style="margin: 5px 0; font-size: 14px;"><strong>Estancia:</strong> ${checkIn} — ${checkOut}</p>
+              </div>
+
+              <div style="text-align: center; margin: 40px 0;">
+                <p style="font-size: 14px; color: #888; margin-bottom: 20px;">He preparado algo especial para ti que no está en las guías convencionales...</p>
+                <a href="https://villaretiror.com/secret-spots" style="background-color: #2C2B29; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">🎁 Descargar los 5 Spots Secretos de Salty</a>
+              </div>
+
+              <p style="font-size: 14px; color: #666; font-style: italic;">
+                "En la isla, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
+              </p>
+            </div>
+
+            <div style="background-color: #F8F9FA; padding: 30px; text-align: center; font-size: 12px; color: #999;">
+              <p>Si necesitas ayuda con el transporte o alguna petición especial, responde a este correo o contacta al Equipo de Villa & Pirata.</p>
+              <div style="margin-top: 20px;">
+                <a href="https://wa.me/17873560895" style="color: #25D366; text-decoration: none; font-weight: bold;">WhatsApp de Soporte</a> | 
+                <a href="https://villaretiror.com" style="color: #primary; text-decoration: none; font-weight: bold;">Mi Reserva</a>
+              </div>
+            </div>
           </div>
-          <p><strong>Check-in:</strong> ${checkIn} | <strong>Check-out:</strong> ${checkOut}</p>
-          <p>En breve recibirás un PDF con tu contrato digital y guía detallada.</p>
-          ${emailFooter}
-        </div>`
+        `
       });
+
+      // 🛰️ TELEGRAM SALES ALERT: Social Proof Interno
+      const commissionSaved = ((Number(req.body.totalPrice) || 0) * 0.15).toFixed(2);
+      await NotificationService.sendTelegramAlert(
+        `💰 <b>¡Salty acaba de cerrar una venta!</b>\n\n` +
+        `Propiedad: <b>${propertyName}</b>\n` +
+        `👤 <b>Huésped:</b> ${customerName}\n` +
+        `📅 <b>Estancia:</b> ${checkIn} al ${checkOut}\n` +
+        `💵 <b>Monto:</b> $${req.body.totalPrice || '0'}\n\n` +
+        `🚀 <b>Ahorro:</b> $${commissionSaved}`
+      );
     }
 
     // 🚀 ENVÍO GARANTIZADO (Guaranteed Delivery)

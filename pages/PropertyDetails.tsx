@@ -460,8 +460,8 @@ export const PropertyDetails: React.FC = () => {
                   to={`/booking/${property.id}`}
                   className="w-full bg-[#FF7F3F] text-white py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl shadow-[#FF7F3F]/30 hover:scale-[1.02] active:scale-95 transition-all outline outline-2 outline-white/20"
                 >
-                  Continuar a Reserva
-                  <span className="material-icons">arrow_forward</span>
+                  Vivir la Experiencia
+                  <span className="material-icons">beach_access</span>
                 </Link>
 
                 <div className="bg-green-50 p-4 rounded-3xl border border-green-200/50 flex items-center gap-3">
@@ -629,7 +629,7 @@ export const PropertyDetails: React.FC = () => {
           to={`/booking/${property.id}`}
           className="bg-[#FF7F3F] text-white h-14 px-10 rounded-[1.75rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center shadow-lg shadow-[#FF7F3F]/40 hover:scale-[1.05] active:scale-95 transition-all border border-white/10"
         >
-          Apartar Fecha
+          Vivir la Experiencia
         </Link>
       </div>
 

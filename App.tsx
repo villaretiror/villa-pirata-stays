@@ -14,11 +14,14 @@ import Message from './pages/Messages';
 import Profile from './pages/Profile';
 import ContractView from './pages/ContractView';
 import HostProfile from './pages/HostProfile';
+import SecretSpots from './pages/SecretSpots';
 import Navbar from './components/Navbar';
 import StayDashboard from './pages/StayDashboard';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
+import SaltyToast from './components/SaltyToast';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
+import { supabase } from './lib/supabase';
 
 const App: React.FC = () => {
   const location = useLocation();
@@ -36,14 +39,25 @@ const App: React.FC = () => {
   const showNavbar = !uiConfig.isHost && !uiConfig.isDetails && !uiConfig.isBooking;
   const showWhatsApp = !uiConfig.isHost && !uiConfig.isAuth;
 
-  let propertyTitle: string | undefined;
+  let currentProperty: any = undefined;
   if (uiConfig.isDetails || uiConfig.isBooking) {
     const id = location.pathname.split('/').pop();
-    propertyTitle = properties.find(p => p.id === id)?.title;
+    currentProperty = properties.find(p => p.id === id);
   }
+  const propertyTitle = currentProperty?.title;
 
   useEffect(() => {
     window.scrollTo(0, 0);
+
+    // 🔐 TOKEN WATCHER: Refresca la sesión automáticamente antes de expirar
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
+      if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed successfully');
+      }
+      if (event === 'SIGNED_OUT') {
+        // Opcional: Limpiar cache local
+      }
+    });
 
     const pageTitles: Record<string, string> = {
       '/': 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR',
@@ -56,10 +70,12 @@ const App: React.FC = () => {
     };
 
     if (uiConfig.isDetails) document.title = propertyTitle ? `${propertyTitle} | Cabo Rojo, PR` : 'Detalles | Villa & Pirata Stays';
-    else if (uiConfig.isBooking) document.title = propertyTitle ? `Reservar ${propertyTitle}` : 'Reservar | Villa & Pirata Stays';
+    else if (uiConfig.isBooking) document.title = propertyTitle ? `Vivir la Experiencia: ${propertyTitle}` : 'Vivir la Experiencia | Villa & Pirata Stays';
     else if (uiConfig.isReservation) document.title = 'Confirmación | Villa & Pirata Stays';
     else if (uiConfig.isHostProfile) document.title = 'Perfil de Anfitrión | Villa & Pirata Stays';
     else document.title = pageTitles[location.pathname] || 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR';
+
+    return () => subscription.unsubscribe();
   }, [location.pathname, uiConfig.isDetails, uiConfig.isBooking, uiConfig.isReservation, propertyTitle]);
 
   return (
@@ -86,11 +102,13 @@ const App: React.FC = () => {
             <Route path="/host-profile/:id" element={<HostProfile />} />
             <Route path="/host" element={<ProtectedRoute role="host"><HostDashboard /></ProtectedRoute>} />
             <Route path="/contrato" element={<ContractView />} />
+            <Route path="/secret-spots" element={<SecretSpots />} />
           </Routes>
         </motion.main>
       </AnimatePresence>
 
       {showWhatsApp && <FloatingWhatsApp propertyTitle={propertyTitle} />}
+      {showWhatsApp && <SaltyToast propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
       {showNavbar && <Navbar />}
     </div>
   );

@@ -132,7 +132,7 @@ const HostChat: React.FC<HostChatProps> = ({ isOpen, onClose }) => {
             <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
           <div>
-            <h3 className="font-bold text-text-main leading-tight">Meliza</h3>
+            <h3 className="font-bold text-text-main leading-tight">Huésped</h3>
             <p className="text-[10px] text-text-light">{isOffline ? 'Simulación Activa' : 'Check-in hoy'}</p>
           </div>
         </div>
@@ -170,10 +170,10 @@ const HostChat: React.FC<HostChatProps> = ({ isOpen, onClose }) => {
               )}
 
               <div className={`max-w-[75%] p-3 rounded-2xl text-sm relative ${isMe
-                  ? 'bg-primary text-white rounded-br-none shadow-lg shadow-primary/20'
-                  : isAi
-                    ? 'bg-white border border-blue-100 text-gray-700 rounded-bl-none shadow-sm'
-                    : 'bg-white border border-gray-100 text-text-main rounded-bl-none shadow-sm'
+                ? 'bg-primary text-white rounded-br-none shadow-lg shadow-primary/20'
+                : isAi
+                  ? 'bg-white border border-blue-100 text-gray-700 rounded-bl-none shadow-sm'
+                  : 'bg-white border border-gray-100 text-text-main rounded-bl-none shadow-sm'
                 }`}>
                 {isAi && <p className="text-[9px] font-bold text-blue-500 mb-1 flex items-center gap-1">Asistente IA <span className="material-icons text-[10px]">bolt</span></p>}
                 <p>{msg.text}</p>

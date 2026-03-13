@@ -5,11 +5,24 @@ import { LocalGuideItem } from '../types';
 interface GuideCardProps {
   item: LocalGuideItem;
   onEdit?: () => void;
+  onAskSalty?: (name: string) => void;
   isEditable?: boolean;
 }
 
-const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, isEditable = false }) => {
-  const handleClick = () => {
+const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEditable = false }) => {
+  const handleClick = (e: React.MouseEvent) => {
+    if (isEditable) return;
+
+    // Si el click fue en un botón de mapa, no hacemos nada (el botón tiene su propio handler o enlace)
+    if ((e.target as HTMLElement).closest('.map-trigger')) return;
+
+    if (onAskSalty) {
+      onAskSalty(item.name);
+    }
+  };
+
+  const handleMapClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (item.mapUrl && !isEditable) {
       window.open(item.mapUrl, '_blank', 'noopener,noreferrer');
     }
@@ -41,12 +54,23 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, isEditable = false 
           <span className="material-icons text-[10px]">directions_car</span> Aprox. {item.distance}
         </div>
         {item.mapUrl && (
-          <div className="bg-blue-50 px-2 py-0.5 rounded text-[10px] font-bold text-blue-600 border border-blue-100 flex items-center gap-1">
+          <button
+            onClick={handleMapClick}
+            className="map-trigger bg-blue-50 px-2 py-0.5 rounded text-[10px] font-bold text-blue-600 border border-blue-100 flex items-center gap-1 hover:bg-blue-100 transition-colors"
+          >
             <span className="material-icons text-[10px]">near_me</span> Ver Ruta
-          </div>
+          </button>
         )}
       </div>
-      <p className="text-xs text-text-light line-clamp-3 leading-relaxed">{item.desc}</p>
+      <p className="text-xs text-text-light line-clamp-2 leading-relaxed mb-3">{item.desc}</p>
+
+      <div className="mt-auto pt-2 border-t border-dashed border-gray-100 flex items-center justify-between group/salty">
+        <span className="text-[9px] font-black uppercase tracking-widest text-primary/60 group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>
+        <div className="flex items-center gap-1 text-[10px] font-bold text-primary">
+          <span>Pregunta a Salty</span>
+          <span className="material-icons text-sm animate-bounce-x">arrow_forward</span>
+        </div>
+      </div>
     </article>
   );
 };

@@ -60,14 +60,11 @@ const Success: React.FC = () => {
         transition={{ delay: 0.3, type: "spring", stiffness: 100, damping: 10 }}
         className="z-10"
       >
-        <h1 className="text-4xl md:text-5xl font-serif font-bold mb-4 text-text-main tracking-tight">
-          {bookingData?.method === 'ath_movil' ? 'Pago Recibido' : '¡Todo listo para tu descanso!'}
+        <h1 className="text-4xl md:text-5xl font-serif font-black mb-4 text-text-main tracking-tight">
+          ¡Confirmado! 🏝️
         </h1>
         <p className="text-text-light text-lg font-medium mb-12 max-w-sm mx-auto leading-relaxed px-4">
-          {bookingData?.method === 'ath_movil'
-            ? <>Tu reserva está siendo <span className="text-orange-500 font-bold">validada</span> por el anfitrión. Recibirás una confirmación en breve.</>
-            : <>Hemos recibido tu reserva {bookingData ? `para ${bookingData.propertyName}` : ''}. Es un honor para nosotros recibirte en <span className="text-secondary font-bold">Villa Retiro R LLC</span>.</>
-          }
+          Prepárate para los mejores atardeceres de tu vida en <span className="text-secondary font-black">{bookingData?.propertyName || 'Boutique Stays'}</span>.
         </p>
       </motion.div>
 
@@ -85,10 +82,10 @@ const Success: React.FC = () => {
         <div className="space-y-4">
           <button
             onClick={() => navigate(`/reservation/${bookingData?.id || 'latest'}`)}
-            className="w-full bg-primary text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-lg shadow-primary/20 hover:shadow-primary/40 active:scale-95 transition-all flex items-center justify-center gap-3 group"
+            className="w-full bg-black text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-lg hover:bg-gray-900 active:scale-95 transition-all flex items-center justify-center gap-3 group"
           >
-            <span className="material-icons text-sm group-hover:rotate-12 transition-transform">auto_stories</span>
-            Ver Guía de Llegada
+            <span className="material-icons text-sm group-hover:rotate-12 transition-transform">confirmation_number</span>
+            Gestionar mi Estancia
           </button>
 
           <button
@@ -99,7 +96,7 @@ const Success: React.FC = () => {
               <div className="absolute inset-0 bg-[#25D366] blur-lg opacity-0 group-hover:opacity-20 transition-opacity"></div>
               <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-5 h-5 relative z-10" alt="WA" />
             </div>
-            ENVIAR CONFIRMACIÓN
+            CONTACTAR AL EQUIPO
           </button>
         </div>
       </motion.div>

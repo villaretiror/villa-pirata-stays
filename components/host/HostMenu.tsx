@@ -3,6 +3,7 @@ import { Property, User as UserType } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import SystemHealthIndicator from './SystemHealthIndicator';
 
 type ModalType = 'none' | 'task' | 'cohost' | 'payouts' | 'alerts' | 'account';
 
@@ -16,6 +17,15 @@ interface Task {
   text: string;
   property: string;
   done: boolean;
+}
+
+interface HealthStatus {
+  service_name: string;
+  status: 'healthy' | 'warning' | 'error' | 'maintenance';
+  last_check: string;
+  latency_ms: number;
+  error_details?: string;
+  metadata: any;
 }
 
 interface CoHost {
@@ -448,6 +458,9 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
           <p className="text-xs font-bold leading-tight uppercase tracking-tighter">{dbError}</p>
         </div>
       )}
+
+      {/* 🚀 Health Monitor 360° Indicator */}
+      <SystemHealthIndicator />
 
       {/* Profile Header */}
       <div

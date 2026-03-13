@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
 import jsPDF from 'jspdf';
@@ -18,6 +18,7 @@ const SESSION_KEY = 'villa_retiro_ai_session_id';
 
 const Messages: React.FC = () => {
   const navigate = useNavigate();
+  const locationState = useLocation().state as { initialPlace?: string } | null;
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -68,13 +69,25 @@ const Messages: React.FC = () => {
     }
 
     // Si no hay historial o falló el parseo, iniciamos con el mensaje de bienvenida
-    setMessages([{
+    const initialMessages: Message[] = [{
       id: crypto.randomUUID(),
-      text: '¡Buenas! Soy el Concierge Premium de Villa Retiro. ¿Está pensando en una estadía especial en Cabo Rojo, Puerto Rico? Puedo ayudarle con disponibilidad, precios y completar su reserva directamente aquí. ¿En qué le sirvo?',
+      text: '¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en Villa Retiro sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?',
       sender: 'ai',
       created_at: new Date().toISOString()
-    }]);
-  }, []);
+    }];
+
+    // Si venimos referidos por un lugar de la guía
+    if (locationState?.initialPlace) {
+      initialMessages.push({
+        id: crypto.randomUUID(),
+        text: `¡Veo que te interesa ${locationState.initialPlace}! Es de mis lugares favoritos. ¿Quieres que te cuente un poco más o te diga qué llevar?`,
+        sender: 'ai',
+        created_at: new Date().toISOString()
+      });
+    }
+
+    setMessages(initialMessages);
+  }, [locationState]);
 
   useEffect(() => {
     if (messages.length > 0) {
@@ -116,6 +129,14 @@ const Messages: React.FC = () => {
     setMessages(prev => [...prev, userMsg]);
     setInputText("");
     setIsTyping(true);
+
+    // 🤖 AI BUFFER LOGIC: Delay intencional para simular refresco de iCal
+    const lowerText = inputText.toLowerCase();
+    const isDateQuery = lowerText.includes('fecha') || lowerText.includes('disponib') || lowerText.includes('cuándo') || lowerText.includes('enero') || lowerText.includes('febrero');
+
+    if (isDateQuery) {
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    }
 
     try {
       const apiMessages = messages.concat(userMsg).map(m => ({
@@ -311,7 +332,7 @@ const Messages: React.FC = () => {
           </div>
           <div className="flex-1">
             <div className="flex justify-between items-center mb-1">
-              <span className="font-bold text-text-main">Concierge Virtual</span>
+              <span className="font-bold text-text-main">Salty: Concierge 360</span>
               <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full">En Vivo</span>
             </div>
             <p className="text-xs text-text-light truncate">¿Cómo puedo ayudarle a planear su visita?</p>
@@ -331,7 +352,7 @@ const Messages: React.FC = () => {
               <span className="material-icons text-lg">hotel_class</span>
             </div>
             <div>
-              <p className="font-bold text-sm text-text-main">Concierge de Lujo</p>
+              <p className="font-bold text-sm text-text-main">Salty - Tu Guía Caribeño</p>
               <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider flex items-center gap-1">
                 <span className="w-1.5 h-1.5 bg-green-500 rounded-full relative"><span className="absolute inset-0 bg-green-500 rounded-full animate-ping"></span></span>
                 En Línea
@@ -382,7 +403,7 @@ const Messages: React.FC = () => {
             <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end animate-slide-up' : 'justify-start animate-fade-in'}`}>
               <div className={`max-w-[85%] p-4 text-[14px] leading-relaxed relative ${m.sender === 'guest' ? 'bg-primary text-white rounded-[20px] rounded-br-[4px] shadow-md shadow-primary/20' : 'bg-white text-text-main rounded-[20px] rounded-tl-[4px] shadow-sm border border-gray-100'}`}>
                 <div className={`flex items-center gap-1 mb-1 text-[10px] font-bold uppercase tracking-wider ${m.sender === 'guest' ? 'text-white/60' : 'text-primary/70'}`}>
-                  {m.sender === 'guest' ? 'Usted' : <><span className="material-icons text-[10px]">auto_awesome</span> Asistente</>}
+                  {m.sender === 'guest' ? 'Usted' : <><span className="material-icons text-[10px]">auto_awesome</span> Salty</>}
                 </div>
 
                 <div>{formatMessageText(displayText, propertyId)}</div>
@@ -444,13 +465,16 @@ const Messages: React.FC = () => {
         })}
         {isTyping && (
           <div className="flex justify-start animate-fade-in mt-6">
-            <div className="max-w-[85%] px-5 py-4 bg-white border border-gray-100 rounded-[20px] rounded-tl-[4px] shadow-sm flex gap-1.5 items-center">
-              <span className="material-icons text-primary/40 mr-1 animate-pulse">edit</span>
-              <div className="flex gap-1">
-                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }}></div>
-                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }}></div>
-                <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
+            <div className="max-w-[85%] px-5 py-4 bg-white border border-blue-100 rounded-[20px] rounded-tl-[4px] shadow-sm flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="material-icons text-primary/40 mr-1 animate-pulse">edit</span>
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
+                </div>
               </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Omitiendo delays: Verificando Calendarios...</p>
             </div>
           </div>
         )}

@@ -49,10 +49,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker__current-month { font-family: 'serif' !important; font-weight: 800 !important; font-size: 1.1rem !important; margin-bottom: 10px !important; color: #1a1a1a !important; }
         .react-datepicker__day-name { text-transform: uppercase !important; font-size: 10px !important; font-weight: 900 !important; color: #999 !important; }
         .react-datepicker__month-container { width: 100% !important; }
-        .react-datepicker__day--disabled { color: #ddd !important; text-decoration: line-through !important; cursor: not-allowed !important; }
-        .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { background-color: #EF4444 !important; border-radius: 14px !important; color: white !important; font-weight: bold !important; }
-        .react-datepicker__day--in-range { background-color: rgba(239, 68, 68, 0.08) !important; color: #EF4444 !important; }
-        .react-datepicker__day:hover { border-radius: 14px !important; background-color: #f3f4f6 !important; }
+        .react-datepicker__day--disabled { color: #ddd !important; text-decoration: line-through !important; cursor: not-allowed !important; opacity: 0.5 !important; }
+        .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { background-color: #FF7F3F !important; border-radius: 12px !important; color: white !important; font-weight: bold !important; }
+        .react-datepicker__day--in-range { background-color: rgba(255, 127, 63, 0.08) !important; color: #FF7F3F !important; }
+        .react-datepicker__day:hover { border-radius: 12px !important; background-color: #f3f4f6 !important; }
       `}</style>
         </div>
     );
