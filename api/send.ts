@@ -2,7 +2,7 @@ import { Resend } from 'resend';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ Versión Node.js para Vercel Functions (v8.1 - GitHub Sync)
+// ✅ Versión Node.js para Vercel Functions (v9.0 - Final Resilience Sync)
 export default async function handler(req: any, res: any) {
   // Manejo de CORS Preflight
   if (req.method === 'OPTIONS') {
@@ -21,13 +21,12 @@ export default async function handler(req: any, res: any) {
 
   try {
     // En Node.js, Vercel ya parsea el body si viene como JSON
-    const body = req.body;
-    const { type, to, customer, contactData, booking, propertyId } = body;
+    const { type, to, customer, contactData, booking, propertyId } = req.body || {};
     const userData = customer || contactData || {};
 
     // Log de Auditoría Master
     console.log(`[Email API] Event: ${type} | UserAgent: ${req.headers['user-agent']}`);
-    console.log(`[Email API] Full Payload:`, JSON.stringify(body, null, 2));
+    console.log(`[Email API] Full Payload:`, JSON.stringify(req.body, null, 2));
 
     const resendClient = new Resend(process.env.RESEND_API_KEY);
     const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
@@ -104,7 +103,7 @@ export default async function handler(req: any, res: any) {
 
     // 📩 CASO: PAGO EXITOSO
     else if (type === 'payment_success') {
-      const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = body;
+      const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body || {};
       emails.push({
         from: fromAddress,
         to: customerEmail,

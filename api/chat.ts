@@ -48,7 +48,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-// ✅ Versión Node.js para Vercel Functions (req, res)
+// ✅ Versión Node.js para Vercel Functions (v9.0 - Final Resilience Sync)
 export default async function handler(req: any, res: any) {
     if (req.method === 'OPTIONS') {
         return res.status(204).end();
