@@ -16,19 +16,21 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
   // Staggered animation delay based on index
   const delay = index * 100;
 
+  const viewers = React.useMemo(() => Math.floor(Math.random() * (8 - 3 + 1)) + 3, []);
+
   const getBadge = () => {
-    if (property.rating >= 4.9) {
-      return (
-        <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold text-text-main shadow-lg z-10 flex items-center gap-1.5 ring-1 ring-black/5">
-          <span className="material-icons text-sm text-primary">local_fire_department</span>
-          Popular
-        </div>
-      );
-    }
     return (
-      <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-xs font-bold text-secondary shadow-lg z-10 flex items-center gap-1.5 ring-1 ring-black/5">
-        <span className="material-icons text-sm text-secondary">diamond</span>
-        Exclusivo
+      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+        {property.rating >= 4.9 && (
+          <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-text-main shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in">
+            <span className="material-icons text-sm text-primary">local_fire_department</span>
+            Popular
+          </div>
+        )}
+        <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5 animate-slide-up" style={{ animationDelay: '200ms' }}>
+          <span className="material-icons text-sm text-primary animate-pulse">visibility</span>
+          {viewers} Viendo ahora
+        </div>
       </div>
     );
   };

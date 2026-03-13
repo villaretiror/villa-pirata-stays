@@ -4,12 +4,13 @@ import PropertyCard from '../components/PropertyCard';
 import GuideCard from '../components/GuideCard';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
+import { PropertyCardSkeleton } from '../components/Skeleton';
 
 type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, localGuideData, favorites, toggleFavorite } = useProperty();
+  const { properties, localGuideData, favorites, toggleFavorite, isLoading } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -171,53 +172,62 @@ const Home: React.FC = () => {
       <div className="relative z-10 px-6 pt-12 pb-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <p className="text-text-light text-sm font-medium mb-1">¡Hola, Viajero! 👋</p>
             <h1 className="text-3xl font-serif font-bold text-text-main leading-tight">
               Exclusive <br />
               <span className="text-primary italic">Boutique Stays.</span>
             </h1>
           </div>
           <div
-            onClick={() => alert("¡Próximamente! Recibirás notificaciones sobre tus estancias exclusivas aquí.")}
-            className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all"
+            onClick={() => {
+              const el = document.getElementById('notif-status');
+              if (el) {
+                el.innerText = "¡Pronto! Notificaciones de Élite.";
+                setTimeout(() => { if (el) el.innerText = "¡Hola, Viajero! 👋"; }, 3000);
+              }
+            }}
+            className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group"
           >
-            <span className="material-icons text-secondary">notifications_none</span>
+            <span className="material-icons text-secondary group-hover:scale-110 transition-transform">notifications_none</span>
           </div>
         </div>
 
-        {/* Search Bar - Modern Glass */}
-        <div
-          onClick={() => setIsSearchOpen(true)}
-          className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10"
-        >
-          <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform">
-            <span className="material-icons">search</span>
-          </div>
-          <div className="flex-1 px-4">
-            <p className="font-bold text-text-main text-sm">Cabo Rojo, PR</p>
-            <p className="text-xs text-text-light">{getGuestSummary()}</p>
-          </div>
-          <div className="bg-gray-100 p-2 rounded-xl text-gray-400 group-hover:text-primary transition-colors">
-            <span className="material-icons text-xl">tune</span>
-          </div>
+        <div className="h-6 -mt-4 mb-4">
+          <p id="notif-status" className="text-text-light text-sm font-medium transition-all duration-500">¡Hola, Viajero! 👋</p>
         </div>
+      </div>
 
-        {/* Categories - Modern Pills */}
-        <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2">
-          {categories.map((cat) => (
-            <button
-              key={cat.id}
-              onClick={() => handleCategorySelect(cat.id)}
-              className={`flex items-center gap-2 px-5 py-3 rounded-full border whitespace-nowrap transition-all duration-300 ${activeCategory === cat.id
-                ? 'bg-secondary text-white border-secondary shadow-lg shadow-secondary/20 scale-105'
-                : 'bg-white border-transparent text-gray-500 shadow-sm hover:bg-gray-50'
-                }`}
-            >
-              <span className="material-icons text-sm">{cat.icon}</span>
-              <span className="text-xs font-bold">{cat.label}</span>
-            </button>
-          ))}
+      {/* Search Bar - Modern Glass */}
+      <div
+        onClick={() => setIsSearchOpen(true)}
+        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10"
+      >
+        <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform">
+          <span className="material-icons">search</span>
         </div>
+        <div className="flex-1 px-4">
+          <p className="font-bold text-text-main text-sm">Cabo Rojo, PR</p>
+          <p className="text-xs text-text-light">{getGuestSummary()}</p>
+        </div>
+        <div className="bg-gray-100 p-2 rounded-xl text-gray-400 group-hover:text-primary transition-colors">
+          <span className="material-icons text-xl">tune</span>
+        </div>
+      </div>
+
+      {/* Categories - Modern Pills */}
+      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2">
+        {categories.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => handleCategorySelect(cat.id)}
+            className={`flex items-center gap-2 px-5 py-3 rounded-full border whitespace-nowrap transition-all duration-300 ${activeCategory === cat.id
+              ? 'bg-secondary text-white border-secondary shadow-lg shadow-secondary/20 scale-105'
+              : 'bg-white border-transparent text-gray-500 shadow-sm hover:bg-gray-50'
+              }`}
+          >
+            <span className="material-icons text-sm">{cat.icon}</span>
+            <span className="text-xs font-bold">{cat.label}</span>
+          </button>
+        ))}
       </div>
 
       {/* Main Content Area */}
@@ -284,7 +294,9 @@ const Home: React.FC = () => {
 
         {/* Listings Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {filteredProperties.length > 0 ? (
+          {isLoading ? (
+            Array(4).fill(0).map((_, i) => <PropertyCardSkeleton key={i} />)
+          ) : filteredProperties.length > 0 ? (
             filteredProperties.map((property, index) => (
               <PropertyCard
                 key={property.id}

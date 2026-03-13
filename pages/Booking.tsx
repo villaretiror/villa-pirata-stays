@@ -8,11 +8,15 @@ import { addDays, format, differenceInDays } from 'date-fns';
 import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
+import { AnimatePresence } from 'framer-motion';
+import { BookingSkeleton } from '../components/Skeleton';
+
+const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { properties, refreshProperties } = useProperty();
+  const { properties, refreshProperties, isLoading } = useProperty();
   const { user } = useAuth();
 
   const property = properties.find(p => p.id === id);
@@ -68,13 +72,13 @@ const Booking: React.FC = () => {
               const icalData = await fetchICalData(sync.url);
               return parseICalData(icalData);
             } catch (err) {
-              console.warn(`iCal sync failed for ${sync.platform}:`, err);
+              console.warn(`iCal sync failed for ${sync.platform}: `, err);
               return [];
             }
           });
 
           const results = await Promise.all(syncPromises);
-          results.flat().forEach(ds => icalDates.push(new Date(`${ds}T12:00:00`)));
+          results.flat().forEach(ds => icalDates.push(new Date(`${ds} T12:00:00`)));
         } catch (err) {
           console.error("Critical Multichannel Sync Error:", err);
         }
@@ -84,6 +88,8 @@ const Booking: React.FC = () => {
     };
     fetchBlockedDates();
   }, [id, property]);
+
+  if (isLoading) return <BookingSkeleton />;
 
   if (!property) {
     return (
@@ -296,171 +302,259 @@ const Booking: React.FC = () => {
     });
   };
 
-  return (
-    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex justify-center items-end sm:items-center p-0 sm:p-4">
-      <div className="bg-white w-full max-w-md h-[95vh] sm:h-auto sm:rounded-[2.5rem] rounded-t-[2.5rem] overflow-hidden flex flex-col shadow-2xl animate-slide-up">
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
 
-        <header className="px-6 py-5 border-b border-gray-100 flex items-center justify-between bg-white sticky top-0 z-10">
-          <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
+  return (
+    <div className="fixed inset-0 z-50 bg-sand flex justify-center items-end sm:items-center p-0 sm:p-4 animate-fade-in">
+      {/* Dynamic Background Mesh for Elite Feel */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px]"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]"></div>
+      </div>
+
+      <div className="relative bg-white/80 backdrop-blur-xl w-full max-w-2xl h-full sm:h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl border border-white/40">
+
+        <header className="px-8 py-6 flex items-center justify-between sticky top-0 bg-white sm:bg-white/80 backdrop-blur-xl z-20 border-b border-black/5">
+          <button
+            onClick={() => navigate(-1)}
+            className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-all active:scale-95"
+          >
             <span className="material-icons text-text-main">close</span>
           </button>
-          <h2 className="font-bold text-lg">Reserva Tu Refugio</h2>
-          <div className="w-10"></div>
+          <div className="text-center">
+            <h2 className="font-serif font-black text-xl text-text-main leading-none">Confirmar Estancia</h2>
+            <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mt-1 italic">Boutique Stays Experience</p>
+          </div>
+          <div className="w-12"></div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-6 space-y-6 no-scrollbar">
-          {/* Info Propiedad */}
-          <div className="flex gap-4 p-3 bg-sand/50 rounded-2xl border border-orange-100">
-            <SmartImage src={property.images[0]} className="w-20 h-20 rounded-xl object-cover" />
-            <div>
-              <h3 className="font-bold text-text-main text-sm">{property.title}</h3>
-              <p className="text-xs text-text-light">{nights || '--'} noches • {property.guests} huéspedes máx</p>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-primary font-bold text-sm">
-                  ${nights > 0 ? (basePrice / nights).toFixed(2) : property.price} / noche
-                </p>
-                {/* Direct Booking Advantage UI */}
-                <div className="bg-green-50 text-green-700 px-2 py-0.5 rounded-full text-[8px] font-black uppercase flex items-center gap-1 border border-green-100">
-                  <span className="material-icons text-[10px]">verified</span>
-                  Mejor Tarifa Directa
+        <div className="flex-1 overflow-y-auto p-8 space-y-10 no-scrollbar pb-32">
+
+          {/* Property Short Summary Card */}
+          <div className="flex gap-6 p-6 bg-white rounded-[2.5rem] shadow-soft border border-black/5">
+            <SmartImage src={property.images[0]} className="w-24 h-24 rounded-[1.8rem] object-cover shadow-lg" />
+            <div className="flex-1">
+              <h3 className="font-serif font-bold text-xl text-text-main mb-1">{property.title}</h3>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1 text-xs font-bold text-text-light">
+                  <span className="material-icons text-sm">groups</span>
+                  {property.guests} máx
+                </div>
+                <div className="flex items-center gap-1 text-xs font-bold text-text-light">
+                  <span className="material-icons text-sm">verified</span>
+                  Directo
                 </div>
               </div>
+              <p className="mt-3 text-primary font-black text-lg">
+                ${property.price} <span className="text-[10px] font-sans text-gray-400">USD / NOCHE</span>
+              </p>
             </div>
           </div>
 
-          {/* Calendario Modular */}
-          <BookingCalendar
-            startDate={startDate}
-            endDate={endDate}
-            onChange={(update) => setDateRange(update)}
-            blockedDates={blockedDates}
-          />
+          {/* Date Selector Trigger - Mobile Optimized */}
+          <section className="space-y-4">
+            <div className="flex justify-between items-end">
+              <h3 className={TAG_STYLE + " text-gray-400"}>1. Cronograma</h3>
+              {startDate && endDate && (
+                <button
+                  onClick={() => setShowCalendarModal(true)}
+                  className="text-[10px] font-black uppercase text-primary underline underline-offset-4"
+                >
+                  Cambiar Fechas
+                </button>
+              )}
+            </div>
 
-          {/* Formulario de Contacto / Detalles */}
-          <div className="space-y-4 pt-4">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Tus Datos de Contacto</h3>
-            <div className="grid grid-cols-1 gap-3">
-              <div className="relative">
-                <span className="material-icons absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm">phone</span>
+            {(!startDate || !endDate) ? (
+              <button
+                onClick={() => setShowCalendarModal(true)}
+                className="w-full p-8 bg-sand/30 border-2 border-dashed border-orange-200 rounded-[2.5rem] flex flex-col items-center gap-4 group hover:bg-sand/50 transition-all"
+              >
+                <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
+                  <span className="material-icons text-2xl">calendar_month</span>
+                </div>
+                <div className="text-center">
+                  <p className="font-serif font-bold text-lg">Selecciona tus fechas</p>
+                  <p className="text-xs text-text-light">Haz clic aquí para ver disponibilidad real</p>
+                </div>
+              </button>
+            ) : (
+              <div
+                onClick={() => setShowCalendarModal(true)}
+                className="grid grid-cols-2 gap-4 cursor-pointer group"
+              >
+                <div className="bg-[#FFF4ED] p-6 rounded-[2rem] border-2 border-primary/20 transition-all group-hover:border-primary/40 shadow-sm">
+                  <p className={TAG_STYLE + " text-[#FF7F3F] mb-1 font-black"}>Check-in</p>
+                  <p className="text-2xl font-serif font-black text-text-main">{format(startDate, 'dd MMM')}</p>
+                </div>
+                <div className="bg-[#FFF4ED] p-6 rounded-[2rem] border-2 border-primary/20 transition-all group-hover:border-primary/40 shadow-sm">
+                  <p className={TAG_STYLE + " text-[#FF7F3F] mb-1 font-black"}>Check-out</p>
+                  <p className="text-2xl font-serif font-black text-text-main">{format(endDate, 'dd MMM')}</p>
+                </div>
+              </div>
+            )}
+          </section>
+
+          {/* User & Message Form */}
+          <section className="space-y-4">
+            <h3 className={TAG_STYLE + " text-gray-400"}>2. Detalles del Viaje</h3>
+            <div className="space-y-4">
+              <div className="relative group">
+                <span className="material-icons absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-primary">phone</span>
                 <input
                   type="tel"
-                  placeholder="Teléfono (WhatsApp pref.)"
-                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:ring-2 ring-primary/20 outline-none font-bold"
+                  placeholder="Teléfono (WhatsApp)"
+                  className="w-full pl-14 pr-6 py-5 bg-white border border-black/5 rounded-[2rem] shadow-soft focus:ring-2 ring-primary/10 outline-none font-bold text-sm"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                 />
               </div>
               <textarea
-                placeholder="¿Algún mensaje o petición especial?"
-                className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:ring-2 ring-primary/20 outline-none min-h-[100px]"
+                placeholder="¿Alguna petición especial? (Ej: Cuna, decoración, early check-in...)"
+                className="w-full p-6 bg-white border border-black/5 rounded-[2.5rem] shadow-soft focus:ring-2 ring-primary/10 outline-none text-sm min-h-[140px] leading-relaxed"
                 value={guestMessage}
                 onChange={(e) => setGuestMessage(e.target.value)}
               />
             </div>
-          </div>
+          </section>
 
-          {/* Promo Code UI */}
-          <div className="space-y-3 pt-2">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Código Promocional</h3>
+          {/* Promo & Totals */}
+          <section className="space-y-6 pt-6 border-t border-black/5">
             <div className="flex gap-2">
               <input
                 type="text"
-                placeholder="Ej: VERANO2024"
-                className="flex-1 p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm focus:ring-2 ring-primary/20 outline-none uppercase font-bold"
+                placeholder="CÓDIGO PROMO"
+                className="flex-1 px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-2 ring-primary/20 outline-none"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
               />
               <button
                 onClick={handleApplyPromo}
-                className="bg-black text-white px-6 rounded-2xl text-xs font-bold hover:bg-gray-900 transition-all uppercase tracking-widest"
+                className="bg-black text-white px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
               >
-                Aplicar
+                Validar
               </button>
             </div>
-            {promoError && <p className="text-[10px] text-red-500 font-bold ml-2 italic">{promoError}</p>}
-            {appliedPromo && (
-              <div className="bg-green-50 p-2 rounded-xl flex justify-between items-center border border-green-100">
-                <p className="text-[10px] text-green-700 font-black uppercase tracking-widest pl-2">
-                  ¡Descuento {appliedPromo.discount_percent}% Aplicado!
-                </p>
-                <button onClick={() => setAppliedPromo(null)} className="text-green-800 p-1">
-                  <span className="material-icons text-xs">close</span>
-                </button>
-              </div>
-            )}
-          </div>
 
-          {/* Desglose de Precios */}
-          <div className="space-y-4 py-6 border-y border-gray-100 bg-gray-50/30 -mx-6 px-6">
-            <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Resumen de Inversión</h3>
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-text-light">${property.price} x {nights || 0} noches</span>
-                <span className="font-medium">${basePrice}</span>
+            {promoError && <p className="text-[10px] text-red-500 font-black tracking-widest uppercase ml-2">{promoError}</p>}
+
+            <div className="bg-[#FFF8F4] p-8 rounded-[2.5rem] border border-orange-200/50 shadow-inner space-y-4">
+              <div className="flex justify-between items-center text-sm font-bold">
+                <span className="text-text-light">Estancia ({nights || 0} noches)</span>
+                <span className="text-text-main font-serif font-black text-lg">${basePrice}</span>
               </div>
               {feesList.map(([name, value]) => (
-                <div key={name} className="flex justify-between text-sm animate-fade-in">
+                <div key={name} className="flex justify-between items-center text-sm font-bold">
                   <span className="text-text-light">{name}</span>
-                  <span className="font-medium">${Number(value) || 0}</span>
+                  <span className="text-text-main font-serif font-black text-lg">${value}</span>
                 </div>
               ))}
               {appliedPromo && (
-                <div className="flex justify-between text-sm text-green-600 font-bold animate-fade-in">
-                  <span>Descuento Directo ({appliedPromo.discount_percent}%)</span>
-                  <span>-${discountAmount.toFixed(2)}</span>
+                <div className="flex justify-between items-center text-sm text-green-700 font-bold">
+                  <span>Beneficio Directo ({appliedPromo.discount_percent}%)</span>
+                  <span className="font-serif font-black text-lg">-${discountAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="flex justify-between items-end pt-4 border-t border-dashed border-gray-200 mt-2">
-                <span className="font-bold text-base text-text-main">Inversión Final</span>
-                <div className="text-right">
-                  <span className="text-[10px] block font-black text-secondary tracking-widest uppercase mb-1">Total PR Tax Incl.</span>
-                  <span className="font-bold text-2xl text-primary">${total}</span>
+              <div className="pt-6 border-t border-dashed border-orange-200 mt-2 flex justify-between items-end">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mb-1">Inversión Final</p>
+                  <p className="text-xs text-text-light font-medium">Todo incluido • Pago Seguro</p>
                 </div>
+                <p className="text-4xl font-serif font-black text-text-main">${total}</p>
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Alerta de Estancia Mínima */}
+          {/* Alerts */}
           {isTooShort && (
-            <div className="bg-red-50 p-4 rounded-2xl border border-red-100 flex items-start gap-3 animate-shake">
+            <div className="flex gap-4 p-5 bg-red-50 rounded-3xl border border-red-100 animate-shake">
               <span className="material-icons text-red-500">warning</span>
-              <div>
-                <p className="text-xs font-bold text-red-700">La reserva mínima es de 2 noches</p>
-                <p className="text-[10px] text-red-600 mt-0.5">Por favor, selecciona una fecha de salida posterior.</p>
-              </div>
-            </div>
-          )}
-
-          {/* Alerta de Cambio de Precio Realtime */}
-          {priceMismatch && (
-            <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 flex items-start gap-3 animate-slide-up">
-              <span className="material-icons text-orange-500">sync</span>
-              <div>
-                <p className="text-xs font-bold text-orange-700">Las tarifas han sido actualizadas</p>
-                <p className="text-[10px] text-orange-600 mt-0.5">El anfitrión ha realizado un cambio. Estamos cargando los nuevos precios...</p>
-              </div>
-            </div>
-          )}
-
-          {/* Pasarela de Pago Modular */}
-          {startDate && endDate && !isTooShort && !priceMismatch && (
-            <PaymentProcessor
-              total={total}
-              user={user}
-              isProcessing={isProcessing}
-              onSuccess={handlePaymentSuccess}
-            />
-          )}
-
-          {!startDate && (
-            <div className="py-6 text-center">
-              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                Selecciona fechas para proceder al pago
+              <p className="text-xs font-bold text-red-700 leading-relaxed">
+                Nivel de Selección: Requiere estancia de 2 noches mínimo. Por favor ajusta tu salida.
               </p>
             </div>
           )}
+
+          {/* Payment Gateway */}
+          {startDate && endDate && !isTooShort && !priceMismatch && (
+            <section className="space-y-4 pb-20">
+              <h3 className={TAG_STYLE + " text-gray-400"}>3. Pasarela de Pago Segura</h3>
+              <PaymentProcessor
+                total={total}
+                user={user}
+                isProcessing={isProcessing}
+                onSuccess={handlePaymentSuccess}
+              />
+            </section>
+          )}
         </div>
       </div>
+
+      {/* --- ELITE FULLSCREEN CALENDAR MODAL --- */}
+      <AnimatePresence>
+        {showCalendarModal && (
+          <div className="fixed inset-0 z-[200] flex flex-col bg-white animate-fade-in">
+            <header className="px-8 py-8 flex items-center justify-between border-b border-black/5">
+              <button
+                onClick={() => setShowCalendarModal(false)}
+                className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center"
+              >
+                <span className="material-icons">close</span>
+              </button>
+              <div className="text-center">
+                <h3 className="text-2xl font-serif font-black">Disponibilidad Real</h3>
+                <p className={TAG_STYLE + " text-primary"}>Fechas actualizadas hace 1 min</p>
+              </div>
+              <div className="w-12"></div>
+            </header>
+
+            <div className="flex-1 overflow-y-auto no-scrollbar p-8">
+              <div className="max-w-md mx-auto">
+                <BookingCalendar
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={(update) => {
+                    setDateRange(update);
+                    // Si ya seleccionó rango, cerrar automáticamente con delay elegante
+                    if (update[0] && update[1]) {
+                      setTimeout(() => setShowCalendarModal(false), 600);
+                    }
+                  }}
+                  blockedDates={blockedDates}
+                />
+
+                <div className="mt-12 p-6 bg-sand/30 rounded-[2.5rem] border border-orange-100">
+                  <h4 className="font-serif font-bold text-lg mb-4 text-center text-text-main">Feeds Externos Sincronizados</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white p-4 rounded-2xl flex items-center gap-3 shadow-sm">
+                      <div className="w-8 h-8 bg-[#FF5A5F]/10 text-[#FF5A5F] rounded-lg flex items-center justify-center">
+                        <span className="material-icons text-sm">bolt</span>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#FF5A5F]">Airbnb Live</span>
+                    </div>
+                    <div className="bg-white p-4 rounded-2xl flex items-center gap-3 shadow-sm">
+                      <div className="w-8 h-8 bg-[#003580]/10 text-[#003580] rounded-lg flex items-center justify-center">
+                        <span className="material-icons text-sm">bolt</span>
+                      </div>
+                      <span className="text-[10px] font-black uppercase tracking-widest text-[#003580]">Booking.com</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <footer className="p-8 border-t border-black/5 pb-safe">
+              <button
+                disabled={!startDate || !endDate}
+                onClick={() => setShowCalendarModal(false)}
+                className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-xs disabled:opacity-30 transition-all shadow-xl"
+              >
+                {startDate && endDate ? `Cerrar y Ver Resumen` : `Selecciona fechas para continuar`}
+              </button>
+            </footer>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

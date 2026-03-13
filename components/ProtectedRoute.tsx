@@ -13,8 +13,17 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
 
   if (loading) {
     return (
-      <div className="fixed inset-0 bg-sand/80 backdrop-blur-[2px] z-50 flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin shadow-lg"></div>
+      <div className="fixed inset-0 bg-[#FDFCFB] z-50 flex flex-col items-center justify-center gap-6 animate-fade-in">
+        <div className="relative">
+          <div className="w-16 h-16 border-4 border-[#FF7F3F]/10 border-t-[#FF7F3F] rounded-full animate-spin"></div>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="material-icons text-[#FF7F3F] animate-pulse">lock</span>
+          </div>
+        </div>
+        <div className="flex flex-col items-center gap-1">
+          <p className="font-serif font-black text-xl tracking-tighter text-text-main animate-pulse">Autenticando Acceso</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF7F3F]">Boutique Stays Security</p>
+        </div>
       </div>
     );
   }
