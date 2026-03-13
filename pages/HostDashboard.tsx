@@ -369,8 +369,8 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           </div>
         </div>
 
-        <div className="h-64 w-full">
-          <ResponsiveContainer width="100%" height="100%">
+        <div className="h-64 w-full" style={{ minHeight: '300px' }}>
+          <ResponsiveContainer width="100%" height="100%" minHeight={300}>
             <AreaChart data={stats}>
               <defs>
                 <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
@@ -428,8 +428,8 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
         <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
           <h4 className="text-[10px] font-black uppercase tracking-widest text-text-light mb-4">Tasa de Ocupación</h4>
-          <div className="h-32 w-full">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="h-32 w-full" style={{ minHeight: '150px' }}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={150}>
               <LineChart data={stats}>
                 <XAxis dataKey="name" hide />
                 <Tooltip />
@@ -2157,7 +2157,7 @@ const HostDashboard: React.FC = () => {
       const { data: props } = await supabase
         .from('properties')
         .select('*')
-        .in('id', hostPropertyIds)
+        .in('id', hostPropertyIds.map(id => String(id)))
         .abortSignal(signal || new AbortController().signal);
 
       if (props && props.length > 0) {
@@ -2176,7 +2176,7 @@ const HostDashboard: React.FC = () => {
       const { data: allBookings } = await supabase
         .from('bookings')
         .select(`*, profiles(full_name, avatar_url, phone), properties(title, images)`)
-        .in('property_id', hostPropertyIds)
+        .in('property_id', hostPropertyIds.map(id => String(id)))
         .abortSignal(signal || new AbortController().signal);
 
       if (allBookings) {
@@ -2216,7 +2216,7 @@ const HostDashboard: React.FC = () => {
       const { data: allExpenses } = await supabase
         .from('property_expenses')
         .select('*')
-        .in('property_id', hostPropertyIds)
+        .in('property_id', hostPropertyIds.map(id => String(id)))
         .abortSignal(signal || new AbortController().signal);
 
       if (allExpenses) setGlobalExpenses(allExpenses);
