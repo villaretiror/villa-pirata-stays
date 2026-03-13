@@ -9,6 +9,7 @@ interface AuthContextType {
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; error: string | null }>;
   logout: () => Promise<void>;
   updateUser: (updated: Partial<User>) => void;
+  resetPassword: (email: string) => Promise<{ error: string | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -23,7 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     id: sbUser.id,
     email: sbUser.email || '',
     name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
-    role: sbUser.email === 'villaretiror@gmail.com' ? 'host' : (dbProfile?.role || sbUser.user_metadata?.role || 'guest'),
+    role: (sbUser.email?.toLowerCase() === 'villaretiror@gmail.com') ? 'host' : (dbProfile?.role || sbUser.user_metadata?.role || 'guest'),
     avatar: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(dbProfile?.full_name || sbUser.user_metadata?.name || 'User')}&background=FF7F3F&color=fff`,
     phone: dbProfile?.phone || sbUser.user_metadata?.phone || '',
     emergencyContact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
@@ -88,6 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isSubscribed) {
           if (session?.user) {
             console.log(`AuthContext: Valid session for ${session.user.email}. Fetching profile...`);
+            const isAdmin = session.user.email?.toLowerCase() === 'villaretiror@gmail.com';
             const profile = await getExtendedProfile(session.user.id);
             if (isSubscribed) {
               updateUserState(mapSupabaseUser(session.user, profile));
@@ -211,14 +213,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error;
   }, []);
 
+  const resetPassword = useCallback(async (email: string) => {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/profile?reset=true`,
+      });
+      return { error: error ? error.message : null };
+    } catch (err: any) {
+      return { error: err.message || "Error al solicitar recuperación" };
+    }
+  }, []);
+
   const value = React.useMemo(() => ({
     user,
     loading,
     login,
     register,
     logout,
-    updateUser
-  }), [user, loading, login, register, logout, updateUser]);
+    updateUser,
+    resetPassword
+  }), [user, loading, login, register, logout, updateUser, resetPassword]);
 
   return (
     <AuthContext.Provider value={value}>

@@ -141,7 +141,7 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  role: 'guest' | 'host';
+  role: 'guest' | 'host' | 'admin';
   avatar?: string;
   phone?: string;
   verificationStatus: 'unverified' | 'pending' | 'verified';

@@ -10,7 +10,8 @@ const Login: React.FC = () => {
   const searchParams = new URLSearchParams(location.search);
   const isInvite = searchParams.get('invite') === 'true';
   const redirectToParam = searchParams.get('redirect');
-  const { login, register } = useAuth();
+  const { login, register, resetPassword } = useAuth();
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isRegistering, setIsRegistering] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -56,6 +57,21 @@ const Login: React.FC = () => {
       setError(err.message === 'Invalid login credentials' ? 'Credenciales incorrectas. Verifica tu email y contraseña.' : err.message || 'Ocurrió un error');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Por favor ingresa tu email para recuperar la contraseña.");
+      return;
+    }
+    setLoading(true);
+    const { error } = await resetPassword(email);
+    setLoading(false);
+    if (error) {
+      setError(error);
+    } else {
+      setSuccessMessage("¡Email enviado! Revisa tu bandeja de entrada para cambiar tu contraseña.");
     }
   };
 
@@ -105,6 +121,12 @@ const Login: React.FC = () => {
           </div>
         )}
 
+        {successMessage && (
+          <div className="bg-green-50 text-green-600 text-[11px] p-3 rounded-xl mb-4 text-center border border-green-100 animate-slide-up">
+            {successMessage}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className={`transition-all duration-500 ease-in-out overflow-hidden ${isRegistering ? 'max-h-24 opacity-100' : 'max-h-0 opacity-0'}`}>
             <label className="block text-[10px] font-bold text-text-light uppercase tracking-wider mb-1 ml-1">Nombre</label>
@@ -146,7 +168,13 @@ const Login: React.FC = () => {
               <input type="checkbox" className="accent-primary w-3.5 h-3.5 cursor-pointer border-gray-300 rounded" />
               <span className="text-[10px] font-bold text-text-light group-hover:text-text-main transition-colors">Recordarme</span>
             </label>
-            <button type="button" className="text-[10px] font-bold text-primary hover:underline">¿Olvidaste tu contraseña?</button>
+            <button
+              type="button"
+              onClick={handleForgotPassword}
+              className="text-[10px] font-bold text-primary hover:underline"
+            >
+              ¿Olvidaste tu contraseña?
+            </button>
           </div>
 
           <button

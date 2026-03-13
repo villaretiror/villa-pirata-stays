@@ -523,6 +523,22 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     });
 
     if (!error) {
+      // 📩 Connect with Resend for professional invitation
+      try {
+        await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'cohost_invitation',
+            email: trimmedEmail,
+            propertyName: propertyName,
+            propertyId: propertyId
+          })
+        });
+      } catch (e) {
+        console.error("Email sync error:", e);
+      }
+
       onShowToast("Invitación enviada ✨");
       setNewCohostEmail('');
       fetchCohosts();

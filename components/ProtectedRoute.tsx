@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  role?: 'guest' | 'host';
+  role?: 'guest' | 'host' | 'admin';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
@@ -63,7 +63,10 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (role && user.role !== role) {
+  // Bypass for Admin email regardless of metadata
+  const isAdminEmail = user.email?.toLowerCase() === 'villaretiror@gmail.com';
+
+  if (role && user.role !== role && user.role !== 'admin' && !isAdminEmail) {
     return <Navigate to="/" replace />;
   }
 

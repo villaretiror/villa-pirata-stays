@@ -168,6 +168,38 @@ export default async function handler(req: any, res: any) {
       );
     }
 
+    // 📩 CASO: INVITACIÓN CO-ANFITRIÓN
+    else if (type === 'cohost_invitation') {
+      const { email, propertyName } = req.body || {};
+      emails.push({
+        from: fromAddress,
+        to: email,
+        subject: `🤝 Invitación para ser Co-anfitrión en ${propertyName}`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 30px; overflow: hidden; background-color: #ffffff;">
+            <div style="background-color: #2C2B29; padding: 40px; text-align: center;">
+              <img src="${currentLogo}" width="120" style="margin-bottom: 20px;" />
+              <h2 style="color: #ffffff; margin: 0; font-family: serif;">Invitación Especial</h2>
+              <p style="color: #FF7F3F; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-top: 10px;">Equipo de Villa & Pirata</p>
+            </div>
+            <div style="padding: 40px; color: #4A4A4A; line-height: 1.6;">
+              <p style="font-size: 16px;">Has sido invitado como <strong>Co-anfitrión</strong> para gestionar la propiedad <strong>${propertyName}</strong>.</p>
+              <p style="font-size: 14px; color: #666;">Como miembro del equipo, tendrás acceso al Panel de Control para supervisar reservas, el calendario operativo y la comunicación con los huéspedes.</p>
+              
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${process.env.VITE_SITE_URL || 'https://villaretiror.com'}/login?invite=true" style="background-color: #FF7F3F; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(255,127,63,0.2);">Aceptar Invitación y Acceder</a>
+              </div>
+              
+              <p style="font-size: 12px; color: #999; text-align: center; font-style: italic;">
+                "Bienvenidos al equipo. Hagamos de cada estancia algo inolvidable." — Salty
+              </p>
+            </div>
+            ${emailFooter}
+          </div>
+        `
+      });
+    }
+
     // 🚀 ENVÍO GARANTIZADO (Guaranteed Delivery)
     const results = [];
     for (const emailData of emails) {

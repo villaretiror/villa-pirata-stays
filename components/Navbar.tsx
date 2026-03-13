@@ -106,8 +106,8 @@ const Navbar: React.FC = () => {
                 </div>
               </div>
 
-              {/* MODO ADMIN DUAL: Persistent link if admin */}
-              {user?.email === 'villaretiror@gmail.com' && (
+              {/* MODO ADMIN DUAL: Persistent link if admin or host */}
+              {(user?.email?.toLowerCase() === 'villaretiror@gmail.com' || user?.role === 'host' || user?.role === 'admin') && (
                 <Link
                   to="/host"
                   onClick={() => {
@@ -150,6 +150,9 @@ const Navbar: React.FC = () => {
           <li><NavItem path="/" icon="explore" label="Explorar" currentPath={currentPath} /></li>
           <li><NavItem path="/favorites" icon="favorite" label="Favoritos" currentPath={currentPath} /></li>
           <li><NavItem path="/messages" icon="chat" label="Chat" currentPath={currentPath} /></li>
+          {(user?.role === 'host' || user?.role === 'admin' || user?.email?.toLowerCase() === 'villaretiror@gmail.com') && (
+            <li><NavItem path="/host" icon="dashboard_customize" label="Panel" currentPath={currentPath} /></li>
+          )}
           <li>
             <NavItem
               path={user ? "#" : "/login"}

@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SmartImage from '../components/SmartImage';
+import { supabase } from '../lib/supabase';
 
 const Profile: React.FC = () => {
   const { user, logout, updateUser } = useAuth();
@@ -13,6 +14,9 @@ const Profile: React.FC = () => {
   const [activeTab, setActiveTab] = useState(initialTab);
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [passwordStatus, setPasswordStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const isResetMode = searchParams.get('reset') === 'true';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
@@ -43,6 +47,24 @@ const Profile: React.FC = () => {
       console.error(e);
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!newPassword || newPassword.length < 6) {
+      alert("La contraseña debe tener al menos 6 caracteres.");
+      return;
+    }
+    try {
+      setPasswordStatus('loading');
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      setPasswordStatus('success');
+      setNewPassword('');
+      setTimeout(() => navigate('/profile'), 3000);
+    } catch (e: any) {
+      console.error(e);
+      setPasswordStatus('error');
     }
   };
 
@@ -210,9 +232,72 @@ const Profile: React.FC = () => {
                 </div>
               </div>
 
+              {/* Password Reset Form (from email link) */}
+              <AnimatePresence>
+                {isResetMode && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    className="bg-primary/5 rounded-[2.5rem] p-8 border border-primary/10 shadow-soft mb-6"
+                  >
+                    <h3 className="font-serif font-bold text-lg mb-2 text-text-main">Nueva Contraseña</h3>
+                    <p className="text-xs text-text-light mb-6">Has solicitado cambiar tu contraseña. Ingresa la nueva abajo.</p>
+
+                    <div className="space-y-4">
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={e => setNewPassword(e.target.value)}
+                        placeholder="Mínimo 6 caracteres"
+                        className="w-full bg-white px-5 py-4 rounded-2xl text-sm font-medium outline-none focus:ring-2 ring-primary/20 border border-primary/10"
+                      />
+                      <button
+                        onClick={handleUpdatePassword}
+                        disabled={passwordStatus === 'loading'}
+                        className="w-full py-4 rounded-2xl font-bold text-xs text-white bg-primary shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
+                      >
+                        {passwordStatus === 'loading' ? 'ACTUALIZANDO...' : 'ACTUALIZAR CONTRASEÑA'}
+                      </button>
+
+                      {passwordStatus === 'success' && (
+                        <p className="text-[10px] font-bold text-green-600 text-center animate-fade-in uppercase tracking-widest">
+                          ✓ Contraseña actualizada. Redirigiendo...
+                        </p>
+                      )}
+                      {passwordStatus === 'error' && (
+                        <p className="text-[10px] font-bold text-red-500 text-center animate-fade-in uppercase tracking-widest">
+                          ! Error al actualizar. Intenta de nuevo.
+                        </p>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              {/* Account Security (Trigger Reset) */}
+              {!isResetMode && (
+                <div className="bg-white rounded-[2.5rem] p-8 shadow-card border border-gray-50 mb-6">
+                  <h3 className="font-serif font-bold text-lg mb-1 text-text-main">Seguridad de la Cuenta</h3>
+                  <p className="text-[10px] font-medium text-text-light mb-6 uppercase tracking-widest">Protege tu acceso boutique</p>
+
+                  <div className="p-5 bg-sand/30 rounded-2xl border border-gray-100 flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-bold text-text-main">Actualizar Contraseña</p>
+                      <p className="text-[10px] text-text-light">Te enviaremos un email seguro para el cambio.</p>
+                    </div>
+                    <button
+                      onClick={() => navigate('/login')}
+                      className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+                    >
+                      Gestionar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Security / Account Actions */}
               <div className="flex flex-col gap-3">
-                {user.email === 'villaretiror@gmail.com' && (
+                {(user.email?.toLowerCase() === 'villaretiror@gmail.com' || user.role === 'host' || user.role === 'admin') && (
                   <button
                     onClick={() => {
                       localStorage.setItem('host_mode_preferred', 'true');
