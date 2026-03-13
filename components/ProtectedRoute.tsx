@@ -8,8 +8,19 @@ interface ProtectedRouteProps {
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const location = useLocation();
+  const [timedOut, setTimedOut] = React.useState(false);
+
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (loading) {
+      timer = setTimeout(() => {
+        setTimedOut(true);
+      }, 5000);
+    }
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   if (loading) {
     return (
@@ -21,9 +32,29 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
           </div>
         </div>
         <div className="flex flex-col items-center gap-1">
-          <p className="font-serif font-black text-xl tracking-tighter text-text-main animate-pulse">Autenticando Acceso</p>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF7F3F]">Boutique Stays Security</p>
+          <p className="font-serif font-black text-xl tracking-tighter text-text-main animate-pulse">
+            {timedOut ? 'Autenticación Lenta' : 'Autenticando Acceso'}
+          </p>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF7F3F]">
+            {timedOut ? 'Posible error de red' : 'Boutique Stays Security'}
+          </p>
         </div>
+        {timedOut && (
+          <div className="flex flex-col gap-2 mt-4">
+            <button
+              onClick={() => window.location.reload()}
+              className="px-6 py-2 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
+            >
+              Reintentar Carga
+            </button>
+            <button
+              onClick={() => logout()}
+              className="px-6 py-2 border border-black/10 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
+            >
+              Cerrar Sesión
+            </button>
+          </div>
+        )}
       </div>
     );
   }
