@@ -170,7 +170,9 @@ export default async function handler(req: any, res: any) {
 
     // 📩 CASO: INVITACIÓN CO-ANFITRIÓN
     else if (type === 'cohost_invitation') {
-      const { email, propertyName } = req.body || {};
+      const { email, propertyName, token } = req.body || {};
+      const inviteUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/login?invite=true${token ? `&token=${token}` : ''}`;
+
       emails.push({
         from: fromAddress,
         to: email,
@@ -187,7 +189,7 @@ export default async function handler(req: any, res: any) {
               <p style="font-size: 14px; color: #666;">Como miembro del equipo, tendrás acceso al Panel de Control para supervisar reservas, el calendario operativo y la comunicación con los huéspedes.</p>
               
               <div style="text-align: center; margin: 40px 0;">
-                <a href="${process.env.VITE_SITE_URL || 'https://villaretiror.com'}/login?invite=true" style="background-color: #FF7F3F; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(255,127,63,0.2);">Aceptar Invitación y Acceder</a>
+                <a href="${inviteUrl}" style="background-color: #FF7F3F; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(255,127,63,0.2);">Aceptar Invitación y Acceder</a>
               </div>
               
               <p style="font-size: 12px; color: #999; text-align: center; font-style: italic;">

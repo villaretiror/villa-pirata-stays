@@ -203,12 +203,15 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
       return alert("Este email ya ha sido invitado a esta propiedad.");
     }
 
+    const token = crypto.randomUUID();
+
     const { data, error } = await supabase
       .from('property_cohosts')
       .insert({
         email: trimmedEmail,
         property_id: selectedPropertyForCoHost,
-        status: 'pending'
+        status: 'pending',
+        invitation_token: token
       })
       .select();
 
@@ -226,7 +229,8 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
             type: 'cohost_invitation',
             email: trimmedEmail,
             propertyName: prop?.title || 'Villa Retiro',
-            propertyId: selectedPropertyForCoHost
+            propertyId: selectedPropertyForCoHost,
+            token: token
           })
         });
       } catch (e) {
@@ -251,7 +255,8 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
           type: 'cohost_invitation',
           email: host.email,
           propertyName: prop?.title || 'Villa Retiro',
-          propertyId: host.property_id
+          propertyId: host.property_id,
+          token: host.invitation_token
         })
       });
       alert("Invitación reenviada a " + host.email + " ✨");

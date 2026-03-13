@@ -94,17 +94,22 @@ export const HealthMonitorService = {
         ];
 
         for (const report of allReports) {
-            const { error } = await supabase.from('system_health').upsert({
-                service_name: report.service_name,
-                status: report.status,
-                latency_ms: report.latency_ms,
-                error_details: report.error_details,
-                property_id: report.property_id,
-                metadata: report.metadata,
-                last_check: new Date().toISOString()
-            }, { onConflict: 'service_name' });
+            try {
+                const { error } = await supabase.from('system_health').upsert({
+                    service_name: report.service_name,
+                    status: report.status,
+                    latency_ms: report.latency_ms,
+                    error_details: report.error_details,
+                    property_id: report.property_id,
+                    metadata: report.metadata,
+                    last_check: new Date().toISOString()
+                }, { onConflict: 'service_name' });
 
-            if (error) console.error(`[HealthMonitor] Error upserting ${report.service_name}:`, error.message);
+                if (error) console.error(`[HealthMonitor] Error upserting ${report.service_name}:`, error.message);
+            } catch (e: any) {
+                console.error(`[HealthMonitor] Critical exception upserting ${report.service_name}:`, e.message);
+                // Fail silently, don't crash the main thread
+            }
 
             // 🚨 TELEGRAM CRITICAL ALERT: Notifica al Host si un canal clave falla
             if (report.status === 'error') {

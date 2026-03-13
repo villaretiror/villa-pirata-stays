@@ -522,10 +522,13 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
       return;
     }
 
+    const token = crypto.randomUUID();
+
     const { error } = await supabase.from('property_cohosts').insert({
       property_id: propertyId,
       email: trimmedEmail,
-      status: 'pending'
+      status: 'pending',
+      invitation_token: token
     });
 
     if (!error) {
@@ -538,7 +541,8 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             type: 'cohost_invitation',
             email: trimmedEmail,
             propertyName: propertyName,
-            propertyId: propertyId
+            propertyId: propertyId,
+            token: token
           })
         });
       } catch (e) {
@@ -561,16 +565,17 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     }
   };
 
-  const handleResendInvitation = async (email: string) => {
+  const handleResendInvitation = async (ch: any) => {
     try {
       await fetch('/api/send', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'cohost_invitation',
-          email: email,
+          email: ch.email,
           propertyName: propertyName,
-          propertyId: propertyId
+          propertyId: propertyId,
+          token: ch.invitation_token
         })
       });
       onShowToast("Invitación reenviada ✨");
@@ -669,7 +674,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
                     {ch.status === 'active' ? 'Activo' : 'Pendiente'}
                   </span>
                   {ch.status === 'pending' && (
-                    <button onClick={() => handleResendInvitation(ch.email)} className="text-[10px] font-bold text-gray-500 hover:text-black flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-colors">
+                    <button onClick={() => handleResendInvitation(ch)} className="text-[10px] font-bold text-gray-500 hover:text-black flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-colors">
                       <span className="material-icons text-[10px]">refresh</span> Reenviar
                     </button>
                   )}
