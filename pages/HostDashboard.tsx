@@ -561,6 +561,25 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     }
   };
 
+  const handleResendInvitation = async (email: string) => {
+    try {
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'cohost_invitation',
+          email: email,
+          propertyName: propertyName,
+          propertyId: propertyId
+        })
+      });
+      onShowToast("Invitación reenviada ✨");
+    } catch (e) {
+      console.error("Resend sync error:", e);
+      onShowToast("Error al reenviar la invitación.");
+    }
+  };
+
   const handleToggleTask = async (taskId: string, currentStatus: boolean) => {
     const { error } = await supabase.from('operation_tasks').update({
       is_completed: !currentStatus,
@@ -645,9 +664,16 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-soft">
               <div>
                 <p className="text-sm font-bold text-text-main">{ch.email}</p>
-                <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                  {ch.status === 'active' ? 'Activo' : 'Pendiente'}
-                </span>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                    {ch.status === 'active' ? 'Activo' : 'Pendiente'}
+                  </span>
+                  {ch.status === 'pending' && (
+                    <button onClick={() => handleResendInvitation(ch.email)} className="text-[10px] font-bold text-gray-500 hover:text-black flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-colors">
+                      <span className="material-icons text-[10px]">refresh</span> Reenviar
+                    </button>
+                  )}
+                </div>
               </div>
               <button onClick={() => handleRemoveCohost(ch.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
                 <span className="material-icons text-sm">delete</span>

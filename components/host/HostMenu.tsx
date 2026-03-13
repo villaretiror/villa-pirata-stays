@@ -241,6 +241,26 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     }
   };
 
+  const resendInvitation = async (host: any) => {
+    try {
+      const prop = properties.find(p => p.id === host.property_id);
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'cohost_invitation',
+          email: host.email,
+          propertyName: prop?.title || 'Villa Retiro',
+          propertyId: host.property_id
+        })
+      });
+      alert("Invitación reenviada a " + host.email + " ✨");
+    } catch (e) {
+      console.error("Resend Trigger Error:", e);
+      alert("Error al reenviar la invitación.");
+    }
+  };
+
   const toggleTask = async (id: number, currentStatus: boolean) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, done: !currentStatus } : t));
     await supabase.from('tasks').update({ done: !currentStatus }).eq('id', id);
@@ -381,9 +401,16 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
                     <p className="text-[9px] text-text-light font-bold truncate opacity-60 italic">{host.email}</p>
                   </div>
                 </div>
-                <span className={`text-[10px] font-black px-3 py-1 rounded-full border ${host.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
-                  {host.status === 'active' ? 'ACTIVO' : 'PENDIENTE'}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className={`text-[10px] font-black px-3 py-1 rounded-full border ${host.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
+                    {host.status === 'active' ? 'ACTIVO' : 'PENDIENTE'}
+                  </span>
+                  {host.status === 'pending' && (
+                    <button onClick={() => resendInvitation(host)} className="p-1 px-2 text-[9px] font-bold bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-full transition-colors flex items-center gap-1">
+                      <span className="material-icons text-[10px]">send</span> Re-enviar
+                    </button>
+                  )}
+                </div>
               </div>
             ))}
           {!loadingCoHosts && coHosts.length === 0 && <p className="text-center py-4 text-[10px] text-gray-400 uppercase font-black tracking-widest opacity-40">Sin equipo asignado</p>}

@@ -1,6 +1,6 @@
-import { supabase } from './lib/supabase';
-import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils';
-import { PromoCode, SeasonalPrice, Booking } from './types';
+import { supabase } from './lib/supabase.js';
+import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
+import { PromoCode, SeasonalPrice, Booking } from './types.js';
 
 /**
  * 👑 AI SERVICES LAYER - THE EXECUTIVE BRAIN
