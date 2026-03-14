@@ -19,6 +19,7 @@ import Navbar from './components/Navbar';
 import StayDashboard from './pages/StayDashboard';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import SaltyToast from './components/SaltyToast';
+import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
 import { supabase } from './lib/supabase';
@@ -109,6 +110,7 @@ const App: React.FC = () => {
 
       {showWhatsApp && <FloatingWhatsApp propertyTitle={propertyTitle} />}
       {showWhatsApp && <SaltyToast propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
+      <Footer />
       {showNavbar && <Navbar />}
     </div>
   );

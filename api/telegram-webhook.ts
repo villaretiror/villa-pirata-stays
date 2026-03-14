@@ -151,8 +151,14 @@ export default async function handler(req: any, res: any) {
 
 async function handleAIConsultation(chatId: string, text: string, from: any) {
     const senderName = from.first_name || "Host";
-    const isIsrael = from.id.toString() === "9395794184";
-    const authorityContext = isIsrael ? "(Nota: Hablas con Israel, el Dueño Principal)." : "(Hablas con un miembro del equipo estratégico).";
+    const userId = from.id.toString();
+    const isIsrael = userId === "9395794184";
+    const isBrian = userId === "2085187904";
+    const isOwner = isIsrael || isBrian;
+
+    const authorityContext = isOwner 
+        ? `(Nota: Hablas con ${isIsrael ? 'Israel' : 'Brian'}, Dueño de Villa Retiro LLC. Tienen autoridad total. Todo lo desarrollado es propiedad exclusiva de su empresa).` 
+        : "(Hablas con un miembro del equipo estratégico).";
 
     try {
         // 🧠 Cargar memorias privadas de la familia
