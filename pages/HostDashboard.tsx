@@ -974,6 +974,10 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
     let gatheredEvents: string[] = [];
 
     try {
+      // 1. Force Backend to Sync to DB instantly (bypasses node limits)
+      try { await fetch('/api/calendar/import', { method: 'POST' }); } catch (err) { console.warn('Silently failed backend sync') }
+
+      // 2. Refresh UI directly via client for instant feedback
       for (const sync of syncItems) {
         console.log(`Syncing ${sync.platform} from: ${sync.url}`);
         const icalData = await fetchICalData(sync.url);
@@ -1171,9 +1175,17 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
             <p className="text-[10px] text-gray-400 mb-2">Copia este enlace para Airbnb, Booking, etc.</p>
             <div className="flex gap-2 bg-gray-100 p-2 rounded-lg">
               <code className="text-[10px] text-gray-600 truncate flex-1 font-mono">
-                https://api.villaretiro.com/ical/{form.id}.ics
+                https://www.villaretiror.com/api/calendar/export?id={form.id}
               </code>
-              <button className="text-primary text-[10px] font-bold uppercase hover:underline">Copiar</button>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(`https://www.villaretiror.com/api/calendar/export?id=${form.id}`);
+                  alert("Enlace copiado al portapapeles ✅");
+                }}
+                className="text-primary text-[10px] font-bold uppercase hover:underline"
+              >
+                Copiar
+              </button>
             </div>
           </div>
         </div>

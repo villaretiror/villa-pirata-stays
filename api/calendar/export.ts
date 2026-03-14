@@ -2,7 +2,7 @@ import ical from 'ical-generator';
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'GET') {
@@ -15,7 +15,7 @@ export default async function handler(req: any, res: any) {
         return res.status(400).json({ error: 'Villa ID is required' });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     try {
         const { data: bookings, error } = await supabase
@@ -37,7 +37,6 @@ export default async function handler(req: any, res: any) {
             // Formatear fechas para iCal
             const start = new Date(booking.check_in);
             const end = new Date(booking.check_out);
-            end.setDate(end.getDate() + 1); // El check-out day is typically exclusive in iCal (all day event)
 
             calendar.createEvent({
                 start: start,

@@ -9,7 +9,7 @@
     },
     "crons": [
         {
-            "path": "/api/sync-ical",
+            "path": "/api/calendar/import",
             "schedule": "0 9 * * *"
         },
         {

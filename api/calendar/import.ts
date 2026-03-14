@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
 // URLs reales de Airbnb con fallback embebido
 const ICAL_URLS: Record<string, string> = {
@@ -21,11 +21,11 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: 'Method not allowed', status: 405 });
     }
 
-    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
         return res.status(500).json({ error: 'Missing Supabase credentials', status: 500 });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     let totalImported = 0;
     const results: Record<string, any> = {};
 
@@ -36,9 +36,14 @@ export default async function handler(req: any, res: any) {
             const controller = new AbortController();
             const timeout = setTimeout(() => controller.abort(), 5000);
 
-            const response = await fetch(url, {
+            const tsUrl = url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+            const response = await fetch(tsUrl, {
                 signal: controller.signal,
-                headers: { 'User-Agent': 'VillaRetiro-Calendar-Sync/1.0' }
+                headers: {
+                    'User-Agent': 'VillaRetiro-Calendar-Sync/1.0',
+                    'Cache-Control': 'no-cache, no-store, must-revalidate',
+                    'Pragma': 'no-cache'
+                }
             });
             clearTimeout(timeout);
 
