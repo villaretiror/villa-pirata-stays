@@ -2,12 +2,20 @@ import { createClient } from '@supabase/supabase-js';
 import { generateOnboardingDraft } from '../aiServices.js';
 import { NotificationService } from '../services/NotificationService.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+// 🛡️ Safe Environment Access (Resilient Protocol)
+const getEnv = (key: string): string => {
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env[key] || process.env[`VITE_${key}`] || '';
+    }
+    return '';
+};
+
+const SUPABASE_URL = getEnv('SUPABASE_URL');
+const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY');
 
 const ICAL_URLS: Record<string, string> = {
-    '42839458': process.env.AIRBNB_ICAL_VILLA_1 || 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331',
-    '1081171030449673920': process.env.AIRBNB_ICAL_VILLA_2 || 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae'
+    '42839458': getEnv('AIRBNB_ICAL_VILLA_1') || 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331',
+    '1081171030449673920': getEnv('AIRBNB_ICAL_VILLA_2') || 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae'
 };
 
 function parseIcsDate(raw: string): string {
@@ -21,12 +29,12 @@ function getPropertyName(id: string): string {
     return `Propiedad ${id}`;
 }
 
-export default async function handler(req: Request) {
+export default async function handler(req: any, res: any) {
     // 🛡️ Security Check: Bearer Token
-    const authHeader = req.headers.get('Authorization');
-    const secret = process.env.CRON_SECRET || "villaretiror_master_key_2026";
+    const authHeader = req.headers['authorization'];
+    const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
     if (!authHeader || authHeader !== `Bearer ${secret}`) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -54,9 +62,7 @@ export default async function handler(req: Request) {
         results.tasks.journey = await taskGuestJourney(supabase);
     }
 
-    return new Response(JSON.stringify(results), {
-        headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(200).json(results);
 }
 
 async function taskCleanupMocks(supabase: any) {

@@ -1,15 +1,23 @@
 import { createClient } from '@supabase/supabase-js';
 import { NotificationService } from '../services/NotificationService.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || "";
+// 🛡️ Safe Environment Access (Resilient Protocol)
+const getEnv = (key: string): string => {
+    if (typeof process !== 'undefined' && process.env) {
+        return process.env[key] || process.env[`VITE_${key}`] || '';
+    }
+    return '';
+};
 
-export default async function handler(req: Request) {
-    // 🛡️ Security Check
-    const authHeader = req.headers.get('Authorization');
-    const secret = process.env.CRON_SECRET || "villaretiror_master_key_2026";
+const SUPABASE_URL = getEnv('SUPABASE_URL');
+const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY');
+
+export default async function handler(req: any, res: any) {
+    // 🛡️ Security Check: Bearer Token
+    const authHeader = req.headers['authorization'];
+    const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
     if (!authHeader || authHeader !== `Bearer ${secret}`) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -75,11 +83,9 @@ export default async function handler(req: Request) {
             inline_keyboard: [[{ text: "🛰 Ver Dashboard Real-time", url: "https://villaretiror.com/host/dashboard" }]]
         });
 
-        return new Response(JSON.stringify({ success: true, timestamp: new Date().toISOString() }), {
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return res.status(200).json({ success: true, timestamp: new Date().toISOString() });
 
     } catch (error: any) {
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+        return res.status(500).json({ error: error.message });
     }
 }
