@@ -1,6 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
 import { NotificationService } from '../services/NotificationService.js';
 
+export const config = {
+    runtime: 'edge',
+};
+
 const supabase = createClient(
     process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || ""
@@ -21,6 +25,7 @@ export default async function handler(req: Request) {
                 id,
                 property_id,
                 check_in,
+                last_notification_sent,
                 profiles (full_name),
                 properties (title)
             `)
@@ -29,12 +34,6 @@ export default async function handler(req: Request) {
 
         if (errCheckIn) throw errCheckIn;
 
-        for (const booking of checkIns || []) {
-            const guestName = (booking.profiles as any)?.full_name || 'Huésped';
-            const propertyTitle = (booking.properties as any)?.title || 'Villa';
-            await NotificationService.notifyCheckInReminder(guestName, propertyTitle, '15:00 (Check-In)');
-        }
-
         // Find bookings checking out today
         const { data: checkOuts, error: errCheckOut } = await supabase
             .from('bookings')
@@ -42,6 +41,7 @@ export default async function handler(req: Request) {
                 id,
                 property_id,
                 check_out,
+                last_notification_sent,
                 profiles (full_name),
                 properties (title)
             `)
@@ -50,22 +50,65 @@ export default async function handler(req: Request) {
 
         if (errCheckOut) throw errCheckOut;
 
-        for (const booking of checkOuts || []) {
-            const guestName = (booking.profiles as any)?.full_name || 'Huésped';
-            const propertyTitle = (booking.properties as any)?.title || 'Villa';
-            await NotificationService.notifyCheckOutAlert(guestName, propertyTitle);
+        const allAlerts = [
+            ...(checkIns || []).map(b => ({ ...b, type: 'checkin' })),
+            ...(checkOuts || []).map(b => ({ ...b, type: 'checkout' }))
+        ];
+
+        let processedCount = 0;
+
+        for (let i = 0; i < allAlerts.length; i++) {
+            const booking = allAlerts[i];
+
+            try {
+                // Rate Limiter: Process sequentially, pause every 5 alerts to respect Telegram limits
+                if (i > 0 && i % 5 === 0) {
+                    await new Promise(resolve => setTimeout(resolve, 2000));
+                }
+
+                const lastSentDate = booking.last_notification_sent ? String(booking.last_notification_sent).split('T')[0] : null;
+                if (lastSentDate === today) continue; // Idempotency check
+
+                const guestName = (booking.profiles as { full_name?: string })?.full_name || 'Huésped';
+                const propertyTitle = (booking.properties as { title?: string })?.title || 'Villa';
+
+                let success = false;
+                if (booking.type === 'checkin') {
+                    success = await NotificationService.notifyCheckInReminder(guestName, propertyTitle, '15:00 (Check-In)');
+                } else {
+                    success = await NotificationService.notifyCheckOutAlert(guestName, propertyTitle);
+                }
+
+                if (success) {
+                    const { error: updateErr } = await supabase
+                        .from('bookings')
+                        .update({ last_notification_sent: new Date().toISOString() })
+                        .eq('id', booking.id);
+
+                    if (updateErr) {
+                        console.error(`[DB Update Error] Booking ID ${booking.id}: ${updateErr.message}`);
+                    } else {
+                        processedCount++;
+                    }
+                }
+            } catch (err) {
+                const msg = err instanceof Error ? err.message : String(err);
+                console.error(`[Alert Error] Booking ID ${booking.id}: ${msg}`);
+                // Silent failure for single item to allow batch to continue
+            }
         }
 
         return new Response(JSON.stringify({
             success: true,
-            checkInsProcessed: checkIns?.length || 0,
-            checkOutsProcessed: checkOuts?.length || 0
+            processedCount,
+            totalAlertsAnalyzed: allAlerts.length
         }), {
             headers: { 'Content-Type': 'application/json' }
         });
 
-    } catch (error: any) {
-        console.error('[Daily Alerts Cron Error]:', error.message);
-        return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    } catch (error: Error | unknown) {
+        const msg = error instanceof Error ? error.message : String(error);
+        console.error('[Daily Alerts Cron Error]:', msg);
+        return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 }

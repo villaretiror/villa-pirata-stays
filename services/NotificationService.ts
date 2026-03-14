@@ -38,8 +38,9 @@ export const NotificationService = {
             }
             console.log("[NotificationService] Alerta Telegram enviada con éxito.");
             return true;
-        } catch (error: any) {
-            console.error("[NotificationService] Error de Red/Fetch:", error.message);
+        } catch (error: Error | unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            console.error("[NotificationService] Error de Red/Fetch:", msg);
             return false;
         }
     },
@@ -72,8 +73,9 @@ export const NotificationService = {
                 return false;
             }
             return true;
-        } catch (error: any) {
-            console.error("[NotificationService] Error de Red/Fetch (Directo):", error.message);
+        } catch (error: Error | unknown) {
+            const msg = error instanceof Error ? error.message : String(error);
+            console.error("[NotificationService] Error de Red/Fetch (Directo):", msg);
             return false;
         }
     },
