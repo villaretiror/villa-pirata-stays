@@ -156,7 +156,7 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
         await NotificationService.sendDirectTelegramMessage(chatId, responseText);
     } catch (error: any) {
         console.error("[Telegram NLP] Error:", error.message);
-        await NotificationService.sendDirectTelegramMessage(chatId, "⚠️ <i>Salty está procesando mucha información ahora mismo. Reintenta en un momento, jefe.</i>");
+        await NotificationService.sendDirectTelegramMessage(chatId, `⚠️ <b>Error de IA:</b> ${error.message}\n<i>Reintenta en un momento, jefe.</i>`);
     }
 }
 
