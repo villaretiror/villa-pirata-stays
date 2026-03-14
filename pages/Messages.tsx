@@ -354,20 +354,20 @@ const Messages: React.FC = () => {
         <h1 className="text-3xl font-serif font-bold mb-8">Asistencia Premium</h1>
         <div
           onClick={() => setActiveChatId('ai-chat')}
-          className="bg-white p-5 rounded-[2rem] shadow-card border border-gray-100 flex gap-4 items-center cursor-pointer hover:shadow-lg active:scale-95 transition-all"
+          className="bg-white/80 backdrop-blur-md p-6 rounded-[2.5rem] shadow-soft border border-white/20 flex gap-5 items-center cursor-pointer hover:shadow-lg active:scale-95 transition-all group"
         >
           <div className="relative">
-            <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white">
-              <span className="material-icons">smart_toy</span>
+            <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-500">
+              <span className="material-icons text-2xl">hotel_class</span>
             </div>
-            <div className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
+            <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
           <div className="flex-1">
-            <div className="flex justify-between items-center mb-1">
-              <span className="font-bold text-text-main">Salty: Concierge 360</span>
-              <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full">En Vivo</span>
+            <div className="flex justify-between items-center mb-1.5">
+              <span className="font-serif font-black italic text-lg text-text-main tracking-tighter">Salty: Concierge 360</span>
+              <span className="text-[9px] font-bold text-white bg-primary px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">En Vivo</span>
             </div>
-            <p className="text-xs text-text-light truncate">¿Cómo puedo ayudarle a planear su visita?</p>
+            <p className="text-[11px] font-medium text-text-light truncate opacity-60">¿Cómo puedo ayudarle a planear su visita?</p>
           </div>
         </div>
       </div>
@@ -376,17 +376,21 @@ const Messages: React.FC = () => {
 
   return (
     <div className="fixed inset-0 bg-white z-[60] flex flex-col animate-slide-up">
-      <header className="px-4 py-4 border-b border-gray-50 flex items-center justify-between bg-white shadow-sm">
-        <div className="flex items-center gap-4">
-          <button onClick={() => setActiveChatId(null)} className="material-icons text-text-main hover:bg-gray-100 p-2 rounded-full -ml-2 transition-colors">arrow_back_ios_new</button>
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-md">
-              <span className="material-icons text-lg">hotel_class</span>
+      <header className="px-6 py-5 border-b border-gray-100/50 flex items-center justify-between bg-white/80 backdrop-blur-md sticky top-0 z-10 transition-all">
+        <div className="flex items-center gap-5">
+          <button onClick={() => setActiveChatId(null)} className="material-icons text-text-main hover:bg-gray-100 p-2.5 rounded-full -ml-3 transition-colors">arrow_back_ios_new</button>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-float relative">
+              <span className="material-icons text-xl">hotel_class</span>
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
             <div>
-              <p className="font-bold text-sm text-text-main">Salty - Tu Guía Caribeño</p>
-              <p className="text-[10px] text-green-500 font-bold uppercase tracking-wider flex items-center gap-1">
-                <span className="w-1.5 h-1.5 bg-green-500 rounded-full relative"><span className="absolute inset-0 bg-green-500 rounded-full animate-ping"></span></span>
+              <p className="font-serif font-black italic text-lg text-text-main tracking-tighter">Salty - Concierge</p>
+              <p className="text-[9px] text-green-600 font-bold uppercase tracking-[0.2em] flex items-center gap-1.5">
+                <span className="flex h-2 w-2 relative">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                </span>
                 En Línea
               </p>
             </div>
@@ -432,13 +436,21 @@ const Messages: React.FC = () => {
           };
 
           return (
-            <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end animate-slide-up' : 'justify-start animate-fade-in'}`}>
-              <div className={`max-w-[85%] p-4 text-[14px] leading-relaxed relative ${m.sender === 'guest' ? 'bg-primary text-white rounded-[20px] rounded-br-[4px] shadow-md shadow-primary/20' : 'bg-white text-text-main rounded-[20px] rounded-tl-[4px] shadow-sm border border-gray-100'}`}>
-                <div className={`flex items-center gap-1 mb-1 text-[10px] font-bold uppercase tracking-wider ${m.sender === 'guest' ? 'text-white/60' : 'text-primary/70'}`}>
-                  {m.sender === 'guest' ? 'Usted' : <><span className="material-icons text-[10px]">auto_awesome</span> Salty</>}
+            <div key={m.id} className={`flex ${m.sender === 'guest' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
+              <div className={`max-w-[85%] p-5 text-[14px] leading-relaxed relative transition-all duration-300 ${m.sender === 'guest'
+                ? 'bg-black text-white rounded-[24px] rounded-br-[4px] shadow-soft'
+                : 'bg-white/80 backdrop-blur-md text-text-main rounded-[24px] rounded-tl-[4px] shadow-soft-sm border border-white/20'
+                }`}>
+                <div className={`flex items-center gap-1.5 mb-2 text-[9px] font-bold uppercase tracking-[0.1em] ${m.sender === 'guest' ? 'text-white/40' : 'text-primary/70'}`}>
+                  {m.sender === 'guest' ? 'Usted' : (
+                    <span className="flex items-center gap-1.5">
+                      <span className="material-icons text-[12px]">auto_awesome</span>
+                      <span className="font-serif font-black italic tracking-tighter text-[11px]">Salty Concierge</span>
+                    </span>
+                  )}
                 </div>
 
-                <div>{formatMessageText(displayText, propertyId)}</div>
+                <div className="font-medium tracking-tight whitespace-pre-wrap">{formatMessageText(displayText, propertyId)}</div>
 
                 {/* Mostrar Botón de PayPal si hay Payment Request */}
                 {paymentData && m.sender === 'ai' && (

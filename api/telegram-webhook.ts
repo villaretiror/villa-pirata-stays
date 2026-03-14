@@ -163,12 +163,15 @@ async function handleCallbackQuery(callbackQuery: any) {
         const bookingId = data.split('send_ob_')[1];
 
         // 1. Extraer el borrador del texto del mensaje
-        // Asumimos que el mensaje en Telegram tiene el formato: "... \n---\n[BORRADOR]"
-        const parts = text.split('---');
-        const draftContent = parts.length > 1 ? parts[1].trim() : text;
+        const separator = '───────────────────────';
+        const parts = text.split(separator);
+        let draftContent = parts.length > 2 ? parts[2].replace('PREVISUALIZACIÓN DEL MENSAJE:', '').trim() : text;
 
-        // Extraer email del texto si es posible, o usar la DB
-        const emailMatch = text.match(/Email:\s*([^\s]+)/);
+        // Limpiar comillas iniciales/finales si Salty las puso en la previsualización
+        draftContent = draftContent.replace(/^"(.*)"$/, '$1').trim();
+
+        // Extraer email del texto si es posible (ignorando tags HTML de Telegram como <code>)
+        const emailMatch = text.match(/Email:\s*(?:<code>)?([^\s<]+)(?:<\/code>)?/);
         let guestEmail = emailMatch ? emailMatch[1] : null;
 
         if (!guestEmail) {
@@ -192,10 +195,12 @@ async function handleCallbackQuery(callbackQuery: any) {
                     bcc: 'villaretiror@gmail.com',
                     subject: text.includes('Día Medio') ? '🌴 ¿Todo bien en el paraíso?' : '🌅 Instrucciones Importantes para tu Salida',
                     html: `
-                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #4A4A4A; line-height: 1.6;">
-                            <p>${draftContent.replace(/\\n/g, '<br/>')}</p>
-                            <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #999; text-align: center;">
-                                <p>Villa & Pirata Stays - Cabo Rojo, Puerto Rico</p>
+                        <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; padding: 20px;">
+                            <div style="background-color: #f9f9f9; padding: 30px; border-radius: 12px; border: 1px solid #eee;">
+                                <p style="font-size: 16px; white-space: pre-wrap;">${draftContent}</p>
+                            </div>
+                            <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #aaa; text-align: center; letter-spacing: 1px; text-transform: uppercase;">
+                                <p>© Villa & Pirata Stays - Cabo Rojo, Puerto Rico</p>
                             </div>
                         </div>
                     `
@@ -208,7 +213,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                     body: JSON.stringify({
                         chat_id: chatId,
                         message_id: messageId,
-                        text: text + "\n\n✅ <b>¡Enviado exitosamente a ${guestEmail}!</b>",
+                        text: text + `\n\n✅ <b>¡Enviado! El correo ya está en la bandeja de entrada de ${guestEmail}.</b>`,
                         parse_mode: 'HTML',
                         reply_markup: { inline_keyboard: [] } // Quita el teclado
                     })

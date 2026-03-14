@@ -17,6 +17,44 @@ import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   AreaChart, Area
 } from 'recharts';
+import {
+  Zap,
+  BarChart3,
+  CreditCard,
+  Home,
+  Users,
+  Star,
+  Map,
+  MessageCircle,
+  Menu,
+  CheckCircle2,
+  Calendar,
+  Key,
+  Wallet,
+  TrendingUp,
+  Sparkles,
+  ChevronRight,
+  Info,
+  Clock,
+  Send,
+  LayoutDashboard,
+  User as UserIcon,
+  AlertTriangle,
+  Bell,
+  Check,
+  Trash2,
+  Download,
+  Plus,
+  Tag,
+  CheckCheck,
+  DollarSign,
+  GripHorizontal,
+  RefreshCcw,
+  UserX,
+  ClipboardCheck,
+  ListPlus
+} from 'lucide-react';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 // --- CUSTOM TOAST ---
 let globalToastCallback: (msg: string) => void = () => { };
@@ -634,8 +672,8 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl text-center animate-scale-up relative overflow-hidden">
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
         <div className="relative z-10">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="material-icons text-4xl text-green-600">verified_user</span>
+          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-100 shadow-soft-sm">
+            <CheckCircle2 strokeWidth={1} className="w-10 h-10 text-green-600" />
           </div>
           <h3 className="text-2xl font-serif font-bold text-text-main mb-4">¡Propiedad en Estado Élite! 🌟</h3>
           <p className="text-sm font-medium text-text-light leading-relaxed mb-8">
@@ -659,8 +697,8 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-        <h3 className="font-bold text-base mb-1 flex items-center gap-2">
-          <span className="material-icons text-primary">groups</span>
+        <h3 className="font-serif font-black italic text-lg mb-1 flex items-center gap-2 tracking-tighter">
+          <Users strokeWidth={1.5} className="w-5 h-5 text-primary" />
           Gestión de Co-anfitriones
         </h3>
         <p className="text-xs text-text-light mb-4">Invita a otros usuarios a gestionar esta villa contigo. Podrán ver el calendario y las reservas en tiempo real.</p>
@@ -675,21 +713,21 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
                     {ch.status === 'active' ? 'Activo' : 'Pendiente'}
                   </span>
                   {ch.status === 'pending' && (
-                    <button onClick={() => handleResendInvitation(ch)} className="text-[10px] font-bold text-gray-500 hover:text-black flex items-center gap-1 bg-gray-100 px-2 py-0.5 rounded-full hover:bg-gray-200 transition-colors">
-                      <span className="material-icons text-[10px]">refresh</span> Reenviar
+                    <button onClick={() => handleResendInvitation(ch)} className="text-[9px] font-bold text-gray-400 hover:text-black flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 transition-all active:scale-95">
+                      <RefreshCcw strokeWidth={2} className="w-3 h-3" /> REENVIAR
                     </button>
                   )}
                 </div>
               </div>
-              <button onClick={() => handleRemoveCohost(ch.id)} className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
-                <span className="material-icons text-sm">delete</span>
+              <button onClick={() => handleRemoveCohost(ch.id)} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-red-100">
+                <Trash2 strokeWidth={1.5} className="w-4 h-4" />
               </button>
             </div>
           ))}
           {cohosts.length === 0 && !isLoading && (
-            <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/50">
-              <span className="material-icons text-gray-200 text-4xl mb-2">person_add_disabled</span>
-              <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest">Sin co-anfitriones registrados</p>
+            <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-[2rem] bg-gray-50/50">
+              <UserX strokeWidth={1} className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sin co-anfitriones registrados</p>
             </div>
           )}
           {isLoading && <div className="text-center py-6 animate-pulse text-[10px] font-bold text-gray-300 uppercase italic">Sincronizando...</div>}
@@ -722,15 +760,15 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
         {isAllCompleted && (
           <div className="absolute top-0 right-0 p-4 bg-green-500 text-white rounded-bl-2xl shadow-lg z-10 animate-fade-in">
-            <button onClick={() => setShowEliteView(true)} className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest">
-              <span className="material-icons text-sm">stars</span> Certificar
+            <button onClick={() => setShowEliteView(true)} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
+              <Sparkles strokeWidth={1.5} className="w-4 h-4 text-yellow-300" /> Certificar
             </button>
           </div>
         )}
 
-        <h3 className="font-bold text-base mb-1 flex items-center gap-2">
-          <span className="material-icons text-secondary">checklist</span>
-          Lista de Tareas (Checklist)
+        <h3 className="font-serif font-black italic text-lg mb-1 flex items-center gap-2 tracking-tighter">
+          <ClipboardCheck strokeWidth={1.5} className="w-5 h-5 text-secondary" />
+          Protocolo Operativo
         </h3>
         <div className="flex justify-between items-center mb-4">
           <p className="text-xs text-text-light">Asegura la calidad del servicio marcando las tareas operativas completadas.</p>
@@ -762,16 +800,16 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
               onClick={() => handleToggleTask(task.id, task.is_completed)}
               className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer ${task.is_completed ? 'bg-green-50/30 border-green-100 opacity-60' : 'bg-white border-gray-100 hover:border-primary/30'}`}
             >
-              <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${task.is_completed ? 'bg-green-500 border-green-500' : 'border-gray-200'}`}>
-                {task.is_completed && <span className="material-icons text-white text-[12px]">check</span>}
+              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${task.is_completed ? 'bg-black border-black shadow-lg animate-scale-up' : 'bg-white border-gray-200'}`}>
+                {task.is_completed && <Check strokeWidth={3} className="text-white w-3 h-3" />}
               </div>
               <span className={`text-sm font-medium ${task.is_completed ? 'line-through text-gray-400' : 'text-text-main'}`}>{task.description}</span>
             </div>
           ))}
           {tasks.length === 0 && !isTaskLoading && (
-            <div className="text-center py-8 opacity-20 italic">
-              <span className="material-icons text-3xl mb-1">playlist_add</span>
-              <p className="text-[10px] font-black uppercase">Sin tareas operativas</p>
+            <div className="text-center py-10 opacity-20 italic bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
+              <ListPlus strokeWidth={1} className="w-10 h-10 mx-auto mb-2 text-gray-400" />
+              <p className="text-[9px] font-bold uppercase tracking-widest">Protocolo impecable</p>
             </div>
           )}
         </div>
@@ -788,7 +826,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             onClick={handleAddTask}
             className="bg-black text-white px-4 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all"
           >
-            <span className="material-icons">add</span>
+            <Plus strokeWidth={2} className="w-5 h-5" />
           </button>
         </div>
       </div>
@@ -2004,35 +2042,37 @@ const WelcomeModal = ({ isOpen, onClose, message }: { isOpen: boolean, onClose: 
 
 const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { leads: any[], alerts: any[], pendingPayments: any[], onResolve: (type: 'lead' | 'alert' | 'payment', id: string) => void }) => {
   const allNotifications = [
-    ...leads.map(l => ({ ...l, type: 'lead', icon: 'person_add', color: 'text-blue-500', created_at: l.created_at || new Date().toISOString() })),
-    ...alerts.map(a => ({ ...a, type: 'alert', icon: 'warning', color: 'text-red-500', created_at: a.created_at || new Date().toISOString() })),
-    ...pendingPayments.map(p => ({ ...p, type: 'payment', icon: 'payments', color: 'text-orange-500', name: p.profiles?.full_name || 'Huésped', created_at: p.created_at || new Date().toISOString() }))
+    ...leads.map(l => ({ ...l, type: 'lead', icon: UserIcon, color: 'text-blue-500', created_at: l.created_at || new Date().toISOString() })),
+    ...alerts.map(a => ({ ...a, type: 'alert', icon: AlertTriangle, color: 'text-red-500', created_at: a.created_at || new Date().toISOString() })),
+    ...pendingPayments.map(p => ({ ...p, type: 'payment', icon: CreditCard, color: 'text-orange-500', name: p.profiles?.full_name || 'Huésped', created_at: p.created_at || new Date().toISOString() }))
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (allNotifications.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-soft overflow-hidden mb-6 animate-fade-in print:hidden">
-      <div className="px-6 py-4 bg-gray-50/50 border-b border-gray-100 flex justify-between items-center">
-        <h3 className="text-sm font-black uppercase tracking-widest text-text-main flex items-center gap-2">
-          <span className="material-icons text-primary">notifications_active</span>
+    <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-soft overflow-hidden mb-8 animate-fade-in print:hidden">
+      <div className="px-8 py-5 bg-gray-50/30 border-b border-gray-100 flex justify-between items-center">
+        <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-text-main flex items-center gap-3">
+          <Bell className="w-4 h-4 text-primary animate-pulse" />
           Centro de Alertas
         </h3>
-        <span className="bg-primary text-white text-[10px] font-black px-2 py-0.5 rounded-full">{allNotifications.length}</span>
+        <span className="bg-primary text-white text-[9px] font-bold px-3 py-1 rounded-full shadow-lg shadow-primary/20">{allNotifications.length}</span>
       </div>
-      <div className="divide-y divide-gray-50 max-h-64 overflow-y-auto no-scrollbar">
+      <div className="divide-y divide-gray-50 max-h-72 overflow-y-auto no-scrollbar">
         {allNotifications.map((n: any) => (
-          <div key={`${n.type}-${n.id}`} className="p-4 hover:bg-gray-50/30 transition-colors flex items-center justify-between group">
-            <div className="flex items-center gap-3">
-              <span className={`material-icons ${n.color} text-xl`}>{n.icon}</span>
+          <div key={`${n.type}-${n.id}`} className="p-5 hover:bg-gray-50/50 transition-all flex items-center justify-between group">
+            <div className="flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-full bg-sand/30 flex items-center justify-center ${n.color} border border-white shadow-sm`}>
+                <n.icon strokeWidth={1.5} className="w-5 h-5" />
+              </div>
               <div>
-                <p className="text-xs font-bold text-text-main line-clamp-1">{n.name || n.profiles?.full_name || 'Novedad'}</p>
-                <p className="text-[10px] text-text-light line-clamp-1">
+                <p className="text-sm font-bold text-text-main line-clamp-1">{n.name || n.profiles?.full_name || 'Novedad'}</p>
+                <p className="text-[9px] font-medium uppercase tracking-widest text-text-light mt-0.5">
                   {n.type === 'lead' && 'Nuevo Lead Interesado'}
                   {n.type === 'alert' && (
-                    <span className="flex items-center gap-1">
+                    <span className="flex items-center gap-2">
                       <span className="font-bold">[{n.severity || 1}/5]</span> {n.message}
-                      {n.severity >= 4 && <span className="bg-red-500 text-white text-[8px] px-1 rounded animate-pulse">CRÍTICO</span>}
+                      {n.severity >= 4 && <span className="bg-red-500 text-white text-[7px] px-1.5 py-0.5 rounded uppercase animate-pulse">Crítico</span>}
                     </span>
                   )}
                   {n.type === 'payment' && 'Validación de Pago Pendiente'}
@@ -2041,9 +2081,10 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
             </div>
             <button
               onClick={() => onResolve(n.type, n.id)}
-              className="p-2 opacity-0 group-hover:opacity-100 bg-gray-100 rounded-full hover:bg-black hover:text-white transition-all"
+              className="p-3 opacity-0 group-hover:opacity-100 bg-white border border-gray-100 rounded-full hover:bg-black hover:text-white transition-all shadow-soft active:scale-90"
+              title="Marcar como resuelto"
             >
-              <span className="material-icons text-sm">done</span>
+              <Check className="w-4 h-4" />
             </button>
           </div>
         ))}
@@ -2053,85 +2094,120 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
 };
 
 const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booking: any, onApprove: (id: string) => void, onReject: (id: string) => void, onClose: () => void }) => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkSize = () => setIsMobile(window.innerWidth < 768);
+    checkSize();
+    window.addEventListener('resize', checkSize);
+    return () => window.removeEventListener('resize', checkSize);
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[150] flex items-center justify-center p-4 animate-fade-in print:hidden">
-      <div className="bg-white w-full max-w-4xl rounded-[3rem] overflow-hidden shadow-2xl animate-scale-up flex flex-col md:flex-row h-[85vh]">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[150] flex items-end md:items-center justify-center md:p-4 animate-fade-in print:hidden overflow-hidden">
+      <motion.div
+        drag={isMobile ? "y" : false}
+        dragConstraints={{ top: 0, bottom: 0 }}
+        dragElastic={{ top: 0.05, bottom: 0.5 }}
+        onDragEnd={(_, info) => {
+          if (isMobile && info.offset.y > 100) onClose();
+        }}
+        initial={isMobile ? { y: "100%" } : { scale: 0.95, opacity: 0 }}
+        animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
+        exit={isMobile ? { y: "100%" } : { scale: 0.95, opacity: 0 }}
+        transition={{ type: "spring", damping: 25, stiffness: 200 }}
+        className="bg-white w-full max-w-4xl md:rounded-[3rem] rounded-t-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[92vh] md:h-[85vh] relative"
+      >
+        {isMobile && (
+          <div className="absolute top-0 left-0 right-0 h-10 flex items-center justify-center z-50 bg-white/80 backdrop-blur-sm">
+            <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
+          </div>
+        )}
+
         {/* Recibo */}
-        <div className="md:w-1/2 bg-gray-100 relative group overflow-hidden">
+        <div className="md:w-1/2 w-full bg-gray-100 relative group overflow-hidden h-[35vh] md:h-full">
           <img
             src={booking.payment_proof_url || "https://placehold.co/600x800?text=Sin+Comprobante"}
             alt="Recibo"
-            className="w-full h-full object-contain p-4 group-hover:scale-105 transition-transform"
+            className="w-full h-full object-contain md:p-4 p-2 group-hover:scale-105 transition-transform duration-700"
           />
-          <div className="absolute top-4 left-4 bg-orange-600 text-white text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-lg">
-            Comprobante ATH Móvil
+          <div className="absolute top-6 left-6 bg-orange-600 text-white text-[9px] font-bold px-4 py-2 rounded-full uppercase tracking-widest shadow-xl flex items-center gap-2 z-10">
+            <CreditCard className="w-4 h-4" />
+            ATH Móvil
           </div>
         </div>
 
         {/* Datos */}
-        <div className="md:w-1/2 p-10 flex flex-col justify-between">
-          <div>
-            <div className="flex justify-between items-start mb-8">
+        <div className="md:w-1/2 w-full p-8 md:p-12 flex flex-col justify-between overflow-y-auto no-scrollbar">
+          <div className="pt-2 md:pt-0">
+            <div className="flex justify-between items-start mb-8 md:mb-10">
               <div>
-                <h3 className="text-3xl font-serif font-black italic text-text-main">Validación Rápida</h3>
-                <p className="text-[11px] font-black uppercase tracking-[0.2em] text-text-light mt-1">Reserva #{booking.id.slice(0, 8)}</p>
+                <h3 className="text-2xl md:text-3xl font-serif font-black italic text-text-main tracking-tighter">Validación Rápida</h3>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-light mt-1 md:mt-2">Reserva #{booking.id.slice(0, 8)}</p>
               </div>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
-                <span className="material-icons">close</span>
+              <button onClick={onClose} className="p-3 bg-gray-50 hover:bg-black hover:text-white rounded-full transition-all active:scale-90 shadow-sm hidden md:block">
+                <Check className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-sand/30 p-4 rounded-2xl border border-gray-100">
-                  <p className="text-[9px] font-black uppercase text-text-light mb-1">Huésped</p>
-                  <p className="text-sm font-bold text-text-main">{booking.profiles?.full_name}</p>
+            <div className="space-y-6 md:space-y-8">
+              <div className="grid grid-cols-2 gap-4 md:gap-6">
+                <div className="bg-gray-50/50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-soft-sm">
+                  <p className="text-[8px] md:text-[9px] font-bold uppercase text-gray-400 mb-2 tracking-widest flex items-center gap-2">
+                    <UserIcon className="w-3 h-3" /> Huésped
+                  </p>
+                  <p className="text-xs md:text-sm font-bold text-text-main truncate">{booking.profiles?.full_name}</p>
                 </div>
-                <div className="bg-sand/30 p-4 rounded-2xl border border-gray-100">
-                  <p className="text-[9px] font-black uppercase text-text-light mb-1">Monto Total</p>
-                  <p className="text-sm font-black text-secondary">${booking.total_price}</p>
+                <div className="bg-gray-50/50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-soft-sm">
+                  <p className="text-[8px] md:text-[9px] font-bold uppercase text-gray-400 mb-2 tracking-widest flex items-center gap-2">
+                    <DollarSign className="w-3 h-3" /> Pago
+                  </p>
+                  <p className="text-lg md:text-xl font-serif font-black italic text-secondary tracking-tighter">${booking.total_price}</p>
                 </div>
               </div>
 
-              <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-gray-50 p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-gray-100 flex items-center gap-4 md:gap-6 group">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-[1.2rem] md:rounded-[1.5rem] overflow-hidden shadow-soft group-hover:scale-105 transition-transform duration-500 shrink-0">
                   <img src={booking.properties?.images?.[0]} className="w-full h-full object-cover" />
                 </div>
-                <div>
-                  <p className="text-[9px] font-black uppercase text-text-light">Propiedad</p>
-                  <p className="text-sm font-bold text-text-main">{booking.properties?.title}</p>
+                <div className="min-w-0">
+                  <p className="text-[8px] md:text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1 flex items-center gap-2">
+                    <Home className="w-3 h-3" /> Propiedad
+                  </p>
+                  <p className="text-xs md:text-sm font-bold text-text-main group-hover:text-primary transition-colors truncate">{booking.properties?.title}</p>
                 </div>
               </div>
 
-              <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="material-icons text-blue-600 text-sm">info</span>
-                  <p className="text-[9px] font-black uppercase text-blue-800">Instrucciones de Validación</p>
+              <div className="bg-blue-50/50 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-blue-100 flex items-start gap-4 md:gap-5">
+                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-500 shrink-0 border border-blue-50">
+                  <Info className="w-5 h-5" />
                 </div>
-                <p className="text-[10px] text-blue-700 leading-relaxed">
-                  Verifica que el nombre en el recibo y el monto coincidan con la reserva antes de confirmar.
-                  Al confirmar, se enviará automáticamente el email de bienvenida y acceso.
-                </p>
+                <div>
+                  <h4 className="text-[9px] font-bold uppercase text-blue-900 tracking-widest mb-1">Tips de Seguridad</h4>
+                  <p className="text-[10px] text-blue-700/80 font-medium leading-relaxed">
+                    Valida que el nombre y monto coincidan. Al confirmar, se liberarán las fechas automáticamente.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4 mt-10">
+          <div className="flex gap-4 mt-8 md:mt-12 pb-6 md:pb-0">
             <button
               onClick={() => onReject(booking.id)}
-              className="flex-1 border-2 border-red-500 text-red-500 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-red-50 transition-all active:scale-95"
+              className="flex-1 border border-red-200 text-red-500 py-4 md:py-5 rounded-[1.5rem] md:rounded-[2rem] font-bold text-[10px] md:text-[11px] uppercase tracking-[0.2em] hover:bg-red-50 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              Rechazar Pago
+              <Trash2 className="w-4 h-4" /> Rechazar
             </button>
             <button
               onClick={() => onApprove(booking.id)}
-              className="flex-2 bg-black text-white py-4 px-10 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-900 transition-all shadow-xl active:scale-95"
+              className="flex-[2] bg-black text-white py-4 md:py-5 rounded-[1.5rem] md:rounded-[2rem] font-bold text-[10px] md:text-[11px] uppercase tracking-[0.3em] hover:bg-gray-800 shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
             >
-              Confirmar y Notificar
+              <CheckCircle2 className="w-4 h-4 text-green-400" /> APROBAR PAGO
             </button>
           </div>
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 };
@@ -2644,46 +2720,76 @@ const HostDashboard: React.FC = () => {
 
   // --- RENDERERS ---
 
+  const containerVariants: any = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 20 },
+    show: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 300,
+        damping: 24
+      }
+    }
+  };
+
   const renderToday = () => (
-    <div className="space-y-6 animate-slide-up">
-      <div className="flex justify-between items-center mb-2">
-        <h2 className="text-2xl font-serif font-bold text-text-main">Gestión del Día</h2>
-        <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-          <span className="material-icons text-[12px]">check_circle</span>
-          Villas Listas para Check-in
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="space-y-8 pb-32"
+    >
+      <motion.div variants={itemVariants} className="flex justify-between items-center mb-2 px-2">
+        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Gestión del Día</h2>
+        <div className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 border border-green-100 shadow-sm">
+          <CheckCircle2 strokeWidth={2.5} className="w-3.5 h-3.5" />
+          Villas Listas
         </div>
-      </div>
+      </motion.div>
 
-      <NotificationInbox
-        leads={leads.filter((l: any) => l.status === 'new')}
-        alerts={urgentAlerts.filter((a: any) => a.status === 'new')}
-        pendingPayments={pendingPayments}
-        onResolve={handleResolveNotification}
-      />
+      <motion.div variants={itemVariants}>
+        <NotificationInbox
+          leads={leads.filter((l: any) => l.status === 'new')}
+          alerts={urgentAlerts.filter((a: any) => a.status === 'new')}
+          pendingPayments={pendingPayments}
+          onResolve={handleResolveNotification}
+        />
+      </motion.div>
 
-      {/* Task 1: Panel de Check-ins (Filtro Temporal) */}
-      <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-soft overflow-hidden relative animate-fade-in">
-        <div className="absolute top-0 right-0 p-6 opacity-[0.03] rotate-12">
-          <span className="material-icons text-7xl">key</span>
+      {/* Panel de Check-ins (Filtro Temporal) */}
+      <motion.div variants={itemVariants} className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft overflow-hidden relative">
+        <div className="absolute top-0 right-0 p-8 opacity-[0.05] rotate-12">
+          <Key strokeWidth={1} className="w-24 h-24 text-primary" />
         </div>
-        <div className="flex justify-between items-center mb-6">
-          <h3 className="text-base font-bold text-text-main flex items-center gap-2">
-            <span className="material-icons text-primary">schedule</span>
+        <div className="flex justify-between items-center mb-8 relative z-10">
+          <h3 className="text-lg font-medium text-text-main flex items-center gap-2.5">
+            <Calendar strokeWidth={1.5} className="w-5 h-5 text-primary" />
             Próximos Check-ins
           </h3>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {pendingPayments.filter(p => {
               const age = Date.now() - new Date(p.created_at).getTime();
-              return age > 3 * 60 * 60 * 1000; // Over 3 hours
+              return age > 3 * 60 * 60 * 1000;
             }).length > 0 && (
-                <span className="bg-red-50 text-red-600 text-[8px] font-black px-2 py-1 rounded-full uppercase animate-pulse">
+                <span className="bg-red-50 text-red-600 text-[9px] font-bold px-3 py-1.5 rounded-full uppercase tracking-tight border border-red-100 animate-pulse">
                   {pendingPayments.filter(p => {
                     const age = Date.now() - new Date(p.created_at).getTime();
                     return age > 3 * 60 * 60 * 1000;
-                  }).length} Reservas Expirando
+                  }).length} Expirando
                 </span>
               )}
-            <span className="bg-sand text-[9px] font-black text-text-light px-3 py-1 rounded-full uppercase tracking-tighter">Próximos 3 Días</span>
+            <span className="bg-sand/50 text-[10px] font-medium text-text-light px-4 py-1.5 rounded-full uppercase tracking-widest border border-gray-100 shadow-sm">Próximos 3 Días</span>
           </div>
         </div>
 
@@ -2696,23 +2802,23 @@ const HostDashboard: React.FC = () => {
                     {booking.profiles?.full_name?.charAt(0) || 'H'}
                   </div>
                   <div>
-                    <h4 className="text-sm font-bold text-text-main group-hover:text-primary transition-colors">{booking.profiles?.full_name || 'Huésped'}</h4>
-                    <p className="text-[10px] font-black uppercase text-text-light tracking-widest">{formatDateLong(booking.check_in)}</p>
+                    <h4 className="text-sm font-medium text-text-main group-hover:text-primary transition-colors">{booking.profiles?.full_name || 'Huésped'}</h4>
+                    <p className="text-[9px] font-medium uppercase text-text-light tracking-[0.2em] mt-0.5">{formatDateLong(booking.check_in)}</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-4">
                   <div className="text-right">
-                    <p className="text-[10px] font-black text-green-600 mb-0.5">${booking.total_price}</p>
-                    <span className="text-[8px] font-black uppercase px-2 py-0.5 rounded-full bg-green-100 text-green-700 border border-green-200">Confirmado</span>
+                    <p className="text-sm font-serif font-black italic text-green-600 mb-0.5 tracking-tight">${booking.total_price}</p>
+                    <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100">Confirmado</span>
                   </div>
                   {/* Send instructions button if within 24h or manual */}
                   <button
                     onClick={() => !booking.instructions_sent_at && handleSendAccessEmail(booking)}
                     disabled={!!booking.instructions_sent_at}
-                    className={`w-8 h-8 flex items-center justify-center rounded-full shadow-sm transition-all active:scale-95 ${booking.instructions_sent_at ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
+                    className={`w-10 h-10 flex items-center justify-center rounded-full shadow-sm transition-all active:scale-95 ${booking.instructions_sent_at ? 'bg-gray-50 text-gray-300' : 'bg-primary text-white hover:bg-primary-dark'}`}
                     title={booking.instructions_sent_at ? "Instrucciones ya enviadas" : "Enviar Instrucciones de Acceso via Email"}
                   >
-                    <span className="material-icons text-xs">{booking.instructions_sent_at ? 'done_all' : 'send_and_archive'}</span>
+                    {booking.instructions_sent_at ? <CheckCircle2 className="w-4 h-4" /> : <Send className="w-4 h-4" />}
                   </button>
                 </div>
               </div>
@@ -2724,36 +2830,56 @@ const HostDashboard: React.FC = () => {
             </div>
           )}
         </div>
-      </div>
-      <SavingsInsights bookings={realBookings} />
+      </motion.div>
+      <motion.div variants={itemVariants}>
+        <SavingsInsights bookings={realBookings} />
+      </motion.div>
 
       {/* Quick Summary Dashboard */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="bg-black p-5 rounded-[2rem] text-white shadow-soft relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <span className="material-icons text-6xl">account_balance</span>
+      <motion.div variants={itemVariants} className="grid grid-cols-2 gap-6">
+        <div className="bg-black p-8 rounded-[2.5rem] text-white shadow-soft relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-6 opacity-10 transition-transform group-hover:scale-110 duration-500">
+            <Wallet strokeWidth={1} className="w-20 h-20" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-white/60 mb-1 relative z-10">Ingresos del Mes</p>
-          <p className="text-2xl font-serif font-bold relative z-10">${monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-white/50 mb-2 relative z-10">Ingresos del Mes</p>
+          <div className="flex items-baseline gap-1 relative z-10">
+            <span className="text-sm font-medium opacity-50">$</span>
+            <p className="text-3xl font-serif font-black italic tracking-tighter">{monthlyRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+            <span className="text-sm font-medium opacity-50">.{(monthlyRevenue % 1).toFixed(2).substring(2)}</span>
+          </div>
         </div>
-        <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft">
-          <p className="text-[10px] font-black uppercase tracking-widest text-text-light mb-1">Ingresos Totales</p>
-          <p className="text-2xl font-serif font-bold text-text-main">${totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft group">
+          <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-light mb-2">Ingresos Totales</p>
+          <div className="flex items-baseline gap-1">
+            <span className="text-sm font-medium text-text-light">$</span>
+            <p className="text-3xl font-serif font-black italic tracking-tighter text-text-main group-hover:text-primary transition-colors">{totalRevenue.toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</p>
+            <span className="text-sm font-medium text-text-light">.{(totalRevenue % 1).toFixed(2).substring(2)}</span>
+          </div>
         </div>
-      </div>
+      </motion.div>
 
-      {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length > 0 && (
-        <div className="bg-orange-50 p-4 rounded-2xl border border-orange-200 flex items-center justify-between cursor-pointer" onClick={() => setShowSmartValidation(pendingPayments.filter((p: any) => p.payment_method === 'ath_movil')[0])}>
-          <div className="flex items-center gap-3">
-            <span className="material-icons text-orange-500 animate-pulse">notification_important</span>
-            <div>
-              <p className="text-xs font-bold text-orange-800">Tienes {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length} pago(s) ATH Móvil por confirmar</p>
-              <p className="text-[10px] text-orange-600 mt-0.5">Valida el recibo para liberar el calendario.</p>
+      {
+        pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length > 0 && (
+          <motion.div
+            variants={itemVariants}
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between cursor-pointer shadow-sm shadow-orange-100/50"
+            onClick={() => setShowSmartValidation(pendingPayments.filter((p: any) => p.payment_method === 'ath_movil')[0])}
+          >
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-orange-600 animate-pulse" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-orange-900 leading-tight">Tienes {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length} pago(s) ATH Móvil por confirmar</p>
+                <p className="text-[11px] font-medium text-orange-600/80 mt-0.5">Valida el recibo para liberar el calendario automático.</p>
+              </div>
             </div>
-          </div>
-          <span className="material-icons text-orange-400 text-sm">arrow_forward_ios</span>
-        </div>
-      )}
+            <ChevronRight className="w-5 h-5 text-orange-400" />
+          </motion.div>
+        )
+      }
 
       {/* Ingresos Históricos (Bar Chart) */}
       <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft">
@@ -2822,110 +2948,119 @@ const HostDashboard: React.FC = () => {
       </div>
 
       {/* Reservation Cards: Real Real-Time Data */}
-      {realBookings.length > 0 ? (
-        realBookings.map((booking: any) => (
-          <article key={booking.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 relative overflow-hidden mb-4">
-            <div className="flex justify-between items-start mb-6">
-              <div className="bg-primary/10 text-primary px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider">
-                Reserva {booking.status}
+      {
+        realBookings.length > 0 ? (
+          realBookings.map((booking: any) => (
+            <article key={booking.id} className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-gray-100 relative overflow-hidden mb-6 group">
+              <div className="flex justify-between items-center mb-8">
+                <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border border-primary/10">
+                  Reserva {booking.status}
+                </div>
+                <div className="flex items-center gap-2 text-text-light">
+                  <Clock className="w-3.5 h-3.5" />
+                  <span className="text-[10px] font-medium uppercase tracking-widest">In: {booking.check_in}</span>
+                </div>
               </div>
-              <span className="font-serif font-bold text-text-main">In: {booking.check_in}</span>
-            </div>
 
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-white shadow-float relative">
-                <img src={booking.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="Guest" className="w-full h-full object-cover" />
-                <div className="absolute -bottom-1 -right-1 bg-green-500 w-4 h-4 rounded-full border-2 border-white"></div>
+              <div className="flex items-center gap-5 mb-8">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-[6px] border-white shadow-float relative group-hover:scale-105 transition-transform duration-500">
+                  <img src={booking.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="Guest" className="w-full h-full object-cover" />
+                  <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-4 border-white"></div>
+                </div>
+                <div>
+                  <h3 className="text-2xl font-serif font-black italic tracking-tighter text-text-main leading-tight">{booking.profiles?.full_name || 'Huésped'}</h3>
+                  <div className="flex items-center gap-2 mt-2">
+                    <span className="text-lg font-serif font-black italic text-primary">${booking.total_price}</span>
+                    <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-light opacity-50">• {booking.status}</span>
+                  </div>
+                </div>
               </div>
-              <div>
-                <h3 className="text-xl font-serif font-bold text-text-main leading-tight">{booking.profiles?.full_name || 'Huésped'}</h3>
-                <p className="text-[10px] font-black uppercase tracking-widest text-text-light mt-1">
-                  ${booking.total_price} • {booking.status}
-                </p>
-              </div>
-            </div>
 
-            <div className="bg-gray-50/50 rounded-2xl p-4 flex items-center gap-4 border border-gray-100 mb-6">
-              <div className="w-12 h-12 bg-white p-1 rounded-xl shadow-sm overflow-hidden">
-                <img src={booking.properties?.images?.[0] || 'https://placehold.co/150'} className="w-full h-full object-cover rounded-lg" alt="Prop" />
+              <div className="bg-gray-50 rounded-2xl p-5 flex items-center justify-between border border-gray-100 mb-8">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 bg-white p-1 rounded-xl shadow-sm overflow-hidden">
+                    <img src={booking.properties?.images?.[0] || 'https://placehold.co/150'} className="w-full h-full object-cover rounded-lg" alt="Prop" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-sm text-text-main">{booking.properties?.title || 'Villa'}</h4>
+                    <p className="text-[10px] font-medium uppercase tracking-widest text-text-light mt-1">ID: {booking.id.slice(0, 8)}</p>
+                  </div>
+                </div>
+                <Home strokeWidth={1.5} className="w-5 h-5 text-primary/30" />
               </div>
-              <div>
-                <h4 className="font-bold text-sm text-text-main">{booking.properties?.title || 'Villa'}</h4>
-                <p className="text-[10px] font-black uppercase tracking-widest text-secondary">ID: {booking.id.slice(0, 8)}</p>
-              </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <button
+                  onClick={() => {
+                    const propertyName = booking.properties?.title || 'nuestra propiedad';
+                    const guestName = (booking.profiles?.full_name || 'Huésped').split(' ')[0];
+                    const msg = `¡Hola ${guestName}! 👋\n\nBienvenido a ${propertyName}. Estamos muy felices de recibirte en nuestro refugio tropical.\n\nPronto te enviaremos las instrucciones detalladas de llegada (código de acceso y ubicación exacta). Si necesitas ayuda con algo antes de tu llegada, no dudes en escribirnos.\n\n¡Disfruta tu estancia!\n\nVilla Retiro & Pirata Team.`;
+                    setWelcomeMessage(msg);
+                    setShowWelcomeModal(true);
+                  }}
+                  className="bg-black hover:bg-gray-900 text-white font-bold text-[10px] uppercase tracking-[0.2em] py-5 rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-xl active:scale-95"
+                >
+                  <Sparkles className="w-4 h-4" /> Bienvenida
+                </button>
+                <button
+                  onClick={() => setIsChatOpen(true)}
+                  className="bg-white border border-gray-100 text-text-main font-bold text-[10px] uppercase tracking-[0.2em] py-5 rounded-2xl flex items-center justify-center gap-2.5 transition-all hover:bg-gray-50 active:scale-95 shadow-sm"
+                >
+                  <MessageCircle className="w-4 h-4" /> Chat
+                </button>
+              </div>
+
+              <div className="mt-4 mb-6 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3">
+                <span className="material-icons text-blue-500 text-base">savings</span>
+                <div>
+                  <p className="text-[10px] text-blue-800 font-black uppercase tracking-wider">Ahorro Directo</p>
+                  <p className="text-[10px] text-blue-700 font-medium leading-tight mt-0.5">
+                    Al ser reserva directa, has ahorrado aprox. <span className="font-bold">${(booking.total_price * 0.15).toFixed(2)}</span> en comisiones de plataformas externas (15%).
+                  </p>
+                </div>
+              </div>
+
+              {booking.status === 'emergency_support' && (
+                <button
+                  onClick={async () => {
+                    const { error } = await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', booking.id);
+                    if (!error) {
+                      showToast("Emeriencia Resuelta ✨");
+                      fetchData();
+                    }
+                  }}
+                  className="w-full mb-3 bg-red-600 text-white font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-red-100 active:scale-95 transition-all"
+                >
+                  <span className="material-icons text-sm">check_circle</span> Resolver Emergencia
+                </button>
+              )}
+
               <button
                 onClick={() => {
-                  const propertyName = booking.properties?.title || 'nuestra propiedad';
-                  const guestName = (booking.profiles?.full_name || 'Huésped').split(' ')[0];
-                  const msg = `¡Hola ${guestName}! 👋\n\nBienvenido a ${propertyName}. Estamos muy felices de recibirte en nuestro refugio tropical.\n\nPronto te enviaremos las instrucciones detalladas de llegada (código de acceso y ubicación exacta). Si necesitas ayuda con algo antes de tu llegada, no dudes en escribirnos.\n\n¡Disfruta tu estancia!\n\nVilla Retiro & Pirata Team.`;
-                  setWelcomeMessage(msg);
-                  setShowWelcomeModal(true);
+                  const msg = getHostInstructionMessage({
+                    guestName: booking.profiles?.full_name || 'Huésped',
+                    propertyName: booking.properties?.title || 'Villa',
+                    accessCode: "C-" + booking.id.slice(-4),
+                    googleMapsLink: "https://maps.google.com/?q=Villa+Retiro+R"
+                  });
+                  const link = generateWhatsAppLink(booking.profiles?.phone || HOST_PHONE, msg);
+                  window.open(link, '_blank');
                 }}
-                className="bg-black hover:bg-gray-900 text-white font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                className="w-full bg-[#25D366] text-white font-black text-[11px] uppercase tracking-[0.2em] py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-95 transition-all"
               >
-                <span className="material-icons text-sm">waving_hand</span> Bienvenida
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-4 h-4 brightness-0 invert" alt="WA" />
+                Enviar Instrucciones
               </button>
-              <button
-                onClick={() => setIsChatOpen(true)}
-                className="bg-white border border-gray-200 text-text-main font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 transition-all hover:bg-gray-50 active:scale-95"
-              >
-                <span className="material-icons text-sm">chat</span> Chat
-              </button>
-            </div>
-
-            <div className="mt-4 mb-6 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3">
-              <span className="material-icons text-blue-500 text-base">savings</span>
-              <div>
-                <p className="text-[10px] text-blue-800 font-black uppercase tracking-wider">Ahorro Directo</p>
-                <p className="text-[10px] text-blue-700 font-medium leading-tight mt-0.5">
-                  Al ser reserva directa, has ahorrado aprox. <span className="font-bold">${(booking.total_price * 0.15).toFixed(2)}</span> en comisiones de plataformas externas (15%).
-                </p>
-              </div>
-            </div>
-
-            {booking.status === 'emergency_support' && (
-              <button
-                onClick={async () => {
-                  const { error } = await supabase.from('bookings').update({ status: 'confirmed' }).eq('id', booking.id);
-                  if (!error) {
-                    showToast("Emeriencia Resuelta ✨");
-                    fetchData();
-                  }
-                }}
-                className="w-full mb-3 bg-red-600 text-white font-black text-[11px] uppercase tracking-widest py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-red-100 active:scale-95 transition-all"
-              >
-                <span className="material-icons text-sm">check_circle</span> Resolver Emergencia
-              </button>
-            )}
-
-            <button
-              onClick={() => {
-                const msg = getHostInstructionMessage({
-                  guestName: booking.profiles?.full_name || 'Huésped',
-                  propertyName: booking.properties?.title || 'Villa',
-                  accessCode: "C-" + booking.id.slice(-4),
-                  googleMapsLink: "https://maps.google.com/?q=Villa+Retiro+R"
-                });
-                const link = generateWhatsAppLink(booking.profiles?.phone || HOST_PHONE, msg);
-                window.open(link, '_blank');
-              }}
-              className="w-full bg-[#25D366] text-white font-black text-[11px] uppercase tracking-[0.2em] py-4 rounded-2xl flex items-center justify-center gap-2 shadow-lg shadow-green-100 active:scale-95 transition-all"
-            >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" className="w-4 h-4 brightness-0 invert" alt="WA" />
-              Enviar Instrucciones
-            </button>
-          </article>
-        ))
-      ) : (
-        <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
-          <span className="material-icons text-4xl text-gray-200 mb-2">hotel</span>
-          <p className="text-xs font-bold text-gray-400">Sin check-ins para hoy</p>
-        </div>
-      )}
-    </div>
+            </article>
+          ))
+        ) : (
+          <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
+            <span className="material-icons text-4xl text-gray-200 mb-2">hotel</span>
+            <p className="text-xs font-bold text-gray-400">Sin check-ins para hoy</p>
+          </div>
+        )
+      }
+    </motion.div >
   );
 
   const renderLeads = () => (
@@ -3040,117 +3175,126 @@ const HostDashboard: React.FC = () => {
   );
 
   const renderListings = () => (
-    <div className="space-y-6 animate-slide-up">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-serif font-bold text-text-main">Tus Propiedades</h2>
-        <div className="flex gap-2">
+    <div className="space-y-8 animate-slide-up pb-12">
+      <div className="flex justify-between items-center mb-4 px-2">
+        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Tus Propiedades</h2>
+        <div className="flex gap-4">
           <button
             onClick={() => setShowImportModal(true)}
-            className="bg-white text-black border border-gray-200 rounded-full px-4 py-2 text-[10px] font-black uppercase tracking-widest shadow-soft hover:bg-gray-50 flex items-center gap-2"
+            className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95"
           >
-            <span className="material-icons text-sm text-[#FF385C]">download</span> Importar
+            <Download strokeWidth={2} className="w-3.5 h-3.5 text-[#FF385C]" /> Importar
           </button>
-          <button className="bg-black text-white rounded-full p-2 w-10 h-10 flex items-center justify-center shadow-lg active:scale-95 transition-all">
-            <span className="material-icons text-xl">add</span>
+          <button className="bg-black text-white rounded-full p-3 w-12 h-12 flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-primary">
+            <Plus strokeWidth={2} className="w-6 h-6" />
           </button>
         </div>
       </div>
 
-      {properties.map((p: Property) => {
-        const activeOffersCount = p.offers?.filter(isOfferActive).length || 0;
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {properties.map((p: Property) => {
+          const activeOffersCount = p.offers?.filter(isOfferActive).length || 0;
 
-        return (
-          <div key={p.id} className="bg-white rounded-[2rem] p-5 shadow-soft flex gap-5 border border-gray-100 group hover:border-black/10 transition-all">
-            <div className="w-28 h-28 rounded-2xl overflow-hidden flex-shrink-0 relative shadow-sm">
-              <img src={p.images?.[0] || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" alt="Listing" />
-              <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[9px] font-black px-2 py-1 rounded-lg backdrop-blur-sm uppercase">
-                ★ {p.rating || 'N/A'}
-              </div>
-            </div>
-            <div className="flex-1 flex flex-col justify-between py-1">
-              <div>
-                <h3 className="font-serif font-bold text-lg text-text-main leading-tight">{p.title}</h3>
-                <div className="flex items-center gap-2 mt-2">
-                  {activeOffersCount > 0 && (
-                    <span className="bg-black text-white text-[9px] font-black px-2 py-1 rounded-full flex items-center gap-1 uppercase tracking-widest">
-                      <span className="material-icons text-[10px]">local_offer</span> {activeOffersCount} Promo
-                    </span>
-                  )}
-                  <span className="text-[10px] font-black uppercase tracking-widest text-text-light">{p.location}</span>
+          return (
+            <div key={p.id} className="bg-white rounded-[2.5rem] p-6 shadow-soft flex gap-6 border border-gray-100 group hover:border-black/5 hover:translate-y-[-4px] transition-all duration-500">
+              <div className="w-32 h-32 rounded-[1.8rem] overflow-hidden flex-shrink-0 relative shadow-soft-sm group-hover:shadow-soft transition-all">
+                <img src={p.images?.[0] || 'https://placehold.co/400'} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt="Listing" />
+                <div className="absolute top-2 right-2 bg-white/90 text-black text-[8px] font-black px-2 py-1 rounded-lg backdrop-blur-md uppercase shadow-sm">
+                  ★ {p.rating || '5.0'}
                 </div>
               </div>
-              <div className="flex justify-between items-end">
-                <div className="text-lg font-serif font-bold text-text-main">${p.price}<span className="text-text-light text-[10px] font-black uppercase tracking-widest ml-1">/noche</span></div>
-                <button
-                  onClick={() => setIsEditing(p.id)}
-                  className="bg-gray-50 text-black font-black text-[10px] uppercase tracking-widest px-5 py-2.5 rounded-xl hover:bg-black hover:text-white transition-all shadow-sm"
-                >
-                  Gestionar
-                </button>
+              <div className="flex-1 flex flex-col justify-between py-1">
+                <div>
+                  <h3 className="font-serif font-black italic text-xl text-text-main leading-none tracking-tighter group-hover:text-primary transition-colors">{p.title}</h3>
+                  <div className="flex items-center gap-2 mt-3">
+                    {activeOffersCount > 0 && (
+                      <span className="bg-primary text-white text-[8px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 uppercase tracking-widest shadow-sm">
+                        <Tag strokeWidth={2} className="w-3 h-3" /> {activeOffersCount} Promo
+                      </span>
+                    )}
+                    <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-light opacity-60">{p.location}</span>
+                  </div>
+                </div>
+                <div className="flex justify-between items-end mt-4">
+                  <div className="flex items-baseline gap-0.5">
+                    <span className="text-xl font-serif font-black italic text-text-main tracking-tighter">${p.price}</span>
+                    <span className="text-text-light text-[8px] font-bold uppercase tracking-widest ml-1 opacity-40">/noche</span>
+                  </div>
+                  <button
+                    onClick={() => setIsEditing(p.id)}
+                    className="bg-gray-50 text-text-main font-bold text-[9px] uppercase tracking-[0.2em] px-6 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm active:scale-95"
+                  >
+                    Gestionar
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
-        )
-      })}
+          )
+        })}
+      </div>
     </div>
   );
   const renderPayments = () => (
-    <div className="space-y-6 animate-fade-in mb-10">
-      <div className="bg-orange-50 p-5 rounded-2xl border border-orange-100 flex items-center gap-4">
-        <div className="w-12 h-12 bg-orange-200 rounded-full flex items-center justify-center text-orange-600">
-          <span className="material-icons">payments</span>
+    <div className="space-y-6 animate-fade-in mb-10 pb-12">
+      <div className="bg-orange-50/50 p-8 rounded-[2.5rem] border border-orange-100 flex items-center gap-6 shadow-sm">
+        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-orange-600 shadow-soft-sm border border-orange-50">
+          <CreditCard strokeWidth={1.5} className="w-8 h-8" />
         </div>
         <div>
-          <h3 className="font-bold text-orange-900 text-sm">Conciliación de ATH Móvil</h3>
-          <p className="text-[10px] text-orange-700 leading-tight mt-1">Verifica los comprobantes subidos por tus huéspedes para confirmar sus estancias.</p>
+          <h3 className="font-serif font-black italic text-xl text-orange-900 tracking-tighter">Conciliación ATH Móvil</h3>
+          <p className="text-[10px] text-orange-700/70 font-medium uppercase tracking-widest mt-1">Valida los comprobantes para confirmar estancias.</p>
         </div>
       </div>
 
       {pendingPayments.length > 0 ? (
-        pendingPayments.map((payment: any) => (
-          <div key={payment.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100">
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-12 h-12 rounded-full overflow-hidden">
-                <img src={payment.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="User" className="w-full h-full object-cover" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {pendingPayments.map((payment: any) => (
+            <div key={payment.id} className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-gray-100 group hover:border-orange-100 transition-all">
+              <div className="flex items-center gap-4 mb-8">
+                <div className="w-14 h-14 rounded-full border-2 border-white shadow-soft overflow-hidden">
+                  <img src={payment.profiles?.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"} alt="User" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="font-bold text-sm text-text-main leading-tight">{payment.profiles?.full_name}</h4>
+                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-light mt-1.5 opacity-60">
+                    <span className="text-secondary font-black">${payment.total_price}</span> • {payment.properties?.title}
+                  </p>
+                </div>
+                <div className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border border-orange-100">Pendiente</div>
               </div>
-              <div className="flex-1">
-                <h4 className="font-bold text-sm text-text-main leading-tight">{payment.profiles?.full_name}</h4>
-                <p className="text-[10px] font-black uppercase tracking-widest text-text-light mt-0.5">${payment.total_price} • {payment.properties?.title}</p>
-              </div>
-              <div className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider">Pendiente</div>
-            </div>
 
-            <div className="mb-6">
-              <p className="text-[10px] font-black uppercase text-text-light tracking-widest mb-2">Comprobante Recibido:</p>
-              <div className="relative aspect-video rounded-2xl overflow-hidden border border-gray-100 bg-gray-50 group">
-                <img src={payment.payment_proof_url} alt="Proof" className="w-full h-full object-contain" />
-                <a
-                  href={payment.payment_proof_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              <div className="mb-8">
+                <p className="text-[9px] font-bold uppercase text-gray-400 tracking-[0.3em] mb-3 ml-1">Comprobante:</p>
+                <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden border border-gray-100 bg-gray-50 group/img shadow-inner">
+                  <img src={payment.payment_proof_url} alt="Proof" className="w-full h-full object-contain p-4 group-hover/img:scale-105 transition-transform duration-700" />
+                  <a
+                    href={payment.payment_proof_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all duration-300 backdrop-blur-sm"
+                  >
+                    <span className="text-white text-[9px] font-bold uppercase tracking-[0.2em] border border-white/20 px-6 py-3 rounded-full hover:bg-white hover:text-black transition-all">Ver Pantalla Completa</span>
+                  </a>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => handleRejectPayment(payment.id)}
+                  className="py-5 rounded-[1.8rem] border border-gray-100 text-red-500 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-red-50 transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
-                  <span className="text-white text-[10px] font-black uppercase tracking-widest border border-white/30 px-4 py-2 rounded-full backdrop-blur-sm">Ver Pantalla Completa</span>
-                </a>
+                  <Trash2 className="w-4 h-4" /> Rechazar
+                </button>
+                <button
+                  onClick={() => handleApprovePayment(payment.id)}
+                  className="py-5 rounded-[1.8rem] bg-black text-white font-bold text-[10px] uppercase tracking-[0.3em] hover:bg-gray-800 shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <CheckCircle2 className="w-4 h-4 text-green-400" /> Confirmar
+                </button>
               </div>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <button
-                onClick={() => handleRejectPayment(payment.id)}
-                className="py-4 rounded-2xl border border-gray-200 text-red-500 font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all"
-              >
-                Rechazar
-              </button>
-              <button
-                onClick={() => handleApprovePayment(payment.id)}
-                className="py-4 rounded-2xl bg-black text-white font-black text-[10px] uppercase tracking-widest hover:bg-gray-900 shadow-lg transition-all"
-              >
-                Confirmar Pago
-              </button>
-            </div>
-          </div>
-        ))
+          ))}
+        </div>
       ) : (
         <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
           <span className="material-icons text-4xl text-gray-200 mb-2">done_all</span>
@@ -3218,80 +3362,147 @@ const HostDashboard: React.FC = () => {
         <div className="flex justify-around items-center px-4 pb-2 min-w-max gap-8 sm:gap-0 sm:min-w-0 sm:w-full">
           <button
             onClick={() => setActiveTab('today')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'today' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'today' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">insights</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">Hoy</span>
+            {activeTab === 'today' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Zap strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'today' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Hoy</span>
           </button>
 
           <button
             onClick={() => setActiveTab('analytics')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'analytics' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'analytics' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">bar_chart</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">Estadísticas</span>
+            {activeTab === 'analytics' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <BarChart3 strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'analytics' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Estadísticas</span>
           </button>
 
           <button
             onClick={() => setActiveTab('payments')}
-            className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === 'payments' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'payments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <div className="relative">
-              <span className="material-icons text-xl">payments</span>
-              {pendingPayments.length > 0 && <span className="absolute -top-1 -right-1 bg-orange-500 text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-black animate-pulse">{pendingPayments.length}</span>}
+            {activeTab === 'payments' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <div className="relative z-10">
+              <CreditCard strokeWidth={1.5} className={`w-5 h-5 ${activeTab === 'payments' ? 'scale-110' : ''}`} />
+              {pendingPayments.length > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black animate-pulse">
+                  {pendingPayments.length}
+                </span>
+              )}
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest">Pagos</span>
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Pagos</span>
           </button>
 
           <button
             onClick={() => setActiveTab('listings')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'listings' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'listings' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">apartment</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">Villas</span>
+            {activeTab === 'listings' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Home strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'listings' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Villas</span>
           </button>
 
           <button
             onClick={() => setActiveTab('leads')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'leads' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'leads' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">contacts</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">CRM</span>
+            {activeTab === 'leads' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Users strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'leads' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">CRM</span>
           </button>
 
           <button
             onClick={() => setActiveTab('reviews')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'reviews' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'reviews' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">star_outline</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">Reseñas</span>
+            {activeTab === 'reviews' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Star strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'reviews' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Reseñas</span>
           </button>
 
           <button
             onClick={() => setActiveTab('guidebook')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'guidebook' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'guidebook' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">explore</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">Guía</span>
+            {activeTab === 'guidebook' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Map strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'guidebook' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Guía</span>
           </button>
 
           <button
             onClick={() => setActiveTab('messages')}
-            className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === 'messages' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'messages' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <div className="relative">
-              <span className="material-icons text-xl">chat_bubble_outline</span>
-              <span className="absolute -top-1 -right-1 bg-primary text-white text-[8px] font-black w-4 h-4 rounded-full flex items-center justify-center border-2 border-black">6</span>
+            {activeTab === 'messages' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <div className="relative z-10">
+              <MessageCircle strokeWidth={1.5} className={`w-5 h-5 ${activeTab === 'messages' ? 'scale-110' : ''}`} />
+              <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">6</span>
             </div>
-            <span className="text-[9px] font-black uppercase tracking-widest">Chats</span>
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Chats</span>
           </button>
 
           <button
             onClick={() => setActiveTab('menu')}
-            className={`flex flex-col items-center gap-1.5 transition-all ${activeTab === 'menu' ? 'text-white scale-110' : 'text-gray-500 hover:text-gray-300'}`}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'menu' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
-            <span className="material-icons text-xl">more_horiz</span>
-            <span className="text-[9px] font-black uppercase tracking-widest">Más</span>
+            {activeTab === 'menu' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Menu strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'menu' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Más</span>
           </button>
         </div>
       </nav>

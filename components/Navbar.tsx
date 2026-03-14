@@ -3,16 +3,17 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { AnimatePresence, motion } from 'framer-motion';
 import SmartImage from './SmartImage';
+import { Compass, Heart, MessageCircle, LayoutDashboard, User as UserIcon, Settings, Receipt, LogOut } from 'lucide-react';
 
 const menuItems = [
-  { label: 'Mi Perfil', icon: 'account_circle', path: '/profile' },
-  { label: 'Mis Estancias', icon: 'receipt_long', path: '/profile?tab=bookings' },
-  { label: 'Configuración', icon: 'settings', path: '/profile' },
+  { label: 'Mi Perfil', icon: UserIcon, path: '/profile' },
+  { label: 'Mis Estancias', icon: Receipt, path: '/profile?tab=bookings' },
+  { label: 'Configuración', icon: Settings, path: '/profile' },
 ];
 
 interface NavItemProps {
   path: string;
-  icon: string;
+  icon: React.ElementType;
   label: string;
   currentPath: string;
   forceActive?: boolean;
@@ -21,33 +22,39 @@ interface NavItemProps {
   userAvatar?: string;
 }
 
-const NavItem = ({ path, icon, label, currentPath, forceActive, onClick, isAvatar, userAvatar }: NavItemProps) => {
+const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, isAvatar, userAvatar }: NavItemProps) => {
   const isActive = forceActive || currentPath === path;
   return (
     <Link
       to={path}
       onClick={onClick}
-      className="group flex flex-col items-center justify-center gap-1 w-16 transition-all active:scale-95"
+      className="group relative flex flex-col items-center justify-center gap-1 w-16 transition-all active:scale-95"
     >
       <div className={`
-        relative flex items-center justify-center w-12 h-8 rounded-full transition-all duration-300
+        relative flex items-center justify-center w-12 h-8 rounded-full z-10 transition-all duration-300
         ${isActive && !isAvatar
-          ? 'bg-primary/10 text-primary scale-110'
-          : 'bg-transparent text-gray-400 group-hover:text-gray-600'
+          ? 'text-primary'
+          : 'text-gray-400 group-hover:text-gray-600'
         }
       `}>
+        {isActive && !isAvatar && (
+          <motion.div
+            layoutId="navPill"
+            className="absolute inset-0 bg-primary/10 rounded-full"
+            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+          />
+        )}
+
         {isAvatar ? (
           <div className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${isActive ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200'}`}>
             <SmartImage src={userAvatar || ''} className="w-full h-full object-cover" />
           </div>
         ) : (
-          <span className={`material-icons-round text-xl ${isActive ? 'text-primary' : 'text-current'}`}>
-            {icon}
-          </span>
+          <Icon strokeWidth={1.5} className="w-5 h-5 relative z-10" />
         )}
       </div>
       <span className={`
-        text-[10px] font-bold tracking-tight transition-colors duration-300 truncate w-full text-center px-1
+        text-[8px] font-medium uppercase tracking-[0.2em] transition-colors duration-300 truncate w-full text-center px-1
         ${isActive ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}
       `}>
         {label}
@@ -116,47 +123,50 @@ const Navbar: React.FC = () => {
                   }}
                   className="flex items-center gap-3 px-5 py-3.5 bg-primary/10 hover:bg-primary/20 rounded-[1.5rem] transition-all group mb-1 border border-primary/20"
                 >
-                  <span className="material-icons-round text-lg text-primary">dashboard_customize</span>
-                  <span className="text-xs font-black text-primary uppercase tracking-tighter">Panel de Host (Admin)</span>
+                  <LayoutDashboard strokeWidth={1.5} className="w-5 h-5 text-primary" />
+                  <span className="text-xs font-bold text-primary tracking-wide">Panel de Host (Admin)</span>
                 </Link>
               )}
 
-              {menuItems.map((item) => (
-                <Link
-                  key={item.label}
-                  to={item.path}
-                  onClick={() => setShowMenu(false)}
-                  className="flex items-center gap-3 px-5 py-3.5 hover:bg-black/5 rounded-[1.5rem] transition-all group"
-                >
-                  <span className="material-icons-round text-lg text-gray-400 group-hover:text-primary transition-colors">{item.icon}</span>
-                  <span className="text-xs font-bold text-text-main">{item.label}</span>
-                </Link>
-              ))}
+              {menuItems.map((item) => {
+                const ItemIcon = item.icon;
+                return (
+                  <Link
+                    key={item.label}
+                    to={item.path}
+                    onClick={() => setShowMenu(false)}
+                    className="flex items-center gap-3 px-5 py-3.5 hover:bg-black/5 rounded-[1.5rem] transition-all group"
+                  >
+                    <ItemIcon strokeWidth={1.5} className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
+                    <span className="text-xs font-medium text-text-main">{item.label}</span>
+                  </Link>
+                );
+              })}
 
               <div className="h-px bg-gray-100 my-2 mx-4 opacity-50"></div>
 
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-red-50 rounded-[1.5rem] transition-all text-red-400 group"
+                className="w-full flex items-center gap-3 px-5 py-3.5 hover:bg-red-50 rounded-[1.5rem] transition-all text-red-500 group"
               >
-                <span className="material-icons-round text-lg opacity-70 group-hover:opacity-100 transition-opacity">logout</span>
-                <span className="text-xs font-bold">Cerrar Sesión Segura</span>
+                <LogOut strokeWidth={1.5} className="w-5 h-5 opacity-70 group-hover:opacity-100 transition-opacity" />
+                <span className="text-xs font-medium">Cerrar Sesión Segura</span>
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        <ul className="pointer-events-auto bg-white/80 backdrop-blur-xl border border-white/40 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.15)] rounded-[2.5rem] px-6 py-2.5 flex items-center justify-between w-[95%] m-0 list-none">
-          <li><NavItem path="/" icon="explore" label="Explorar" currentPath={currentPath} /></li>
-          <li><NavItem path="/favorites" icon="favorite" label="Favoritos" currentPath={currentPath} /></li>
-          <li><NavItem path="/messages" icon="chat" label="Chat" currentPath={currentPath} /></li>
+        <ul className="pointer-events-auto bg-white/80 backdrop-blur-xl shadow-[0_12px_40px_-12px_rgba(0,0,0,0.1)] rounded-[2.5rem] px-6 py-2.5 flex items-center justify-between w-[95%] m-0 list-none">
+          <li><NavItem path="/" icon={Compass} label="Explorar" currentPath={currentPath} /></li>
+          <li><NavItem path="/favorites" icon={Heart} label="Favoritos" currentPath={currentPath} /></li>
+          <li><NavItem path="/messages" icon={MessageCircle} label="Chat" currentPath={currentPath} /></li>
           {(user?.role === 'host' || user?.role === 'admin' || user?.email?.toLowerCase() === 'villaretiror@gmail.com') && (
-            <li><NavItem path="/host" icon="dashboard_customize" label="Panel" currentPath={currentPath} /></li>
+            <li><NavItem path="/host" icon={LayoutDashboard} label="Panel" currentPath={currentPath} /></li>
           )}
           <li>
             <NavItem
               path={user ? "#" : "/login"}
-              icon={user ? "account_circle" : "person"}
+              icon={UserIcon}
               label={user ? (user.name.split(' ')[0]) : "Entrar"}
               currentPath={currentPath}
               isAvatar={!!user}

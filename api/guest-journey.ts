@@ -73,20 +73,25 @@ export default async function handler(req: Request) {
                 const draft = await generateOnboardingDraft(stage, guestName, propertyTitle, booking.check_out);
 
                 const messageText = `
-📝 <b>Borrador de Onboarding (${displayStage})</b>
-<b>Propiedad:</b> ${propertyTitle}
-<b>Huésped:</b> ${guestName}
-<b>Email:</b> ${guestEmail}
+🛎 <b>Salty: Revisión de Onboarding</b>
+───────────────────────
+📅 <b>Etapa:</b> ${displayStage}
+🏠 <b>Propiedad:</b> <code>${propertyTitle}</code>
+👤 <b>Huésped:</b> ${guestName}
+📧 <b>Email:</b> <code>${guestEmail}</code>
+───────────────────────
 
----
-${draft}
----
-¿Deseas enviar este mensaje ahora?`;
+<b>PREVISUALIZACIÓN DEL MENSAJE:</b>
+<i>"${draft}"</i>
+
+───────────────────────
+¿Autorizas el envío de este borrador vía <b>Resend</b>?`;
 
                 // Botón de Telegram
                 const keyboard = {
                     inline_keyboard: [
-                        [{ text: "✅ Aprobar y Enviar", callback_data: `send_ob_${booking.id}` }]
+                        [{ text: "✅ Aprobar y Enviar", callback_data: `send_ob_${booking.id}` }],
+                        [{ text: "✏️ Editar en Dashboard", url: `${process.env.VITE_SITE_URL || 'https://villaretiror.com'}/host/dashboard` }]
                     ]
                 };
 

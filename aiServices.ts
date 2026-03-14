@@ -200,31 +200,40 @@ export const generateOnboardingDraft = async (
     propertyTitle: string,
     checkOutDate: string
 ): Promise<string> => {
-    let context = "";
+    let mission = "";
     if (stage === 'mid_stay') {
-        context = `Escribe un email súper corto de 'Día Medio' para el huésped. 
-        Objetivo: Saludar, verificar que todo esté bien en la propiedad y recordarles que estás a una orden de WhatsApp de distancia. No ofrezcas servicios extras ni limpiezas adicionales.`;
+        mission = `Escribe un mensaje de 'Hospitality Check' para el huésped.
+        - Saluda cálidamente por su nombre.
+        - Pregunta si todo está fluyendo perfecto en la villa.
+        - Invítales a descubrir los 'Secret Spots' (menciona que Ostiones o Guaniquilla son joyas de la zona si quieren aventura).
+        - Recuerda que estás a un mensaje de distancia si necesitan cualquier tip local.`;
     } else {
-        context = `Escribe un email de 'Día antes del Check-Out' para el huésped.
-        Objetivo: Agradecer su estancia, recordar amablemente que el checkout es a las 11:00 AM, pedirles que dejen la basura en los zafacones exteriores y que cierren bien las puertas. No ofrezcas late check-out ni servicios extras.`;
+        mission = `Escribe un mensaje de 'Despedida Impecable' para el día antes del check-out.
+        - Agradece la confianza de habernos elegido.
+        - Recordatorios logísticos suaves (basados en VILLA_KNOWLEDGE):
+          1. El check-out es a las 11:00 AM.
+          2. Depositar la basura en los zafacones exteriores.
+          3. Cerrar bien el portón y puertas.
+          4. Dejar las llaves en su lugar (lockbox).
+        - Deséales un viaje de regreso seguro.`;
     }
 
     const prompt = `
-        Eres "Salty", el concierge de lujo de Villa & Pirata Stays en Cabo Rojo.
-        Tono: Caribeño-sofisticado, extremadamente cordial, educado y acogedor. Haces que el huésped se sienta en una propiedad de lujo. Mantén una distancia profesional pero con calidez impecable.
+        Eres "Salty", el concierge ejecutivo de Villa & Pirata Stays.
+        Tono: Modern Luxury, extremadamente cordial, ejecutivo y acogedor. Usa el "Tú" para conectar.
         
-        Datos de la reserva:
+        Datos:
         - Huésped: ${guestName}
         - Propiedad: ${propertyTitle}
-        - Fecha de Salida (Check-Out): ${checkOutDate}
+        - Salida: ${checkOutDate}
         
         Misión:
-        ${context}
+        ${mission}
         
-        Reglas estrictas:
-        - NO uses placeholders como [tu nombre]. Firma como "Salty, Concierge".
-        - REDACTA SOLO EL CUERPO DEL EMAIL. (No incluyas "Asunto:" ni etiquetas HTML).
-        - Directo, pulido y profesional.
+        Reglas:
+        - NO uses placeholders. Firma como "Salty, Concierge".
+        - REDACTA SOLO EL CUERPO. Sin etiquetas HTML.
+        - Sé breve, pulido y profesional.
     `;
 
     try {
@@ -237,7 +246,7 @@ export const generateOnboardingDraft = async (
     } catch (e) {
         console.error("Error generating draft:", e);
         return stage === 'mid_stay'
-            ? `¡Hola ${guestName}! Soy Salty. Pasaba a saludarte y verificar que estés disfrutando de ${propertyTitle}. Si necesitas asistencia, responde este correo o escríbenos por WhatsApp. ¡Sigue disfrutando!`
-            : `Estimado/a ${guestName}, esperamos que haya disfrutado su estancia en ${propertyTitle}. Le recordamos que el check-out es a las 11:00 AM el ${checkOutDate}. Por favor, deposite la basura en los zafacones exteriores y asegure bien las puertas al salir. ¡Buen viaje de regreso!`;
+            ? `¡Hola ${guestName}! Soy Salty. Pasaba a saludarte y verificar que estés disfrutando de ${propertyTitle}. Si quieres una aventura hoy, no dejes de visitar Guaniquilla. ¡Cualquier cosa, aquí estoy!`
+            : `Hola ${guestName}, esperamos que hayas disfrutado tu estancia. Solo un recordatorio de que el check-out es a las 11:00 AM. Por favor, recuerda dejar la basura fuera y cerrar bien puertas y portón. ¡Buen viaje de regreso!`;
     }
 };
