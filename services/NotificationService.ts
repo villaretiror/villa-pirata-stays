@@ -7,8 +7,9 @@ export const NotificationService = {
     /**
      * Envía una alerta a Telegram al chat del Host.
      * @param message Mensaje formateado para Telegram (HTML)
+     * @param keyboard Opcional. Inline Keyboard Markup
      */
-    async sendTelegramAlert(message: string): Promise<boolean> {
+    async sendTelegramAlert(message: string, keyboard?: any): Promise<boolean> {
         // En un entorno de producción, el TOKEN y el CHAT_ID vendrían de variables de entorno
         const TELEGRAM_TOKEN = "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
 
@@ -21,14 +22,20 @@ export const NotificationService = {
         }
 
         try {
+            const bodyPayload: any = {
+                chat_id: CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            };
+
+            if (keyboard) {
+                bodyPayload.reply_markup = keyboard;
+            }
+
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: CHAT_ID,
-                    text: message,
-                    parse_mode: 'HTML'
-                })
+                body: JSON.stringify(bodyPayload)
             });
 
             const data = await response.json();
@@ -48,7 +55,7 @@ export const NotificationService = {
     /**
      * Enviar mensaje directo a un Chat ID específico
      */
-    async sendDirectTelegramMessage(chatId: string, message: string): Promise<boolean> {
+    async sendDirectTelegramMessage(chatId: string, message: string, keyboard?: any): Promise<boolean> {
         const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
 
         if (!TELEGRAM_TOKEN) {
@@ -57,14 +64,20 @@ export const NotificationService = {
         }
 
         try {
+            const bodyPayload: any = {
+                chat_id: chatId,
+                text: message,
+                parse_mode: 'HTML'
+            };
+
+            if (keyboard) {
+                bodyPayload.reply_markup = keyboard;
+            }
+
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    chat_id: chatId,
-                    text: message,
-                    parse_mode: 'HTML'
-                })
+                body: JSON.stringify(bodyPayload)
             });
 
             const data = await response.json();

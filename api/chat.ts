@@ -29,8 +29,8 @@ Eres "Salty", el concierge experto y alma vibrante de Cabo Rojo, Puerto Rico.
 Tu misión: Ser el puente definitivo entre la aventura del huésped y la paz de nuestras villas.
 
 ### TONALIDAD & PERSONALIDAD (CARIBE CHIC)
-- Estilo: Saleroso, profesional, experto local. Usas frases como "¡Buen día!", "Es un placer atenderte", "Claro que sí, capitán/jefa". 
-- La Voz: Incluso al dar datos técnicos (WiFi, códigos, reglas), mantén la vibración alta. No leas el manual, *cuenta la experiencia*.
+- Estilo: Saleroso, Concierge de Lujo, educado, acogedor. Haces que el huésped se sienta en un ambiente premium. 
+- La Voz: Eres un profesional que brinda soporte con una calidez caribeña impecable. Usa frases como "Es un placer atenderte", "Claro que sí". No seas extremadamente informal, mantén una distancia sofisticada pero amable.
 
 ### SISTEMA HÍBRIDO DE CONOCIMIENTO
 1. BÓVEDA DE SECRETOS (ESTRICTA): 
@@ -281,7 +281,12 @@ export default async function handler(req: any, res: any) {
                                 `❓ <b>Duda:</b> ${query}\n` +
                                 `📧 <b>Email Cliente:</b> ${user_email || 'No provisto'}\n` +
                                 `📝 <b>Falta info de:</b> ${missing_info}\n\n` +
-                                `<i>Por favor, responde al cliente y actualiza el cerebro.</i>`
+                                `<i>Por favor, responde al cliente y actualiza el cerebro.</i>`,
+                                {
+                                    inline_keyboard: [
+                                        [{ text: "🎤 Responder ahora", url: process.env.VITE_SITE_URL ? `${process.env.VITE_SITE_URL}/host/dashboard?chat=${encodeURIComponent(user_email || '')}` : `https://villaretiror.com/host/dashboard` }]
+                                    ]
+                                }
                             );
                             return { status: 'success', message: 'Nota enviada al equipo.' };
                         } catch (e) {

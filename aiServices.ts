@@ -1,7 +1,12 @@
 import { supabase } from './lib/supabase.js';
 import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { generateText } from 'ai';
 
+const google = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+});
 /**
  * 👑 AI SERVICES LAYER - THE EXECUTIVE BRAIN
  * Architecture: Bridge between LLM and Backend Logic
@@ -186,4 +191,53 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
     }
 
     return { basePrice, fees, discount, total, nights, hasSeasonal };
+};
+
+// 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)
+export const generateOnboardingDraft = async (
+    stage: 'mid_stay' | 'check_out',
+    guestName: string,
+    propertyTitle: string,
+    checkOutDate: string
+): Promise<string> => {
+    let context = "";
+    if (stage === 'mid_stay') {
+        context = `Escribe un email súper corto de 'Día Medio' para el huésped. 
+        Objetivo: Saludar, verificar que todo esté bien en la propiedad y recordarles que estás a una orden de WhatsApp de distancia. No ofrezcas servicios extras ni limpiezas adicionales.`;
+    } else {
+        context = `Escribe un email de 'Día antes del Check-Out' para el huésped.
+        Objetivo: Agradecer su estancia, recordar amablemente que el checkout es a las 11:00 AM, pedirles que dejen la basura en los zafacones exteriores y que cierren bien las puertas. No ofrezcas late check-out ni servicios extras.`;
+    }
+
+    const prompt = `
+        Eres "Salty", el concierge de lujo de Villa & Pirata Stays en Cabo Rojo.
+        Tono: Caribeño-sofisticado, extremadamente cordial, educado y acogedor. Haces que el huésped se sienta en una propiedad de lujo. Mantén una distancia profesional pero con calidez impecable.
+        
+        Datos de la reserva:
+        - Huésped: ${guestName}
+        - Propiedad: ${propertyTitle}
+        - Fecha de Salida (Check-Out): ${checkOutDate}
+        
+        Misión:
+        ${context}
+        
+        Reglas estrictas:
+        - NO uses placeholders como [tu nombre]. Firma como "Salty, Concierge".
+        - REDACTA SOLO EL CUERPO DEL EMAIL. (No incluyas "Asunto:" ni etiquetas HTML).
+        - Directo, pulido y profesional.
+    `;
+
+    try {
+        const { text } = await generateText({
+            model: google('gemini-2.5-flash'),
+            prompt,
+            temperature: 0.4
+        });
+        return text.trim();
+    } catch (e) {
+        console.error("Error generating draft:", e);
+        return stage === 'mid_stay'
+            ? `¡Hola ${guestName}! Soy Salty. Pasaba a saludarte y verificar que estés disfrutando de ${propertyTitle}. Si necesitas asistencia, responde este correo o escríbenos por WhatsApp. ¡Sigue disfrutando!`
+            : `Estimado/a ${guestName}, esperamos que haya disfrutado su estancia en ${propertyTitle}. Le recordamos que el check-out es a las 11:00 AM el ${checkOutDate}. Por favor, deposite la basura en los zafacones exteriores y asegure bien las puertas al salir. ¡Buen viaje de regreso!`;
+    }
 };

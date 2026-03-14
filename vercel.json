@@ -19,6 +19,10 @@
         {
             "path": "/api/daily-alerts",
             "schedule": "0 10 * * *"
+        },
+        {
+            "path": "/api/guest-journey",
+            "schedule": "0 14 * * *"
         }
     ],
     "headers": [

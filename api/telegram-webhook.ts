@@ -1,5 +1,6 @@
 import { NotificationService } from '../services/NotificationService.js';
 import { supabase } from '../lib/supabase.js';
+import { Resend } from 'resend';
 
 export const config = {
     runtime: 'edge', // Using Edge Runtime for faster response
@@ -12,6 +13,12 @@ export default async function handler(req: Request) {
 
     try {
         const update = await req.json();
+
+        // Handle Callback Queries (Botones de Telegram)
+        if (update.callback_query) {
+            await handleCallbackQuery(update.callback_query);
+            return new Response('OK', { status: 200 });
+        }
 
         // Check if it's a message containing text
         if (!update.message || !update.message.text) {
@@ -98,5 +105,95 @@ ${pendingAlerts > 0 ? alertDetails : '✅ Todo funcionando en orden.'}
     } catch (err: any) {
         console.error("Error processando comando /status", err);
         await NotificationService.sendDirectTelegramMessage(chatId, "❌ Error obteniendo el reporte de Supabase.");
+    }
+}
+
+async function handleCallbackQuery(callbackQuery: any) {
+    const data = callbackQuery.data; // ex: "send_ob_12345"
+    const messageId = callbackQuery.message.message_id;
+    const chatId = callbackQuery.message.chat.id;
+    const text = callbackQuery.message.text || "";
+
+    const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+
+    if (data.startsWith('send_ob_')) {
+        const bookingId = data.split('send_ob_')[1];
+
+        // 1. Extraer el borrador del texto del mensaje
+        // Asumimos que el mensaje en Telegram tiene el formato: "... \n---\n[BORRADOR]"
+        const parts = text.split('---');
+        const draftContent = parts.length > 1 ? parts[1].trim() : text;
+
+        // Extraer email del texto si es posible, o usar la DB
+        const emailMatch = text.match(/Email:\s*([^\s]+)/);
+        let guestEmail = emailMatch ? emailMatch[1] : null;
+
+        if (!guestEmail) {
+            // Intentar recuperar de Supabase
+            const { data: booking } = await supabase
+                .from('bookings')
+                .select('profiles(email)')
+                .eq('id', bookingId)
+                .single();
+            guestEmail = (booking?.profiles as any)?.email;
+        }
+
+        if (guestEmail && process.env.RESEND_API_KEY) {
+            try {
+                const resend = new Resend(process.env.RESEND_API_KEY);
+                const fromAddress = 'Salty <reservas@villaretiror.com>';
+
+                await resend.emails.send({
+                    from: fromAddress,
+                    to: guestEmail,
+                    bcc: 'villaretiror@gmail.com',
+                    subject: text.includes('Día Medio') ? '🌴 ¿Todo bien en el paraíso?' : '🌅 Instrucciones Importantes para tu Salida',
+                    html: `
+                        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #4A4A4A; line-height: 1.6;">
+                            <p>${draftContent.replace(/\\n/g, '<br/>')}</p>
+                            <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px; font-size: 12px; color: #999; text-align: center;">
+                                <p>Villa & Pirata Stays - Cabo Rojo, Puerto Rico</p>
+                            </div>
+                        </div>
+                    `
+                });
+
+                // Notificar éxito y eliminar el botón en Telegram
+                await fetch(`https://api.telegram.org/bot${telegramToken}/editMessageText`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        message_id: messageId,
+                        text: text + "\n\n✅ <b>¡Enviado exitosamente a ${guestEmail}!</b>",
+                        parse_mode: 'HTML',
+                        reply_markup: { inline_keyboard: [] } // Quita el teclado
+                    })
+                });
+
+                await fetch(`https://api.telegram.org/bot${telegramToken}/answerCallbackQuery`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        callback_query_id: callbackQuery.id,
+                        text: '✅ Email enviado exitosamente a ' + guestEmail
+                    })
+                });
+
+            } catch (err: any) {
+                console.error("Resend error from Telegram Webhook:", err);
+            }
+        } else {
+            console.error("No email found or missing Resend API KEY");
+            await fetch(`https://api.telegram.org/bot${telegramToken}/answerCallbackQuery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    callback_query_id: callbackQuery.id,
+                    text: '❌ ERROR: Faltan datos (Email no encontrado).',
+                    show_alert: true
+                })
+            });
+        }
     }
 }
