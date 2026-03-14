@@ -1,7 +1,7 @@
 {
-  "name": "villa-and-pirata-stays",
+  "name": "villa-pirata-stays",
   "private": true,
-  "version": "1.1.2",
+  "version": "1.1.2-SALTY",
   "engines": {
     "node": "20.x"
   },
