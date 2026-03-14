@@ -22,6 +22,13 @@ function getPropertyName(id: string): string {
 }
 
 export default async function handler(req: Request) {
+    // 🛡️ Security Check: Bearer Token
+    const authHeader = req.headers.get('Authorization');
+    const secret = process.env.CRON_SECRET || "villaretiror_master_key_2026";
+    if (!authHeader || authHeader !== `Bearer ${secret}`) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    }
+
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const now = new Date();
     const utcHour = now.getUTCHours();
@@ -32,8 +39,9 @@ export default async function handler(req: Request) {
         tasks: {}
     };
 
-    // 1. SIEMPRE: Sincronización de iCal & Feedback Loop (Cada 15 min)
+    // 1. SIEMPRE (Cada 15 min): iCal Sync, Feedback Loop & Mock Cleanup
     results.tasks.calendar_sync = await taskCalendarSync(supabase);
+    results.tasks.cleanup = await taskCleanupMocks(supabase);
 
     // 2. DIARIO (10:00 UTC): Feedback Request & Daily Alerts
     if (utcHour === 10 && utcMinute < 15) {
@@ -49,6 +57,17 @@ export default async function handler(req: Request) {
     return new Response(JSON.stringify(results), {
         headers: { 'Content-Type': 'application/json' }
     });
+}
+
+async function taskCleanupMocks(supabase: any) {
+    const now = new Date().toISOString();
+    // Limpiar holds temporales expirados
+    const { count: holds } = await supabase.from('bookings').delete().eq('status', 'pending_ai_validation').lt('hold_expires_at', now);
+    // Limpiar logs de chat muy antiguos ( > 30 días ) para optimizar
+    const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const { count: logs } = await supabase.from('chat_logs').delete().lt('last_interaction', thirtyDaysAgo.toISOString());
+
+    return { status: 'ok', holds_cleared: holds || 0, logs_optimized: logs || 0 };
 }
 
 async function taskCalendarSync(supabase: any) {
