@@ -44,7 +44,34 @@ export default async function handler(req: Request) {
         if (text.startsWith('/status')) {
             await handleStatusCommand(chatId);
         }
-        // Si hubiera más comandos, agregarlos aquí.
+        // Procesar RESPUESTAS DEL HOST AL CHAT (Human Takeover)
+        else if (update.message.reply_to_message) {
+            const repliedText = update.message.reply_to_message.text || '';
+            const sessionMatch = repliedText.match(/Sesión:\s*([a-zA-Z0-9-]+)/);
+
+            if (sessionMatch) {
+                const sessionId = sessionMatch[1];
+                const takeoverDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+                // 1. Silent Mode para Salty (30 mins)
+                await supabase.from('chat_logs').update({
+                    human_takeover_until: takeoverDate
+                }).eq('session_id', sessionId);
+
+                // 2. Insertar en mirror para notificar al Frontend
+                await supabase.from('ai_chat_logs').insert({
+                    session_id: sessionId,
+                    sender: 'host',
+                    text: text
+                });
+
+                // 3. Confirmar a Telegram
+                await NotificationService.sendDirectTelegramMessage(
+                    chatId,
+                    "✅ <i>Mensaje entregado en la web. Salty ha sido silenciado por 30 mins para esta sesión.</i>"
+                );
+            }
+        }
         else {
             // Ignorar mensajes que no sean comandos para no spamear
         }

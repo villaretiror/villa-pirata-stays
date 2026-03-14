@@ -117,8 +117,10 @@ export default async function handler(req: any, res: any) {
 
         // 2. Persistencia y Auditoría de Sesión + Contexto 360°
         let userContext = "";
+        let profile: any = null;
         if (userId) {
-            const { data: profile } = await supabase.from('profiles').select('*').eq('id', userId).single();
+            const { data: p } = await supabase.from('profiles').select('*').eq('id', userId).single();
+            profile = p;
             const { data: history } = await supabase.from('bookings').select('status, check_in, property_id').eq('user_id', userId).limit(3);
 
             if (profile) userContext += `Huésped: ${profile.full_name}. `;
@@ -139,6 +141,44 @@ export default async function handler(req: any, res: any) {
             }, { onConflict: 'session_id' }).then(({ error }) => {
                 if (error) console.error('[CHAT_LOG_ERROR]:', error.message);
             });
+        }
+
+        // 🔗 CHAT MIRROR: Human Takeover & Notify Telegram
+        let isHumanTakeover = false;
+        const lastGuestMessage = recentMessages.length > 0 ? String(recentMessages[recentMessages.length - 1].content || recentMessages[recentMessages.length - 1].text || '') : null;
+
+        if (sessionId) {
+            // Check if Host took over
+            const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until').eq('session_id', sessionId).single();
+            if (logInfo && logInfo.human_takeover_until) {
+                if (new Date(logInfo.human_takeover_until) > new Date()) {
+                    isHumanTakeover = true;
+                }
+            }
+
+            // Notificamos a Telegram el mensaje en tiempo real (si es nuevo y tiene texto)
+            if (lastGuestMessage) {
+                try {
+                    const { NotificationService } = await import('../services/NotificationService.js');
+                    await NotificationService.sendTelegramAlert(
+                        `💬 <b>Chat Web (Espejo)</b>\n\n` +
+                        `<b>Sesión:</b> <code>${sessionId}</code>\n` +
+                        `<b>Huésped:</b> ${profile ? profile.full_name : 'Anónimo'}\n\n` +
+                        `🗨️ <i>"${lastGuestMessage}"</i>\n\n` +
+                        `👉 <i>Responde a este mensaje de Telegram para tomar el control por 30 mins y detener a Salty.</i>`
+                    );
+                } catch (e) {
+                    // Ignorar silenciosamente si Telegram falla
+                }
+
+                // Si el host tomó control, NO ejecutamos Gemini. Devolvemos el control silencioso.
+                if (isHumanTakeover) {
+                    return new Response("[Host conectado] Te leemos en directo. Un miembro de nuestro equipo responde en seguida...", {
+                        status: 200,
+                        headers: { 'Content-Type': 'text/plain' }
+                    });
+                }
+            }
         }
 
         // 3. Sanitización de mensajes

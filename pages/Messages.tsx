@@ -87,7 +87,39 @@ const Messages: React.FC = () => {
     }
 
     setMessages(initialMessages);
-  }, [locationState]);
+
+    // 🔗 CHAT MIRROR: Supabase Realtime Subscription
+    const channel = supabase.channel(`chat_mirror_${sessionId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'ai_chat_logs', filter: `session_id=eq.${sessionId}` },
+        (payload: any) => {
+          const newMsg = payload.new;
+          // Solo escuchamos los mensajes enviados por el Host 
+          if (newMsg.sender === 'host') {
+            setMessages((prev) => {
+              // Evitar duplicados (aunque el ID es único en DB y diferente en frontend, chequeamos por si acaso)
+              if (prev.some(m => m.text === newMsg.text)) return prev;
+
+              const hostMsg: Message = {
+                id: newMsg.id || crypto.randomUUID(),
+                text: newMsg.text,
+                sender: 'ai', // Lo tratamos como AI en UI para que aparezca a la izquierda
+                created_at: newMsg.created_at
+              };
+              // Add a subtle prefix indicating human override
+              hostMsg.text = `👨🏻‍💻 [Host] ${hostMsg.text}`;
+              return [...prev, hostMsg];
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [locationState, sessionId]);
 
   useEffect(() => {
     if (messages.length > 0) {
