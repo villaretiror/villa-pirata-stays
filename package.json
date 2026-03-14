@@ -1,7 +1,7 @@
 {
-  "name": "villa-retiro-stays",
+  "name": "villa-and-pirata-stays",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.2",
   "engines": {
     "node": "20.x"
   },
