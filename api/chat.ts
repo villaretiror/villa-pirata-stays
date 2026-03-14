@@ -118,6 +118,18 @@ export default async function handler(req: any, res: any) {
         // 2. Persistencia y Auditoría de Sesión + Contexto 360°
         let userContext = "";
         let profile: any = null;
+        let extendedMemory = "";
+
+        // 🧠 Cargar memoria dinámica de aprendizajes previos de Salty
+        const { data: memories } = await supabase.from('salty_memories')
+            .select('learned_text')
+            .order('created_at', { ascending: false })
+            .limit(10);
+
+        if (memories && memories.length > 0) {
+            extendedMemory = `\n\n[MEMORIA DINÁMICA (APRENDIZAJE RECIENTE DEL HOST)]:\nAplica estas reglas/información nueva si el usuario pregunta sobre ello: ` + memories.map(m => `- ${m.learned_text}`).join('\n');
+        }
+
         if (userId) {
             const { data: p } = await supabase.from('profiles').select('*').eq('id', userId).single();
             profile = p;
@@ -185,7 +197,7 @@ export default async function handler(req: any, res: any) {
         const finalMessages: CoreMessage[] = [
             {
                 role: 'user',
-                content: `INSTRUCCIONES DE SERVICIO (LEER PRIORITARIAMENTE): ${VILLA_CONCIERGE_PROMPT}. \nCONTEXTO USUARIO: ${userContext || "Anónimo"}.`
+                content: `INSTRUCCIONES DE SERVICIO (LEER PRIORITARIAMENTE): ${VILLA_CONCIERGE_PROMPT}. \nCONTEXTO USUARIO: ${userContext || "Anónimo"}.${extendedMemory}`
             },
             {
                 role: 'assistant',

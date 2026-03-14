@@ -36,6 +36,25 @@ export default async function handler(req: any, res: any) {
     let totalImported = 0;
     const results: Record<string, any> = {};
 
+    // 🤖 FEEDBACK LOOP: Notificar sobre "Human Takeovers" expirados
+    try {
+        const { data: expiredLogs } = await supabase.from('chat_logs')
+            .select('session_id')
+            .lt('human_takeover_until', new Date().toISOString())
+            .eq('takeover_notified', false);
+
+        if (expiredLogs && expiredLogs.length > 0) {
+            for (const log of expiredLogs) {
+                await NotificationService.sendTelegramAlert(
+                    `🤖 <b>Salty:</b> Retomando guardia activa. (Sesión: <code>${log.session_id}</code>)\n¿Hubo algo importante en esta charla que deba aprender para futuras consultas?`
+                );
+                await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', log.session_id);
+            }
+        }
+    } catch (err) {
+        console.error("Error comprobando takeover logs en import crons", err);
+    }
+
     for (const [propertyId, url] of Object.entries(ICAL_URLS)) {
         results[propertyId] = { status: 'skipped', newBlocks: 0 };
 

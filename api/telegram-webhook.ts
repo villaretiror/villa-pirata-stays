@@ -44,18 +44,34 @@ export default async function handler(req: Request) {
         if (text.startsWith('/status')) {
             await handleStatusCommand(chatId);
         }
-        // Procesar RESPUESTAS DEL HOST AL CHAT (Human Takeover)
+        // Procesar RESPUESTAS DEL HOST AL CHAT (Human Takeover o Feedback)
         else if (update.message.reply_to_message) {
             const repliedText = update.message.reply_to_message.text || '';
             const sessionMatch = repliedText.match(/Sesión:\s*([a-zA-Z0-9-]+)/);
 
-            if (sessionMatch) {
+            if (repliedText.includes('Retomando guardia activa')) {
+                // Modo Aprendizaje (Feedback Loop)
+                if (text && text.trim().length > 0) {
+                    await supabase.from('salty_memories').insert({
+                        learned_text: text,
+                        session_id: sessionMatch ? sessionMatch[1] : null
+                    });
+
+                    await NotificationService.sendDirectTelegramMessage(
+                        chatId,
+                        "🧠 <i>Copiado, jefe. He actualizado mi memoria interna para no volver a fallar en esta consulta.</i>"
+                    );
+                }
+            }
+            else if (sessionMatch) {
+                // Modo Chat Mirror (Human Takeover)
                 const sessionId = sessionMatch[1];
                 const takeoverDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-                // 1. Silent Mode para Salty (30 mins)
+                // 1. Silent Mode para Salty (30 mins) y reset de notificación
                 await supabase.from('chat_logs').update({
-                    human_takeover_until: takeoverDate
+                    human_takeover_until: takeoverDate,
+                    takeover_notified: false
                 }).eq('session_id', sessionId);
 
                 // 2. Insertar en mirror para notificar al Frontend
