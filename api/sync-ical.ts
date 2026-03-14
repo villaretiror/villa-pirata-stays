@@ -7,8 +7,10 @@ const supabase = createClient(
 );
 
 const ICAL_FEEDS = [
-    { property_id: '1081171030449673920', url: 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae' },
-    { property_id: '42839458', url: 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331' }
+    { property_id: '1081171030449673920', platform: 'Airbnb', url: 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae' },
+    { property_id: '1081171030449673920', platform: 'Booking.com', url: 'https://ical.booking.com/v1/export?t=246c7179-e44f-458e-bede-2ff3376464b1' },
+    { property_id: '42839458', platform: 'Airbnb', url: 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331' },
+    { property_id: '42839458', platform: 'Booking.com', url: 'https://ical.booking.com/v1/export?t=424b8257-5e8e-4d8d-9522-b2e63f4bf669' }
 ];
 
 export default async function handler(req: Request) {
@@ -29,15 +31,16 @@ export default async function handler(req: Request) {
                 if (ev && ev.start && ev.end) {
                     const check_in = new Date(ev.start).toISOString().split('T')[0];
                     const check_out = new Date(ev.end).toISOString().split('T')[0];
+                    const summary = ev.summary || "Reserva Externa";
 
-                    // Upsert based on some hash of the event or property+dates
-                    // Note: This is an EXTERNAL booking from iCal
+                    // Upsert based on property_id, check_in, check_out
                     await supabase.from('bookings').upsert({
                         property_id: feed.property_id,
                         check_in,
                         check_out,
                         status: 'confirmed',
-                        payment_method: 'airbnb_sync',
+                        source: (feed as any).platform || 'Airbnb',
+                        customer_name: summary,
                         total_price: 0 // External, placeholder
                     }, { onConflict: 'property_id, check_in, check_out' });
                 }

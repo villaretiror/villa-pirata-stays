@@ -193,6 +193,38 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
                             .upsert({ key, value, category: category || 'general' });
                         return error ? { error: error.message } : { success: true };
                     }
+                },
+                fetch_reservations: {
+                    description: 'Busca las reservas próximas o actuales para informar sobre quién llega y por qué plataforma.',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            daysAhead: { type: 'number', description: 'Número de días a futuro para buscar (default 7).' }
+                        }
+                    },
+                    execute: async ({ daysAhead = 7 }) => {
+                        const today = new Date().toISOString().split('T')[0];
+                        const future = new Date();
+                        future.setDate(future.getDate() + daysAhead);
+                        const futureStr = future.toISOString().split('T')[0];
+
+                        const { data: bookings, error } = await supabaseServiceRole
+                            .from('bookings')
+                            .select('customer_name, check_in, check_out, source, property_id')
+                            .eq('status', 'confirmed')
+                            .gte('check_in', today)
+                            .lte('check_in', futureStr);
+
+                        if (error) return { error: error.message };
+                        
+                        // Enriquecer con nombre de propiedad
+                        const bookingsNamed = bookings.map(b => ({
+                            ...b,
+                            villa: b.property_id === '1081171030449673920' ? 'Villa Retiro R' : 'Pirata Family'
+                        }));
+
+                        return { bookings: bookingsNamed };
+                    }
                 }
             }
         });
@@ -211,17 +243,21 @@ async function handleStatusCommand(chatId: string) {
         // 1. Obtener Reservas Actuales (Checkins/Checkouts/Activas de Hoy)
         const { data: bookings, error: bookingsError } = await supabase
             .from('bookings')
-            .select('property_id, check_in, check_out, status')
+            .select('property_id, check_in, check_out, status, source, customer_name')
             .eq('status', 'confirmed')
             .or(`check_in.eq.${today},check_out.eq.${today},and(check_in.lte.${today},check_out.gte.${today})`);
 
         let checkIns = 0;
         let checkOuts = 0;
         let occupied = 0;
+        let details = "";
 
         if (!bookingsError && bookings) {
             for (const b of (bookings as any[])) {
-                if (b.check_in === today) checkIns++;
+                if (b.check_in === today) {
+                    checkIns++;
+                    details += `🔑 <b>${b.customer_name || 'Huésped'}</b> llega a ${b.property_id === '42839458' ? 'Pirata' : 'Retiro'} vía <i>${b.source}</i>\n`;
+                }
                 if (b.check_out === today) checkOuts++;
                 if (b.check_in <= today && b.check_out >= today) occupied++;
             }
@@ -245,6 +281,7 @@ async function handleStatusCommand(chatId: string) {
 🔑 <b>Check-Ins Hoy:</b> ${checkIns}
 🧹 <b>Check-Outs Hoy:</b> ${checkOuts}
 
+${details ? `<b>Logística de Hoy:</b>\n${details}` : ''}
 ⚠️ <b>Alertas de Sistema:</b> ${pendingAlerts}
 ${pendingAlerts > 0 ? alertDetails : '✅ Todo funcionando en orden.'}
 `;
