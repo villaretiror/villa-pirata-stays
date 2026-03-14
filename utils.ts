@@ -74,9 +74,8 @@ export const formatDateLong = (dateStr: string): string => {
 export const fetchICalData = async (url: string): Promise<string> => {
   if (!url.startsWith('http')) throw new Error('URL de calendario inválida.');
 
-  // Usamos un proxy de CORS para poder leer feeds de Airbnb/Booking desde el navegador
-  const bustCacheUrl = url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
-  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(bustCacheUrl)}`;
+  // Usamos nuestro proxy backend edge-runtime para saltarnos CORS
+  const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
 
   try {
     const response = await fetch(proxyUrl);
@@ -96,7 +95,7 @@ export const fetchICalData = async (url: string): Promise<string> => {
 export const importPropertyFromUrl = async (url: string): Promise<Partial<Property>> => {
   if (!url.startsWith('http')) throw new Error('URL inválida.');
 
-  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
 
   try {
     const response = await fetch(proxyUrl);
