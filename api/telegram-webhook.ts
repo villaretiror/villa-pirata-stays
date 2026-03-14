@@ -1,14 +1,52 @@
 import { NotificationService } from '../services/NotificationService.js';
 import { supabase } from '../lib/supabase.js';
 import { Resend } from 'resend';
+import { generateText, CoreMessage } from 'ai';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
+import { PROPERTIES } from '../constants.js';
+import { SECRETS_DATA } from '../constants/secrets_data.js';
+import {
+    checkAvailabilityWithICal,
+    findCalendarGaps,
+    getPaymentVerificationStatus,
+    handleCrisisAlert
+} from '../aiServices.js';
 
 export const config = {
-    runtime: 'edge', // Using Edge Runtime for faster response
+    // We remove the 'edge' runtime to use standard Node.js for better consistency with the chat engine
+    maxDuration: 30,
 };
 
-export default async function handler(req: Request) {
+const google = createGoogleGenerativeAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+});
+
+const VILLA_CONCIERGE_PROMPT = `
+Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo, Puerto Rico. 
+Tu misión: Ser un anfitrión excepcional que combina la eficiencia de un concierge de lujo con la calidez de un amigo local "Real-Time".
+
+### ROL EN TELEGRAM (ADMIN GROUP)
+- Estás en un grupo con los dueños de la Villa (Host y su padre).
+- Tu objetivo es ser un CONSULTOR OPERATIVO.
+- Ayuda a gestionar la logística, responde dudas sobre disponibilidad y políticas.
+- Los miembros del grupo son tus jefes. Trátalos con respeto ejecutivo pero con la calidez de Salty.
+
+### CAPACIDADES SENSORIALES (ELITE)
+- DATOS EXTERNOS: Tienes acceso a información del mundo real.
+- APRENDIZAJE: Escucha gustos o preferencias mencionadas en el chat.
+
+### PRIORIDAD DE CONOCIMIENTO
+1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima. Usa 'VILLA_KNOWLEDGE.policies' y 'VILLA_KNOWLEDGE.survival_tips'.
+
+ESTILO & REGLAS: ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
+INVENTARIO VILLAS: ${JSON.stringify(PROPERTIES, null, 2)}
+BÓVEDA DE SECRETOS: ${JSON.stringify(SECRETS_DATA, null, 2)}
+`.trim();
+
+export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') {
-        return new Response(JSON.stringify({ error: 'Method Not Allowed' }), { status: 405 });
+        return res.status(405).json({ error: 'Method Not Allowed' });
     }
 
     try {
@@ -17,12 +55,12 @@ export default async function handler(req: Request) {
         // Handle Callback Queries (Botones de Telegram)
         if (update.callback_query) {
             await handleCallbackQuery(update.callback_query);
-            return new Response('OK', { status: 200 });
+            return res.status(200).send('OK');
         }
 
         // Check if it's a message containing text
         if (!update.message || !update.message.text) {
-            return new Response('OK - No message to process', { status: 200 });
+            return res.status(200).send('OK');
         }
 
         const chatId = update.message.chat.id.toString();
@@ -35,9 +73,8 @@ export default async function handler(req: Request) {
 
         if (!allowedIds.includes(chatId)) {
             console.warn(`[Telegram Webhook] Mensaje recibido de Chat ID no autorizado: ${chatId}`);
-            // Send a warning to the unauthorized user just in case
             await NotificationService.sendDirectTelegramMessage(chatId, "⚠️ *Acceso Denegado*\nEste bot es privado y exclusivo para el equipo administrativo de Villa & Pirata Stays.");
-            return new Response('Unauthorized Access', { status: 200 }); // Retornar 200 para que Telegram no reintente
+            return res.status(200).send('Unauthorized Access');
         }
 
         // Procesar Comando /status
@@ -88,14 +125,38 @@ export default async function handler(req: Request) {
                 );
             }
         }
+        // --- 🧠 NUEVO: NLP & IA INTELLIGENCE (Salty Brain) ---
+        else if (text.toLowerCase().includes('salty') || text.startsWith('/') || update.message.chat.type === 'private') {
+            await handleAIConsultation(chatId, text, update.message.from);
+        }
         else {
-            // Ignorar mensajes que no sean comandos para no spamear
+            // Ignorar mensajes que no mencionen a Salty o no sean comandos para no spamear en grupos
         }
 
-        return new Response('OK', { status: 200 });
+        return res.status(200).send('OK');
     } catch (error: any) {
         console.error("[Telegram Webhook] Error interno:", error.message);
-        return new Response('Internal Server Error', { status: 500 }); // Podría ser 200 para evitar reintentos, depende
+        return res.status(500).send('Internal Server Error');
+    }
+}
+
+async function handleAIConsultation(chatId: string, text: string, from: any) {
+    const senderName = from.first_name || "Host";
+    const isFather = from.id.toString() === "9395794184"; // ID o teléfono convertido si Telegram lo provee
+    const authorityContext = isFather ? "(Nota: Hablas con el Padre del Host, tiene autoridad máxima)." : "(Hablas con un miembro del equipo administrativo).";
+
+    try {
+        const { text: responseText } = await generateText({
+            model: google('gemini-2.5-flash'),
+            system: `${VILLA_CONCIERGE_PROMPT}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
+            prompt: `Mensaje de ${senderName}: ${text}`,
+            temperature: 0.7,
+        });
+
+        await NotificationService.sendDirectTelegramMessage(chatId, responseText);
+    } catch (error: any) {
+        console.error("[Telegram NLP] Error:", error.message);
+        await NotificationService.sendDirectTelegramMessage(chatId, "⚠️ <i>Salty está procesando mucha información ahora mismo. Reintenta en un momento, jefe.</i>");
     }
 }
 
