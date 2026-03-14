@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { NotificationService } from '../../services/NotificationService.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
@@ -12,6 +13,12 @@ const ICAL_URLS: Record<string, string> = {
 function parseIcsDate(raw: string): string {
     const d = raw.replace(/T.*/, '').trim(); // YYYYMMDD
     return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`;
+}
+
+function getPropertyName(id: string): string {
+    if (id === '1081171030449673920') return 'Villa Retiro R';
+    if (id === '42839458') return 'Pirata Family House';
+    return `Propiedad ${id}`;
 }
 
 export default async function handler(req: any, res: any) {
@@ -104,6 +111,16 @@ export default async function handler(req: any, res: any) {
             }
 
             results[propertyId] = { status: 'synced', newBlocks };
+
+            if (newBlocks > 0) {
+                const message = `
+🔄 <b>Sincronización Automática (iCal)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Propiedad:</b> ${getPropertyName(propertyId)}
+<b>Fechas Bloqueadas:</b> +${newBlocks} noches
+⚠️ <i>El calendario se ha cerrado para las nuevas fechas descubiertas. Revisa el Dashboard.</i>`;
+                await NotificationService.sendTelegramAlert(message);
+            }
 
         } catch (err: any) {
             const isTimeout = err.name === 'AbortError';

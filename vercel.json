@@ -10,7 +10,7 @@
     "crons": [
         {
             "path": "/api/calendar/import",
-            "schedule": "0 9 * * *"
+            "schedule": "*/15 * * * *"
         },
         {
             "path": "/api/feedback-cron",
