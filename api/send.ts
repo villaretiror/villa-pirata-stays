@@ -37,8 +37,8 @@ export default async function handler(req: any, res: any) {
     const hostEmail = 'villaretiror@gmail.com';
 
     const LOGOS: Record<string, string> = {
-      '1081171030449673920': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/villa_retiro_logo.png',
-      '42839458': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/logos/pirata_family_logo.png'
+      '1081171030449673920': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
+      '42839458': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/pirata_family_logo.png'
     };
 
     const currentLogo = LOGOS[propertyId] || LOGOS['1081171030449673920'];
