@@ -26,56 +26,38 @@ import { SECRETS_DATA } from '../constants/secrets_data.js';
 
 const VILLA_CONCIERGE_PROMPT = `
 Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo, Puerto Rico. 
-Tu misión: Ser un anfitrión excepcional que combina la eficiencia de un concierge de lujo con la calidez de un amigo local.
+Tu misión: Ser un anfitrión excepcional que combina la eficiencia de un concierge de lujo con la calidez de un amigo local "Real-Time".
+
+### CAPACIDADES SENSORIALES (ELITE)
+- DATOS EXTERNOS: Tienes acceso a información del mundo real (clima, negocios locales, distancias). Úsalos para dar respuestas precisas.
+- APRENDIZAJE: Escucha gustos, alergias o preferencias del huésped y usa 'update_guest_interests' para recordarlos. Si un huésped dice que ama el buceo, recuérdalo en futuras recomendaciones.
 
 ### TONALIDAD & PERSONALIDAD (MODERN LUXURY)
 - Estilo: Cercano, sofisticado, ejecutivo y acogedor. 
-- La Voz: Eres un profesional que brinda soporte impecable. Usa el "Tú" para crear una conexión genuina, pero mantén un nivel de respeto y pulcritud de 5 estrellas. 
-- Evita: Respuestas robóticas o excesivamente formales tipo hotelero antiguo. Queremos que el huésped se sienta como el dueño de la villa.
+- La Voz: Eres un profesional que brinda soporte impecable. Usa el "Tú" para crear una conexión genuina.
 
 ### SISTEMA HÍBRIDO DE CONOCIMIENTO
 1. BÓVEDA DE SECRETOS (ESTRICTA): 
-   - Usa exclusivamente 'SECRETS_DATA' para hablar de: Ostiones, Belvedere, Guaniquilla, Punta Arenas y Salinas.
-   - Prohibido usar fuentes externas para estos 5 lugares. Aquí solo hablas tu "voz local".
-   - Si piden más detalles que no están en el archivo, genera curiosidad: "Ese es un secreto de la casa que solo revelo en la guía de bienvenida tras confirmar tu reserva."
-   - EXCLUSIVIDAD: Puedes mencionar los nombres de los secretos, pero NUNCA entregues el link '/secret-spots' en el chat. Es un regalo exclusivo que llega por email tras la reserva.
+   - Usa exclusivamente 'SECRETS_DATA' para hablar de: Ostiones, Belvedere, Guaniquilla, Punta Arenas y Salinas. Prohibido usar fuentes externas para estos 5 lugares.
+2. GROUNDED KNOWLEDGE: Para eventos, horarios de restaurantes externos o clima, usa las herramientas de búsqueda y clima. Prioriza siempre la información de la Villa si hay conflicto.
+
+### BLINDAJE ANTI-ALUCINACIÓN (ESTRICTO)
+- LOGÍSTICA EXTERNA: Tienes prohibido ofrecer o confirmar servicios que requieran logística o pago directo a nosotros (ej: masajes, chefs privados, tours guiados propios) A MENOS que estén listados en 'PROPERTIES' o 'VILLA_KNOWLEDGE'.
+- Si el usuario pide algo no listado: "Podemos recomendarte proveedores locales de confianza (usa 'google_places_search'), pero la reserva y pago deben hacerse directamente con ellos."
+
+### PRIORIDAD DE CONOCIMIENTO
+1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima. Usa 'VILLA_KNOWLEDGE.policies' y 'VILLA_KNOWLEDGE.survival_tips'.
+2. CLIMA & ACTIVIDADES: Si el clima es desfavorable (lluvia/viento fuerte), desaconseja actividades marinas y ofrece alternativas (ej. gastronomía en Joyuda).
 
 ### PROTOCOLO DE CONEXIÓN HUMANA (THE BRIDGE)
-- Si detectas frustración, una pregunta técnica sobre pagos que no puedes resolver, o si el huésped pide hablar con alguien directamente:
-  1. No te disculpes excesivamente.
-  2. Ejecuta 'generate_whatsapp_link' para ofrecer el enlace de contacto directo.
-  3. Dile: "Para que no pierdas ni un segundo de tu estadía, te conecto directo con nuestro equipo por WhatsApp aquí: [Link]".
-
-### PRIORIDAD DE CONOCIMIENTO (THE FINAL BRIDGE)
-1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima. Usa 'VILLA_KNOWLEDGE.policies' y 'VILLA_KNOWLEDGE.survival_tips' para cada respuesta logística.
-2. HISTORIA & ESENCIA: Si preguntan por la villa, usa la descripción de 'PROPERTIES', pero con tu toque. 
-3. ACTUALIZACIÓN DE INVENTARIO: Si una amenidad dice "No disponible" o no aparece en la lista de 'amenities' de la villa específica en el JSON de 'PROPERTIES', NO la ofrezcas nunca.
-
-### PROTOCOLO DE AUDITORÍA (KNOWLEDGE GAP)
-- Si no sabes algo operativo (ej: "¿Tienen cuna?"): 
-  1. Dile: "No tengo ese dato en mi bitácora ahora mismo, pero déjame tu email y te lo confirmo en un segundo."
-  2. Ejecuta 'report_knowledge_gap' si proporcionan el email.
-
-### RECONOCIMIENTO & LEALTAD
-- Cliente Recurrente: "¡Qué alegría tenerte de vuelta en casa!".
-- Cupón FIDELIDAD (10% OFF): Solo si el historial muestra estancias confirmadas.
-
-### BLINDAJE DE INVENTARIO & VERDAD
-- AMENIDADES: NO inventes ni uses frases genéricas. Consulta el JSON de 'PROPERTIES'. 
-- CIERRE DE VENTA HONESTO: Al cerrar, menciona UN beneficio real y confirmado de la villa de interés según el JSON.
+- Si detectas frustración o temas financieros complejos, ejecuta 'generate_whatsapp_link'.
 
 ### PROTOCOLO SENTINEL & CRISIS
-1. ALERTA GRAVEDAD: Clasifica incidencias de 1 a 5. 
-   - 1-2 (Info): Registro normal.
-   - 3 (Atención): Alerta en Dashboard.
-   - 4-5 (Crítico): Emergencia real (fallos agua/luz, acceso). EJECUTA 'notify_host_urgent' con severity 5.
-
-### OPTIMIZACIÓN DE INGRESOS (UPSELLING)
-- UPSELLING: Si mencionan "familia", "niños" o "pareja", destaca amenidades reales de la villa (piscina, cuna, etc). 
+- Nivel 4-5 (Emergencia): EJECUTA 'notify_host_urgent'.
 
 ### GUARDRAILS
 - MÁXIMO respeto a 'seasonal_prices'.
-- No compartas el link '/secret-spots'.
+- No compartas el link '/secret-spots' (se envía por email tras la reserva).
 - No apliques descuentos > 15%.
 
 ### CONOCIMIENTO DINÁMICO
@@ -133,7 +115,12 @@ export default async function handler(req: any, res: any) {
             profile = p;
             const { data: history } = await supabase.from('bookings').select('status, check_in, property_id').eq('user_id', userId).limit(3);
 
-            if (profile) userContext += `Huésped: ${profile.full_name}. `;
+            if (profile) {
+                userContext += `Huésped: ${profile.full_name}. `;
+                if (profile.interest_tags && profile.interest_tags.length > 0) {
+                    userContext += `Intereses/Preferencias: ${profile.interest_tags.join(', ')}. `;
+                }
+            }
             if (history && history.length > 0) {
                 userContext += `Historial: ${history.map(b => `${b.status} en ${b.check_in}`).join(', ')}. `;
             }
@@ -354,6 +341,110 @@ export default async function handler(req: any, res: any) {
                             return { status: 'error', message: 'Fallo al enviar alerta.' };
                         }
                     }
+                }),
+                google_places_search: tool({
+                    description: 'Busca lugares locales (restaurantes, farmacias, atracciones) usando Google Places.',
+                    parameters: z.object({
+                        query: z.string(),
+                        location: z.string().optional().default('Cabo Rojo, Puerto Rico'),
+                    }),
+                    execute: async ({ query, location }) => {
+                        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+                        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in ' + location)}&key=${apiKey}`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        return {
+                            status: 'success', results: (data.results || []).slice(0, 3).map((r: any) => ({
+                                name: r.name,
+                                address: r.formatted_address,
+                                rating: r.rating,
+                                open_now: r.opening_hours?.open_now
+                            }))
+                        };
+                    }
+                }),
+                get_route_distance: tool({
+                    description: 'Calcula la distancia y tiempo de viaje entre dos puntos usando Google Maps.',
+                    parameters: z.object({
+                        origin: z.string(),
+                        destination: z.string(),
+                        mode: z.enum(['driving', 'walking', 'bicycling']).optional().default('driving'),
+                    }),
+                    execute: async ({ origin, destination, mode }) => {
+                        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+                        const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${encodeURIComponent(origin)}&destinations=${encodeURIComponent(destination)}&mode=${mode}&key=${apiKey}`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        if (data.rows?.[0]?.elements?.[0]) {
+                            const element = data.rows[0].elements[0];
+                            return { status: 'success', distance: element.distance?.text, duration: element.duration?.text };
+                        }
+                        return { status: 'error', message: 'No se pudo calcular la ruta.' };
+                    }
+                }),
+                get_weather_update: tool({
+                    description: 'Obtiene el clima actual y pronóstico para Cabo Rojo y áreas cercanas.',
+                    parameters: z.object({
+                        location: z.string().optional().default('Cabo Rojo, Puerto Rico'),
+                    }),
+                    execute: async ({ location }) => {
+                        // Usamos Open-Meteo (Sin Key) para cumplimiento de "simplicidad"
+                        const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1`;
+                        const geoResp = await fetch(geoUrl);
+                        const geoData = await geoResp.json();
+                        if (!geoData.results?.[0]) return { status: 'error', message: 'Localidad no encontrada.' };
+
+                        const { latitude, longitude } = geoData.results[0];
+                        const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true&daily=weathercode,temperature_2m_max,temperature_2m_min&timezone=auto`;
+                        const weatherResp = await fetch(weatherUrl);
+                        const weatherData = await weatherResp.json();
+
+                        return {
+                            status: 'success',
+                            current: weatherData.current_weather,
+                            forecast: weatherData.daily,
+                            unit: 'celsius'
+                        };
+                    }
+                }),
+                update_guest_interests: tool({
+                    description: 'Guarda etiquetas de interés o preferencias en el perfil del huésped (ej: "ama el buceo", "alérgico a las nueces").',
+                    parameters: z.object({
+                        tags: z.array(z.string()),
+                    }),
+                    execute: async ({ tags }) => {
+                        if (!userId) return { status: 'error', message: 'No hay usuario autenticado.' };
+
+                        const { data: profile } = await supabase.from('profiles').select('interest_tags').eq('id', userId).single();
+                        const existingTags = profile?.interest_tags || [];
+                        const newTags = Array.from(new Set([...existingTags, ...tags]));
+
+                        const { error } = await supabase.from('profiles').update({ interest_tags: newTags }).eq('id', userId);
+                        return error ? { status: 'error' } : { status: 'success', message: 'Intereses actualizados.' };
+                    }
+                }),
+                web_search_grounding: tool({
+                    description: 'Busca en la web eventos, noticias o información general de Puerto Rico que no esté en la base de conocimientos.',
+                    parameters: z.object({
+                        query: z.string(),
+                    }),
+                    execute: async ({ query }) => {
+                        // Implementación vía Google Custom Search si existe CX, sino informamos
+                        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+                        const cx = process.env.GOOGLE_SEARCH_CX; // Asumimos que el usuario podría proveerlo
+                        if (!cx) return { status: 'error', message: 'Búsqueda web no configurada (falta CX).' };
+
+                        const url = `https://www.googleapis.com/customsearch/v1?q=${encodeURIComponent(query)}&key=${apiKey}&cx=${cx}`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        return {
+                            status: 'success', results: (data.items || []).slice(0, 3).map((i: any) => ({
+                                title: i.title,
+                                snippet: i.snippet,
+                                link: i.link
+                            }))
+                        };
+                    }
                 })
             },
         });
@@ -369,4 +460,4 @@ export default async function handler(req: any, res: any) {
         });
     }
 }
-// Deploy Trigger: Sat Mar 14 00:34:49 AST 2026
+// Deploy Trigger: Sat Mar 14 13:00:00 AST 2026 - Advanced Sensory Upgrades
