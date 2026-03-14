@@ -89,8 +89,8 @@ export const maxDuration = 30;
 
 // Configuración de Supabase para Servidor (Usando Service Role si está disponible o Anon como fallback)
 const supabase = createClient(
-    process.env.VITE_SUPABASE_URL || "",
-    process.env.VITE_SUPABASE_ANON_KEY || ""
+    process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ""
 );
 
 const google = createGoogleGenerativeAI({

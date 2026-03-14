@@ -1,15 +1,29 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Environment config
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://villaretiror.com';
+// 🛡️ Safe Environment Access (Hybrid Node/Browser)
+const getEnv = (key: string): string => {
+  // 1. Try process.env (Server/Vercel)
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || process.env[`VITE_${key}`] || '';
+  }
+  // 2. Try import.meta.env (Client/Vite)
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    // @ts-ignore
+    return import.meta.env[`VITE_${key}`] || import.meta.env[key] || '';
+  }
+  return '';
+};
+
+const SUPABASE_URL = getEnv('SUPABASE_URL');
+const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY');
+export const SITE_URL = getEnv('SITE_URL') || 'https://villaretiror.com';
 
 export const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
 
 console.log(`[Supabase Service] Initialized in ${isConfigured ? 'PRODUCTION' : 'DEMO/MOCK'} mode`);
 if (!isConfigured) {
-  console.warn("Supabase keys missing. Check VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment.");
+  console.warn("Supabase keys missing. Check SUPABASE_URL and SUPABASE_ANON_KEY in your environment.");
 }
 
 
