@@ -62,6 +62,11 @@ export default async function handler(req: any, res: any) {
         results.tasks.journey = await taskGuestJourney(supabase);
     }
 
+    // 4. DIARIO (18:00 UTC+): Post-Checkout Thank You (3h after 11am check-out)
+    if (utcHour >= 18) {
+        results.tasks.thanks = await taskPostCheckoutThanks(supabase);
+    }
+
     return res.status(200).json(results);
 }
 
@@ -181,4 +186,53 @@ async function taskGuestJourney(supabase: any) {
         }
     }
     return { status: 'ok', drafts_generated: count };
+}
+
+async function taskPostCheckoutThanks(supabase: any) {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Buscar reservas confirmadas que salen HOY y no han recibido el gracias
+    // Excluyendo Airbnb (porque ellos manejan su comunicación)
+    const { data: bookings } = await supabase
+        .from('bookings')
+        .select(`
+            id, 
+            customer_name, 
+            customer_email, 
+            property_id, 
+            source,
+            properties(title)
+        `)
+        .eq('check_out', today)
+        .eq('status', 'confirmed')
+        .eq('email_sent_thanks', false)
+        .neq('source', 'Airbnb');
+
+    let sentCount = 0;
+    const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
+
+    for (const b of bookings || []) {
+        try {
+            const resp = await fetch(`${siteUrl}/api/send`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'thank_you_note',
+                    customerName: b.customer_name,
+                    customerEmail: b.customer_email || (b as any).profiles?.email,
+                    propertyName: b.properties?.title || getPropertyName(b.property_id),
+                    propertyId: b.property_id
+                })
+            });
+
+            if (resp.ok) {
+                await supabase.from('bookings').update({ email_sent_thanks: true }).eq('id', b.id);
+                sentCount++;
+            }
+        } catch (err) {
+            console.error(`Error sending thanks for booking ${b.id}:`, err);
+        }
+    }
+
+    return { status: 'ok', sent: sentCount };
 }

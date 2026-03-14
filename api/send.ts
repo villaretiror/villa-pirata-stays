@@ -105,51 +105,74 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 📩 CASO: PAGO EXITOSO / RESERVA CONFIRMADA
+    // 📩 CASO: PAGO EXITOSO / RESERVA CONFIRMADA (Caribe Chic Edition)
     else if (type === 'payment_success' || type === 'reservation_confirmed') {
       const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body || {};
       const firstName = customerName?.split(' ')[0] || 'Viajero';
+      
+      const mapsUrl = propertyId === '42839458' ? 'https://share.google/iQA2MMS4C2Vv7HBIx' : 'https://share.google/LBxZV0NwKZps4rliR';
+      const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(propertyName || 'Cabo Rojo, Puerto Rico')}`;
 
       emails.push({
         from: fromAddress,
         to: customerEmail,
         bcc: hostEmail,
-        subject: `🏝️ ¡Todo listo! Salty te da la bienvenida a ${propertyName}`,
+        subject: `🏝️ ¡Confirmado! Tu refugio en el oeste está listo`,
         html: `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 30px; overflow: hidden; background-color: #ffffff;">
-            <div style="background-color: #FDFCFB; padding: 40px; text-align: center; border-bottom: 2px dashed #f0f0f0;">
-              <img src="${currentLogo}" width="140" style="margin-bottom: 20px;" />
-              <h1 style="color: #2C2B29; font-size: 28px; margin: 0; font-family: serif;">¡Confirmado, ${firstName}!</h1>
-              <p style="color: #FF7F3F; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 12px; margin-top: 10px;">Prepárate para la experiencia Caribe Chic</p>
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 40px; overflow: hidden; background-color: #ffffff; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+            <div style="background-color: #FDFCFB; padding: 50px 40px; text-align: center; border-bottom: 2px dashed #f0f0f0;">
+              <img src="${currentLogo}" width="140" style="margin-bottom: 25px;" />
+              <h1 style="color: #2C2B29; font-size: 32px; margin: 0; font-family: 'Playfair Display', serif; font-weight: 700;">¡Hola, ${firstName}!</h1>
+              <p style="color: #FF7F3F; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 11px; margin-top: 15px;">Tu experiencia Caribe Chic comienza ahora</p>
             </div>
             
-            <div style="padding: 40px; color: #4A4A4A; line-height: 1.6;">
-              <p style="font-size: 16px;">
-                ¡Hola! Soy <strong>Salty</strong>, tu concierge personal. Estoy saltando de alegría porque has elegido <strong>${propertyName}</strong> para tu descanso. Te aseguro que los atardeceres aquí tienen un sabor especial.
+            <div style="padding: 40px; color: #4A4A4A; line-height: 1.8;">
+              <p style="font-size: 17px; margin-bottom: 25px;">
+                Soy <strong>Salty</strong>, tu concierge digital. La brisa de Buyé ya te espera y yo he preparado cada detalle para que tu estancia en <strong>${propertyName}</strong> sea legendaria.
               </p>
               
-              <div style="background-color: #FFF8F4; padding: 30px; border-radius: 20px; margin: 30px 0; border: 1px solid #FFEDE2;">
-                <h3 style="color: #FF7F3F; margin-top: 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Tu Guía de Acceso</h3>
-                <p style="margin: 10px 0;"><strong>Código de Entrada:</strong> <span style="font-size: 24px; color: #2C2B29; font-weight: black; letter-spacing: 2px;">${accessCode || '1234#'}</span></p>
-                <p style="margin: 5px 0; font-size: 14px;"><strong>WiFi:</strong> ${wifiName || 'Villa_Guest'} / <code>${wifiPass || 'pirata2024'}</code></p>
-                <p style="margin: 5px 0; font-size: 14px;"><strong>Estancia:</strong> ${checkIn} — ${checkOut}</p>
+              <div style="background-color: #2C2B29; color: #ffffff; padding: 35px; border-radius: 25px; margin: 30px 0; position: relative; overflow: hidden;">
+                <h3 style="color: #FF7F3F; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Protocolo de Acceso</h3>
+                <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">Código Seguro:</p>
+                <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${accessCode || '4829#'}</span></p>
+                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                  <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${wifiName || 'VillaRetiro_Guest'}</p>
+                  <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${wifiPass || 'Tropical2024!'}</code></p>
+                </div>
+              </div>
+
+              <!-- 🌦️ Live Weather Section -->
+              <div style="border: 1px solid #f0f0f0; border-radius: 20px; padding: 20px; margin-bottom: 30px; display: flex; align-items: center; gap: 15px; background: #fafafa;">
+                <span style="font-size: 30px;">☀️</span>
+                <div>
+                  <p style="margin: 0; font-weight: bold; font-size: 14px; color: #2C2B29;">Clima en Cabo Rojo</p>
+                  <p style="margin: 0; font-size: 12px; color: #666;">28°C — Soleado y Perfecto para Buyé.</p>
+                </div>
+              </div>
+
+              <!-- 🗺️ Navigation Buttons -->
+              <div style="text-align: center; margin: 35px 0;">
+                <p style="font-size: 14px; color: #888; margin-bottom: 20px;">¿Cómo llegar al paraíso?</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                  <a href="${mapsUrl}" style="background-color: #ffffff; color: #2C2B29; border: 1px solid #ddd; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">📍 Google Maps</a>
+                  <a href="${wazeUrl}" style="background-color: #33CCFF; color: #ffffff; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">🚙 Waze</a>
+                </div>
               </div>
 
               <div style="text-align: center; margin: 40px 0;">
-                <p style="font-size: 14px; color: #888; margin-bottom: 20px;">He preparado algo especial para ti que no está en las guías convencionales...</p>
-                <a href="https://villaretiror.com/secret-spots" style="background-color: #2C2B29; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">🎁 Descargar los 5 Spots Secretos de Salty</a>
+                <a href="https://villaretiror.com/stay/${propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
               </div>
 
-              <p style="font-size: 14px; color: #666; font-style: italic;">
-                "En la isla, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
+              <p style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
+                "En la Villa, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
               </p>
             </div>
 
-            <div style="background-color: #F8F9FA; padding: 30px; text-align: center; font-size: 12px; color: #999;">
-              <p>Si necesitas ayuda con el transporte o alguna petición especial, responde a este correo o contacta al Equipo de Villa & Pirata.</p>
-              <div style="margin-top: 20px;">
-                <a href="https://wa.me/17873560895" style="color: #25D366; text-decoration: none; font-weight: bold;">WhatsApp de Soporte</a> | 
-                <a href="https://villaretiror.com" style="color: #primary; text-decoration: none; font-weight: bold;">Mi Reserva</a>
+            <div style="background-color: #F8F9FA; padding: 40px; text-align: center; font-size: 12px; color: #999;">
+              <p>Si necesitas arreglos especiales (chef, decoración, transporte), responde a este correo.</p>
+              <div style="margin-top: 25px;">
+                <a href="https://wa.me/17873560895" style="color: #25D366; text-decoration: none; font-weight: bold;">WhatsApp VIP</a> | 
+                <a href="https://villaretiror.com" style="color: #666; text-decoration: none;">villaretiror.com</a>
               </div>
             </div>
           </div>
@@ -196,6 +219,62 @@ export default async function handler(req: any, res: any) {
               </p>
             </div>
             ${emailFooter}
+          </div>
+        `
+      });
+    }
+
+    // 📩 CASO: THANK YOU NOTE (Post-stay Luxury Loop)
+    else if (type === 'thank_you_note') {
+      const { customerName, customerEmail, propertyName } = req.body || {};
+      const firstName = customerName?.split(' ')[0] || 'Socio';
+      const googleReviewUrl = propertyName?.includes('Retiro') 
+        ? 'https://g.page/r/CUERPA_RETIRO_PLACEHOLDER' 
+        : 'https://g.page/r/PIRATA_FAMILY_PLACEHOLDER';
+
+      emails.push({
+        from: fromAddress,
+        to: customerEmail,
+        subject: '🌊 ¡Gracias por ser parte de la historia de Villa Retiro!',
+        html: `
+          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 40px; overflow: hidden; background-color: #ffffff;">
+            <div style="padding: 50px 40px; text-align: center; background-color: #FDFCFB;">
+              <img src="${currentLogo}" width="120" style="margin-bottom: 30px;" />
+              <h1 style="color: #2C2B29; font-size: 28px; margin: 0; font-family: serif;">¡Buen viaje a casa, ${firstName}!</h1>
+            </div>
+            
+            <div style="padding: 40px; color: #4A4A4A; line-height: 1.8; text-align: left;">
+              <p style="font-size: 16px;">
+                Espero que la brisa de Cabo Rojo y la paz de la Villa te acompañen en tu regreso. Fue un verdadero placer para mí y para todo el equipo de **Villa Retiro LLC** tenerte con nosotros.
+              </p>
+              <p style="font-size: 16px;">
+                Mi misión como tu concierge es que cada detalle haya sido perfecto. Si disfrutaste tu estancia tanto como nosotros disfrutamos recibirte, nos ayudaría muchísimo que compartieras tu experiencia:
+              </p>
+              
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${googleReviewUrl}" style="background-color: #2C2B29; color: #ffffff; padding: 20px 40px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">⭐⭐⭐⭐⭐ Dejar reseña en Google</a>
+                <p style="font-size: 11px; color: #999; margin-top: 15px;">(Tu apoyo ayuda a que este proyecto familiar siga creciendo)</p>
+              </div>
+
+              <div style="background: linear-gradient(135deg, #FFF8F4 0%, #FFEDE2 100%); padding: 35px; border-radius: 25px; margin: 40px 0; border: 1px solid #FFD8C2; text-align: center;">
+                <h3 style="color: #FF7F3F; margin-top: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">🎁 Un regalo para tu regreso</h3>
+                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Sabemos que ya estás extrañando el atardecer en Buyé. Por reservar directamente, tienes este beneficio exclusivo:</p>
+                <div style="background: white; display: inline-block; padding: 15px 30px; border: 2px dashed #FF7F3F; border-radius: 12px; margin-bottom: 25px;">
+                  <span style="font-size: 22px; color: #2C2B29; font-weight: 900; letter-spacing: 2px;">RETORNOPREMIUM</span>
+                </div>
+                <p style="font-size: 13px; font-weight: bold; color: #2C2B29;">10% de Descuento Directo + Regalo de Huésped Recurrente</p>
+                <a href="https://villaretiror.com" style="color: #FF7F3F; font-weight: bold; text-decoration: underline; font-size: 14px; margin-top: 15px; display: block;">📅 ¡Quiero volver! Reservar ahora</a>
+              </div>
+
+              <p style="font-size: 14px; color: #666; font-style: italic; text-align: center;">
+                "Hasta la próxima, socio." — Salty
+              </p>
+            </div>
+
+            <div style="background-color: #F8F9FA; padding: 30px; text-align: center; font-size: 11px; color: #999; border-top: 1px solid #eee;">
+              <p>© 2026 Villa Retiro LLC. Todos los derechos reservados.</p>
+              <p>Salty™ es una marca de Villa Retiro LLC.</p>
+            </div>
           </div>
         `
       });
