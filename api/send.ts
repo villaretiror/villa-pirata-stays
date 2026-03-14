@@ -3,7 +3,7 @@ import { NotificationService } from '../services/NotificationService.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// ✅ Versión Node.js para Vercel Functions (v9.0 - Final Resilience Sync)
+// ✅ Versión Node.js para Vercel Functions (v9.1 - Precision Segment Logic)
 export default async function handler(req: any, res: any) {
   // Manejo de CORS Preflight
   if (req.method === 'OPTIONS') {
@@ -23,25 +23,57 @@ export default async function handler(req: any, res: any) {
   }
 
   try {
-    // En Node.js, Vercel ya parsea el body si viene como JSON
-    const { type, to, customer, contactData, booking, propertyId } = req.body || {};
+    const { type, customer, contactData, propertyId } = req.body || {};
     const userData = customer || contactData || {};
 
+    // 🏆 PROPERTY DATA REPOSITORY (THE BRAIN)
+    const PROPERTY_DATA: Record<string, any> = {
+      '1081171030449673920': {
+        name: 'Villa Retiro R',
+        logo: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
+        wifiName: 'VillaRetiro_Starlink_Premium',
+        wifiPass: 'Tropical2024!',
+        accessCode: '4829 #',
+        mapsUrl: 'https://share.google/LBxZV0NwKZps4rliR',
+        wazeUrl: 'https://waze.com/ul?q=Carr%20307%20Km%206.2%2C%20Interior%2C%20Cabo%20Rojo%2C%2000623',
+        reviewUrl: 'https://g.page/r/CUERPA_RETIRO_PLACEHOLDER',
+        accentColor: '#FF7F3F'
+      },
+      '42839458': {
+        name: 'Pirata Family House',
+        logo: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/pirata_family_logo.png',
+        wifiName: 'PirataHouse_WiFi',
+        wifiPass: 'Pirata2024!',
+        accessCode: '1776 #',
+        mapsUrl: 'https://share.google/iQA2MMS4C2Vv7HBIx',
+        wazeUrl: 'https://waze.com/ul?q=Boquer%C3%B3n%2C%20Cabo%20Rojo%2C%20Puerto%20Rico%2000622',
+        reviewUrl: 'https://g.page/r/PIRATA_FAMILY_PLACEHOLDER',
+        accentColor: '#2C2B29'
+      }
+    };
+
+    const p = PROPERTY_DATA[propertyId] || PROPERTY_DATA['1081171030449673920'];
+    const currentLogo = p.logo;
+
     // Log de Auditoría Master Consolidado
-    const clientName = userData.name || (req.body || {}).customerName || 'Cliente Indefinido';
-    console.log(`[Email System] Enviando tipo: ${type} para el cliente: ${clientName}`);
-    console.log(`[Email API] UserAgent: ${req.headers['user-agent']}`);
+    const rawClientName = userData.name || (req.body || {}).customerName || '';
+    
+    // 👤 PERSONALIZATION ENGINE
+    const formatFirstName = (name: string) => {
+      if (!name || name.trim() === '') return 'Viajero';
+      // Limpiar y capitalizar (SOPORTE PARA NOMBRES EN MAYÚSCULAS)
+      const cleanName = name.trim().split(' ')[0].toLowerCase();
+      return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+    };
+
+    const firstName = formatFirstName(rawClientName);
+    const clientFullName = rawClientName || 'Cliente Indefinido';
+
+    console.log(`[Email System] Enviando tipo: ${type} para el cliente: ${firstName} (Propiedad: ${p.name})`);
 
     const resendClient = new Resend(process.env.RESEND_API_KEY);
     const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
     const hostEmail = 'villaretiror@gmail.com';
-
-    const LOGOS: Record<string, string> = {
-      '1081171030449673920': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
-      '42839458': 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/pirata_family_logo.png'
-    };
-
-    const currentLogo = LOGOS[propertyId] || LOGOS['1081171030449673920'];
 
     const emailFooter = `
       <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #f0f0f0; text-align: center;">
@@ -65,6 +97,7 @@ export default async function handler(req: any, res: any) {
           <p><strong>Email:</strong> ${email}</p>
           <p><strong>Teléfono:</strong> ${phone}</p>
           <p><strong>Mensaje:</strong> ${message}</p>
+          <p><strong>Propiedad de Interés:</strong> ${p.name}</p>
           ${emailFooter}
         </div>`
       });
@@ -72,31 +105,31 @@ export default async function handler(req: any, res: any) {
         emails.push({
           from: fromAddress,
           to: email,
-          subject: 'Recibimos tu consulta - Villa Retiro 🌴',
+          subject: `Recibimos tu consulta - ${p.name} 🌴`,
           html: `<div style="font-family: sans-serif; text-align: center; padding: 30px;">
             <img src="${currentLogo}" width="100" />
-            <h2>¡Hola ${name?.split(' ')[0]}!</h2>
-            <p>Gracias por tu interés. Te contactaremos pronto.</p>
+            <h2>¡Hola ${firstName}!</h2>
+            <p>Gracias por tu interés en ${p.name}. Te contactaremos pronto.</p>
             ${emailFooter}
           </div>`
         });
       }
     }
 
-    // 📩 CASO: ALERTA URGENTE CHAT / CHAT NOTIFICATION
+    // 📩 CASO: ALERTA URGENTE CHAT
     else if (type === 'urgent_alert' || type === 'chat_notification') {
-      const name = userData.name || 'Cliente';
       const message = userData.message || 'Soporte Urgente';
       const contact = userData.contact || userData.phone || userData.email || 'No Provisto';
       emails.push({
         from: fromAddress,
         to: hostEmail,
-        subject: `🚨 ${type === 'urgent_alert' ? 'URGENTE' : 'Notificación'}: Soporte Chat - ${name}`,
+        subject: `🚨 ${type === 'urgent_alert' ? 'URGENTE' : 'Notificación'}: Soporte Chat - ${firstName}`,
         html: `<div style="font-family: sans-serif; border: 4px solid #F63; padding: 30px; border-radius: 20px;">
           <h1 style="color: #F63;">⚠️ Solicitud de Soporte</h1>
-          <p><strong>Cliente:</strong> ${name}</p>
+          <p><strong>Cliente:</strong> ${clientFullName}</p>
           <p><strong>Mensaje:</strong> ${message}</p>
           <p><strong>Contacto:</strong> ${contact}</p>
+          <p><strong>Propiedad:</strong> ${p.name}</p>
           <div style="margin-top: 20px;">
             <a href="https://wa.me/${contact?.replace(/\D/g, '')}" style="background: #25D366; color: white; padding: 15px 25px; text-decoration: none; border-radius: 10px; font-weight: bold;">WhatsApp Directo</a>
           </div>
@@ -105,39 +138,35 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 📩 CASO: PAGO EXITOSO / RESERVA CONFIRMADA (Caribe Chic Edition)
+    // 📩 CASO: PAGO EXITOSO / RESERVA CONFIRMADA
     else if (type === 'payment_success' || type === 'reservation_confirmed') {
-      const { customerName, customerEmail, propertyName, checkIn, checkOut, accessCode, wifiName, wifiPass } = req.body || {};
-      const firstName = customerName?.split(' ')[0] || 'Viajero';
+      const { customerEmail, checkIn, checkOut, totalPrice } = req.body || {};
       
-      const mapsUrl = propertyId === '42839458' ? 'https://share.google/iQA2MMS4C2Vv7HBIx' : 'https://share.google/LBxZV0NwKZps4rliR';
-      const wazeUrl = `https://waze.com/ul?q=${encodeURIComponent(propertyName || 'Cabo Rojo, Puerto Rico')}`;
-
       emails.push({
         from: fromAddress,
         to: customerEmail,
         bcc: hostEmail,
-        subject: `🏝️ ¡Confirmado! Tu refugio en el oeste está listo`,
+        subject: `🏝️ ¡Confirmado! Tu refugio en ${p.name} está listo`,
         html: `
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 40px; overflow: hidden; background-color: #ffffff; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
             <div style="background-color: #FDFCFB; padding: 50px 40px; text-align: center; border-bottom: 2px dashed #f0f0f0;">
               <img src="${currentLogo}" width="140" style="margin-bottom: 25px;" />
-              <h1 style="color: #2C2B29; font-size: 32px; margin: 0; font-family: 'Playfair Display', serif; font-weight: 700;">¡Hola, ${firstName}!</h1>
-              <p style="color: #FF7F3F; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 11px; margin-top: 15px;">Tu experiencia Caribe Chic comienza ahora</p>
+              <h1 style="color: #2C2B29; font-size: 32px; margin: 0; font-family: serif; font-weight: 700;">¡Hola, ${firstName}!</h1>
+              <p style="color: ${p.accentColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 11px; margin-top: 15px;">Tu experiencia Caribe Chic en ${p.name} comienza ahora</p>
             </div>
             
             <div style="padding: 40px; color: #4A4A4A; line-height: 1.8;">
               <p style="font-size: 17px; margin-bottom: 25px;">
-                Soy <strong>Salty</strong>, tu concierge digital. La brisa de Buyé ya te espera y yo he preparado cada detalle para que tu estancia en <strong>${propertyName}</strong> sea legendaria.
+                Soy <strong>Salty</strong>, tu concierge digital. La brisa de Cabo Rojo ya te espera y yo he preparado cada detalle para que tu estancia en <strong>${p.name}</strong> sea legendaria.
               </p>
               
               <div style="background-color: #2C2B29; color: #ffffff; padding: 35px; border-radius: 25px; margin: 30px 0; position: relative; overflow: hidden;">
-                <h3 style="color: #FF7F3F; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Protocolo de Acceso</h3>
+                <h3 style="color: ${p.accentColor}; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Protocolo de Acceso</h3>
                 <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">Código Seguro:</p>
-                <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${accessCode || '4829#'}</span></p>
+                <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${p.accessCode}</span></p>
                 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                  <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${wifiName || 'VillaRetiro_Guest'}</p>
-                  <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${wifiPass || 'Tropical2024!'}</code></p>
+                  <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${p.wifiName}</p>
+                  <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${p.wifiPass}</code></p>
                 </div>
               </div>
 
@@ -146,7 +175,7 @@ export default async function handler(req: any, res: any) {
                 <span style="font-size: 30px;">☀️</span>
                 <div>
                   <p style="margin: 0; font-weight: bold; font-size: 14px; color: #2C2B29;">Clima en Cabo Rojo</p>
-                  <p style="margin: 0; font-size: 12px; color: #666;">28°C — Soleado y Perfecto para Buyé.</p>
+                  <p style="margin: 0; font-size: 12px; color: #666;">28°C — Soleado y Perfecto para disfrutar.</p>
                 </div>
               </div>
 
@@ -154,13 +183,13 @@ export default async function handler(req: any, res: any) {
               <div style="text-align: center; margin: 35px 0;">
                 <p style="font-size: 14px; color: #888; margin-bottom: 20px;">¿Cómo llegar al paraíso?</p>
                 <div style="display: flex; gap: 10px; justify-content: center;">
-                  <a href="${mapsUrl}" style="background-color: #ffffff; color: #2C2B29; border: 1px solid #ddd; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">📍 Google Maps</a>
-                  <a href="${wazeUrl}" style="background-color: #33CCFF; color: #ffffff; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">🚙 Waze</a>
+                  <a href="${p.mapsUrl}" style="background-color: #ffffff; color: #2C2B29; border: 1px solid #ddd; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">📍 Google Maps</a>
+                  <a href="${p.wazeUrl}" style="background-color: #33CCFF; color: #ffffff; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">🚙 Waze</a>
                 </div>
               </div>
 
               <div style="text-align: center; margin: 40px 0;">
-                <a href="https://villaretiror.com/stay/${propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
+                <a href="https://villaretiror.com/stay/${propertyId}" style="background: linear-gradient(135deg, ${p.accentColor} 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
               </div>
 
               <p style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
@@ -179,11 +208,11 @@ export default async function handler(req: any, res: any) {
         `
       });
 
-      // 🛰️ TELEGRAM SALES ALERT: Social Proof Interno
-      const priceStr = req.body.totalPrice ? `$${req.body.totalPrice}` : '0';
+      // 🛰️ TELEGRAM SALES ALERT
+      const priceStr = totalPrice ? `$${totalPrice}` : '0';
       await NotificationService.notifyNewReservation(
-        customerName || 'Invitado',
-        propertyName || 'Propiedad',
+        firstName,
+        p.name,
         checkIn || 'TBD',
         checkOut || 'TBD',
         priceStr
@@ -192,26 +221,26 @@ export default async function handler(req: any, res: any) {
 
     // 📩 CASO: INVITACIÓN CO-ANFITRIÓN
     else if (type === 'cohost_invitation') {
-      const { email, propertyName, token } = req.body || {};
+      const { email, token } = req.body || {};
       const inviteUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/login?invite=true${token ? `&token=${token}` : ''}`;
 
       emails.push({
         from: fromAddress,
         to: email,
-        subject: `🤝 Invitación para ser Co-anfitrión en ${propertyName}`,
+        subject: `🤝 Invitación para ser Co-anfitrión en ${p.name}`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 30px; overflow: hidden; background-color: #ffffff;">
             <div style="background-color: #2C2B29; padding: 40px; text-align: center;">
               <img src="${currentLogo}" width="120" style="margin-bottom: 20px;" />
               <h2 style="color: #ffffff; margin: 0; font-family: serif;">Invitación Especial</h2>
-              <p style="color: #FF7F3F; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-top: 10px;">Equipo de Villa & Pirata</p>
+              <p style="color: ${p.accentColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 2px; font-size: 11px; margin-top: 10px;">Equipo de Villa & Pirata</p>
             </div>
             <div style="padding: 40px; color: #4A4A4A; line-height: 1.6;">
-              <p style="font-size: 16px;">Has sido invitado como <strong>Co-anfitrión</strong> para gestionar la propiedad <strong>${propertyName}</strong>.</p>
+              <p style="font-size: 16px;">Has sido invitado como <strong>Co-anfitrión</strong> para gestionar la propiedad <strong>${p.name}</strong>.</p>
               <p style="font-size: 14px; color: #666;">Como miembro del equipo, tendrás acceso al Panel de Control para supervisar reservas, el calendario operativo y la comunicación con los huéspedes.</p>
               
               <div style="text-align: center; margin: 40px 0;">
-                <a href="${inviteUrl}" style="background-color: #FF7F3F; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(255,127,63,0.2);">Aceptar Invitación y Acceder</a>
+                <a href="${inviteUrl}" style="background-color: ${p.accentColor}; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(255,127,63,0.2);">Aceptar Invitación y Acceder</a>
               </div>
               
               <p style="font-size: 12px; color: #999; text-align: center; font-style: italic;">
@@ -224,18 +253,14 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 📩 CASO: THANK YOU NOTE (Post-stay Luxury Loop)
+    // 📩 CASO: THANK YOU NOTE
     else if (type === 'thank_you_note') {
-      const { customerName, customerEmail, propertyName } = req.body || {};
-      const firstName = customerName?.split(' ')[0] || 'Socio';
-      const googleReviewUrl = propertyName?.includes('Retiro') 
-        ? 'https://g.page/r/CUERPA_RETIRO_PLACEHOLDER' 
-        : 'https://g.page/r/PIRATA_FAMILY_PLACEHOLDER';
+      const { customerEmail } = req.body || {};
 
       emails.push({
         from: fromAddress,
         to: customerEmail,
-        subject: '🌊 ¡Gracias por ser parte de la historia de Villa Retiro!',
+        subject: `🌊 ¡Gracias por ser parte de la historia de ${p.name}!`,
         html: `
           <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 40px; overflow: hidden; background-color: #ffffff;">
             <div style="padding: 50px 40px; text-align: center; background-color: #FDFCFB;">
@@ -245,20 +270,20 @@ export default async function handler(req: any, res: any) {
             
             <div style="padding: 40px; color: #4A4A4A; line-height: 1.8; text-align: left;">
               <p style="font-size: 16px;">
-                Espero que la brisa de Cabo Rojo y la paz de la Villa te acompañen en tu regreso. Fue un verdadero placer para mí y para todo el equipo de **Villa Retiro LLC** tenerte con nosotros.
+                Espero que la brisa de Cabo Rojo y la paz de la Villa te acompañen en tu regreso. Fue un verdadero placer para mí y para todo el equipo de **Villa Retiro LLC** tenerte con nosotros en **${p.name}**.
               </p>
               <p style="font-size: 16px;">
                 Mi misión como tu concierge es que cada detalle haya sido perfecto. Si disfrutaste tu estancia tanto como nosotros disfrutamos recibirte, nos ayudaría muchísimo que compartieras tu experiencia:
               </p>
               
               <div style="text-align: center; margin: 40px 0;">
-                <a href="${googleReviewUrl}" style="background-color: #2C2B29; color: #ffffff; padding: 20px 40px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">⭐⭐⭐⭐⭐ Dejar reseña en Google</a>
+                <a href="${p.reviewUrl}" style="background-color: #2C2B29; color: #ffffff; padding: 20px 40px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; box-shadow: 0 10px 20px rgba(0,0,0,0.1);">⭐⭐⭐⭐⭐ Dejar reseña en Google</a>
                 <p style="font-size: 11px; color: #999; margin-top: 15px;">(Tu apoyo ayuda a que este proyecto familiar siga creciendo)</p>
               </div>
 
               <div style="background: linear-gradient(135deg, #FFF8F4 0%, #FFEDE2 100%); padding: 35px; border-radius: 25px; margin: 40px 0; border: 1px solid #FFD8C2; text-align: center;">
                 <h3 style="color: #FF7F3F; margin-top: 0; font-size: 15px; text-transform: uppercase; letter-spacing: 1px;">🎁 Un regalo para tu regreso</h3>
-                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Sabemos que ya estás extrañando el atardecer en Buyé. Por reservar directamente, tienes este beneficio exclusivo:</p>
+                <p style="font-size: 14px; color: #666; margin-bottom: 20px;">Sabemos que ya estás extrañando el atardecer en nuestro paraíso. Por reservar directamente, tienes este beneficio exclusivo:</p>
                 <div style="background: white; display: inline-block; padding: 15px 30px; border: 2px dashed #FF7F3F; border-radius: 12px; margin-bottom: 25px;">
                   <span style="font-size: 22px; color: #2C2B29; font-weight: 900; letter-spacing: 2px;">RETORNOPREMIUM</span>
                 </div>
@@ -280,7 +305,7 @@ export default async function handler(req: any, res: any) {
       });
     }
 
-    // 🚀 ENVÍO GARANTIZADO (Guaranteed Delivery)
+    // 🚀 ENVÍO GARANTIZADO
     const results = [];
     for (const emailData of emails) {
       const { data, error } = await resendClient.emails.send(emailData);
@@ -290,7 +315,6 @@ export default async function handler(req: any, res: any) {
       results.push(data);
     }
 
-    console.log(`[Email System] Despacho exitoso para tipo: ${type}`);
     return res.status(200).json({ success: true, results });
 
   } catch (err: any) {
