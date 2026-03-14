@@ -42,5 +42,96 @@ export const NotificationService = {
             console.error("[NotificationService] Error de Red/Fetch:", error.message);
             return false;
         }
+    },
+
+    /**
+     * Enviar mensaje directo a un Chat ID específico
+     */
+    async sendDirectTelegramMessage(chatId: string, message: string): Promise<boolean> {
+        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
+
+        if (!TELEGRAM_TOKEN) {
+            console.warn("[NotificationService] Telegram Token faltante para envío directo.");
+            return false;
+        }
+
+        try {
+            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            });
+
+            const data = await response.json();
+            if (!data.ok) {
+                console.error("[NotificationService] Error de Telegram (Directo):", data.description);
+                return false;
+            }
+            return true;
+        } catch (error: any) {
+            console.error("[NotificationService] Error de Red/Fetch (Directo):", error.message);
+            return false;
+        }
+    },
+
+    /**
+     * 🏨 RESERVAS: Nueva Reservación Confirmada
+     */
+    async notifyNewReservation(guestName: string, property: string, checkIn: string, checkOut: string, price: string): Promise<boolean> {
+        const message = `
+🏨 <b>¡Nueva Reserva Confirmada!</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+<b>Fechas:</b> ${checkIn} a ${checkOut}
+<b>Total:</b> $${price} USD
+🚀 <i>Acción: Prepara todo para su llegada.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 🔑 CHECK-IN: Recordatorio
+     */
+    async notifyCheckInReminder(guestName: string, property: string, time: string): Promise<boolean> {
+        const message = `
+🔑 <b>¡Check-In Hoy!</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+<b>Hora:</b> ${time}
+✨ <i>Acción: Asegúrate de que los códigos funcionen.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 🧹 CHECK-OUT: Salida y Limpieza
+     */
+    async notifyCheckOutAlert(guestName: string, property: string): Promise<boolean> {
+        const message = `
+🧹 <b>¡Huésped Saliendo! (Check-Out)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+🧼 <i>Acción: Coordinar limpieza de inmediato para la próxima reserva.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * ⭐ REVIEWS: Nuevo Comentario
+     */
+    async notifyNewReview(guestName: string, property: string, rating: number, platform: string): Promise<boolean> {
+        const stars = "⭐".repeat(rating);
+        const message = `
+⭐ <b>¡Nueva Reseña en ${platform}!</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Propiedad:</b> ${property}
+<b>Huésped:</b> ${guestName}
+<b>Calificación:</b> ${stars}
+💬 <i>Acción: Responde rápido para mantener el SEO alto.</i>`;
+        return this.sendTelegramAlert(message);
     }
 };

@@ -157,14 +157,13 @@ export default async function handler(req: any, res: any) {
       });
 
       // 🛰️ TELEGRAM SALES ALERT: Social Proof Interno
-      const commissionSaved = ((Number(req.body.totalPrice) || 0) * 0.15).toFixed(2);
-      await NotificationService.sendTelegramAlert(
-        `💰 <b>¡Salty acaba de cerrar una venta!</b>\n\n` +
-        `Propiedad: <b>${propertyName}</b>\n` +
-        `👤 <b>Huésped:</b> ${customerName}\n` +
-        `📅 <b>Estancia:</b> ${checkIn} al ${checkOut}\n` +
-        `💵 <b>Monto:</b> $${req.body.totalPrice || '0'}\n\n` +
-        `🚀 <b>Ahorro:</b> $${commissionSaved}`
+      const priceStr = req.body.totalPrice ? `$${req.body.totalPrice}` : '0';
+      await NotificationService.notifyNewReservation(
+        customerName || 'Invitado',
+        propertyName || 'Propiedad',
+        checkIn || 'TBD',
+        checkOut || 'TBD',
+        priceStr
       );
     }
 

@@ -319,23 +319,32 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
 
   const renderAlertsModal = () => (
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-        <h2 className="font-bold text-xl mb-1">Notificaciones</h2>
-        <p className="text-xs text-text-light mb-6">Gestiona las alertas push.</p>
-        <div className="space-y-4">
-          {Object.entries(notifications).map(([key, val]) => (
-            <div key={key} className="flex items-center justify-between">
-              <span className="capitalize text-sm font-medium text-text-main">{key}</span>
-              <button
-                onClick={() => setNotifications({ ...notifications, [key]: !val })}
-                className={`w-10 h-6 rounded-full p-1 transition-colors ${val ? 'bg-primary' : 'bg-gray-300'}`}
-              >
-                <div className={`w-4 h-4 rounded-full bg-white shadow-sm transform transition-transform ${val ? 'translate-x-4' : ''}`}></div>
-              </button>
-            </div>
-          ))}
+      <div className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl border border-white/5">
+        <h2 className="font-serif font-bold text-2xl mb-1 text-text-main flex items-center gap-2">
+          <span className="material-icons text-blue-500 text-3xl">telegram</span>
+          Telegram Bot
+        </h2>
+        <p className="text-xs text-text-light mb-6">Tus alertas ahora están centralizadas vía Telegram para mayor confiabilidad 🌴.</p>
+
+        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 flex items-start gap-4 mb-6">
+          <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-500 shrink-0">
+            <span className="material-icons text-lg">admin_panel_settings</span>
+          </div>
+          <div>
+            <h4 className="text-[11px] font-black uppercase text-blue-900 tracking-wider mb-1">Monitoreo Activo</h4>
+            <p className="text-[10px] text-blue-700/80 font-medium leading-relaxed">
+              Las notificaciones Push web han sido desactivadas. Recibirás alertas instantáneas en tu celular de: 🏨 Reservas, 🔑 Check-in, 🧹 Limpieza y ⭐ Reseñas.
+            </p>
+          </div>
         </div>
-        <button onClick={() => setActiveModal('none')} className="w-full mt-6 py-3 text-sm font-bold text-gray-500 hover:bg-gray-50 rounded-xl">Cerrar</button>
+
+        <div className="text-center">
+          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mb-2">Comando Disponible</p>
+          <code className="bg-gray-100 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-bold font-mono">/status</code>
+          <p className="text-[9px] text-gray-400 mt-2">Envíalo al bot para obtener un reporte en vivo.</p>
+        </div>
+
+        <button onClick={() => setActiveModal('none')} className="w-full mt-8 py-4 text-[10px] font-black uppercase tracking-widest bg-black text-white hover:bg-gray-800 rounded-2xl shadow-xl transition-all">Cerrar Panel</button>
       </div>
     </div>
   );

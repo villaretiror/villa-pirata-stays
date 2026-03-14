@@ -50,17 +50,7 @@ const ScrollToTop = () => {
   return null;
 };
 
-/* 
-const registerServiceWorker = () => {
-  if ('serviceWorker' in navigator && import.meta.env.PROD) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch((err) => {
-        console.warn('PWA Sync Pending - Local Environment skip:', err.message);
-      });
-    });
-  }
-};
-*/
+
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -82,5 +72,3 @@ root.render(
     </ErrorBoundary>
   </React.StrictMode>
 );
-
-// registerServiceWorker();
