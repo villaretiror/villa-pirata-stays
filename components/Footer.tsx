@@ -17,10 +17,10 @@ const Footer: React.FC = () => {
 
         <div className="flex flex-col items-center md:items-end space-y-1 text-center md:text-right">
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-main">
-            Propiedad Intelectual de Villa Retiro LLC © 2026
+            Propiedad Intelectual de Villa Retiro LLC © 2026.
           </p>
           <p className="text-[9px] text-text-light/60 max-w-[250px] leading-relaxed italic">
-            Salty™ es una marca de Villa Retiro LLC. Todos los derechos reservados.
+            Salty™ es una marca de Villa Retiro LLC.
           </p>
         </div>
       </div>
