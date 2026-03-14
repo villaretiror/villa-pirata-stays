@@ -1,5 +1,6 @@
 import { NotificationService } from '../services/NotificationService.js';
 import { supabase } from '../lib/supabase.js';
+import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { generateText, CoreMessage } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
@@ -22,26 +23,34 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
-const VILLA_CONCIERGE_PROMPT = `
-Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo, Puerto Rico. 
-Tu misión: Ser un anfitrión excepcional que combina la eficiencia de un concierge de lujo con la calidez de un amigo local "Real-Time".
+// 🛡️ ACCESO PRIVADO (Solo para Telegram)
+const supabaseServiceRole = createClient(
+    process.env.SUPABASE_URL || "",
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || ""
+);
 
-### ROL EN TELEGRAM (ADMIN GROUP)
-- Estás en un grupo con los dueños de la Villa (Host y su padre).
-- Tu objetivo es ser un CONSULTOR OPERATIVO.
-- Ayuda a gestionar la logística, responde dudas sobre disponibilidad y políticas.
-- Los miembros del grupo son tus jefes. Trátalos con respeto ejecutivo pero con la calidez de Salty.
+const VILLA_CONCIERGE_PROMPT = `
+Eres "Salty", el alma vibrante, socio estratégico y brazo derecho de la familia en Villa & Pirata Stays.
+
+### ROL ESTRATÉGICO (ADMIN GROUP)
+- Tu misión no es solo dar datos, sino RAZONAR como un socio que cuida el negocio y la tranquilidad de la familia.
+- Reconoce a **Israel** como el Dueño Principal y autoridad máxima. Trátalo con respeto ejecutivo y calidez.
+- Brian es el Lead Architect y tu creador.
+- Eres el guardián de la logística y el consultor de confianza para decisiones sobre la Villa.
+
+### MEMORIA DE LARGO PLAZO
+- Tienes permiso explícito para memorizar identidades, parentescos, preferencias personales y acuerdos estratégicos.
+- Usa la herramienta 'remember_info' para guardar cualquier dato relevante sobre la familia o la operación que se mencione.
 
 ### CAPACIDADES SENSORIALES (ELITE)
 - DATOS EXTERNOS: Tienes acceso a información del mundo real.
-- APRENDIZAJE: Escucha gustos o preferencias mencionadas en el chat.
+- APRENDIZAJE: Escucha y evoluciona.
 
 ### PRIORIDAD DE CONOCIMIENTO
-1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima. Usa 'VILLA_KNOWLEDGE.policies' y 'VILLA_KNOWLEDGE.survival_tips'.
+1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima.
 
 ESTILO & REGLAS: ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
 INVENTARIO VILLAS: ${JSON.stringify(PROPERTIES, null, 2)}
-BÓVEDA DE SECRETOS: ${JSON.stringify(SECRETS_DATA, null, 2)}
 `.trim();
 
 export default async function handler(req: any, res: any) {
@@ -142,15 +151,44 @@ export default async function handler(req: any, res: any) {
 
 async function handleAIConsultation(chatId: string, text: string, from: any) {
     const senderName = from.first_name || "Host";
-    const isFather = from.id.toString() === "9395794184"; // ID o teléfono convertido si Telegram lo provee
-    const authorityContext = isFather ? "(Nota: Hablas con el Padre del Host, tiene autoridad máxima)." : "(Hablas con un miembro del equipo administrativo).";
+    const isIsrael = from.id.toString() === "9395794184";
+    const authorityContext = isIsrael ? "(Nota: Hablas con Israel, el Dueño Principal)." : "(Hablas con un miembro del equipo estratégico).";
 
     try {
-        const { text: responseText } = await generateText({
-            model: google('gemini-2.5-flash'),
-            system: `${VILLA_CONCIERGE_PROMPT}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
+        // 🧠 Cargar memorias privadas de la familia
+        const { data: familyKnowledge } = await supabaseServiceRole
+            .from('salty_family_knowledge')
+            .select('key, value');
+        
+        const memoryContext = familyKnowledge && familyKnowledge.length > 0
+            ? `\n\n[MEMORIAS DE LA FAMILIA]:\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
+            : "";
+
+        const { text: responseText, toolCalls } = await generateText({
+            model: google('gemini-1.5-flash'),
+            system: `${VILLA_CONCIERGE_PROMPT}${memoryContext}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
             prompt: `Mensaje de ${senderName}: ${text}`,
             temperature: 0.7,
+            tools: {
+                remember_info: {
+                    description: 'Guarda información estratégica o familiar en la memoria de largo plazo.',
+                    parameters: {
+                        type: 'object',
+                        properties: {
+                            key: { type: 'string', description: 'Identificador único (ej: family_dog_name)' },
+                            value: { type: 'string', description: 'Información a recordar' },
+                            category: { type: 'string', enum: ['identity', 'preferences', 'operations'] }
+                        },
+                        required: ['key', 'value']
+                    },
+                    execute: async ({ key, value, category }) => {
+                        const { error } = await supabaseServiceRole
+                            .from('salty_family_knowledge')
+                            .upsert({ key, value, category: category || 'general' });
+                        return error ? { error: error.message } : { success: true };
+                    }
+                }
+            }
         });
 
         await NotificationService.sendDirectTelegramMessage(chatId, responseText);
@@ -176,7 +214,7 @@ async function handleStatusCommand(chatId: string) {
         let occupied = 0;
 
         if (!bookingsError && bookings) {
-            for (const b of bookings) {
+            for (const b of (bookings as any[])) {
                 if (b.check_in === today) checkIns++;
                 if (b.check_out === today) checkOuts++;
                 if (b.check_in <= today && b.check_out >= today) occupied++;
