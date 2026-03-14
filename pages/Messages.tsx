@@ -23,9 +23,14 @@ const Messages: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [hostIsTyping, setHostIsTyping] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Intentar obtener el propertyId si venimos de una página de villa
+  const urlParams = new URLSearchParams(window.location.search);
+  const propertyIdFromUrl = urlParams.get('propertyId');
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -57,8 +62,6 @@ const Messages: React.FC = () => {
     if (savedMessages) {
       try {
         const parsed: Message[] = JSON.parse(savedMessages);
-        // Filtramos solo mensajes realmente inválidos o corruptos, 
-        // pero mantenemos el historial para persistencia post-refresh.
         if (Array.isArray(parsed) && parsed.length > 0) {
           setMessages(parsed);
           return;
@@ -68,7 +71,6 @@ const Messages: React.FC = () => {
       }
     }
 
-    // Si no hay historial o falló el parseo, iniciamos con el mensaje de bienvenida
     const initialMessages: Message[] = [{
       id: crypto.randomUUID(),
       text: '¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en Villa Retiro sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?',
@@ -76,7 +78,6 @@ const Messages: React.FC = () => {
       created_at: new Date().toISOString()
     }];
 
-    // Si venimos referidos por un lugar de la guía
     if (locationState?.initialPlace) {
       initialMessages.push({
         id: crypto.randomUUID(),
@@ -88,36 +89,46 @@ const Messages: React.FC = () => {
 
     setMessages(initialMessages);
 
-    // 🔗 CHAT MIRROR: Supabase Realtime Subscription
-    const channel = supabase.channel(`chat_mirror_${sessionId}`)
+    // 🔗 CHAT MIRROR & typing: Supabase Realtime Subscription
+    const channelLogs = supabase.channel(`chat_logs_${sessionId}`)
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'chat_logs', filter: `session_id=eq.${sessionId}` },
+        (payload: any) => {
+          if (payload.new.is_host_typing !== undefined) {
+             setHostIsTyping(payload.new.is_host_typing);
+          }
+        }
+      )
+      .subscribe();
+
+    const channelHistory = supabase.channel(`chat_mirror_history_${sessionId}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'ai_chat_logs', filter: `session_id=eq.${sessionId}` },
         (payload: any) => {
           const newMsg = payload.new;
-          // Solo escuchamos los mensajes enviados por el Host 
           if (newMsg.sender === 'host') {
             setMessages((prev) => {
-              // Evitar duplicados (aunque el ID es único en DB y diferente en frontend, chequeamos por si acaso)
               if (prev.some(m => m.text === newMsg.text)) return prev;
-
               const hostMsg: Message = {
                 id: newMsg.id || crypto.randomUUID(),
                 text: newMsg.text,
-                sender: 'ai', // Lo tratamos como AI en UI para que aparezca a la izquierda
+                sender: 'ai',
                 created_at: newMsg.created_at
               };
-              // Add a subtle prefix indicating human override
               hostMsg.text = `👨🏻‍💻 [Host] ${hostMsg.text}`;
               return [...prev, hostMsg];
             });
+            setHostIsTyping(false); // Si llega el mensaje, deja de escribir
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(channelLogs);
+      supabase.removeChannel(channelHistory);
     };
   }, [locationState, sessionId]);
 
@@ -126,7 +137,7 @@ const Messages: React.FC = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
     }
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages, isTyping]);
+  }, [messages, isTyping, hostIsTyping]);
 
   const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -191,7 +202,9 @@ const Messages: React.FC = () => {
           body: JSON.stringify({
             messages: apiMessages,
             sessionId: getSessionId(),
-            userId
+            userId,
+            propertyId: propertyIdFromUrl || (locationState?.initialPlace ? '1081171030449673920' : null),
+            currentUrl: window.location.href
           }),
           signal: controller.signal
         });
@@ -507,6 +520,21 @@ const Messages: React.FC = () => {
             </div>
           );
         })}
+        {hostIsTyping && (
+          <div className="flex justify-start animate-fade-in mt-6">
+            <div className="max-w-[85%] px-5 py-4 bg-primary/5 border border-primary/10 rounded-[20px] rounded-tl-[4px] shadow-sm flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <span className="material-icons text-primary/60 mr-1 animate-pulse">edit_note</span>
+                <div className="flex gap-1">
+                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }}></div>
+                  <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
+                </div>
+              </div>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Un miembro del equipo está redactando una respuesta...</p>
+            </div>
+          </div>
+        )}
         {isTyping && (
           <div className="flex justify-start animate-fade-in mt-6">
             <div className="max-w-[85%] px-5 py-4 bg-white border border-blue-100 rounded-[20px] rounded-tl-[4px] shadow-sm flex flex-col gap-2">

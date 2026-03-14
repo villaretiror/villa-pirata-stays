@@ -90,10 +90,17 @@ export default async function handler(req: any, res: any) {
     }
 
     try {
-        const { messages: rawMessages, sessionId, userId } = req.body;
+        const { messages: rawMessages, sessionId, userId, propertyId, currentUrl } = req.body;
 
         // 1. Limite de Memoria: Solo enviamos los últimos 20 mensajes
         const recentMessages = (rawMessages || []).slice(-20);
+
+        // 🏆 PROPERTY TITLES FOR CONTEXT
+        const PROPERTY_TITLES: Record<string, string> = {
+            '1081171030449673920': 'Villa Retiro R',
+            '42839458': 'Pirata Family House'
+        };
+        const activePropertyName = propertyId ? (PROPERTY_TITLES[propertyId] || 'Villa Desconocida') : 'Navegación General';
 
         // 2. Persistencia y Auditoría de Sesión + Contexto 360°
         let userContext = "";
@@ -134,7 +141,9 @@ export default async function handler(req: any, res: any) {
                 session_id: sessionId,
                 user_id: validUserId,
                 message_count: (rawMessages || []).length,
-                last_interaction: new Date().toISOString()
+                last_interaction: new Date().toISOString(),
+                current_property: activePropertyName,
+                current_url: currentUrl
             }, { onConflict: 'session_id' }).then(({ error }) => {
                 if (error) console.error('[CHAT_LOG_ERROR]:', error.message);
             });
@@ -159,10 +168,11 @@ export default async function handler(req: any, res: any) {
                     const { NotificationService } = await import('../services/NotificationService.js');
                     await NotificationService.sendTelegramAlert(
                         `💬 <b>Chat Web (Espejo)</b>\n\n` +
+                        `<b>Viendo:</b> ${activePropertyName}\n` +
                         `<b>Sesión:</b> <code>${sessionId}</code>\n` +
                         `<b>Huésped:</b> ${profile ? profile.full_name : 'Anónimo'}\n\n` +
                         `🗨️ <i>"${lastGuestMessage}"</i>\n\n` +
-                        `👉 <i>Responde a este mensaje de Telegram para tomar el control por 30 mins y detener a Salty.</i>`
+                        `👉 <i>Responde a este mensaje de Telegram para tomar el control.</i>`
                     );
                 } catch (e) {
                     // Ignorar silenciosamente si Telegram falla

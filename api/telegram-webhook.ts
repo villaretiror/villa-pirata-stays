@@ -86,9 +86,18 @@ export default async function handler(req: any, res: any) {
             return res.status(200).send('Unauthorized Access');
         }
 
-        // Procesar Comando /status
         if (text.startsWith('/status')) {
             await handleStatusCommand(chatId);
+        }
+        // ✍️ FLASH HANDSHAKE: Toggle typing indicator
+        else if (text.startsWith('/typing') || text.startsWith('/notyping')) {
+            const sessionMatch = text.match(/([a-zA-Z0-9-]+)/);
+            if (sessionMatch) {
+                const sessionId = sessionMatch[1];
+                const isTyping = text.startsWith('/typing');
+                await supabase.from('chat_logs').update({ is_host_typing: isTyping }).eq('session_id', sessionId);
+                await NotificationService.sendDirectTelegramMessage(chatId, `⌨️ <i>Indicador de escritura ${isTyping ? 'ACTIVADO' : 'DESACTIVADO'} para la web.</i>`);
+            }
         }
         // Procesar RESPUESTAS DEL HOST AL CHAT (Human Takeover o Feedback)
         else if (update.message.reply_to_message) {
@@ -114,13 +123,14 @@ export default async function handler(req: any, res: any) {
                 const sessionId = sessionMatch[1];
                 const takeoverDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
 
-                // 1. Silent Mode para Salty (30 mins) y reset de notificación
+                // 1. Silent Mode para Salty (30 mins), reset typing y reset de notificación
                 await supabase.from('chat_logs').update({
                     human_takeover_until: takeoverDate,
+                    is_host_typing: false,
                     takeover_notified: false
                 }).eq('session_id', sessionId);
 
-                // 2. Insertar en mirror para notificar al Frontend
+                // 2. Insertar en mirror para notificar al Frontend (LOG DE AUDITORÍA COMPLETO)
                 await supabase.from('ai_chat_logs').insert({
                     session_id: sessionId,
                     sender: 'host',
