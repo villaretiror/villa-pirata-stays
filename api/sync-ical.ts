@@ -3,7 +3,11 @@ import ical from 'node-ical';
 
 // 🔑 EXCLUSIVAMENTE Service Role Key — bypass RLS para escritura en bookings
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+// 🛡️ Búsqueda exhaustiva de la Service Role Key
+const SUPABASE_SERVICE_KEY = 
+    process.env.SUPABASE_SERVICE_ROLE_KEY || 
+    process.env.SERVICE_ROLE_KEY || 
+    '';
 
 const ICAL_FEEDS = [
     { property_id: '1081171030449673920', platform: 'Airbnb',      url: 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae' },
