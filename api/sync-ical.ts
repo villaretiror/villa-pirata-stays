@@ -12,29 +12,25 @@ const ICAL_FEEDS = [
     { property_id: '42839458',           platform: 'Booking.com', url: 'https://ical.booking.com/v1/export?t=424b8257-5e8e-4d8d-9522-b2e63f4bf669' }
 ];
 
-export default async function handler(req: Request) {
+export default async function handler(req: any, res: any) {
     // 🛡️ AUTH GATE: Acepta Bearer header (Vercel Cron) O query param ?secret= (prueba manual)
     const CRON_SECRET = process.env.CRON_SECRET || 'villaretiror_master_key_2026';
-    const authHeader = req.headers.get('Authorization') || '';
-    const url = new URL(req.url);
-    const querySecret = url.searchParams.get('secret') || '';
+    const authHeader  = req.headers?.authorization || req.headers?.Authorization || '';
+    const querySecret = req.query?.secret || '';
 
     const isAuthorizedHeader = authHeader === `Bearer ${CRON_SECRET}`;
     const isAuthorizedQuery  = querySecret === CRON_SECRET;
 
     if (!isAuthorizedHeader && !isAuthorizedQuery) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-            status: 401,
-            headers: { 'Content-Type': 'application/json' }
-        });
+        return res.status(401).json({ error: 'Unauthorized' });
     }
 
     // 🔌 Verificar que la Service Role Key está configurada
     if (!SUPABASE_SERVICE_KEY) {
-        return new Response(JSON.stringify({
+        return res.status(500).json({
             error: 'MISSING_ENV',
-            detail: 'SUPABASE_SERVICE_ROLE_KEY is not set. Anon key cannot bypass RLS. Set this variable in Vercel dashboard.'
-        }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+            detail: 'SUPABASE_SERVICE_ROLE_KEY is not set. The anon key cannot bypass RLS. Set this variable in Vercel dashboard under Environment Variables.'
+        });
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
@@ -45,7 +41,7 @@ export default async function handler(req: Request) {
 
     for (const feed of ICAL_FEEDS) {
         try {
-            console.log(`[iCal Sync] Fetching ${feed.platform} feed for property ${feed.property_id}...`);
+            console.log(`[iCal Sync] Fetching ${feed.platform} for property ${feed.property_id}...`);
             const data = await ical.fromURL(feed.url);
             const events = Object.values(data).filter((e: any) => e && e.type === 'VEVENT');
 
@@ -72,8 +68,8 @@ export default async function handler(req: Request) {
                         }, { onConflict: 'property_id,check_in,check_out' });
 
                     if (upsertError) {
-                        // 🚨 Este log captura el "Permission Denied" de Supabase RLS
-                        console.error(`[iCal Sync] ❌ DB UPSERT ERROR for ${feed.property_id} | ${check_in}→${check_out}: CODE=${upsertError.code} MSG="${upsertError.message}" HINT="${upsertError.hint}"`);
+                        // 🚨 Captura "Permission Denied" de RLS y cualquier otro error de Supabase
+                        console.error(`[iCal Sync] ❌ DB ERROR | ${feed.property_id} | ${check_in}→${check_out} | CODE=${upsertError.code} | "${upsertError.message}" | HINT: ${upsertError.hint}`);
                         feedErrors++;
                         totalErrors++;
                     } else {
@@ -94,24 +90,17 @@ export default async function handler(req: Request) {
             console.log(`[iCal Sync] ✅ ${feed.platform} → ${feed.property_id}: ${feedSynced} synced, ${feedErrors} errors`);
 
         } catch (networkError: any) {
-            console.error(`[iCal Sync] ❌ NETWORK ERROR for ${feed.property_id} (${feed.platform}): ${networkError.message}`);
+            console.error(`[iCal Sync] ❌ NETWORK ERROR | ${feed.property_id} (${feed.platform}): ${networkError.message}`);
             results.push({ property: feed.property_id, platform: feed.platform, error: networkError.message });
             totalErrors++;
         }
     }
 
-    const response = {
+    return res.status(200).json({
         status: totalErrors === 0 ? 'ok' : 'partial',
         timestamp: new Date().toISOString(),
         total_synced: totalSynced,
         total_errors: totalErrors,
         summary: results
-    };
-
-    console.log('[iCal Sync] Final Result:', JSON.stringify(response));
-
-    return new Response(JSON.stringify(response, null, 2), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' }
     });
 }
