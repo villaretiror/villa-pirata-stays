@@ -25,20 +25,26 @@ export const ExternalSyncService = {
         
         if (isVillaRetiro) {
             return {
-                title: "Villa Retiro R - Luxury Saman Oasis",
-                description: "Actualización desde Airbnb: Hemos renovado el área de la piscina y añadido paneles solares para una estancia 100% eco-friendly.",
-                amenities: ["Piscina Salada", "Starlink", "Paneles Solares", "BBQ de Gas", "AC en todo"],
-                photos: ["https://lh3.googleusercontent.com/v1...", "https://lh3.googleusercontent.com/v2..."],
-                house_rules: "Strictly no parties. Check-in after 4PM."
+                title: "Villa Retiro R - Modern Tropical Retreat",
+                description: "Sincronizado: Disfruta de una villa boutique con piscina privada de agua salada, energía solar garantizada 24/7 y cisterna industrial.",
+                amenities: ["Piscina Salada", "Internet Fibra/Cable (65 Mbps)", "Paneles Solares", "BBQ de Gas", "AC Split", "Cisterna"],
+                photos: [
+                    "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/95730c30-f345-41de-bf0d-1d9562c775e4.jpeg",
+                    "https://a0.muscache.com/im/pictures/hosting/Hosting-1081171030449673920/original/ced4098c-c522-4c05-b0d8-1ea532d338c0.jpeg"
+                ],
+                house_rules: "Apagar luces y A/C al salir. Check-in 3:00 PM."
             };
         }
 
         return {
             title: "Pirata Family House - Boquerón",
-            description: "Cerca de todo. Nueva decoración en la terraza.",
-            amenities: ["Cercanía al Poblado", "Ducha Exterior", "Wifi", "Hamacas"],
-            photos: ["https://lh3.googleusercontent.com/p1..."],
-            house_rules: "Quiet hours 10PM-8AM."
+            description: "Designer Villa cerca del Poblado y Playa Buyé. Confort total y diseño funcional.",
+            amenities: ["WiFi Alta Velocidad (65 Mbps)", "Sistema Solar", "Ducha Exterior", "Hamacas"],
+            photos: [
+                "https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/05f8a5b2-ef01-4470-a8f1-5f73fcba3301.jpeg",
+                "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/a26d55e6-2784-45f1-81a3-6b73cf753a97.jpeg"
+            ],
+            house_rules: "Se requiere fósforo/encendedor para la estufa. Check-in 3:00 PM."
         };
     },
 

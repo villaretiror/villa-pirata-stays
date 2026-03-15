@@ -3,7 +3,7 @@ import { streamText, CoreMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { HOST_PHONE } from '../constants.js';
-import { ExternalSyncService } from './ExternalSyncService.js';
+import { ExternalSyncService } from '../lib/ExternalSyncService.js';
 import {
     checkAvailabilityWithICal,
     logAbandonmentLead,
