@@ -233,31 +233,50 @@ const Home: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-8 pb-32">
-
-        {/* Guide Section */}
-        <div className="mb-10">
-          <div className="flex justify-between items-end mb-4">
-            <h2 className="font-serif font-bold text-xl text-text-main">Experiencia Cabo Rojo</h2>
-            <div className="flex gap-1 bg-gray-100 p-1 rounded-lg">
-              {localGuideData.map((guide, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setActiveGuideTab(idx)}
-                  className={`px-3 py-1 rounded-md text-[10px] font-bold transition-all ${activeGuideTab === idx ? 'bg-white text-text-main shadow-sm' : 'text-gray-400'}`}
-                >
-                  {guide.category}
-                </button>
-              ))}
+        {/* Playas del Paraíso Section */}
+        <div className="mb-16">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
+              <h2 className="font-serif font-bold text-2xl text-text-main">Playas del Paraíso</h2>
             </div>
+            <span className="material-icons text-primary/30">beach_access</span>
           </div>
-
           <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
-            {localGuideData[activeGuideTab].items.map((item, i) => (
-              <GuideCard
-                key={i}
-                item={item}
-                onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })}
-              />
+            {localGuideData.find(g => g.id === 'beaches')?.items.map((item, i) => (
+              <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
+            ))}
+          </div>
+        </div>
+
+        {/* Ruta Gastronómica Section */}
+        <div className="mb-16">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
+              <h2 className="font-serif font-bold text-2xl text-text-main">Ruta Gastronómica</h2>
+            </div>
+            <span className="material-icons text-secondary/30">restaurant</span>
+          </div>
+          <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
+            {localGuideData.find(g => g.id === 'gastronomy')?.items.map((item, i) => (
+              <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
+            ))}
+          </div>
+        </div>
+
+        {/* Cerca de Ti Section */}
+        <div className="mb-16">
+          <div className="flex justify-between items-end mb-6">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
+              <h2 className="font-serif font-bold text-2xl text-text-main">Cerca de Ti</h2>
+            </div>
+            <span className="material-icons text-text-light/30">place</span>
+          </div>
+          <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
+            {localGuideData.find(g => g.id === 'nearby')?.items.map((item, i) => (
+              <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
             ))}
           </div>
         </div>
