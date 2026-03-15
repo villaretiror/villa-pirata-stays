@@ -3,19 +3,16 @@ import { streamText, CoreMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
 import { HOST_PHONE } from '../constants.js';
-import { ExternalSyncService } from '../lib/ExternalSyncService.js';
 import {
     checkAvailabilityWithICal,
     logAbandonmentLead,
-    applyAIQuote
+    getPaymentVerificationStatus,
+    findCalendarGaps,
+    handleCrisisAlert,
+    applyAIQuote,
+    createTemporaryHold,
+    checkUserConcessions
 } from '../aiServices.js';
-
-import { SECRETS_DATA } from '../constants/secrets_data.js';
-
-/**
- * 👑 VILLA RETIRO & PIRATA STAYS - CONCIERGE CHAT ENGINE (DYNAMIC v5.0)
- * Logic: Fully Autonomous Agentic Concierge with External Sync
- */
 
 export const maxDuration = 30;
 
@@ -35,45 +32,56 @@ export default async function handler(req: any, res: any) {
     try {
         const { messages: rawMessages, sessionId, userId, propertyId, currentUrl } = req.body;
 
-        // --- 1. DYNAMIC DATA FETCHING ---
         const { data: dbProperties } = await supabase.from('properties').select('*');
         const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
         const villaKnowledge = knowledgeSetting?.value || {};
 
         const propertyTitles: Record<string, string> = {};
-        dbProperties?.forEach((p: any) => {
-            propertyTitles[p.id] = p.title;
-        });
+        dbProperties?.forEach((p: any) => { propertyTitles[p.id] = p.title; });
 
         const activePropertyName = propertyId ? (propertyTitles[propertyId] || 'Villa Desconocida') : 'Navegación General';
 
-        // --- 2. MASTER PROMPT ---
         const VILLA_CONCIERGE_PROMPT = `
-Eres "Salty", el concierge ejecutivo de Villa & Pirata Stays.
+Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo. 
+Tu misión: Ser un anfitrión excepcional "Real-Time". Caribe Chic Style.
 
-### MISIÓN DE SINCRONIZACIÓN (MODO AGENTE)
-- Puedes sincronizar información de Airbnb usando 'sync_external_platform'.
-- Si el Host te pide "revisar cambios en Airbnb", primero haz un 'preview'. 
-- Informa al Host: "Encontré estos cambios: [...] ¿Deseas aplicarlos a la web?". 
-- Solo aplica si el Host confirma.
-
-### GESTIÓN DE INFO
-- Usa 'modify_villa_data' para cambios puntuales.
+### CAPACIDADES SENSORIALES
+- CONTEXTO: Sabes que el usuario está viendo: ${activePropertyName} (URL: ${currentUrl}).
+- APRENDIZAJE: Usa 'update_guest_interests' para recordar preferencias.
 
 ### PRIORIDAD DE CONOCIMIENTO
-1. REGLAS & OPERACIÓN: ${JSON.stringify(villaKnowledge, null, 2)}
-2. INVENTARIO REAL-TIME: ${JSON.stringify(dbProperties, null, 2)}
+1. REGLAS: ${JSON.stringify(villaKnowledge)}
+2. INVENTARIO: ${JSON.stringify(dbProperties)}
+
+### GUARDRAILS
+- No apliques descuentos > 15%.
+- Usa 'generate_whatsapp_link' si hay frustración.
+- Usa 'notify_host_urgent' para emergencias.
 `.trim();
 
-        // 3. Memoria
-        let extendedMemory = "";
-        const { data: memories } = await supabase.from('salty_memories').select('learned_text').order('created_at', { ascending: false }).limit(5);
-        if (memories) extendedMemory = `\n[MEMORIA]: ` + memories.map(m => `- ${m.learned_text}`).join('\n');
+        if (sessionId) {
+            supabase.from('chat_logs').upsert({
+                session_id: sessionId, user_id: userId || null, message_count: (rawMessages || []).length,
+                last_interaction: new Date().toISOString(), current_property: activePropertyName, current_url: currentUrl
+            }, { onConflict: 'session_id' }).select().then();
 
-        // 4. Messages History
+            const lastMsg = rawMessages?.slice(-1)[0]?.content || rawMessages?.slice(-1)[0]?.text;
+            if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
+                try {
+                    const { NotificationService } = await import('../services/NotificationService.js');
+                    await NotificationService.sendTelegramAlert(`💬 <b>Mirror: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>`);
+                } catch (e) {}
+            }
+
+            const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until').eq('session_id', sessionId).single();
+            if (logInfo?.human_takeover_until && new Date(logInfo.human_takeover_until) > new Date()) {
+                return new Response("Un miembro del equipo está respondiendo...", { status: 200 });
+            }
+        }
+
         const recentMessages = (rawMessages || []).slice(-15);
         const finalMessages: CoreMessage[] = [
-            { role: 'user', content: `INSTRUCCIONES: ${VILLA_CONCIERGE_PROMPT}. \n${extendedMemory}` },
+            { role: 'user', content: `INSTRUCCIONES: ${VILLA_CONCIERGE_PROMPT}` },
             { role: 'assistant', content: "¡Hola! Soy Salty. ¿Qué villa vamos a gestionar hoy?" },
             ...recentMessages.map((m: any): CoreMessage => ({
                 role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
@@ -81,67 +89,53 @@ Eres "Salty", el concierge ejecutivo de Villa & Pirata Stays.
             }))
         ];
 
-        // 5. Execution
         const result = await streamText({
             model: google('gemini-2.5-flash'),
             messages: finalMessages,
             maxSteps: 5,
+            temperature: 0.7,
             tools: {
-                sync_external_platform: tool({
-                    description: 'Busca cambios en Airbnb y los compara con la base de datos local.',
-                    parameters: z.object({
-                        villa_id: z.string(),
-                        action: z.enum(['preview', 'apply']),
-                        apply_data: z.any().optional()
-                    }),
-                    execute: async ({ villa_id, action, apply_data }) => {
-                        if (action === 'preview') {
-                            const diff = await ExternalSyncService.previewSync(villa_id);
-                            return { status: 'success', diff };
-                        } else {
-                            await ExternalSyncService.commitSync(villa_id, apply_data);
-                            return { status: 'success', message: 'Base de datos sincronizada con Airbnb.' };
-                        }
-                    }
+                check_availability: tool({
+                    description: 'Busca disponibilidad.',
+                    parameters: z.object({ villa_ids: z.array(z.string()), check_in: z.string(), check_out: z.string() }),
+                    execute: async ({ villa_ids, check_in, check_out }) => {
+                        const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
+                        const available = villa_ids.filter((_, i) => results[i].available);
+                        return { status: 'success', available_ids: available };
+                    },
                 }),
-                modify_villa_data: tool({
-                    description: 'Actualiza campos específicos de una villa.',
-                    parameters: z.object({
-                        villa_id: z.string(),
-                        field: z.string(),
-                        value: z.any(),
-                        reason: z.string()
-                    }),
-                    execute: async ({ villa_id, field, value, reason }) => {
-                        const { error } = await supabase.from('properties').update({ [field]: value }).eq('id', villa_id);
-                        if (error) return { status: 'error', message: error.message };
-                        await supabase.from('salty_memories').insert({ learned_text: `Cambio manual: ${field} -> ${value}. Razón: ${reason}`, property_id: villa_id });
+                generate_booking_pattern: tool({
+                    description: 'Genera cotización.',
+                    parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
+                    execute: async ({ villa_id, check_in, check_out, promo_code }) => {
+                        const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
+                        return `[PAYMENT_REQUEST: ${villa_id}, ${quote.total}, ${check_in}, ${check_out}, ${quote.nights}, ${quote.discount}]`;
+                    },
+                }),
+                notify_host_urgent: tool({
+                    description: 'Alerta urgente.',
+                    parameters: z.object({ client_name: z.string(), issue_description: z.string(), contact_info: z.string(), severity: z.number() }),
+                    execute: async ({ client_name, issue_description, contact_info, severity }) => {
+                        await handleCrisisAlert(client_name, issue_description, contact_info, severity);
                         return { status: 'success' };
                     }
                 }),
-                check_availability: tool({
-                    description: 'Busca disponibilidad en el calendario.',
-                    parameters: z.object({
-                        villa_ids: z.array(z.string()),
-                        check_in: z.string(),
-                        check_out: z.string(),
-                    }),
-                    execute: async ({ villa_ids, check_in, check_out }) => {
-                        const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
-                        return { status: 'success', available_ids: villa_ids.filter((_, i) => results[i].available) };
-                    },
-                }),
-                generate_whatsapp_link: tool({
-                    description: 'Enlace a soporte humano.',
-                    parameters: z.object({ reason: z.string().optional() }),
-                    execute: async ({ reason }) => ({ status: 'success', url: `https://wa.me/${HOST_PHONE}?text=${encodeURIComponent(`Ayuda: ${reason}`)}` })
+                google_places_search: tool({
+                    description: 'Busca lugares locales.',
+                    parameters: z.object({ query: z.string() }),
+                    execute: async ({ query }) => {
+                        const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY;
+                        const url = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in Cabo Rojo, PR')}&key=${apiKey}`;
+                        const resp = await fetch(url);
+                        const data = await resp.json();
+                        return { status: 'success', results: (data.results || []).slice(0, 3).map((r: any) => ({ name: r.name, rating: r.rating })) };
+                    }
                 })
             },
         });
 
         return result.pipeTextStreamToResponse(res);
-
     } catch (error: any) {
-        return res.status(500).json({ error: 'Sync re-evaluating', details: error.message });
+        return res.status(500).json({ error: 'Sync error', details: error.message });
     }
 }

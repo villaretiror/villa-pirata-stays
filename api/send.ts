@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { supabase } from '../lib/supabase.js';
+import { NotificationService } from '../services/NotificationService.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
@@ -84,6 +85,17 @@ export default async function handler(req: any, res: any) {
           ${emailFooter}
         </div>`
       });
+
+      // 🔔 Alerta Telegram (Contacto)
+      await NotificationService.sendTelegramAlert(
+        `📩 <b>Nueva Consulta Web</b>\n\n` +
+        `👤 <b>Nombre:</b> ${name}\n` +
+        `📧 <b>Email:</b> ${email}\n` +
+        `📱 <b>Tel:</b> ${phone}\n` +
+        `🏠 <b>Villa:</b> ${p.name}\n\n` +
+        `🗨️ <i>"${message}"</i>`
+      );
+
       if (email) {
         emailOptions.push({
           from: fromAddress,
@@ -116,6 +128,15 @@ export default async function handler(req: any, res: any) {
           ${emailFooter}
         </div>`
       });
+
+      // 🔔 Alerta Telegram (Soporte Urgente)
+      await NotificationService.sendTelegramAlert(
+        `🚨 <b>¡ALERTA DE SOPORTE!</b>\n\n` +
+        `👤 <b>Huésped:</b> ${clientFullName}\n` +
+        `📞 <b>Contacto:</b> ${contact}\n` +
+        `🏝️ <b>Villa:</b> ${p.name}\n\n` +
+        `📟 <b>Mensaje:</b> ${message}`
+      );
     } else if (type === 'payment_success' || type === 'reservation_confirmed') {
       emailOptions.push({
         from: fromAddress,
@@ -171,6 +192,15 @@ export default async function handler(req: any, res: any) {
           </div>
         `
       });
+
+      // 🔔 Alerta Telegram (Pago Exitoso)
+      await NotificationService.notifyNewReservation(
+        firstName,
+        p.name,
+        rest.checkIn || 'Fecha',
+        rest.checkOut || 'Fecha',
+        rest.total || '0'
+      );
     } else if (type === 'cohost_invitation') {
       const inviteUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/login?invite=true${rest.token ? `&token=${rest.token}` : ''}`;
       emailOptions.push({
