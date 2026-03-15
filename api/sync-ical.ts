@@ -18,24 +18,19 @@ export default async function handler(req: any, res: any) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // 🔍 DIAGNÓSTICO DE VARIABLES (Se leen DENTRO del handler)
-    const envAudit = {
-        SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-        SERVICE_ROLE_KEY: !!process.env.SERVICE_ROLE_KEY,
-        SUPABASE_ANON_KEY: !!process.env.SUPABASE_ANON_KEY,
-        VITE_SUPABASE_ANON_KEY: !!process.env.VITE_SUPABASE_ANON_KEY,
-        SUPABASE_URL: !!process.env.SUPABASE_URL
-    };
-
-    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY;
+    // 🔍 LECTURA RESILIENTE DE VARIABLES
+    const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 
     if (!SERVICE_KEY || !SUPABASE_URL) {
         return res.status(500).json({
             error: 'MISSING_ENV_DIAGNOSTIC',
-            message: 'No se detectó una Service Role Key válida.',
-            diagnostic: envAudit,
-            hint: 'Asegúrate de que el nombre en Vercel sea exactamente SUPABASE_SERVICE_ROLE_KEY. Si usaste otro nombre, dime cuál es.'
+            diagnostic: {
+                SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+                SERVICE_ROLE_KEY: !!process.env.SERVICE_ROLE_KEY,
+                SUPABASE_URL: !!process.env.SUPABASE_URL,
+                VITE_URL: !!process.env.VITE_SUPABASE_URL
+            }
         });
     }
 
@@ -76,7 +71,6 @@ export default async function handler(req: any, res: any) {
     return res.status(200).json({
         status: 'done',
         total_synced: totalSynced,
-        audit: envAudit,
         summary: results
     });
 }
