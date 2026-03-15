@@ -297,6 +297,9 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 };
 
 const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId, onFilterChange }: { bookings: any[], expenses: any[], properties: any[], selectedPropertyId: string, onFilterChange: (id: string) => void }) => {
+  const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross');
+  const [showOrigin, setShowOrigin] = useState(false);
+
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const creationDate = selectedProperty ? new Date(selectedProperty.created_at) : null;
 
@@ -329,7 +332,18 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         return createdAt.getMonth() === month && createdAt.getFullYear() === year;
       });
 
-      const income = monBookings.reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+      const webIncome = monBookings
+        .filter(b => !b.booking_source?.toLowerCase().includes('airbnb') && !b.booking_source?.toLowerCase().includes('ota'))
+        .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
+      const otaIncome = monBookings
+        .filter(b => b.booking_source?.toLowerCase().includes('airbnb') || b.booking_source?.toLowerCase().includes('ota'))
+        .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+
+      const adjustedWeb = viewMode === 'net' ? webIncome * 0.97 : webIncome;
+      const adjustedOTA = viewMode === 'net' ? otaIncome * 0.85 : otaIncome;
+
+      const income = adjustedWeb + adjustedOTA;
       const expense = monExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
 
       const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
@@ -355,18 +369,20 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
       data.push({
         name: monthStr,
-        Ingresos: income,
+        Total: income,
+        Web: adjustedWeb,
+        OTA: adjustedOTA,
         Gastos: expense,
         Profit: income - expense,
         Ocupación: occupancy
       });
     }
     return data;
-  }, [filteredBookings, filteredExpenses, creationDate]);
+  }, [filteredBookings, filteredExpenses, creationDate, viewMode]);
 
   const currentMonthData = stats[stats.length - 1];
-  const margin = currentMonthData.Ingresos > 0
-    ? Math.round((currentMonthData.Profit / currentMonthData.Ingresos) * 100)
+  const margin = currentMonthData.Total > 0
+    ? Math.round((currentMonthData.Profit / currentMonthData.Total) * 100)
     : 0;
 
   const handleExport = () => {
@@ -381,7 +397,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
   return (
     <div className="space-y-6 animate-fade-in print:bg-white print:p-0 mb-10">
-      <div className="flex justify-between items-center bg-white p-4 rounded-3xl border border-gray-100 shadow-sm print:hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm print:hidden">
         <select
           value={selectedPropertyId}
           onChange={(e) => onFilterChange(e.target.value)}
@@ -390,23 +406,52 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           <option value="all">Todas las villas</option>
           {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
         </select>
+
+        <div className="flex items-center gap-2 bg-gray-50 p-1.5 rounded-2xl">
+          <button
+            onClick={() => setViewMode('gross')}
+            className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase transition-all ${viewMode === 'gross' ? 'bg-black text-white shadow-lg' : 'text-gray-400'}`}
+          >
+            Bruto
+          </button>
+          <button
+            onClick={() => setViewMode('net')}
+            className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase transition-all ${viewMode === 'net' ? 'bg-primary text-white shadow-lg' : 'text-gray-400'}`}
+          >
+            Neto
+          </button>
+        </div>
+
         <button
           onClick={handleExport}
           className="p-2 bg-black text-white rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group"
         >
           <span className="material-icons text-sm group-hover:rotate-12 transition-transform">picture_as_pdf</span>
-          Exportar Reporte
+          Exportar
         </button>
       </div>
 
-      <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
+      <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
         <div className="flex justify-between items-center mb-8">
-          <h3 className="font-serif font-black text-xl italic flex items-center gap-2">
-            <span className="material-icons text-blue-500">trending_up</span> Rendimiento Histórico
-          </h3>
-          <div className="flex gap-4">
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#CBB28A]"></div><span className="text-[10px] font-black uppercase text-gray-400">Ingresos</span></div>
-            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-red-400"></div><span className="text-[10px] font-black uppercase text-gray-400">Gastos</span></div>
+          <div>
+            <h3 className="font-serif font-black text-xl italic flex items-center gap-2">
+              <span className="material-icons text-blue-500">trending_up</span> Rendimiento {viewMode === 'net' ? 'Neto' : 'Bruto'}
+            </h3>
+            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
+              Visualizando ingresos {viewMode === 'net' ? 'después de comisiones (est.)' : 'totales antes de tasas'}
+            </p>
+          </div>
+          <div className="flex flex-col items-end gap-3">
+            <div className="flex gap-4">
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#CBB28A]"></div><span className="text-[10px] font-black uppercase text-gray-400">Web</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-400"></div><span className="text-[10px] font-black uppercase text-gray-400">OTAs</span></div>
+            </div>
+            <button
+              onClick={() => setShowOrigin(!showOrigin)}
+              className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg border transition-all ${showOrigin ? 'bg-black text-white' : 'bg-white text-gray-400'}`}
+            >
+              {showOrigin ? 'Ocultar Origen' : 'Ver Desglose'}
+            </button>
           </div>
         </div>
 
@@ -414,9 +459,13 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           <ResponsiveContainer width="100%" height="100%" minHeight={300}>
             <AreaChart data={stats}>
               <defs>
-                <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
+                <linearGradient id="colorWeb" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.8} />
                   <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
+                </linearGradient>
+                <linearGradient id="colorOTA" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8} />
+                  <stop offset="95%" stopColor="#60A5FA" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -426,7 +475,14 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
                 contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '1rem', fontSize: '10px' }}
                 itemStyle={{ fontWeight: 900, textTransform: 'uppercase' }}
               />
-              <Area type="monotone" dataKey="Ingresos" stroke="#CBB28A" fillOpacity={1} fill="url(#colorInc)" strokeWidth={3} />
+              {showOrigin ? (
+                <>
+                  <Area type="monotone" dataKey="Web" stackId="1" stroke="#CBB28A" fillOpacity={1} fill="url(#colorWeb)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="OTA" stackId="1" stroke="#60A5FA" fillOpacity={1} fill="url(#colorOTA)" strokeWidth={3} />
+                </>
+              ) : (
+                <Area type="monotone" dataKey="Total" stroke="#CBB28A" fillOpacity={1} fill="url(#colorWeb)" strokeWidth={3} />
+              )}
               <Area type="monotone" dataKey="Gastos" stroke="#F87171" fillOpacity={0.1} fill="#F87171" strokeWidth={3} />
             </AreaChart>
           </ResponsiveContainer>
@@ -453,8 +509,8 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
               <span className="absolute text-xl font-black">{margin}%</span>
             </div>
             <div>
-              <p className="text-2xl font-black">${currentMonthData.Profit.toLocaleString()}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Utilidad Neta</p>
+              <p className="text-2xl font-black">${currentMonthData.Total.toLocaleString()}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Utilidad {viewMode === 'net' ? 'Neta Est.' : 'Neta'}</p>
               <div className="mt-2 p-2 bg-white/10 rounded-xl border border-white/10">
                 <p className="text-[8px] font-bold uppercase tracking-tighter text-primary-light leading-tight">
                   {currentMonthData.Profit < 0
@@ -502,7 +558,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         <div className="grid grid-cols-3 gap-6">
           <div className="border border-black p-4 rounded-xl text-center">
             <p className="text-[10px] font-bold uppercase mb-1">Total Ingresos</p>
-            <p className="text-2xl font-black">${currentMonthData.Ingresos.toLocaleString()}</p>
+            <p className="text-2xl font-black">${currentMonthData.Total.toLocaleString()}</p>
           </div>
           <div className="border border-black p-4 rounded-xl text-center">
             <p className="text-[10px] font-bold uppercase mb-1">Total Gastos</p>
@@ -837,7 +893,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
 const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void, isSaving: boolean }) => {
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'seasonal' | 'fees' | 'offers' | 'policies' | 'emergency' | 'cohosts' | 'expenses'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'seasonal' | 'fees' | 'offers' | 'policies' | 'conversion' | 'emergency' | 'cohosts' | 'expenses'>('info');
   const [newFeeName, setNewFeeName] = useState('');
   const [newFeeValue, setNewFeeValue] = useState(0);
 
@@ -1457,13 +1513,18 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
-          {['info', 'photos', 'calendar', 'seasonal', 'fees', 'offers', 'policies', 'emergency', 'cohosts', 'expenses'].map((section: any) => (
+          {['info', 'photos', 'calendar', 'seasonal', 'fees', 'offers', 'policies', 'conversion', 'emergency', 'cohosts', 'expenses'].map((section: any) => (
             <button
               key={section}
               onClick={() => setActiveSection(section as any)}
               className={`px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap ${activeSection === section ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
             >
-              {section === 'emergency' ? '🚨 Panic Mode' : section === 'seasonal' ? '🗓️ Precios' : section === 'policies' ? '📋 Políticas' : section === 'cohosts' ? '👥 Co-hosts' : section === 'expenses' ? '💸 Gastos' : section}
+              {section === 'emergency' ? '🚨 Panic Mode' : 
+               section === 'seasonal' ? '🗓️ Precios' : 
+               section === 'policies' ? '📋 Políticas' : 
+               section === 'conversion' ? '🚀 Ventas' :
+               section === 'cohosts' ? '👥 Co-hosts' : 
+               section === 'expenses' ? '💸 Gastos' : section}
             </button>
           ))}
         </div>
@@ -2214,7 +2275,7 @@ const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booki
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -2601,15 +2662,42 @@ const HostDashboard: React.FC = () => {
     }
   };
 
+  const handleAddTag = async (type: 'lead' | 'profile', id: string, currentTags: string[]) => {
+    const newTag = window.prompt("Añadir etiqueta (ej: VIP, Remote Worker, Pet Friendly):");
+    if (!newTag) return;
+
+    const table = type === 'lead' ? 'leads' : 'profiles';
+    const updatedTags = [...(currentTags || []), newTag];
+
+    const { error } = await supabase.from(table).update({ tags: updatedTags }).eq('id', id);
+    if (!error) {
+      showToast(`Etiqueta "${newTag}" añadida ✨`);
+      fetchData();
+    }
+  };
+
   const handleSaveProperty = async (updated: Property) => {
     if (isSaving || user?.email !== 'villaretiror@gmail.com') return;
     setIsSaving(true);
     const hostId = user?.id;
     if (!hostId) return;
 
-    const payload = { ...updated, host_id: hostId };
+    const payload = { 
+      ...updated, 
+      host_id: hostId,
+      reviews_list: updated.reviewsList || [], // Sincronizar con columna DB
+      availability_urgency_msg: updated.availability_urgency_msg,
+      general_area_map_url: updated.general_area_map_url,
+      exact_lat_long: updated.exact_lat_long,
+      google_maps_url: updated.google_maps_url,
+      waze_url: updated.waze_url,
+      review_url: updated.review_url
+    };
+    
+    // Limpiar campos que no van a la DB como columnas planas
     delete (payload as any).reviewsList;
     delete (payload as any).offers;
+    delete (payload as any).seasonal_prices;
 
     const { error: updateError } = await supabase.from('properties').update(payload).eq('id', updated.id);
     if (updateError) {
@@ -2697,25 +2785,31 @@ const HostDashboard: React.FC = () => {
   };
 
   // --- REVIEW MANAGEMENT ---
-  const handleUpdateReviewStats = (propertyId: string, newRating: number, newCount: number) => {
-    const updatedProps = properties.map((p: Property) => {
-      if (p.id === propertyId) {
-        return { ...p, rating: newRating, reviews: newCount };
-      }
-      return p;
-    });
-    onUpdateProperties(updatedProps);
+  const handleUpdateReviewStats = async (propertyId: string, newRating: number, newCount: number) => {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    const updatedProp = { 
+      ...property, 
+      rating: newRating, 
+      reviews: newCount 
+    };
+    
+    // Autoguardar en Supabase
+    handleSaveProperty(updatedProp);
   };
 
-  const handleAddManualReview = (propertyId: string, review: Review) => {
-    const updatedProps = properties.map((p: Property) => {
-      if (p.id === propertyId) {
-        const currentReviews = p.reviewsList || [];
-        return { ...p, reviewsList: [review, ...currentReviews] };
-      }
-      return p;
-    });
-    onUpdateProperties(updatedProps);
+  const handleAddManualReview = async (propertyId: string, review: Review) => {
+    const property = properties.find(p => p.id === propertyId);
+    if (!property) return;
+
+    const updatedProp = { 
+      ...property, 
+      reviewsList: [review, ...(property.reviewsList || [])] 
+    };
+    
+    // Autoguardar en Supabase
+    handleSaveProperty(updatedProp);
   };
 
   // --- RENDERERS ---
@@ -2750,6 +2844,45 @@ const HostDashboard: React.FC = () => {
       animate="show"
       className="space-y-8 pb-32"
     >
+      {/* Salty Morning Briefing Slot */}
+      <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group border border-white/10">
+        <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-700">
+          <Sparkles strokeWidth={1} className="w-24 h-24" />
+        </div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-6">
+            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10">Salty Morning Briefing</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+          </div>
+          <h2 className="text-3xl font-serif font-black italic tracking-tighter mb-4 leading-tight">
+            "La brisa de <span className="text-primary-light">Cabo Rojo</span> augura un día de 5 estrellas."
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/10">
+            <div className="flex items-start gap-4">
+              <div className="bg-white/10 p-2 rounded-xl"><Calendar className="w-4 h-4 text-primary-light" /></div>
+              <div>
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Check-ins</p>
+                <p className="text-sm font-bold">{nextCheckins.filter(b => b.check_in === new Date().toISOString().split('T')[0]).length} Llegadas hoy</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="bg-white/10 p-2 rounded-xl"><Zap className="w-4 h-4 text-yellow-400" /></div>
+              <div>
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Clima en Vivo</p>
+                <p className="text-sm font-bold">29°C Parcialmente Nublado</p>
+              </div>
+            </div>
+            <div className="flex items-start gap-4">
+              <div className="bg-white/10 p-2 rounded-xl"><AlertTriangle className="w-4 h-4 text-red-400" /></div>
+              <div>
+                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Status Op.</p>
+                <p className="text-sm font-bold">{urgentAlerts.filter(a => a.status === 'new').length > 0 ? 'Revisión Pendiente' : 'Todo en Orden'}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
       <motion.div variants={itemVariants} className="flex justify-between items-center mb-2 px-2">
         <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Gestión del Día</h2>
         <div className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 border border-green-100 shadow-sm">
@@ -2798,11 +2931,24 @@ const HostDashboard: React.FC = () => {
             nextCheckins.map((booking: any) => (
               <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-soft-sm transition-all cursor-default">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-sand flex items-center justify-center text-text-light text-xs font-black border border-white shadow-sm">
-                    {booking.profiles?.full_name?.charAt(0) || 'H'}
+                  <div className="w-10 h-10 rounded-full bg-sand flex items-center justify-center text-text-light text-xs font-black border border-white shadow-sm overflow-hidden">
+                    {booking.profiles?.avatar_url ? (
+                      <img src={booking.profiles.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+                    ) : (
+                      booking.profiles?.full_name?.charAt(0) || 'H'
+                    )}
                   </div>
                   <div>
-                    <h4 className="text-sm font-medium text-text-main group-hover:text-primary transition-colors">{booking.profiles?.full_name || 'Huésped'}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-sm font-medium text-text-main group-hover:text-primary transition-colors">{booking.profiles?.full_name || 'Huésped'}</h4>
+                      <div className="flex gap-1">
+                        {(booking.profiles?.tags || []).slice(0, 2).map((tag: string) => (
+                          <span key={tag} className="text-[6px] font-black uppercase px-1.5 py-0.5 rounded-full bg-sand border border-black/5 text-text-light tracking-tighter">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
                     <p className="text-[9px] font-medium uppercase text-text-light tracking-[0.2em] mt-0.5">{formatDateLong(booking.check_in)}</p>
                   </div>
                 </div>
@@ -3067,24 +3213,24 @@ const HostDashboard: React.FC = () => {
     <div className="space-y-6 animate-slide-up">
       <div className="bg-black/95 p-6 rounded-[2rem] text-white shadow-soft relative overflow-hidden">
         <span className="material-icons absolute -bottom-4 -right-4 text-7xl opacity-5">database</span>
-        <h3 className="text-xl font-serif font-bold mb-2">Base CRM Local</h3>
+        <h3 className="text-xl font-serif font-bold mb-2">Base CRM con IA</h3>
         <p className="text-[11px] font-medium opacity-60 leading-relaxed mb-6">
-          Gestiona los datos de tus huéspedes registrados para campañas de WhatsApp.
+          Salty está analizando el comportamiento de los clientes y asignando etiquetas inteligentes para tu marketing proactivo.
         </p>
         <div className="flex gap-2">
-          <button onClick={() => showToast("Exportando CSV...")} className="flex-1 bg-white text-black font-black text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2">
-            <span className="material-icons text-sm">file_download</span> CSV
+          <button onClick={() => showToast("Exportando CSV...")} className="flex-1 bg-white text-black font-black text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg">
+            <span className="material-icons text-sm">file_download</span> Exportar
           </button>
-          <button onClick={() => showToast("Abriendo WhatsApp Web CRM...")} className="flex-1 bg-[#25D366] text-white font-black text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2">
-            <span className="material-icons text-sm">chat</span> CRM WA
+          <button onClick={() => showToast("Abriendo WhatsApp Web CRM...")} className="flex-1 bg-[#25D366] text-white font-black text-[10px] uppercase tracking-widest py-3 rounded-xl flex items-center justify-center gap-2 transition-all active:scale-95 shadow-lg">
+            <span className="material-icons text-sm">chat</span> Blast WA
           </button>
         </div>
       </div>
 
       <div className="bg-white rounded-[2rem] shadow-soft border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
-          <h3 className="font-bold text-text-main text-sm">Clientes Registrados</h3>
-          <span className="bg-gray-100 text-[10px] font-black text-text-light px-2 py-0.5 rounded-full">{leads.length}</span>
+          <h3 className="font-bold text-text-main text-sm">Inteligencia de Huéspedes</h3>
+          <span className="bg-gray-100 text-[10px] font-black text-text-light px-2 py-0.5 rounded-full">{leads.length} Perfiles</span>
         </div>
 
         {leads.length === 0 ? (
@@ -3094,25 +3240,57 @@ const HostDashboard: React.FC = () => {
           </div>
         ) : (
           <div className="divide-y divide-gray-50">
-            {leads.map((lead: any, i: number) => (
-              <div key={i} className="p-4 hover:bg-gray-50/50 transition-colors flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-sand text-secondary flex items-center justify-center font-bold text-sm shadow-sm">
-                    {lead.name.charAt(0).toUpperCase()}
+            {leads.map((lead: any, i: number) => {
+              return (
+                <div key={i} className="p-5 hover:bg-gray-50/50 transition-colors flex items-center justify-between group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-full bg-sand text-secondary flex items-center justify-center font-bold text-sm shadow-sm border border-white">
+                      {lead.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-bold text-sm text-text-main leading-tight">{lead.name}</p>
+                        <div className="flex gap-1">
+                          {(lead.tags || []).map((tag: string) => (
+                            <span 
+                              key={tag}
+                              className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${
+                                tag === 'VIP' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                tag === 'Web Directa' ? 'bg-green-100 text-green-700 border-green-200' :
+                                tag === 'Pet Friendly' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                tag === 'Remote Worker' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' :
+                                'bg-blue-100 text-blue-700 border-blue-200'
+                              }`}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                          {(!lead.tags || lead.tags.length === 0) && (
+                            <span className="text-[7px] font-black uppercase px-2 py-0.5 rounded-full bg-gray-50 text-gray-400 border border-gray-100">Nuevo Lead</span>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] font-bold text-primary mt-0.5 opacity-70">{lead.email}</p>
+                      {lead.message && (
+                        <p className="text-[10px] text-text-light mt-1 italic line-clamp-1 opacity-60">Salty Note: "{lead.message}"</p>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-bold text-sm text-text-main leading-tight">{lead.name}</p>
-                    <p className="text-[10px] font-bold text-primary mt-0.5">{lead.email}</p>
-                    {lead.message && (
-                      <p className="text-[10px] text-text-light mt-1 italic line-clamp-1">"{lead.message}"</p>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <button 
+                      onClick={() => handleAddTag('lead', lead.id, lead.tags || [])} 
+                      className="text-gray-300 hover:text-primary p-2 hover:bg-primary/5 rounded-full transition-all"
+                      title="Añadir Etiqueta"
+                    >
+                      <span className="material-icons text-lg">local_offer</span>
+                    </button>
+                    <button onClick={() => showToast(`Iniciando contacto con ${lead.name}`)} className="text-gray-300 group-hover:text-primary p-2 hover:bg-primary/5 rounded-full transition-all">
+                      <span className="material-icons text-lg">contact_email</span>
+                    </button>
                   </div>
                 </div>
-                <button className="text-primary p-2 hover:bg-primary/5 rounded-full transition-all">
-                  <span className="material-icons text-lg">arrow_forward</span>
-                </button>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -3304,6 +3482,112 @@ const HostDashboard: React.FC = () => {
     </div>
   );
 
+  const renderConversion = () => (
+    <div className="space-y-6 animate-fade-in pb-20">
+      <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-2">
+        <div className="flex gap-3">
+          <span className="material-icons text-orange-600">bolt</span>
+          <div>
+            <h3 className="font-bold text-orange-800 text-sm">Optimización de Conversión</h3>
+            <p className="text-xs text-orange-600 leading-relaxed">
+              Configura elementos que crean urgencia y confianza para aumentar tus reservas directas.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {properties.map((p: Property) => {
+        const [formData, setFormData] = useState({
+          availability_urgency_msg: p.availability_urgency_msg || '',
+          general_area_map_url: p.general_area_map_url || '',
+          exact_lat_long: p.exact_lat_long || '',
+          google_maps_url: p.google_maps_url || '',
+          waze_url: p.waze_url || '',
+          review_url: p.review_url || ''
+        });
+
+        const handleBlur = () => {
+          handleSaveProperty({ ...p, ...formData });
+        };
+
+        return (
+          <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100">
+            <h3 className="font-serif font-black italic text-lg mb-6 border-b border-gray-50 pb-2">{p.title}</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Mensaje de Urgencia (Pulsaciones)</label>
+                <input 
+                  value={formData.availability_urgency_msg}
+                  onChange={e => setFormData({...formData, availability_urgency_msg: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm mt-1"
+                  placeholder="Ej: Solo quedan 2 fines de semana en Abril"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">URL Mapa Estético (Pin General)</label>
+                  <input 
+                    value={formData.general_area_map_url}
+                    onChange={e => setFormData({...formData, general_area_map_url: e.target.value})}
+                    onBlur={handleBlur}
+                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm mt-1"
+                    placeholder="https://supabase.co/..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Coordenadas Exactas (GPS)</label>
+                  <input 
+                    value={formData.exact_lat_long}
+                    onChange={e => setFormData({...formData, exact_lat_long: e.target.value})}
+                    onBlur={handleBlur}
+                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm mt-1"
+                    placeholder="18.0636,-67.1569"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Google Maps URL</label>
+                  <input 
+                    value={formData.google_maps_url}
+                    onChange={e => setFormData({...formData, google_maps_url: e.target.value})}
+                    onBlur={handleBlur}
+                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-[10px] mt-1"
+                    placeholder="https://goo.gl/maps/..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Waze URL</label>
+                  <input 
+                    value={formData.waze_url}
+                    onChange={e => setFormData({...formData, waze_url: e.target.value})}
+                    onBlur={handleBlur}
+                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-[10px] mt-1"
+                    placeholder="https://waze.com/ul?..."
+                  />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Google Review URL</label>
+                  <input 
+                    value={formData.review_url}
+                    onChange={e => setFormData({...formData, review_url: e.target.value})}
+                    onBlur={handleBlur}
+                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-[10px] mt-1"
+                    placeholder="https://g.page/r/..."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   const editingProperty = properties.find(p => p.id === isEditing);
 
   return (
@@ -3332,6 +3616,7 @@ const HostDashboard: React.FC = () => {
             onFilterChange={setAnalyticsFilter}
           />
         )}
+        {activeTab === 'conversion' && renderConversion()}
         {activeTab === 'messages' && <HostMessageCenter />}
       </main>
 
@@ -3488,6 +3773,21 @@ const HostDashboard: React.FC = () => {
               <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black">6</span>
             </div>
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Chats</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('conversion')}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'conversion' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            {activeTab === 'conversion' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Sparkles strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'conversion' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Optimizar</span>
           </button>
 
           <button

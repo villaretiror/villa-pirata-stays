@@ -428,7 +428,7 @@ export const PropertyDetails: React.FC = () => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                   </span>
                   <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">
-                    {viewers} personas viendo ahora
+                    {p.availability_urgency_msg || `${viewers} personas viendo ahora`}
                   </span>
                 </div>
                 <p className={TAG_STYLE + " text-gray-400 mb-1"}>Inversión Preferencial</p>
@@ -476,20 +476,114 @@ export const PropertyDetails: React.FC = () => {
               </div>
             </div>
 
-            <div className="p-6 bg-secondary/10 rounded-[2.5rem] border border-secondary/20 flex flex-col items-center text-center space-y-3">
-              <span className="material-icons text-secondary text-4xl">contact_support</span>
-              <h4 className="font-serif font-bold text-lg">¿Dudas sobre tu estancia?</h4>
-              <p className="text-xs text-text-light">Habla con nuestro Cerebro Ejecutivo para cerrar una oferta especial.</p>
-              <button
-                onClick={() => (window as any).toggleChat?.()}
-                className="text-secondary font-black uppercase text-[10px] tracking-widest"
+            {/* Secure Map Widget */}
+            <div className="bg-white p-6 rounded-[3rem] border border-black/5 shadow-soft space-y-4">
+              <h4 className={TAG_STYLE + " text-gray-400"}>Ubicación Estratégica</h4>
+              <div 
+                className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer shadow-inner border border-black/5" 
+                onClick={() => window.open(p.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${p.exact_lat_long || p.location}`, '_blank')}
               >
-                Abrir Chat Ahora
-              </button>
+                <img 
+                  src={p.general_area_map_url || 'https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80&w=800'} 
+                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                  alt="Mapa del área general" 
+                />
+                <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                  <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
+                    <span className="material-icons text-primary text-sm">explore</span>
+                    <span className="text-[10px] font-black uppercase tracking-tighter">Explorar Zona</span>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-text-light italic leading-relaxed">
+                Ubicación general aproximada. Por seguridad, la dirección exacta y coordenadas se revelan tras confirmar la reserva.
+              </p>
             </div>
           </div>
         </aside>
       </div>
+
+      {/* --- REVIEWS CAROUSEL --- */}
+      {(p.reviewsList && p.reviewsList.length > 0) && (
+        <section className="max-w-7xl mx-auto px-6 mt-20">
+          <div className="flex items-center gap-4 mb-10">
+            <h2 className="text-3xl font-serif font-bold text-text-main">Voz del Huésped</h2>
+            <div className="flex-1 h-px bg-black/5"></div>
+          </div>
+          
+          <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6">
+            {p.reviewsList.map((rev, i) => (
+              <div key={i} className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3rem] shadow-soft border border-black/5 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center gap-1 text-orange-400 mb-4">
+                    {Array(5).fill(0).map((_, j) => (
+                      <span key={j} className="material-icons text-sm">{j < rev.rating ? 'star' : 'star_border'}</span>
+                    ))}
+                  </div>
+                  <p className="text-lg text-text-main font-serif italic leading-relaxed mb-6">
+                    "{rev.text}"
+                  </p>
+                </div>
+                <div className="flex items-center justify-between pt-6 border-t border-black/5">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-sand rounded-full flex items-center justify-center font-black text-primary text-xs">
+                      {rev.author.charAt(0)}
+                    </div>
+                    <div>
+                      <p className="font-bold text-sm text-text-main">{rev.author}</p>
+                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">{rev.date}</p>
+                    </div>
+                  </div>
+                  {getSourceLabel(rev.source)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* --- CROSS-SELLING (OTHER VILLAS) --- */}
+      <section className="max-w-7xl mx-auto px-6 mt-32 mb-20">
+        <div className="flex flex-col items-center text-center space-y-4 mb-12">
+          <p className={TAG_STYLE + " text-primary"}>¿Buscas algo diferente?</p>
+          <h2 className="text-4xl font-serif font-black text-text-main">Otras Colecciones de Élite</h2>
+          <div className="w-20 h-1.5 bg-primary/20 rounded-full"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {properties
+            .filter(prop => prop.id !== id)
+            .map((other, i) => (
+              <Link 
+                key={other.id}
+                to={`/property/${other.id}`}
+                className="group relative h-[400px] rounded-[3.5rem] overflow-hidden shadow-2xl transition-all hover:-translate-y-2"
+              >
+                <img src={other.images[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={other.title} />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
+                  <div>
+                    <h3 className="text-3xl font-serif font-black text-white leading-tight">{other.title}</h3>
+                    <p className="text-white/60 text-sm font-medium mt-2">{other.subtitle}</p>
+                    <div className="flex items-center gap-3 mt-4">
+                      <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                        <span className="material-icons text-xs text-orange-400">star</span>
+                        <span className="text-[10px] font-black text-white">{other.rating}</span>
+                      </div>
+                      <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
+                        <span className="material-icons text-xs text-white">groups</span>
+                        <span className="text-[10px] font-black text-white">{other.guests} Guests</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-black group-hover:bg-primary group-hover:text-white transition-all shadow-2xl">
+                    <span className="material-icons">arrow_forward</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+        </div>
+      </section>
 
       {/* --- MODALS & DRAWERS --- */}
 

@@ -53,6 +53,13 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           id: String(p.id),
           guests: Number(p.guests || p.policies?.guests || p.policies?.maxGuests) || 1,
           price: Number(p.price) || 0,
+          reviewsList: p.reviews_list || [],
+          availability_urgency_msg: p.availability_urgency_msg,
+          general_area_map_url: p.general_area_map_url,
+          exact_lat_long: p.exact_lat_long,
+          google_maps_url: p.google_maps_url,
+          waze_url: p.waze_url,
+          review_url: p.review_url,
           policies: {
             ...p.policies,
             guests: Number(p.policies?.guests || p.policies?.maxGuests || p.guests) || 1,
@@ -61,6 +68,15 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         })) as Property[];
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
+
+        // 1b. Fetch System Settings (Guidebook)
+        const { data: settings } = await supabase.from('system_settings').select('key, value');
+        if (settings) {
+          const guide = settings.find((s: any) => s.key === 'local_guide_data')?.value;
+          if (guide) {
+            setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(guide) ? prev : guide);
+          }
+        }
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') console.error("fetchPropertiesFromDB Error:", err);
@@ -116,8 +132,17 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setProperties(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
   }, []);
 
-  const updateGuide = useCallback((updated: LocalGuideCategory[]) => {
+  const updateGuide = useCallback(async (updated: LocalGuideCategory[]) => {
     setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
+    
+    // Persistir en Supabase
+    const { error } = await supabase.from('system_settings').upsert({
+      key: 'local_guide_data',
+      value: updated,
+      updated_at: new Date().toISOString()
+    });
+    
+    if (error) console.error("Error saving guide to DB:", error);
   }, []);
 
   const value = useMemo(() => ({

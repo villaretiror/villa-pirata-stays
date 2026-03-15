@@ -87,6 +87,12 @@ export interface Property {
   policies: Policies;
   blockedDates: string[];
   calendarSync: CalendarSync[];
+  availability_urgency_msg?: string;
+  general_area_map_url?: string;
+  exact_lat_long?: string;
+  google_maps_url?: string;
+  waze_url?: string;
+  review_url?: string;
   isOffline?: boolean;
   seasonal_prices?: SeasonalPrice[];
   host: {

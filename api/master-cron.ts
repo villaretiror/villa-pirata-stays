@@ -84,17 +84,24 @@ async function taskCleanupMocks(supabase: any) {
 async function taskCalendarSync(supabase: any) {
     let newBlocksTotal = 0;
 
-    // Feedback Loop: Takeover notified
-    const { data: expired } = await supabase.from('chat_logs').select('session_id').lt('human_takeover_until', new Date().toISOString()).eq('takeover_notified', false);
+    // Feedback Loop: Silently reset takeover notified status without alerting Telegram
+    const { data: expired } = await supabase.from('chat_logs')
+        .select('session_id')
+        .lt('human_takeover_until', new Date().toISOString())
+        .eq('takeover_notified', false);
+    
     for (const log of expired || []) {
-        await NotificationService.sendTelegramAlert(`🤖 <b>Salty:</b> Retomando guardia activa. (Sesión: <code>${log.session_id}</code>)\n¿Hubo algo importante en esta charla que deba aprender para futuras consultas?`);
         await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', log.session_id);
     }
 
     for (const [id, url] of Object.entries(ICAL_URLS)) {
         try {
             const resp = await fetch(url + '?nocache=' + Date.now(), { signal: AbortSignal.timeout(8000) });
-            if (!resp.ok) continue;
+            if (!resp.ok) {
+                // Notificar error crítico si la URL de Airbnb no responde (Error de conexión o 404)
+                await NotificationService.sendTelegramAlert(`⚠️ <b>Error Crítico iCal</b>\nFallo al conectar con la fuente de Airbnb para <b>${getPropertyName(id)}</b>.\n<i>El calendario podría estar desincronizado.</i>`);
+                continue;
+            }
             const text = await resp.text();
             const lines = text.split(/\r?\n/);
             let inEvent = false, start = '', end = '', count = 0;
@@ -108,8 +115,12 @@ async function taskCalendarSync(supabase: any) {
                         const ci = parseIcsDate(start), co = parseIcsDate(end);
                         const { data } = await supabase.from('bookings').select('id').eq('property_id', id).eq('check_in', ci).eq('status', 'external_block').limit(1);
                         if (!data || data.length === 0) {
-                            await supabase.from('bookings').insert({ property_id: id, status: 'external_block', check_in: ci, check_out: co, guests: 1, total_price: 0 });
-                            count++; newBlocksTotal++;
+                            const { error: insError } = await supabase.from('bookings').insert({ property_id: id, status: 'external_block', check_in: ci, check_out: co, guests: 1, total_price: 0 });
+                            if (!insError) {
+                                count++; newBlocksTotal++;
+                            } else {
+                                await NotificationService.sendTelegramAlert(`⚠️ <b>Error de Base de Datos</b>\nNo se pudo guardar el bloqueo externo para ${getPropertyName(id)} en Supabase.`);
+                            }
                         }
                     }
                     continue;
@@ -119,10 +130,10 @@ async function taskCalendarSync(supabase: any) {
                     if (l.startsWith('DTEND')) end = (l.split(':').pop() || '').trim();
                 }
             }
-            if (count > 0) {
-                await NotificationService.sendTelegramAlert(`🔄 <b>Sincronización iCal</b>\n<b>Propiedad:</b> ${getPropertyName(id)}\n<b>Nuevas:</b> +${count} noches`);
-            }
-        } catch { }
+            // Éxito en silencio: El usuario no quiere reportes de éxito de iCal
+        } catch (err: any) {
+            await NotificationService.sendTelegramAlert(`❌ <b>Fallo de Sistema iCal</b>\nError inesperado en el proceso de sincronización para ${getPropertyName(id)}: <i>${err.message}</i>`);
+        }
     }
     return { status: 'ok', new_blocks: newBlocksTotal };
 }

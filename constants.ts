@@ -111,26 +111,27 @@ export const PROPERTIES: Property[] = [
     price: 285,
     cleaning_fee: 85,
     service_fee: 20,
-    security_deposit: 250,
+    security_deposit: 0,
     fees: {
       "Limpieza": 85,
       "Service Fee": 20,
-      "Security Deposit": 250
+      "Security Deposit": 0
     },
     policies: {
-      checkInTime: "4:00 PM",
+      checkInTime: "3:00 PM",
       checkOutTime: "11:00 AM",
       guests: 8,
-      wifiName: "VillaRetiro_Starlink_Premium",
+      wifiName: "VillaRetiro_HighSpeed_WiFi",
       wifiPass: "Tropical2024!",
       accessCode: "4829 #",
       cancellationPolicy: 'firm',
       houseRules: [
+        'Apagar luces y A/C al salir',
+        'Mantener puertas cerradas si el A/C está encendido',
         'No fumar en interiores',
         'No fiestas ni eventos masivos',
         'Horas de silencio: 10:00 PM – 8:00 AM',
-        'Máximo 8 huéspedes',
-        'Mascotas permitidas con fee adicional'
+        'Mascotas permitidas'
       ]
     },
     blockedDates: [],
@@ -166,9 +167,9 @@ export const PROPERTIES: Property[] = [
     ],
     amenities: [
       'Piscina Privada (Agua Salada)',
-      'Generador Eléctrico Automático 24/7',
+      'SISTEMA SOLAR (Energía 24/7)',
       'Cisterna de Agua Industrial',
-      'WiFi Starlink de Alta Velocidad',
+      'Internet de Alta Velocidad (Cable Estable)',
       'Aire Acondicionado Split',
       'Cocina Completa Equipada',
       'Área de BBQ con Carbón',
@@ -181,7 +182,7 @@ export const PROPERTIES: Property[] = [
       'Cámaras de Seguridad (Exterior)',
       'Detector de Humo y CO'
     ],
-    featuredAmenity: 'Generador Eléctrico FULL Automático',
+    featuredAmenity: 'SISTEMA SOLAR (Energía 24/7)',
     category: 'Boutique',
     guests: 8,
     bedrooms: 2,
@@ -204,14 +205,14 @@ export const PROPERTIES: Property[] = [
     price: 145,
     cleaning_fee: 85,
     service_fee: 0,
-    security_deposit: 250,
+    security_deposit: 0,
     fees: {
       "Limpieza": 85,
       "Mantenimiento de Piscina": 25,
-      "Security Deposit": 250
+      "Security Deposit": 0
     },
     policies: {
-      checkInTime: "4:00 PM",
+      checkInTime: "3:00 PM",
       checkOutTime: "11:00 AM",
       guests: 6,
       wifiName: "PirataHouse_WiFi",
@@ -219,11 +220,11 @@ export const PROPERTIES: Property[] = [
       accessCode: "1776 #",
       cancellationPolicy: 'firm',
       houseRules: [
+        'Para encender la estufa se requiere fósforo o encendedor',
         'No fumar en interiores',
         'No fiestas ni eventos masivos',
         'Horas de silencio: 10:00 PM – 8:00 AM',
-        'Máximo 6 huéspedes',
-        'Mascotas permitidas con fee adicional'
+        'Mascotas permitidas'
       ]
     },
     blockedDates: [],
@@ -258,7 +259,8 @@ export const PROPERTIES: Property[] = [
       "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/a3fc93d3-5558-4390-8213-2431be1edef5.jpeg"
     ],
     amenities: [
-      'WiFi de Alta Velocidad',
+      'WiFi de Alta Velocidad (65 Mbps)',
+      'SISTEMA SOLAR (Energía Constante)',
       'Aire Acondicionado Split',
       'Cocina Completa Equipada',
       'Self Check-in con Lockbox',

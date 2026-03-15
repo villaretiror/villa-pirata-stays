@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PropertyCard from '../components/PropertyCard';
 import GuideCard from '../components/GuideCard';
+import ReviewCarousel from '../components/ReviewCarousel';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
 import { PropertyCardSkeleton } from '../components/Skeleton';
@@ -285,6 +286,18 @@ const Home: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Social Proof - Reviews Carousel */}
+        {!isLoading && properties.length > 0 && (
+          <div className="mb-16 border-y border-gray-100/50 py-4">
+            <div className="text-center mb-2">
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">Lo que dicen nuestros huéspedes</p>
+            </div>
+            <ReviewCarousel 
+              reviews={properties.flatMap(p => p.reviewsList || []).slice(0, 8)} 
+            />
+          </div>
+        )}
 
         {/* Listings Header */}
         <div ref={resultsRef} className="flex justify-between items-center mb-6 scroll-mt-32">
