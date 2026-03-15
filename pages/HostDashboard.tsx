@@ -98,7 +98,7 @@ interface ReviewManagerProps {
 const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, onAddReview }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newReview, setNewReview] = useState<Partial<Review>>({ rating: 5, source: 'Airbnb', date: 'Mayo 2024' });
-  const [stats, setStats] = useState({ rating: property.rating, count: property.reviews });
+  const [stats, setStats] = useState({ rating: property.rating, count: property.reviews_count });
 
   const saveReview = () => {
     if (!newReview.author || !newReview.text) return;
@@ -163,7 +163,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
       {/* Reviews List */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <h4 className="font-bold text-sm">Reseñas Destacadas ({property.reviewsList?.length || 0})</h4>
+          <h4 className="font-bold text-sm">Reseñas Destacadas ({property.reviews_list?.length || 0})</h4>
           <button onClick={() => setIsAdding(!isAdding)} className="text-primary text-xs font-bold underline">
             {isAdding ? 'Cancelar' : '+ Agregar Manualmente'}
           </button>
@@ -193,7 +193,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
           </div>
         )}
 
-        {property.reviewsList?.map(review => (
+        {property.reviews_list?.map(review => (
           <div key={review.id} className="text-sm border-b border-gray-100 pb-3 last:border-0">
             <div className="flex justify-between mb-1">
               <span className="font-bold">{review.author}</span>
@@ -2685,7 +2685,7 @@ const HostDashboard: React.FC = () => {
     const payload = { 
       ...updated, 
       host_id: hostId,
-      reviews_list: updated.reviewsList || [], // Sincronizar con columna DB
+      reviews_list: updated.reviews_list || [], // Sincronizar con columna DB
       availability_urgency_msg: updated.availability_urgency_msg,
       general_area_map_url: updated.general_area_map_url,
       exact_lat_long: updated.exact_lat_long,
@@ -2695,7 +2695,7 @@ const HostDashboard: React.FC = () => {
     };
     
     // Limpiar campos que no van a la DB como columnas planas
-    delete (payload as any).reviewsList;
+    delete (payload as any).reviews_list;
     delete (payload as any).offers;
     delete (payload as any).seasonal_prices;
 
@@ -2762,7 +2762,7 @@ const HostDashboard: React.FC = () => {
         id: String(dbItem.id),
         subtitle: 'Importada de plataforma',
         rating: importedData.rating || 4.5,
-        reviews: importedData.reviews || 10,
+        reviews_count: (importedData as any).reviews_count || 10,
         bedrooms: 2,
         beds: 2,
         baths: 1,
@@ -2792,7 +2792,7 @@ const HostDashboard: React.FC = () => {
     const updatedProp = { 
       ...property, 
       rating: newRating, 
-      reviews: newCount 
+      reviews_count: newCount 
     };
     
     // Autoguardar en Supabase
@@ -2803,9 +2803,9 @@ const HostDashboard: React.FC = () => {
     const property = properties.find(p => p.id === propertyId);
     if (!property) return;
 
-    const updatedProp = { 
+    const updatedProp: Property = { 
       ...property, 
-      reviewsList: [review, ...(property.reviewsList || [])] 
+      reviews_list: [review, ...(property.reviews_list || [])] 
     };
     
     // Autoguardar en Supabase

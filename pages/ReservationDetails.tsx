@@ -54,7 +54,7 @@ const ReservationDetails: React.FC = () => {
             </div>
             <div className="flex items-center gap-1 mt-1 text-text-light text-xs font-medium">
               <span className="material-icons text-[14px]">star</span>
-              <span>{property.rating} ({property.reviews} reseñas)</span>
+              <span>{property.rating} ({property.reviews_count} reseñas)</span>
             </div>
           </div>
         </div>

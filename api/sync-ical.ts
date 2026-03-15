@@ -25,10 +25,14 @@ export default async function handler(req: any, res: any) {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
     
-    // 1. Obtener propiedades y sus feeds de sincronización (calendarSync es el estandár)
+    // 1. Obtener parámetros de lote (Batching)
+    const limit = parseInt(req.query?.limit) || 5; 
+    const offset = parseInt(req.query?.offset) || 0;
+
     const { data: properties, error: pError } = await supabase
         .from('properties')
-        .select('id, title, "calendarSync"');
+        .select('id, title, "calendarSync"')
+        .range(offset, offset + limit - 1);
 
     if (pError || !properties) {
         return res.status(500).json({ error: 'DATABASE_ERROR', message: pError?.message });
@@ -38,82 +42,91 @@ export default async function handler(req: any, res: any) {
     let totalSynced = 0;
 
     for (const prop of properties) {
-        const propertyId = prop.id;
-        const propertyTitle = prop.title || "Villa";
-        const syncFeeds = Array.isArray(prop.calendarSync) ? prop.calendarSync : [];
+        try {
+            const propertyId = prop.id;
+            const propertyTitle = prop.title || "Villa";
+            const syncFeeds = Array.isArray(prop.calendarSync) ? prop.calendarSync : [];
 
-        if (syncFeeds.length === 0) {
-            results.push({ property: propertyTitle, status: 'no_feeds' });
-            continue;
-        }
+            if (syncFeeds.length === 0) {
+                results.push({ property: propertyTitle, status: 'no_feeds' });
+                continue;
+            }
 
-        const updatedFeeds = [];
+            const updatedFeeds = [];
+            const allBookingsToUpsert: any[] = [];
 
-        for (const feed of syncFeeds) {
-            try {
-                if (!feed.url) continue;
-
-                const response = await fetch(feed.url);
-                const icalText = await response.text();
-                const data = ical.parseICS(icalText);
+            // 2. Procesar feeds en paralelo para esta propiedad
+            const feedPromises = syncFeeds.map(async (feed: any) => {
+                if (!feed.url) return { ...feed, syncStatus: 'skipped' };
                 
-                const events = Object.values(data).filter((e: any) => e && e.type === 'VEVENT');
-                
-                let feedCount = 0;
-                let lastError = null;
+                try {
+                    const response = await fetch(feed.url, { signal: AbortSignal.timeout(15000) }); // 15s timeout
+                    const icalText = await response.text();
+                    const data = ical.parseICS(icalText);
+                    const events = Object.values(data).filter((e: any) => e && e.type === 'VEVENT');
+                    
+                    const oneMonthAgo = new Date();
+                    oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
 
-                for (const event of events) {
-                    const ev = event as any;
-                    if (ev?.start && ev?.end) {
-                        const check_in  = new Date(ev.start).toISOString().split('T')[0];
-                        const check_out = new Date(ev.end).toISOString().split('T')[0];
-                        
-                        const { error } = await supabase.from('bookings').upsert({
-                            property_id: propertyId,
-                            check_in,
-                            check_out,
-                            status: 'confirmed',
-                            source: feed.platform || 'iCal External',
-                            customer_name: ev.summary || 'Reserva Externa',
-                            total_price: 0
-                        }, { onConflict: 'property_id,check_in,check_out' }); // unique_booking_slot constraint
+                    for (const event of events) {
+                        const ev = event as any;
+                        if (ev?.start && ev?.end) {
+                            const endDate = new Date(ev.end);
+                            if (endDate < oneMonthAgo) continue; // Ignorar pasado lejano
 
-                        if (!error) {
-                            feedCount++;
-                            totalSynced++;
-                        } else {
-                            lastError = error.message;
+                            allBookingsToUpsert.push({
+                                property_id: propertyId,
+                                check_in: new Date(ev.start).toISOString().split('T')[0],
+                                check_out: new Date(ev.end).toISOString().split('T')[0],
+                                status: 'confirmed',
+                                source: feed.platform || 'iCal External',
+                                customer_name: ev.summary || 'Reserva Externa',
+                                total_price: 0
+                            });
                         }
                     }
+
+                    return {
+                        ...feed,
+                        lastSynced: new Date().toISOString(),
+                        syncStatus: 'success',
+                        events_found: events.length
+                    };
+                } catch (feedErr: any) {
+                    return { ...feed, syncStatus: 'error', db_error: feedErr.message };
                 }
+            });
 
-                updatedFeeds.push({
-                    ...feed,
-                    lastSynced: new Date().toISOString(),
-                    syncStatus: lastError ? 'error' : 'success',
-                    events_found: events.length,
-                    synced: feedCount,
-                    db_error: lastError
-                });
+            const processedFeeds = await Promise.all(feedPromises);
+            
+            // 3. Upsert masivo para esta propiedad (Eficiencia máxima)
+            if (allBookingsToUpsert.length > 0) {
+                const { error: upsertError } = await supabase
+                    .from('bookings')
+                    .upsert(allBookingsToUpsert, { 
+                        onConflict: 'property_id,check_in,check_out',
+                        ignoreDuplicates: false 
+                    });
 
-                results.push({ 
-                    property: propertyTitle, 
-                    platform: feed.platform, 
-                    events_found: events.length, 
-                    synced: feedCount,
-                    db_error: lastError 
-                });
-
-            } catch (err: any) {
-                updatedFeeds.push({ ...feed, syncStatus: 'error', db_error: err.message });
-                results.push({ property: propertyTitle, platform: feed.platform, error: err.message });
+                if (!upsertError) {
+                    totalSynced += allBookingsToUpsert.length;
+                }
             }
-        }
 
-        // Actualizar el objeto calendarSync con los nuevos estados
-        await supabase.from('properties')
-            .update({ calendarSync: updatedFeeds })
-            .eq('id', propertyId);
+            // Actualizar estados de feeds
+            await supabase.from('properties')
+                .update({ calendarSync: processedFeeds })
+                .eq('id', propertyId);
+
+            results.push({ 
+                property: propertyTitle, 
+                feeds: processedFeeds.length,
+                bookings_processed: allBookingsToUpsert.length 
+            });
+
+        } catch (propErr: any) {
+            results.push({ property: prop.title, error: propErr.message });
+        }
     }
 
     return res.status(200).json({

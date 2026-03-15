@@ -30,10 +30,14 @@ function getPropertyName(id: string): string {
 }
 
 export default async function handler(req: any, res: any) {
-    // 🛡️ Security Check: Bearer Token
-    const authHeader = req.headers['authorization'];
+    // 🛡️ Security Check: Header o Query
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const querySecret = req.query?.secret || '';
     const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
-    if (!authHeader || authHeader !== `Bearer ${secret}`) {
+
+    const isAuthorized = (authHeader === `Bearer ${secret}`) || (querySecret === secret);
+
+    if (!isAuthorized) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -47,8 +51,8 @@ export default async function handler(req: any, res: any) {
         tasks: {}
     };
 
-    // 1. SIEMPRE (Cada 15 min): iCal Sync, Feedback Loop & Mock Cleanup
-    results.tasks.calendar_sync = await taskCalendarSync(supabase);
+    // 1. SIEMPRE (Cada ejecución): iCal Sync & Cleanup
+    results.tasks.calendar_sync = await taskCalendarSync(req);
     results.tasks.cleanup = await taskCleanupMocks(supabase);
 
     // 2. DIARIO (10:00 UTC): Feedback Request & Daily Alerts
@@ -56,6 +60,9 @@ export default async function handler(req: any, res: any) {
         results.tasks.feedback = await taskFeedback(supabase);
         results.tasks.alerts = await taskDailyAlerts(supabase);
     }
+    
+    // ... rest of logic remains the same ...
+
 
     // 3. DIARIO (14:00 UTC): Guest Journey (Onboarding)
     if (utcHour === 14 && utcMinute < 15) {
@@ -77,65 +84,24 @@ async function taskCleanupMocks(supabase: any) {
     // Limpiar logs de chat muy antiguos ( > 30 días ) para optimizar
     const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const { count: logs } = await supabase.from('chat_logs').delete().lt('last_interaction', thirtyDaysAgo.toISOString());
+    const { count: aiLogs } = await supabase.from('ai_chat_logs').delete().lt('created_at', thirtyDaysAgo.toISOString());
 
-    return { status: 'ok', holds_cleared: holds || 0, logs_optimized: logs || 0 };
+    return { status: 'ok', holds_cleared: holds || 0, logs_optimized: (logs || 0) + (aiLogs || 0) };
 }
 
-async function taskCalendarSync(supabase: any) {
-    let newBlocksTotal = 0;
+async function taskCalendarSync(req: any) {
+    const protocol = req.headers['x-forwarded-proto'] || 'http';
+    const host = req.headers['host'];
+    const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
+    const syncUrl = `${protocol}://${host}/api/sync-ical?secret=${secret}`;
 
-    // Feedback Loop: Silently reset takeover notified status without alerting Telegram
-    const { data: expired } = await supabase.from('chat_logs')
-        .select('session_id')
-        .lt('human_takeover_until', new Date().toISOString())
-        .eq('takeover_notified', false);
-    
-    for (const log of expired || []) {
-        await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', log.session_id);
+    try {
+        const resp = await fetch(syncUrl, { signal: AbortSignal.timeout(55000) });
+        if (!resp.ok) return { status: 'error', code: resp.status };
+        return await resp.json();
+    } catch (err: any) {
+        return { status: 'internal_fetch_error', message: err.message };
     }
-
-    for (const [id, url] of Object.entries(ICAL_URLS)) {
-        try {
-            const resp = await fetch(url + '?nocache=' + Date.now(), { signal: AbortSignal.timeout(8000) });
-            if (!resp.ok) {
-                // Notificar error crítico si la URL de Airbnb no responde (Error de conexión o 404)
-                await NotificationService.sendTelegramAlert(`⚠️ <b>Error Crítico iCal</b>\nFallo al conectar con la fuente de Airbnb para <b>${getPropertyName(id)}</b>.\n<i>El calendario podría estar desincronizado.</i>`);
-                continue;
-            }
-            const text = await resp.text();
-            const lines = text.split(/\r?\n/);
-            let inEvent = false, start = '', end = '', count = 0;
-
-            for (const line of lines) {
-                const l = line.trim();
-                if (l === 'BEGIN:VEVENT') { inEvent = true; start = ''; end = ''; continue; }
-                if (l === 'END:VEVENT' && inEvent) {
-                    inEvent = false;
-                    if (start.length >= 8 && end.length >= 8) {
-                        const ci = parseIcsDate(start), co = parseIcsDate(end);
-                        const { data } = await supabase.from('bookings').select('id').eq('property_id', id).eq('check_in', ci).eq('status', 'external_block').limit(1);
-                        if (!data || data.length === 0) {
-                            const { error: insError } = await supabase.from('bookings').insert({ property_id: id, status: 'external_block', check_in: ci, check_out: co, guests: 1, total_price: 0 });
-                            if (!insError) {
-                                count++; newBlocksTotal++;
-                            } else {
-                                await NotificationService.sendTelegramAlert(`⚠️ <b>Error de Base de Datos</b>\nNo se pudo guardar el bloqueo externo para ${getPropertyName(id)} en Supabase.`);
-                            }
-                        }
-                    }
-                    continue;
-                }
-                if (inEvent) {
-                    if (l.startsWith('DTSTART')) start = (l.split(':').pop() || '').trim();
-                    if (l.startsWith('DTEND')) end = (l.split(':').pop() || '').trim();
-                }
-            }
-            // Éxito en silencio: El usuario no quiere reportes de éxito de iCal
-        } catch (err: any) {
-            await NotificationService.sendTelegramAlert(`❌ <b>Fallo de Sistema iCal</b>\nError inesperado en el proceso de sincronización para ${getPropertyName(id)}: <i>${err.message}</i>`);
-        }
-    }
-    return { status: 'ok', new_blocks: newBlocksTotal };
 }
 
 async function taskFeedback(supabase: any) {

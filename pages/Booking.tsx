@@ -241,6 +241,8 @@ const Booking: React.FC = () => {
       .from('bookings')
       .insert({
         user_id: user.id,
+        customer_name: user.name,
+        source: 'Direct Web',
         property_id: id,
         check_in: format(startDate, 'yyyy-MM-dd'),
         check_out: format(endDate, 'yyyy-MM-dd'),

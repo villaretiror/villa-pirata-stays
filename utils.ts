@@ -121,7 +121,7 @@ export const importPropertyFromUrl = async (url: string): Promise<Partial<Proper
       images: image ? [image] : ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"],
       price: 250, // Default price
       rating: 4.9,
-      reviews: 15,
+      reviews_count: 15,
       amenities: ['Wifi Starlink', 'Check-in Autónomo', 'Cocina Completa']
     };
   } catch (error: any) {

@@ -72,7 +72,7 @@ export interface Property {
   service_fee: number;
   security_deposit: number;
   rating: number;
-  reviews: number;
+  reviews_count: number;
   images: string[];
   amenities: string[];
   featuredAmenity?: string;
@@ -81,7 +81,7 @@ export interface Property {
   bedrooms: number;
   beds: number;
   baths: number;
-  reviewsList?: Review[];
+  reviews_list?: Review[];
   offers?: Offer[];
   fees: FeeStructure;
   policies: Policies;
@@ -105,14 +105,18 @@ export interface Property {
 
 export interface Booking {
   id: string;
-  propertyId: string;
-  guestId: string;
-  guestName: string;
-  guestImage: string;
-  checkIn: string;
-  checkOut: string;
+  property_id: string;
+  user_id?: string;
+  customer_name?: string;
+  source?: string;
+  check_in: string;
+  check_out: string;
   status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'pending_ai_validation' | 'emergency_support' | 'expired';
   guests: number;
+  email_sent?: boolean;
+  payment_method?: string;
+  payment_proof_url?: string;
+  total_price: number;
   paymentDetails: {
     method: 'Credit Card' | 'ATH Movil' | 'Cash';
     transactionId?: string;

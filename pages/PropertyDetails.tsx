@@ -504,7 +504,7 @@ export const PropertyDetails: React.FC = () => {
       </div>
 
       {/* --- REVIEWS CAROUSEL --- */}
-      {(p.reviewsList && p.reviewsList.length > 0) && (
+      {(p.reviews_list && p.reviews_list.length > 0) && (
         <section className="max-w-7xl mx-auto px-6 mt-20">
           <div className="flex items-center gap-4 mb-10">
             <h2 className="text-3xl font-serif font-bold text-text-main">Voz del Huésped</h2>
@@ -512,7 +512,7 @@ export const PropertyDetails: React.FC = () => {
           </div>
           
           <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6">
-            {p.reviewsList.map((rev, i) => (
+            {p.reviews_list.map((rev, i) => (
               <div key={i} className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3rem] shadow-soft border border-black/5 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center gap-1 text-orange-400 mb-4">

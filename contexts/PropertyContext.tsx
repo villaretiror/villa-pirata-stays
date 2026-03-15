@@ -55,22 +55,13 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mapped: Property[] = data.map((p: any) => ({
           ...p,
           id: String(p.id),
-          title: p.title || p.name || 'Villa', // Fallback a name si title falta, pero prioriza title
-          subtitle: p.subtitle || '',
           guests: Number(p.guests || p.policies?.guests || p.policies?.maxGuests) || 1,
           price: Number(p.price) || 0,
-          reviewsList: p.reviews_list || [],
-          availability_urgency_msg: p.availability_urgency_msg,
-          general_area_map_url: p.general_area_map_url,
-          exact_lat_long: p.exact_lat_long,
-          google_maps_url: p.google_maps_url,
-          waze_url: p.waze_url,
-          review_url: p.review_url,
           policies: {
             ...p.policies,
             guests: Number(p.policies?.guests || p.policies?.maxGuests || p.guests) || 1,
-            wifiPass: isAdmin ? p.policies?.wifiPass : '********',
-            accessCode: isAdmin ? p.policies?.accessCode : 'CONFIDENCIAL'
+            wifiPass: isAdmin ? p.policies?.wifiPass || p.wifi_pass : '********',
+            accessCode: isAdmin ? p.policies?.accessCode || p.access_code : 'CONFIDENCIAL'
           }
         })) as Property[];
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);

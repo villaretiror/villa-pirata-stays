@@ -313,7 +313,7 @@ const Home: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">Lo que dicen nuestros huéspedes</p>
             </div>
             <ReviewCarousel 
-              reviews={properties.flatMap(p => p.reviewsList || []).slice(0, 8)} 
+              reviews={properties.flatMap(p => p.reviews_list || []).slice(0, 8)} 
             />
           </div>
         )}
