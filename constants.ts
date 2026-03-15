@@ -169,7 +169,7 @@ export const PROPERTIES: Property[] = [
       'Piscina Privada (Agua Salada)',
       'SISTEMA SOLAR (Energía 24/7)',
       'Cisterna de Agua Industrial',
-      'Internet de Alta Velocidad (Cable Estable)',
+      'Internet de Alta Velocidad 65 Mbps (Cable Estable)',
       'Aire Acondicionado Split',
       'Cocina Completa Equipada',
       'Área de BBQ con Carbón',

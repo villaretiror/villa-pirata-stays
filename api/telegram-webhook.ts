@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { NotificationService } from '../services/NotificationService.js';
 import { supabase } from '../lib/supabase.js';
 import { createClient } from '@supabase/supabase-js';
@@ -188,16 +189,12 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
             tools: {
                 remember_info: {
                     description: 'Guarda información estratégica o familiar en la memoria de largo plazo.',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            key: { type: 'string', description: 'Identificador único (ej: family_dog_name)' },
-                            value: { type: 'string', description: 'Información a recordar' },
-                            category: { type: 'string', enum: ['identity', 'preferences', 'operations'] }
-                        },
-                        required: ['key', 'value']
-                    },
-                    execute: async ({ key, value, category }) => {
+                    parameters: z.object({
+                        key: z.string().describe('Identificador único (ej: family_dog_name)'),
+                        value: z.string().describe('Información a recordar'),
+                        category: z.enum(['identity', 'preferences', 'operations']).optional()
+                    }),
+                    execute: async ({ key, value, category }: { key: string; value: string; category?: 'identity' | 'preferences' | 'operations' }) => {
                         const { error } = await supabaseServiceRole
                             .from('salty_family_knowledge')
                             .upsert({ key, value, category: category || 'general' });
@@ -206,13 +203,10 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
                 },
                 fetch_reservations: {
                     description: 'Busca las reservas próximas o actuales para informar sobre quién llega y por qué plataforma.',
-                    parameters: {
-                        type: 'object',
-                        properties: {
-                            daysAhead: { type: 'number', description: 'Número de días a futuro para buscar (default 7).' }
-                        }
-                    },
-                    execute: async ({ daysAhead = 7 }) => {
+                    parameters: z.object({
+                        daysAhead: z.number().optional().describe('Número de días a futuro para buscar (default 7).')
+                    }),
+                    execute: async ({ daysAhead = 7 }: { daysAhead?: number }) => {
                         const today = new Date().toISOString().split('T')[0];
                         const future = new Date();
                         future.setDate(future.getDate() + daysAhead);
@@ -226,9 +220,9 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
                             .lte('check_in', futureStr);
 
                         if (error) return { error: error.message };
-                        
+
                         // Enriquecer con nombre de propiedad
-                        const bookingsNamed = bookings.map(b => ({
+                        const bookingsNamed = (bookings || []).map((b: any) => ({
                             ...b,
                             villa: b.property_id === '1081171030449673920' ? 'Villa Retiro R' : 'Pirata Family'
                         }));
