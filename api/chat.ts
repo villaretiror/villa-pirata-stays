@@ -83,7 +83,7 @@ Eres "Salty", el concierge ejecutivo de Villa & Pirata Stays.
 
         // 5. Execution
         const result = await streamText({
-            model: google('gemini-2.0-flash'),
+            model: google('gemini-2.5-flash'),
             messages: finalMessages,
             maxSteps: 5,
             tools: {

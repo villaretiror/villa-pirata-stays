@@ -183,7 +183,7 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
             : "";
 
         const { text: responseText, toolCalls } = await generateText({
-            model: google('gemini-1.5-flash'),
+            model: google('gemini-2.5-flash'),
             system: `${VILLA_CONCIERGE_PROMPT}${memoryContext}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
             prompt: `Mensaje de ${senderName}: ${text}`,
             temperature: 0.7,
