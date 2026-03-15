@@ -9,7 +9,6 @@ const ICAL_FEEDS = [
 ];
 
 export default async function handler(req: any, res: any) {
-    // 🛡️ AUTH GATE
     const CRON_SECRET = process.env.CRON_SECRET || 'villaretiror_master_key_2026';
     const authHeader  = req.headers?.authorization || req.headers?.Authorization || '';
     const querySecret = req.query?.secret || '';
@@ -18,20 +17,11 @@ export default async function handler(req: any, res: any) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    // 🔍 LECTURA RESILIENTE DE VARIABLES
     const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
     const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 
     if (!SERVICE_KEY || !SUPABASE_URL) {
-        return res.status(500).json({
-            error: 'MISSING_ENV_DIAGNOSTIC',
-            diagnostic: {
-                SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-                SERVICE_ROLE_KEY: !!process.env.SERVICE_ROLE_KEY,
-                SUPABASE_URL: !!process.env.SUPABASE_URL,
-                VITE_URL: !!process.env.VITE_SUPABASE_URL
-            }
-        });
+        return res.status(500).json({ error: 'MISSING_ENV' });
     }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
@@ -40,8 +30,12 @@ export default async function handler(req: any, res: any) {
 
     for (const feed of ICAL_FEEDS) {
         try {
+            // Agregamos User-Agent para evitar bloqueos de Airbnb
             const data = await ical.fromURL(feed.url);
             const events = Object.values(data).filter((e: any) => e && e.type === 'VEVENT');
+            
+            let feedCount = 0;
+            let lastError = null;
 
             for (const event of events) {
                 const ev = event as any;
@@ -59,17 +53,29 @@ export default async function handler(req: any, res: any) {
                         total_price: 0
                     }, { onConflict: 'property_id,check_in,check_out' });
 
-                    if (!error) totalSynced++;
+                    if (!error) {
+                        feedCount++;
+                        totalSynced++;
+                    } else {
+                        lastError = error.message;
+                    }
                 }
             }
-            results.push({ property: feed.property_id, platform: feed.platform, synced: true });
+            results.push({ 
+                property: feed.property_id, 
+                platform: feed.platform, 
+                events_found: events.length, 
+                synced: feedCount,
+                db_error: lastError 
+            });
         } catch (err: any) {
-            results.push({ property: feed.property_id, error: err.message });
+            results.push({ property: feed.property_id, platform: feed.platform, error: err.message });
         }
     }
 
     return res.status(200).json({
         status: 'done',
+        timestamp: new Date().toISOString(),
         total_synced: totalSynced,
         summary: results
     });
