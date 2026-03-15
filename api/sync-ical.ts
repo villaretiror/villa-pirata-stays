@@ -25,10 +25,10 @@ export default async function handler(req: any, res: any) {
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
     
-    // 1. Obtenemos todo de la tabla properties para mapear dinámicamente
+    // 1. Obtener propiedades y sus feeds de sincronización (calendarSync es el estandár)
     const { data: properties, error: pError } = await supabase
         .from('properties')
-        .select('id, title, airbnb_link, booking_link, calendarSync');
+        .select('id, title, "calendarSync"');
 
     if (pError || !properties) {
         return res.status(500).json({ error: 'DATABASE_ERROR', message: pError?.message });
@@ -40,23 +40,19 @@ export default async function handler(req: any, res: any) {
     for (const prop of properties) {
         const propertyId = prop.id;
         const propertyTitle = prop.title || "Villa";
-        const airbnbUrl = prop.airbnb_link;
-        const bookingUrl = prop.booking_link;
-        const currentSyncSettings = prop.calendarSync || {};
+        const syncFeeds = Array.isArray(prop.calendarSync) ? prop.calendarSync : [];
 
-        const feeds = [
-            { platform: 'Airbnb',      url: airbnbUrl },
-            { platform: 'Booking.com', url: bookingUrl }
-        ].filter(f => f.url && f.url.includes('http'));
+        if (syncFeeds.length === 0) {
+            results.push({ property: propertyTitle, status: 'no_feeds' });
+            continue;
+        }
 
-        const propSyncStats: any = { 
-            ...currentSyncSettings, 
-            last_sync: new Date().toISOString(), 
-            feeds: [] 
-        };
+        const updatedFeeds = [];
 
-        for (const feed of feeds) {
+        for (const feed of syncFeeds) {
             try {
+                if (!feed.url) continue;
+
                 const response = await fetch(feed.url);
                 const icalText = await response.text();
                 const data = ical.parseICS(icalText);
@@ -77,10 +73,10 @@ export default async function handler(req: any, res: any) {
                             check_in,
                             check_out,
                             status: 'confirmed',
-                            source: feed.platform,
+                            source: feed.platform || 'iCal External',
                             customer_name: ev.summary || 'Reserva Externa',
                             total_price: 0
-                        }, { onConflict: 'property_id,check_in,check_out' });
+                        }, { onConflict: 'property_id,check_in,check_out' }); // unique_booking_slot constraint
 
                         if (!error) {
                             feedCount++;
@@ -91,11 +87,13 @@ export default async function handler(req: any, res: any) {
                     }
                 }
 
-                propSyncStats.feeds.push({
-                    platform: feed.platform,
+                updatedFeeds.push({
+                    ...feed,
+                    lastSynced: new Date().toISOString(),
+                    syncStatus: lastError ? 'error' : 'success',
                     events_found: events.length,
                     synced: feedCount,
-                    error: lastError
+                    db_error: lastError
                 });
 
                 results.push({ 
@@ -107,13 +105,14 @@ export default async function handler(req: any, res: any) {
                 });
 
             } catch (err: any) {
+                updatedFeeds.push({ ...feed, syncStatus: 'error', db_error: err.message });
                 results.push({ property: propertyTitle, platform: feed.platform, error: err.message });
             }
         }
 
-        // Actualización del estado de sincronización usando la columna estándar
+        // Actualizar el objeto calendarSync con los nuevos estados
         await supabase.from('properties')
-            .update({ calendarSync: propSyncStats })
+            .update({ calendarSync: updatedFeeds })
             .eq('id', propertyId);
     }
 
