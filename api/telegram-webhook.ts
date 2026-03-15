@@ -21,7 +21,7 @@ export const config = {
 };
 
 const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
 });
 
 // 🛡️ ACCESO PRIVADO (Solo para Telegram)
@@ -76,16 +76,17 @@ export default async function handler(req: any, res: any) {
         const chatId = update.message.chat.id.toString();
         const text = update.message.text.trim();
 
-        // Validar Chat ID (Seguridad)
-        // El principal va a ser process.env.TELEGRAM_CHAT_ID (Padre e Hijo en el mismo grupo, o múltiples)
-        const allowedIdsStr = process.env.ALLOWED_TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || '2085187904';
-        const allowedIds = allowedIdsStr.split(',').map(id => id.trim());
+        // 🛡️ SECURITY GATE: Validar Chat ID contra lista de IDs autorizados
+        // Los IDs de Israel (9395794184) y Brian (2085187904) son el fallback hardcodeado si la variable no está en Vercel
+        const allowedIdsStr = process.env.ALLOWED_TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || '9395794184,2085187904';
+        const allowedIds = allowedIdsStr.split(',').map(id => id.trim()).filter(id => id.length > 0);
 
         if (!allowedIds.includes(chatId)) {
-            console.warn(`[Telegram Webhook] Mensaje recibido de Chat ID no autorizado: ${chatId}`);
-            await NotificationService.sendDirectTelegramMessage(chatId, "⚠️ *Acceso Denegado*\nEste bot es privado y exclusivo para el equipo administrativo de Villa & Pirata Stays.");
-            return res.status(200).send('Unauthorized Access');
+            console.warn(`[Telegram Webhook] 🚫 Acceso bloqueado. Chat ID no autorizado: ${chatId}`);
+            // Responder OK a Telegram para no revelar que el bot existe, pero no procesar el mensaje
+            return res.status(200).send('OK');
         }
+        console.log(`[Telegram Webhook] ✅ Acceso autorizado para Chat ID: ${chatId}`);
 
         if (text.startsWith('/status')) {
             await handleStatusCommand(chatId);
