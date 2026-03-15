@@ -11,6 +11,10 @@
         {
             "path": "/api/master-cron",
             "schedule": "0 10 * * *"
+        },
+        {
+            "path": "/api/sync-ical",
+            "schedule": "0 * * * *"
         }
     ],
     "headers": [

@@ -1,12 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import ical from 'node-ical';
 
-const ICAL_FEEDS = [
-    { property_id: '1081171030449673920', platform: 'Airbnb',      url: 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae' },
-    { property_id: '1081171030449673920', platform: 'Booking.com', url: 'https://ical.booking.com/v1/export?t=246c7179-e44f-458e-bede-2ff3376464b1' },
-    { property_id: '42839458',           platform: 'Airbnb',      url: 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331' },
-    { property_id: '42839458',           platform: 'Booking.com', url: 'https://ical.booking.com/v1/export?t=424b8257-5e8e-4d8d-9522-b2e63f4bf669' }
-];
+/**
+ * 🛰️ ICAL SYNC ENGINE (ULTRA-RESILIENT V3)
+ * Este motor es agnóstico a variaciones de nombres de columnas.
+ * Busca dinámicamente: name/Name, airbnb_link/airbnb_url, booking_link/booking_url.
+ */
 
 export default async function handler(req: any, res: any) {
     const CRON_SECRET = process.env.CRON_SECRET || 'villaretiror_master_key_2026';
@@ -25,52 +24,101 @@ export default async function handler(req: any, res: any) {
     }
 
     const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+    
+    // 1. Obtenemos todo de la tabla properties para mapear dinámicamente
+    const { data: properties, error: pError } = await supabase
+        .from('properties')
+        .select('*');
+
+    if (pError || !properties) {
+        return res.status(500).json({ error: 'DATABASE_ERROR', message: pError?.message });
+    }
+
     const results: any[] = [];
     let totalSynced = 0;
 
-    for (const feed of ICAL_FEEDS) {
-        try {
-            // Agregamos User-Agent para evitar bloqueos de Airbnb
-            const data = await ical.fromURL(feed.url);
-            const events = Object.values(data).filter((e: any) => e && e.type === 'VEVENT');
-            
-            let feedCount = 0;
-            let lastError = null;
+    for (const prop of properties) {
+        // Mapeo Resiliente con Corchetes (evita errores de case-sensitivity)
+        const propertyId = prop["id"];
+        const propertyName = prop["name"] || prop["Name"] || prop["title"] || "Villa";
+        const airbnbUrl = prop["airbnb_link"] || prop["airbnb_url"] || prop["airbnbLink"];
+        const bookingUrl = prop["booking_link"] || prop["booking_url"] || prop["bookingLink"];
+        const currentSyncSettings = prop["calendarsync"] || prop["calendarSync"] || prop["sync_settings"] || {};
 
-            for (const event of events) {
-                const ev = event as any;
-                if (ev?.start && ev?.end) {
-                    const check_in  = new Date(ev.start).toISOString().split('T')[0];
-                    const check_out = new Date(ev.end).toISOString().split('T')[0];
-                    
-                    const { error } = await supabase.from('bookings').upsert({
-                        property_id: feed.property_id,
-                        check_in,
-                        check_out,
-                        status: 'confirmed',
-                        source: feed.platform,
-                        customer_name: ev.summary || 'Reserva Externa',
-                        total_price: 0
-                    }, { onConflict: 'property_id,check_in,check_out' });
+        const feeds = [
+            { platform: 'Airbnb',      url: airbnbUrl },
+            { platform: 'Booking.com', url: bookingUrl }
+        ].filter(f => f.url && f.url.includes('http'));
 
-                    if (!error) {
-                        feedCount++;
-                        totalSynced++;
-                    } else {
-                        lastError = error.message;
+        const propSyncStats: any = { 
+            ...currentSyncSettings, 
+            last_sync: new Date().toISOString(), 
+            feeds: [] 
+        };
+
+        for (const feed of feeds) {
+            try {
+                // Fetch iCal data
+                const response = await fetch(feed.url);
+                const icalText = await response.text();
+                const data = ical.parseICS(icalText);
+                
+                const events = Object.values(data).filter((e: any) => e && e.type === 'VEVENT');
+                
+                let feedCount = 0;
+                let lastError = null;
+
+                for (const event of events) {
+                    const ev = event as any;
+                    if (ev?.start && ev?.end) {
+                        const check_in  = new Date(ev.start).toISOString().split('T')[0];
+                        const check_out = new Date(ev.end).toISOString().split('T')[0];
+                        
+                        const { error } = await supabase.from('bookings').upsert({
+                            property_id: propertyId,
+                            check_in,
+                            check_out,
+                            status: 'confirmed',
+                            source: feed.platform,
+                            customer_name: ev.summary || 'Reserva Externa',
+                            total_price: 0
+                        }, { onConflict: 'property_id,check_in,check_out' });
+
+                        if (!error) {
+                            feedCount++;
+                            totalSynced++;
+                        } else {
+                            lastError = error.message;
+                        }
                     }
                 }
+
+                propSyncStats.feeds.push({
+                    platform: feed.platform,
+                    events_found: events.length,
+                    synced: feedCount,
+                    error: lastError
+                });
+
+                results.push({ 
+                    property: propertyName, 
+                    platform: feed.platform, 
+                    events_found: events.length, 
+                    synced: feedCount,
+                    db_error: lastError 
+                });
+
+            } catch (err: any) {
+                results.push({ property: propertyName, platform: feed.platform, error: err.message });
             }
-            results.push({ 
-                property: feed.property_id, 
-                platform: feed.platform, 
-                events_found: events.length, 
-                synced: feedCount,
-                db_error: lastError 
-            });
-        } catch (err: any) {
-            results.push({ property: feed.property_id, platform: feed.platform, error: err.message });
         }
+
+        // Actualización dinámica del estado de sincronización
+        // Intentamos actualizar calendarSync o calendarsync según lo que exista
+        const syncColumn = prop.hasOwnProperty("calendarsync") ? "calendarsync" : "calendarSync";
+        await supabase.from('properties')
+            .update({ [syncColumn]: propSyncStats })
+            .eq('id', propertyId);
     }
 
     return res.status(200).json({
