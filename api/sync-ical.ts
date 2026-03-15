@@ -28,7 +28,7 @@ export default async function handler(req: any, res: any) {
     // 1. Obtenemos todo de la tabla properties para mapear dinámicamente
     const { data: properties, error: pError } = await supabase
         .from('properties')
-        .select('*');
+        .select('id, title, airbnb_link, booking_link, calendarSync');
 
     if (pError || !properties) {
         return res.status(500).json({ error: 'DATABASE_ERROR', message: pError?.message });
@@ -38,12 +38,11 @@ export default async function handler(req: any, res: any) {
     let totalSynced = 0;
 
     for (const prop of properties) {
-        // Mapeo Resiliente con Corchetes (evita errores de case-sensitivity)
-        const propertyId = prop["id"];
-        const propertyName = prop["name"] || prop["Name"] || prop["title"] || "Villa";
-        const airbnbUrl = prop["airbnb_link"] || prop["airbnb_url"] || prop["airbnbLink"];
-        const bookingUrl = prop["booking_link"] || prop["booking_url"] || prop["bookingLink"];
-        const currentSyncSettings = prop["calendarsync"] || prop["calendarSync"] || prop["sync_settings"] || {};
+        const propertyId = prop.id;
+        const propertyTitle = prop.title || "Villa";
+        const airbnbUrl = prop.airbnb_link;
+        const bookingUrl = prop.booking_link;
+        const currentSyncSettings = prop.calendarSync || {};
 
         const feeds = [
             { platform: 'Airbnb',      url: airbnbUrl },
@@ -58,7 +57,6 @@ export default async function handler(req: any, res: any) {
 
         for (const feed of feeds) {
             try {
-                // Fetch iCal data
                 const response = await fetch(feed.url);
                 const icalText = await response.text();
                 const data = ical.parseICS(icalText);
@@ -101,7 +99,7 @@ export default async function handler(req: any, res: any) {
                 });
 
                 results.push({ 
-                    property: propertyName, 
+                    property: propertyTitle, 
                     platform: feed.platform, 
                     events_found: events.length, 
                     synced: feedCount,
@@ -109,15 +107,13 @@ export default async function handler(req: any, res: any) {
                 });
 
             } catch (err: any) {
-                results.push({ property: propertyName, platform: feed.platform, error: err.message });
+                results.push({ property: propertyTitle, platform: feed.platform, error: err.message });
             }
         }
 
-        // Actualización dinámica del estado de sincronización
-        // Intentamos actualizar calendarSync o calendarsync según lo que exista
-        const syncColumn = prop.hasOwnProperty("calendarsync") ? "calendarsync" : "calendarSync";
+        // Actualización del estado de sincronización usando la columna estándar
         await supabase.from('properties')
-            .update({ [syncColumn]: propSyncStats })
+            .update({ calendarSync: propSyncStats })
             .eq('id', propertyId);
     }
 

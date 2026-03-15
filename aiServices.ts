@@ -238,7 +238,7 @@ export const generateOnboardingDraft = async (
 
     try {
         const { text } = await generateText({
-            model: google('gemini-2.5-flash'),
+            model: google('gemini-1.5-flash'),
             prompt,
             temperature: 0.4
         });
@@ -246,7 +246,7 @@ export const generateOnboardingDraft = async (
     } catch (e) {
         console.error("Error generating draft:", e);
         return stage === 'mid_stay'
-            ? `¡Hola ${guestName}! Soy Salty. Pasaba a saludarte y verificar que estés disfrutando de ${propertyTitle}. Si quieres una aventura hoy, no dejes de visitar Guaniquilla. ¡Cualquier cosa, aquí estoy!`
-            : `Hola ${guestName}, esperamos que hayas disfrutado tu estancia. Solo un recordatorio de que el check-out es a las 11:00 AM. Por favor, recuerda dejar la basura fuera y cerrar bien puertas y portón. ¡Buen viaje de regreso!`;
+            ? `¡Hola ${guestName}! Soy Salty. Pasaba a saludarte y verificar que estés disfrutando de tu estancia en ${propertyTitle}. Si quieres una aventura hoy, no dejes de visitar los spots locales. ¡Cualquier cosa, aquí estoy!`
+            : `Hola ${guestName}, esperamos que hayas disfrutado tu estancia en ${propertyTitle}. Solo un recordatorio de que el check-out es a las 11:00 AM. Por favor, recuerda dejar la basura fuera y cerrar bien puertas y portón. ¡Buen viaje de regreso!`;
     }
 };

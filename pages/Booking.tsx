@@ -222,9 +222,9 @@ const Booking: React.FC = () => {
       }
     }
 
-    // Final total validation check
-    if (Math.abs(reTotal - total) > 0.01) {
-      alert("⚠️ Los precios han cambiado. Por favor revisa el nuevo total.");
+    // Final total validation check (Threshold expanded to 1.0 to avoid over-sensitivity)
+    if (Math.abs(reTotal - total) > 1.0) {
+      alert(`⚠️ Los precios se han actualizado a $${reTotal}. Por favor revisa el nuevo desglose.`);
       setPriceMismatch(true);
       setIsProcessing(false);
       refreshProperties();

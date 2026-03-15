@@ -30,7 +30,8 @@
     "react-dom": "18.2.0",
     "react-router-dom": "^7.13.1",
     "recharts": "^3.8.0",
-    "resend": "^3.5.0"
+    "resend": "^3.5.0",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",

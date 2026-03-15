@@ -37,15 +37,15 @@ export default async function handler(req: any, res: any) {
 
     // 🏢 Data Merge (DB + Defaults)
     const p = {
-      name: dbProperty?.title || (v_propertyId === '42839458' ? 'Pirata Family House' : 'Villa Retiro R'),
+      name: dbProperty?.title || 'Villa Retiro / Pirata',
       logo: dbProperty?.logo_url || 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
       accentColor: dbProperty?.accent_color || '#FF7F3F',
-      wifiName: dbProperty?.wifi_name || 'VillaRetiro_Starlink_Premium',
-      wifiPass: dbProperty?.wifi_pass || 'Tropical2024!',
+      wifiName: dbProperty?.wifi_name || 'VillaRetiro_Starlink',
+      wifiPass: dbProperty?.wifi_pass || 'Tropical!',
       accessCode: dbProperty?.access_code || '4829 #',
       mapsUrl: dbProperty?.google_maps_url || 'https://share.google/LBxZV0NwKZps4rliR',
-      wazeUrl: dbProperty?.waze_url || 'https://waze.com/ul?q=Carr%20307%20Km%206.2%2C%20Interior%2C%20Cabo%20Rojo%2C%2000623',
-      reviewUrl: dbProperty?.review_url || 'https://g.page/r/CUERPA_RETIRO_PLACEHOLDER'
+      wazeUrl: dbProperty?.waze_url || 'https://waze.com/ul?q=Cabo%20Rojo',
+      reviewUrl: dbProperty?.review_url || 'https://g.page/r/CUERPA_RETIRO'
     };
 
     const currentLogo = p.logo;

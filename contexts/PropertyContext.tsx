@@ -43,7 +43,11 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.from('properties').select('*').or('isOffline.eq.false,isOffline.is.null').abortSignal(signal || new AbortController().signal);
+      const { data, error } = await supabase.from('properties')
+        .select('*')
+        .or('isOffline.eq.false,isOffline.is.null')
+        .abortSignal(signal || new AbortController().signal);
+      
       if (error) throw error;
       if (data) {
         console.log('Propiedades recibidas del DB:', data);
@@ -51,6 +55,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mapped: Property[] = data.map((p: any) => ({
           ...p,
           id: String(p.id),
+          title: p.title || p.name || 'Villa', // Fallback a name si title falta, pero prioriza title
+          subtitle: p.subtitle || '',
           guests: Number(p.guests || p.policies?.guests || p.policies?.maxGuests) || 1,
           price: Number(p.price) || 0,
           reviewsList: p.reviews_list || [],
