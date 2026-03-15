@@ -35,7 +35,8 @@ export const PropertyDetails: React.FC = () => {
     refreshProperties();
   }, [id]);
 
-  // Custom Hook param
+  // 0. Hooks safety priority
+  const shouldReduceMotion = useReducedMotion();
   const { scrollY } = useScroll();
   const headerOpacity = useTransform(scrollY, [0, 150], [0, 1]);
   const headerBg = useTransform(scrollY, [0, 150], ['rgba(253,252,251,0)', 'rgba(253,252,251,0.95)']);
@@ -177,8 +178,8 @@ export const PropertyDetails: React.FC = () => {
   const getAmenityIcon = (amenity: string): string => {
     const lower = amenity.toLowerCase();
     if (lower.includes('piscina')) return 'pool';
-    if (lower.includes('generador') || lower.includes('eléctric')) return 'bolt';
-    if (lower.includes('wifi') || lower.includes('starlink')) return 'wifi';
+    if (lower.includes('generador') || lower.includes('eléctric') || lower.includes('solar')) return 'bolt';
+    if (lower.includes('wifi') || lower.includes('internet') || lower.includes('cable') || lower.includes('mbps')) return 'wifi';
     if (lower.includes('bbq') || lower.includes('parrilla')) return 'outdoor_grill';
     if (lower.includes('pet') || lower.includes('mascota')) return 'pets';
     if (lower.includes('aire') || lower.includes('acondicionado')) return 'ac_unit';
@@ -196,7 +197,6 @@ export const PropertyDetails: React.FC = () => {
     setActiveSection(activeSection === section ? null : section);
   };
 
-  const shouldReduceMotion = useReducedMotion();
 
   return (
     <div className="bg-[#FDFCFB] min-h-screen pb-32 relative">
