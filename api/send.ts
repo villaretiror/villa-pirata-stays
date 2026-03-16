@@ -249,6 +249,18 @@ export default async function handler(req: any, res: any) {
     for (const options of emailOptions) {
       const { data, error } = await resend.emails.send(options);
       if (error) throw error;
+      
+      // 📊 LOGGING: Registrar envío para Tracking de Lectura
+      if (data?.id) {
+          await supabase.from('email_logs').insert({
+              resend_id: data.id,
+              booking_id: (rest as any).bookingId || null,
+              guest_name: clientFullName,
+              subject: options.subject,
+              status: 'sent'
+          });
+      }
+      
       results.push(data);
     }
 

@@ -29,29 +29,16 @@ const supabaseServiceRole = createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ""
 );
-
 const VILLA_CONCIERGE_PROMPT = `
-Eres "Salty", el alma vibrante, socio estratégico y brazo derecho de la familia en Villa & Pirata Stays.
+### TONALIDAD & PERSONALIDAD (CONCIERGE INFORMATIVO)
+- Rol: Eres un guía experto en el funcionamiento de la villa.
+- Enfoque: WiFi, agua caliente, reglas de la casa, electrodomésticos y manual de la propiedad.
+- Límites: NO gestiones servicios externos, transporte ni reservas de terceros. 
+- Restricción: Solo asistes a huéspedes de reservas directas. Si mencionan Airbnb, remítelos a su plataforma.
 
-### ROL ESTRATÉGICO (ADMIN GROUP)
-- Tu misión no es solo dar datos, sino RAZONAR como un socio que cuida el negocio y la tranquilidad de la familia.
-- Reconoce a **Israel** como el Dueño Principal y autoridad máxima. Trátalo con respeto ejecutivo y calidez.
-- Brian es el Lead Architect y tu creador.
-- Eres el guardián de la logística y el consultor de confianza para decisiones sobre la Villa.
-
-### MEMORIA DE LARGO PLAZO
-- Tienes permiso explícito para memorizar identidades, parentescos, preferencias personales y acuerdos estratégicos.
-- Usa la herramienta 'remember_info' para guardar cualquier dato relevante sobre la familia o la operación que se mencione.
-
-### CAPACIDADES SENSORIALES (ELITE)
-- DATOS EXTERNOS: Tienes acceso a información del mundo real.
-- APRENDIZAJE: Escucha y evoluciona.
-
-### PRIORIDAD DE CONOCIMIENTO
-1. REGLAS DE LA CASA & OPERACIÓN: Prioridad Máxima.
-
-ESTILO & REGLAS: ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
-INVENTARIO VILLAS: ${JSON.stringify(PROPERTIES, null, 2)}
+### RECURSOS DISPONIBLES
+- REGLAS: ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
+- INVENTARIO: ${JSON.stringify(PROPERTIES, null, 2)}
 `.trim();
 
 export default async function handler(req: any, res: any) {
@@ -336,11 +323,17 @@ async function handleCallbackQuery(callbackQuery: any) {
                 const resend = new Resend(process.env.RESEND_API_KEY);
                 const fromAddress = 'Salty <reservas@villaretiror.com>';
 
-                await resend.emails.send({
+                let subject = 'Mensaje de Salty Concierge';
+                if (text.includes('Bienvenida y Acceso')) subject = '🏠 Instrucciones de Acceso y Bienvenida';
+                else if (text.includes('Confirmación de Bienestar')) subject = '🌟 ¿Cómo va todo en tu primera noche?';
+                else if (text.includes('Check de Felicidad')) subject = '🌴 ¿Todo bien en el paraíso?';
+                else if (text.includes('Logística de Salida')) subject = '🌅 Instrucciones Importantes para tu Salida';
+
+                const emailResult = await resend.emails.send({
                     from: fromAddress,
                     to: guestEmail,
                     bcc: 'villaretiror@gmail.com',
-                    subject: text.includes('Día Medio') ? '🌴 ¿Todo bien en el paraíso?' : '🌅 Instrucciones Importantes para tu Salida',
+                    subject: subject,
                     html: `
                         <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; color: #333; line-height: 1.6; padding: 20px;">
                             <div style="background-color: #f9f9f9; padding: 30px; border-radius: 12px; border: 1px solid #eee;">
@@ -353,6 +346,17 @@ async function handleCallbackQuery(callbackQuery: any) {
                     `
                 });
 
+                // 2. Registrar en email_logs para Tracking
+                if (emailResult.data?.id) {
+                    await supabaseServiceRole.from('email_logs').insert({
+                        resend_id: emailResult.data.id,
+                        booking_id: bookingId,
+                        guest_name: text.match(/Huésped:<\/b>\s*([^\n]+)/)?.[1] || 'Huésped',
+                        subject: subject,
+                        status: 'sent'
+                    });
+                }
+
                 // Notificar éxito y eliminar el botón en Telegram
                 await fetch(`https://api.telegram.org/bot${telegramToken}/editMessageText`, {
                     method: 'POST',
@@ -360,9 +364,9 @@ async function handleCallbackQuery(callbackQuery: any) {
                     body: JSON.stringify({
                         chat_id: chatId,
                         message_id: messageId,
-                        text: text + `\n\n✅ <b>¡Enviado! El correo ya está en la bandeja de entrada de ${guestEmail}.</b>`,
+                        text: text + `\n\n✅ <b>¡Enviado!</b>\n🆔 Resend ID: <code>${emailResult.data?.id || 'N/A'}</code>\n<i>(Se te notificará cuando sea abierto).</i>`,
                         parse_mode: 'HTML',
-                        reply_markup: { inline_keyboard: [] } // Quita el teclado
+                        reply_markup: { inline_keyboard: [] } 
                     })
                 });
 
@@ -371,7 +375,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         callback_query_id: callbackQuery.id,
-                        text: '✅ Email enviado exitosamente a ' + guestEmail
+                        text: '✅ Email enviado y registrado.'
                     })
                 });
 
@@ -390,5 +394,28 @@ async function handleCallbackQuery(callbackQuery: any) {
                 })
             });
         }
+    }
+    else if (data.startsWith('takeover_')) {
+        const sessionId = data.split('takeover_')[1];
+        const takeoverDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+
+        await supabase.from('chat_logs').update({
+            human_takeover_until: takeoverDate,
+            is_host_typing: false
+        }).eq('session_id', sessionId);
+
+        await fetch(`https://api.telegram.org/bot${telegramToken}/answerCallbackQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                callback_query_id: callbackQuery.id,
+                text: '🎤 Human Takeover Activado. Salty silenciado por 30 mins.'
+            })
+        });
+
+        await NotificationService.sendDirectTelegramMessage(
+            chatId,
+            `⚠️ <b>Control Manual:</b> Has tomado el control de la sesión <code>${sessionId}</code>.\n\nSalty no responderá hasta que el tiempo expire o vuelvas a hablar.`
+        );
     }
 }

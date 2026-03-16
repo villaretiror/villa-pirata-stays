@@ -151,7 +151,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           </div>
 
           <div className="text-right">
-            <span className="block text-[10px] text-gray-400 line-through decoration-red-400 mb-0.5">${Math.round(property.price * 1.15)}</span>
+            {/* Only show strikethrough if the DB has a real original_price higher than current price */}
+            {typeof property.original_price === 'number' && property.original_price > property.price && (
+              <span className="block text-[10px] text-gray-400 line-through decoration-red-400 mb-0.5">
+                ${property.original_price}
+              </span>
+            )}
             <div className="flex items-baseline gap-1">
               <span className="font-bold text-xl text-text-main">${property.price}</span>
               <span className="text-xs font-medium text-gray-400">/noche</span>

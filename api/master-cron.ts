@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { generateOnboardingDraft } from '../aiServices.js';
 import { NotificationService } from '../services/NotificationService.js';
 
@@ -13,19 +13,8 @@ const getEnv = (key: string): string => {
 const SUPABASE_URL = getEnv('SUPABASE_URL');
 const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY');
 
-const ICAL_URLS: Record<string, string> = {
-    '42839458': getEnv('AIRBNB_ICAL_VILLA_1') || 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331',
-    '1081171030449673920': getEnv('AIRBNB_ICAL_VILLA_2') || 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae'
-};
-
-function parseIcsDate(raw: string): string {
-    const d = raw.replace(/T.*/, '').trim();
-    return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`;
-}
-
+// SCHEMA-ALIGNED: getPropertyName is a safe fallback only
 function getPropertyName(id: string): string {
-    if (id === '1081171030449673920') return 'Villa Retiro R';
-    if (id === '42839458') return 'Pirata Family House';
     return `Propiedad ${id}`;
 }
 
@@ -55,10 +44,11 @@ export default async function handler(req: any, res: any) {
     results.tasks.calendar_sync = await taskCalendarSync(req);
     results.tasks.cleanup = await taskCleanupMocks(supabase);
 
-    // 2. DIARIO (10:00 UTC): Feedback Request & Daily Alerts
+    // 2. DIARIO (10:00 UTC): Feedback Request, Daily Alerts & Onboarding Journey
     if (utcHour === 10 && utcMinute < 15) {
         results.tasks.feedback = await taskFeedback(supabase);
         results.tasks.alerts = await taskDailyAlerts(supabase);
+        results.tasks.journey = await taskGuestJourney(supabase);
     }
     
     // ... rest of logic remains the same ...
@@ -136,8 +126,17 @@ async function taskGuestJourney(supabase: any) {
     const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
     const todayStr = today.toISOString().split('T')[0];
     const tomorrowStr = tomorrow.toISOString().split('T')[0];
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
 
-    const { data: bookings } = await supabase.from('bookings').select('id, property_id, check_in, check_out, profiles(full_name, email), properties(title)').eq('status', 'confirmed').neq('payment_method', 'airbnb_sync').not('profiles', 'is', null);
+    // FILTRO ESTRICTO: Solo reservas directas con perfiles locales (Excluye Airbnb/Booking Sync)
+    const { data: bookings } = await supabase
+        .from('bookings')
+        .select('id, property_id, check_in, check_out, source, profiles(full_name, email), properties(title)')
+        .eq('status', 'confirmed')
+        .not('profiles', 'is', null)
+        .not('source', 'ilike', '%airbnb%')
+        .not('source', 'ilike', '%booking%');
 
     let count = 0;
     for (const b of bookings || []) {
@@ -149,14 +148,42 @@ async function taskGuestJourney(supabase: any) {
         const checkInD = new Date(b.check_in), checkOutD = new Date(b.check_out);
         const midStr = new Date(checkInD.getTime() + (checkOutD.getTime() - checkInD.getTime()) / 2).toISOString().split('T')[0];
 
-        let stage: 'mid_stay' | 'check_out' | null = null;
-        if (todayStr === midStr && b.check_out !== todayStr) stage = 'mid_stay';
+        let stage: 'check_in' | 'check_in_followup' | 'mid_stay' | 'check_out' | null = null;
+        if (tomorrowStr === b.check_in) stage = 'check_in';
+        else if (yesterdayStr === b.check_in) stage = 'check_in_followup'; // Un día después de llegar
+        else if (todayStr === midStr && b.check_out !== todayStr) stage = 'mid_stay';
         else if (tomorrowStr === b.check_out) stage = 'check_out';
 
         if (stage) {
             const draft = await generateOnboardingDraft(stage, name, title, b.check_out);
-            const msg = `🛎 <b>Salty Onboarding</b>\nEtapa: ${stage}\nPropiedad: ${title}\nHuésped: ${name}\n\n<i>"${draft}"</i>`;
-            const keyboard = { inline_keyboard: [[{ text: "✅ Aprobar y Enviar", callback_data: `send_ob_${b.id}` }]] };
+            const msg = `🛎 <b>Onboarding Hub: ${name}</b>\n` +
+                        `🏠 <b>Villa:</b> ${title}\n` +
+                        `📅 <b>Fecha Clave:</b> ${stage === 'check_in' ? b.check_in : b.check_out}\n` +
+                        `👤 <b>Etapa:</b> ${stage === 'check_in' ? 'Bienvenida y Acceso' : stage === 'mid_stay' ? 'Check de Felicidad' : 'Logística de Salida'}\n\n` +
+                        `📝 <b>Borrador de Salty:</b>\n<i>"${draft}"</i>\n\n` +
+                        `¿Ejecutamos el envío a <code>${(b.profiles as any)?.email}</code>?`;
+
+            const keyboard = { 
+                inline_keyboard: [
+                    [
+                        { 
+                            text: "✅ Aprobar y Enviar", 
+                            callback_data: `send_ob_${b.id}` 
+                        },
+                        { 
+                            text: "✏️ Editar", 
+                            url: `${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host/dashboard?edit_ob=${b.id}` 
+                        }
+                    ],
+                    [
+                        { 
+                            text: "📋 Ver Ficha de Huésped", 
+                            url: `${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host/dashboard?booking=${b.id}` 
+                        }
+                    ]
+                ] 
+            };
+            
             await NotificationService.sendTelegramAlert(msg, keyboard);
             count++;
             await new Promise(r => setTimeout(r, 1000));
@@ -170,15 +197,33 @@ async function taskPostCheckoutThanks(supabase: any) {
     
     // Buscar reservas confirmadas que salen HOY y no han recibido el gracias
     // Excluyendo Airbnb (porque ellos manejan su comunicación)
+    const prompt = (mission: string, guestName: string, propertyTitle: string, checkOutDate: string) => `
+    Eres Salty, el Caribbean Luxury Concierge.
+    
+    MISIÓN: ${mission}
+    HUESPED: ${guestName}
+    PROPIEDAD: ${propertyTitle}
+    FECHA CLAVE: ${checkOutDate}
+
+    REGLAS DE ETIQUETA:
+    1. El mensaje DEBE comenzar con una frase de cortesía extrema, calidez y hospitalidad impecable.
+    2. La logística técnica (llaves, basura, check-out) debe ir en el segundo párrafo.
+    3. Nunca ofrezcas servicios externos.
+    4. Tono Sophisticated Caribbean.
+
+    Escribe solo el cuerpo del mensaje, sin asuntos ni firmas.
+    `.trim();
+    // SCHEMA FIX: 'customer_email' does NOT exist in bookings table.
+    // We JOIN profiles to get the guest email.
     const { data: bookings } = await supabase
         .from('bookings')
         .select(`
             id, 
             customer_name, 
-            customer_email, 
             property_id, 
             source,
-            properties(title)
+            properties(title),
+            profiles(email, full_name)
         `)
         .eq('check_out', today)
         .eq('status', 'confirmed')
@@ -195,9 +240,9 @@ async function taskPostCheckoutThanks(supabase: any) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     type: 'thank_you_note',
-                    customerName: b.customer_name,
-                    customerEmail: b.customer_email || (b as any).profiles?.email,
-                    propertyName: b.properties?.title || getPropertyName(b.property_id),
+                    customerName: b.customer_name || (b as any).profiles?.full_name || 'Huésped',
+                    customerEmail: (b as any).profiles?.email,
+                    propertyName: (b as any).properties?.title || getPropertyName(b.property_id),
                     propertyId: b.property_id
                 })
             });

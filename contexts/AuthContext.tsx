@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
+import { Tables } from '../supabase_types';
+
+type ProfileRow = Tables<'profiles'>;
 
 interface AuthContextType {
   user: User | null;
@@ -20,18 +23,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initialFetchRef = useRef(false);
 
   // Singleton approach refinement: Singleton to map and persist users
-  const mapSupabaseUser = (sbUser: any, dbProfile: any = null): User => ({
+  const mapSupabaseUser = useCallback((sbUser: any, dbProfile: ProfileRow | null = null): User => ({
     id: sbUser.id,
     email: sbUser.email || '',
     name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
-    role: (sbUser.email?.toLowerCase() === 'villaretiror@gmail.com') ? 'host' : (dbProfile?.role || sbUser.user_metadata?.role || 'guest'),
+    role: (sbUser.email?.toLowerCase() === 'villaretiror@gmail.com') ? 'host' : ((dbProfile?.role as 'guest' | 'host' | 'admin') || sbUser.user_metadata?.role || 'guest'),
     avatar: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(dbProfile?.full_name || sbUser.user_metadata?.name || 'User')}&background=FF7F3F&color=fff`,
     phone: dbProfile?.phone || sbUser.user_metadata?.phone || '',
     emergencyContact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
     bio: dbProfile?.bio || '',
     verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
     registeredAt: sbUser.created_at,
-  });
+    given_concessions: (dbProfile?.given_concessions as any[]) || []
+  }), []);
 
   const updateUserState = useCallback((newUser: User | null) => {
     setUser(prev => {
@@ -45,7 +49,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const getExtendedProfile = async (id: string): Promise<any> => {
+  const getExtendedProfile = useCallback(async (id: string): Promise<ProfileRow | null> => {
     try {
       const { data: profile, error } = await supabase
         .from('profiles')
@@ -57,12 +61,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         console.warn("AuthContext: Profile fetch error:", error.message);
         return null;
       }
-      return profile;
+      return profile as ProfileRow;
     } catch (err) {
       console.error("AuthContext: Critical profile fetch error:", err);
       return null;
     }
-  };
+  }, []);
 
   useEffect(() => {
     let isSubscribed = true;
@@ -164,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error("AuthStrategy FAIL:", err.message);
       return { user: null, error: err.message || "Error al iniciar sesión" };
     }
-  }, []);
+  }, [getExtendedProfile, mapSupabaseUser]);
 
   const register = useCallback(async (email: string, password: string, name: string) => {
     const { data, error } = await supabase.auth.signUp({
@@ -174,9 +178,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     if (error) return { user: null, error: error.message };
+
+    // PROACTIVE: Ensure physical profile row exists in DB immediately
+    if (data.user) {
+      await supabase.from('profiles').upsert({
+        id: data.user.id,
+        full_name: name,
+        email: email,
+        role: 'guest'
+      });
+    }
+
     const mappedUser = data.user ? mapSupabaseUser(data.user) : null;
     return { user: mappedUser, error: null };
-  }, []);
+  }, [mapSupabaseUser]);
 
   const logout = useCallback(async () => {
     setLoading(true);
@@ -199,19 +214,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const updateUser = useCallback(async (updated: Partial<User>) => {
     const { data, error } = await supabase.auth.updateUser({ data: { ...updated } });
     if (!error && data.user) {
+      const profileUpdate: Partial<ProfileRow> = {};
+      if (updated.name) profileUpdate.full_name = updated.name;
+      if (updated.phone) profileUpdate.phone = updated.phone;
+      if (updated.bio !== undefined) profileUpdate.bio = updated.bio;
+      if (updated.avatar) profileUpdate.avatar_url = updated.avatar;
+      if (updated.emergencyContact) profileUpdate.emergency_contact = updated.emergencyContact;
+
       await supabase.from('profiles').upsert({
         id: data.user.id,
-        full_name: updated.name,
-        phone: updated.phone,
-        bio: updated.bio,
-        avatar_url: updated.avatar,
-        emergency_contact: updated.emergencyContact
+        ...profileUpdate,
+        updated_at: new Date().toISOString()
       });
+      
       const profile = await getExtendedProfile(data.user.id);
       setUser(mapSupabaseUser(data.user, profile));
     }
     if (error) throw error;
-  }, []);
+  }, [mapSupabaseUser, getExtendedProfile]);
 
   const resetPassword = useCallback(async (email: string) => {
     try {

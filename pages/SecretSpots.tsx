@@ -3,41 +3,20 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import SmartImage from '../components/SmartImage';
 
-const SECRETS = [
-    {
-        title: "Cueva del Pirata (Punta Guaniquilla)",
-        desc: "No vayas al mediodía. Camina el sendero de Punta Guaniquilla a las 4:30 PM. Encontrarás cuevas con fósiles marinos y una vista del atardecer que parece de otro planeta. Es mi lugar favorito para meditar con el sonido del mar.",
-        image: "https://images.unsplash.com/photo-1544148103-0773bf10d32b?auto=format&fit=crop&q=80&w=800",
-        tip: "Lleva calzado cerrado, el terreno es de roca kárstica (filosa)."
-    },
-    {
-        title: "El Muelle Espejo de Joyuda",
-        desc: "Joyuda es famoso por el marisco, pero pocos saben que detrás de los restaurantes hay pequeños muelles de madera. Ve después de que baje el sol; el agua se convierte en un espejo perfecto que refleja el cielo rosado del oeste.",
-        image: "https://images.unsplash.com/photo-1519046904884-53103b34b206?auto=format&fit=crop&q=80&w=800",
-        tip: "Pide el 'Mofongo relleno de carrucho' en cualquier chinchorro local."
-    },
-    {
-        title: "Torre de Observación de Boquerón",
-        desc: "Dentro del Bosque Estatal de Boquerón hay una torre de observación de aves. Si subes temprano, verás la neblina sobre los manglares y toda la bahía de Boquerón sin un solo turista a la vista.",
-        image: "https://images.unsplash.com/photo-1500382017468-9049fed747ef?auto=format&fit=crop&q=80&w=800",
-        tip: "Lleva binoculares y mucho repelente."
-    },
-    {
-        title: "Playa Tortuga (El Rincón Escondido)",
-        desc: "Cerca de la concurrida Playa Combate, hay un pequeño recodo llamado Playa Tortuga. Es cristalina, baja y usualmente está vacía. Es donde las tortugas realmente vienen a saludar si guardas silencio.",
-        image: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=800",
-        tip: "Lleva tu propia sombra, no hay árboles cerca del agua."
-    },
-    {
-        title: "Los Acantilados del Faro",
-        desc: "No te quedes solo en el Faro. Camina por el borde de los acantilados de piedra caliza roja hacia el este. La brisa del Caribe aquí tiene una energía diferente. Es el punto más al suroeste de la isla.",
-        image: "https://images.unsplash.com/photo-1533105079780-92b9be482077?auto=format&fit=crop&q=80&w=800",
-        tip: "Mantente alejado del borde, el viento puede ser muy fuerte."
-    }
-];
+import { useProperty } from '../contexts/PropertyContext';
 
 const SecretSpots: React.FC = () => {
     const navigate = useNavigate();
+    const { secretSpots } = useProperty();
+
+    const SECRETS = secretSpots.length > 0 ? secretSpots : [
+        {
+            title: "Cargando Spots...",
+            desc: "Salty está buscando sus lugares favoritos en la base de datos...",
+            image: "https://images.unsplash.com/photo-1544148103-0773bf10d32b?auto=format&fit=crop&q=80&w=800",
+            tip: "Un momento por favor."
+        }
+    ];
 
     useEffect(() => {
         document.title = "Salty's Secret Spots | Cabo Rojo";

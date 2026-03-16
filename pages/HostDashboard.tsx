@@ -11,7 +11,21 @@ import SavingsInsights from '../components/host/SavingsInsights';
 import { useAuth } from '../contexts/AuthContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
+import { Database, Tables } from '../supabase_types';
 import { HOST_PHONE } from '../constants';
+
+type BookingRow = Tables<'bookings'>;
+type ExpenseRow = Tables<'property_expenses'>;
+type LeadRow = Tables<'leads'>;
+type AlertRow = Tables<'urgent_alerts'>;
+type CohostRow = Tables<'property_cohosts'>;
+type TaskRow = Tables<'operation_tasks'>;
+
+// Joined types for nested queries
+type BookingWithDetails = BookingRow & {
+  profiles: { full_name: string | null; avatar_url: string | null; phone: string | null; email?: string | null; tags: string[] | null } | null;
+  properties: { title: string; images: string[] | null; policies?: any } | null;
+};
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -296,12 +310,12 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
   );
 };
 
-const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId, onFilterChange }: { bookings: any[], expenses: any[], properties: any[], selectedPropertyId: string, onFilterChange: (id: string) => void }) => {
+const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId, onFilterChange }: { bookings: BookingRow[], expenses: ExpenseRow[], properties: Property[], selectedPropertyId: string, onFilterChange: (id: string) => void }) => {
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross');
   const [showOrigin, setShowOrigin] = useState(false);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
-  const creationDate = selectedProperty ? new Date(selectedProperty.created_at) : null;
+  const creationDate = selectedProperty?.created_at ? new Date(selectedProperty.created_at) : null;
 
   const filteredBookings = useMemo(() =>
     selectedPropertyId === 'all' ? bookings : bookings.filter(b => b.property_id === selectedPropertyId),
@@ -323,21 +337,23 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
       const monthStr = d.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
 
       const monBookings = filteredBookings.filter(b => {
+        if (!b.check_in) return false;
         const checkIn = new Date(b.check_in);
         return checkIn.getMonth() === month && checkIn.getFullYear() === year && (b.status === 'confirmed' || b.status === 'completed');
       });
 
       const monExpenses = filteredExpenses.filter(e => {
+        if (!e.created_at) return false;
         const createdAt = new Date(e.created_at);
         return createdAt.getMonth() === month && createdAt.getFullYear() === year;
       });
 
       const webIncome = monBookings
-        .filter(b => !b.booking_source?.toLowerCase().includes('airbnb') && !b.booking_source?.toLowerCase().includes('ota'))
+        .filter(b => !b.source?.toLowerCase().includes('airbnb') && !b.source?.toLowerCase().includes('ota'))
         .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
 
       const otaIncome = monBookings
-        .filter(b => b.booking_source?.toLowerCase().includes('airbnb') || b.booking_source?.toLowerCase().includes('ota'))
+        .filter(b => b.source?.toLowerCase().includes('airbnb') || b.source?.toLowerCase().includes('ota'))
         .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
 
       const adjustedWeb = viewMode === 'net' ? webIncome * 0.97 : webIncome;
@@ -360,6 +376,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
       }
 
       const bookedDays = monBookings.reduce((sum, b) => {
+        if (!b.check_in || !b.check_out) return sum;
         const start = new Date(b.check_in);
         const end = new Date(b.check_out);
         const diff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
@@ -576,12 +593,12 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
 const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: string, propertyName: string, onShowToast: (msg: string) => void }) => {
   const [newCohostEmail, setNewCohostEmail] = useState('');
-  const [cohosts, setCohosts] = useState<any[]>([]);
+  const [cohosts, setCohosts] = useState<CohostRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [showEliteView, setShowEliteView] = useState(false);
 
   // --- Checklist State ---
-  const [tasks, setTasks] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<TaskRow[]>([]);
   const [isTaskLoading, setIsTaskLoading] = useState(false);
   const [newTaskDesc, setNewTaskDesc] = useState('');
 
@@ -660,7 +677,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     }
   };
 
-  const handleResendInvitation = async (ch: any) => {
+  const handleResendInvitation = async (ch: CohostRow) => {
     try {
       await fetch('/api/send', {
         method: 'POST',
@@ -680,15 +697,16 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     }
   };
 
-  const handleToggleTask = async (taskId: string, currentStatus: boolean) => {
+  const handleToggleTask = async (taskId: string, currentStatus: boolean | null) => {
+    const isCompleted = !!currentStatus;
     const { error } = await supabase.from('operation_tasks').update({
-      is_completed: !currentStatus,
-      completed_at: !currentStatus ? new Date().toISOString() : null
+      is_completed: !isCompleted,
+      completed_at: !isCompleted ? new Date().toISOString() : null
     }).eq('id', taskId);
 
     if (!error) {
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, is_completed: !currentStatus } : t));
-      if (!currentStatus) onShowToast("¡Tarea completada! ✅");
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, is_completed: !isCompleted } : t));
+      if (!isCompleted) onShowToast("¡Tarea completada! ✅");
     }
   };
 
@@ -853,7 +871,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
           {tasks.map((task) => (
             <div
               key={task.id}
-              onClick={() => handleToggleTask(task.id, task.is_completed)}
+              onClick={() => handleToggleTask(task.id, !!task.is_completed)}
               className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer ${task.is_completed ? 'bg-green-50/30 border-green-100 opacity-60' : 'bg-white border-gray-100 hover:border-primary/30'}`}
             >
               <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${task.is_completed ? 'bg-black border-black shadow-lg animate-scale-up' : 'bg-white border-gray-200'}`}>
@@ -2302,15 +2320,15 @@ const HostDashboard: React.FC = () => {
   const [urgentAlerts, setUrgentAlerts] = useState<any[]>([]);
 
   // Real-time Database State
-  const [realBookings, setRealBookings] = useState<any[]>([]);
+  const [realBookings, setRealBookings] = useState<BookingWithDetails[]>([]);
   const [cleaningStatus, setCleaningStatus] = useState<'ready' | 'progress' | 'dirty'>('ready');
-  const [pendingPayments, setPendingPayments] = useState<any[]>([]);
+  const [pendingPayments, setPendingPayments] = useState<BookingWithDetails[]>([]);
 
   // Analytics State
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
-  const [propertyPerformance, setPropertyPerformance] = useState<any>({ performance: {}, chartData: [] });
-  const [globalExpenses, setGlobalExpenses] = useState<any[]>([]);
+  const [propertyPerformance, setPropertyPerformance] = useState<{ performance: Record<string, number>, chartData: { label: string, val: number }[] }>({ performance: {}, chartData: [] });
+  const [globalExpenses, setGlobalExpenses] = useState<ExpenseRow[]>([]);
   const [analyticsFilter, setAnalyticsFilter] = useState<string>('all');
 
   // --- STABLE CALLBACKS ---
@@ -2318,12 +2336,12 @@ const HostDashboard: React.FC = () => {
     try {
       const { data } = await supabase
         .from('bookings')
-        .select('*, profiles(full_name, avatar_url, phone), properties(title, images)')
+        .select('*, profiles(full_name, avatar_url, phone, email), properties(title, images, policies)')
         .eq('status', 'waiting_approval')
         .abortSignal(signal || new AbortController().signal);
 
       if (data) {
-        setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : data);
+        setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : (data as BookingWithDetails[]));
       }
     } catch (e) {
       console.warn("fetchPayments error:", e);
@@ -2388,41 +2406,63 @@ const HostDashboard: React.FC = () => {
         .abortSignal(signal || new AbortController().signal);
 
       if (props && props.length > 0) {
-        const mappedProps: Property[] = props.map((p: any) => ({
+        const mappedProps: Property[] = (props as Tables<'properties'>[]).map(p => ({
           ...p,
-          host: p.host || {
+          id: String(p.id),
+          title: p.title || 'Villa',
+          price: p.price || 0,
+          cleaning_fee: p.cleaning_fee || 0,
+          service_fee: p.service_fee || 0,
+          security_deposit: p.security_deposit || 0,
+          rating: p.rating || 5,
+          reviews_count: p.reviews || 0,
+          images: p.images || [],
+          amenities: p.amenities || [],
+          guests: p.guests || 2,
+          bedrooms: p.bedrooms || 1,
+          beds: p.beds || 1,
+          baths: p.baths || 1,
+          fees: (p.fees as any) || {},
+          policies: (p.policies as any) || {},
+          blockedDates: p.blockedDates || [],
+          calendarSync: (p.calendarSync as any[]) || [],
+          seasonal_prices: (p.seasonal_prices as any[]) || [],
+          host: (p.host as any) || {
             name: user.name || 'Anfitrión',
             image: user.avatar || '',
             yearsHosting: 1,
             badges: user.role === 'host' ? ['Pro Host'] : []
           }
-        }));
+        })) as Property[];
         onUpdateProperties(mappedProps);
       }
 
       const { data: allBookings } = await supabase
         .from('bookings')
-        .select(`*, profiles(full_name, avatar_url, phone), properties(title, images)`)
+        .select(`*, profiles(full_name, avatar_url, phone, email), properties(title, images, policies)`)
         .in('property_id', hostPropertyIds.map(id => String(id)))
         .abortSignal(signal || new AbortController().signal);
 
       if (allBookings) {
+        const typedBookings = allBookings as BookingWithDetails[];
         let total = 0; let monthly = 0;
         const currentMonth = new Date().getMonth();
         const currentYear = new Date().getFullYear();
         const performance: Record<string, number> = {};
         const monthsHistory: Record<string, number> = {};
 
-        allBookings.forEach((b: any) => {
+        typedBookings.forEach((b) => {
           if (b.status === 'confirmed' || b.status === 'completed') {
             const amount = Number(b.total_price) || 0;
             total += amount;
             const propTitle = b.properties?.title || 'Villa Desconocida';
             performance[propTitle] = (performance[propTitle] || 0) + amount;
-            const dateObj = new Date(b.created_at);
-            const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-            monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
-            if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) monthly += amount;
+            if (b.created_at) {
+              const dateObj = new Date(b.created_at);
+              const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+              monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
+              if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) monthly += amount;
+            }
           }
         });
 
@@ -2437,7 +2477,7 @@ const HostDashboard: React.FC = () => {
         setMonthlyRevenue(monthly);
         setPropertyPerformance({ performance, chartData });
         const today = new Date().toISOString().split('T')[0];
-        const filteredBookings = allBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected'));
+        const filteredBookings = typedBookings.filter((b) => (b.check_out >= today && b.status !== 'rejected'));
         setRealBookings(filteredBookings);
 
         // SWR: Persistir cache para carga instantánea futura
@@ -2579,11 +2619,11 @@ const HostDashboard: React.FC = () => {
           body: JSON.stringify({
             type: 'reservation_confirmed',
             customerName: booking.profiles?.full_name || 'Huésped',
-            customerEmail: booking.profiles?.email || booking.email,
+            customerEmail: booking.profiles?.email || 'anfitrion@villaretiror.com',
             propertyName: booking.properties?.title || 'Villa Retiro',
             checkIn: booking.check_in,
             checkOut: booking.check_out,
-            accessCode: booking.properties?.policies?.accessCode || "C-" + bookingId.slice(-4),
+            accessCode: booking.properties?.policies?.accessCode || "C-" + (bookingId?.slice(-4) || 'XXXX'),
             wifiName: booking.properties?.policies?.wifiName || 'Villa Retiro Guest',
             wifiPass: booking.properties?.policies?.wifiPass || 'vacaciones2024',
             propertyId: booking.property_id,
@@ -2912,11 +2952,13 @@ const HostDashboard: React.FC = () => {
           </h3>
           <div className="flex items-center gap-3">
             {pendingPayments.filter(p => {
+              if (!p.created_at) return false;
               const age = Date.now() - new Date(p.created_at).getTime();
               return age > 3 * 60 * 60 * 1000;
             }).length > 0 && (
                 <span className="bg-red-50 text-red-600 text-[9px] font-bold px-3 py-1.5 rounded-full uppercase tracking-tight border border-red-100 animate-pulse">
                   {pendingPayments.filter(p => {
+                    if (!p.created_at) return false;
                     const age = Date.now() - new Date(p.created_at).getTime();
                     return age > 3 * 60 * 60 * 1000;
                   }).length} Expirando
@@ -2928,7 +2970,7 @@ const HostDashboard: React.FC = () => {
 
         <div className="space-y-4">
           {nextCheckins.length > 0 ? (
-            nextCheckins.map((booking: any) => (
+            nextCheckins.map((booking) => (
               <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-soft-sm transition-all cursor-default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-sand flex items-center justify-center text-text-light text-xs font-black border border-white shadow-sm overflow-hidden">
@@ -2949,7 +2991,7 @@ const HostDashboard: React.FC = () => {
                         ))}
                       </div>
                     </div>
-                    <p className="text-[9px] font-medium uppercase text-text-light tracking-[0.2em] mt-0.5">{formatDateLong(booking.check_in)}</p>
+                    <p className="text-[9px] font-medium uppercase text-text-light tracking-[0.2em] mt-0.5">{booking.check_in ? formatDateLong(booking.check_in) : '---'}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-4">

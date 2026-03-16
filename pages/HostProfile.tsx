@@ -2,14 +2,18 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { supabase } from '../lib/supabase';
-import { Property, Review } from '../types';
+import { Property } from '../types';
+import { Database } from '../supabase_types';
 import SmartImage from '../components/SmartImage';
+
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type PropertyRow = Database['public']['Tables']['properties']['Row'];
 
 const HostProfile: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
-    const [host, setHost] = useState<any>(null);
-    const [properties, setProperties] = useState<Property[]>([]);
+    const [host, setHost] = useState<ProfileRow | null>(null);
+    const [properties, setProperties] = useState<PropertyRow[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -32,7 +36,7 @@ const HostProfile: React.FC = () => {
                     .select('*')
                     .eq('host_id', id);
 
-                if (props) setProperties(props as any[]);
+                if (props) setProperties(props);
             } catch (err) {
                 console.error("Error fetching host profile:", err);
             } finally {
@@ -128,7 +132,7 @@ const HostProfile: React.FC = () => {
                     {/* Main Content */}
                     <div className="md:col-span-2 space-y-8">
                         <div>
-                            <h2 className="text-3xl font-serif font-bold text-text-main mb-6">Alojamientos de {host.full_name.split(' ')[0]}</h2>
+                            <h2 className="text-3xl font-serif font-bold text-text-main mb-6">Alojamientos de {host.full_name?.split(' ')[0] || 'Anfitrión'}</h2>
                             <div className="grid grid-cols-1 gap-6">
                                 {properties.map((prop, idx) => (
                                     <motion.div

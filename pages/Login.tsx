@@ -30,35 +30,90 @@ const Login: React.FC = () => {
         const { user, error } = await register(email, password, name);
         if (error) throw new Error(error);
         if (user) {
-          // Supabase requiere confirmar email por defecto en modo real
           setError("¡Registro casi listo! Revisa tu email para confirmar tu cuenta.");
         }
       } else {
         const { user, error } = await login(email, password);
         if (error) throw new Error(error);
         if (user) {
-          console.log(`Login Debug: User authenticated successfully. Email: ${user.email}, Role: ${user.role}`);
+          console.log(`Login Debug: User authenticated. Email: ${user.email}, Role: ${user.role}`);
 
-          // Redirección Prioritaria por parámetro
+          // ── PASO 1: Redirección prioritaria por parámetro ──────────────────
           if (redirectToParam === 'messages') {
             navigate('/messages');
             return;
           }
 
-          // Redirección por Rol (Fallback)
+          // ── PASO 2: Flujo de aceptación de invitación de Co-host ──────────
+          // URL: /login?invite=true&token=<uuid>
+          // Si el token está presente, activamos el cohost en Supabase
+          const inviteToken = searchParams.get('token');
+          if (isInvite && inviteToken) {
+            const { data: cohostRecord, error: findErr } = await supabase
+              .from('property_cohosts')
+              .select('id, email, status')
+              .eq('invitation_token', inviteToken)
+              .maybeSingle();
+
+            if (findErr) {
+              console.error('[Cohost Accept] DB error:', findErr.message);
+            } else if (!cohostRecord) {
+              setError('El enlace de invitación no es válido o ya expiró.');
+              setLoading(false);
+              return;
+            } else if (cohostRecord.email.toLowerCase() !== user.email?.toLowerCase()) {
+              setError(`Esta invitación fue enviada a ${cohostRecord.email}. Inicia sesión con ese email.`);
+              setLoading(false);
+              return;
+            } else if (cohostRecord.status !== 'active') {
+              // Activate the cohost record
+              const { error: updateErr } = await supabase
+                .from('property_cohosts')
+                .update({ status: 'active' })
+                .eq('id', cohostRecord.id);
+
+              if (updateErr) {
+                console.error('[Cohost Accept] Update error:', updateErr.message);
+              } else {
+                console.log(`[Cohost Accept] ✅ Activated cohost for ${user.email}`);
+              }
+            }
+            // Co-host accepted → go to host dashboard
+            navigate('/host');
+            return;
+          }
+
+          // ── PASO 3: Redirección por Rol (Fallback) ────────────────────────
           if (user.role === 'host' || user.email === 'villaretiror@gmail.com') {
             navigate('/host');
           } else {
-            navigate('/profile');
+            // Check if this user is an active cohost (in case they revisit /login directly)
+            const { data: cohostCheck } = await supabase
+              .from('property_cohosts')
+              .select('id')
+              .eq('email', user.email?.toLowerCase() ?? '')
+              .eq('status', 'active')
+              .limit(1);
+
+            if (cohostCheck && cohostCheck.length > 0) {
+              navigate('/host');
+            } else {
+              navigate('/profile');
+            }
           }
         }
       }
     } catch (err: any) {
-      setError(err.message === 'Invalid login credentials' ? 'Credenciales incorrectas. Verifica tu email y contraseña.' : err.message || 'Ocurrió un error');
+      setError(
+        err.message === 'Invalid login credentials'
+          ? 'Credenciales incorrectas. Verifica tu email y contraseña.'
+          : err.message || 'Ocurrió un error'
+      );
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleForgotPassword = async () => {
     if (!email) {

@@ -10,6 +10,10 @@ import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
 import { AnimatePresence } from 'framer-motion';
 import { BookingSkeleton } from '../components/Skeleton';
+import type { Tables, TablesInsert } from '../supabase_types';
+
+type BookingInsert = TablesInsert<'bookings'>;
+type PromoRow = Tables<'promo_codes'>;
 
 const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
 
@@ -30,7 +34,7 @@ const Booking: React.FC = () => {
   const [priceMismatch, setPriceMismatch] = useState(false);
 
   const [promoCode, setPromoCode] = useState('');
-  const [appliedPromo, setAppliedPromo] = useState<any>(null);
+  const [appliedPromo, setAppliedPromo] = useState<PromoRow | null>(null);
   const [promoError, setPromoError] = useState('');
 
   // 1. Fetch Fresh on Mount
@@ -48,8 +52,9 @@ const Booking: React.FC = () => {
         .eq('property_id', id)
         .or('status.in.(confirmed,waiting_approval,emergency_support),status.eq.pending_ai_validation');
 
+      type BookingDateRow = Pick<Tables<'bookings'>, 'check_in' | 'check_out' | 'status' | 'hold_expires_at'>;
       const bookingDates: Date[] = [];
-      bookings?.forEach((b: any) => {
+      (bookings as BookingDateRow[] | null)?.forEach((b) => {
         // Skip if it's an expired AI hold
         if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < new Date()) {
           return;
@@ -236,22 +241,25 @@ const Booking: React.FC = () => {
       await supabase.rpc('increment_promo_usage', { promo_id: finalPromoId });
     }
 
-    // 4. Secure Insert and Select (Atomic flow)
+    // 4. Secure Insert and Select (Atomic flow) — Strict Schema Types
+    const bookingPayload: BookingInsert = {
+      user_id: user.id,
+      customer_name: user.name,
+      source: 'Direct Web',
+      property_id: id,
+      check_in: format(startDate, 'yyyy-MM-dd'),
+      check_out: format(endDate, 'yyyy-MM-dd'),
+      total_price: reTotal,
+      guests_count: freshProperty.guests ?? property.guests ?? null,
+      status: status,
+      payment_method: method,
+      payment_proof_url: proofUrl || null,
+      email_sent: false
+    };
+
     const { data: bookingData, error: bookingError } = await supabase
       .from('bookings')
-      .insert({
-        user_id: user.id,
-        customer_name: user.name,
-        source: 'Direct Web',
-        property_id: id,
-        check_in: format(startDate, 'yyyy-MM-dd'),
-        check_out: format(endDate, 'yyyy-MM-dd'),
-        total_price: total,
-        status: status,
-        payment_method: method,
-        payment_proof_url: proofUrl || null,
-        email_sent: false // Default to false
-      })
+      .insert(bookingPayload)
       .select()
       .single();
 

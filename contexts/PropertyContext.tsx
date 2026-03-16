@@ -2,10 +2,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Property, LocalGuideCategory } from '../types';
 import { INITIAL_LOCAL_GUIDE } from '../constants';
 import { supabase, isConfigured } from '../lib/supabase';
+import { Database } from '../supabase_types';
+
+type PropertyRow = Database['public']['Tables']['properties']['Row'];
+type SettingRow = Database['public']['Tables']['system_settings']['Row'];
 
 interface PropertyContextType {
   properties: Property[];
   localGuideData: LocalGuideCategory[];
+  secretSpots: any[];
+  villaKnowledge: any;
   favorites: string[];
   isLoading: boolean;
   toggleFavorite: (id: string) => void;
@@ -32,6 +38,9 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch { return INITIAL_LOCAL_GUIDE; }
   });
 
+  const [secretSpots, setSecretSpots] = useState<any[]>([]);
+  const [villaKnowledge, setVillaKnowledge] = useState<any>(null);
+
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('favorites');
@@ -52,27 +61,63 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (data) {
         console.log('Propiedades recibidas del DB:', data);
         const isAdmin = session?.user?.email === 'villaretiror@gmail.com';
-        const mapped: Property[] = data.map((p: any) => ({
-          ...p,
-          id: String(p.id),
-          guests: Number(p.guests || p.policies?.guests || p.policies?.maxGuests) || 1,
-          price: Number(p.price) || 0,
-          policies: {
-            ...p.policies,
-            guests: Number(p.policies?.guests || p.policies?.maxGuests || p.guests) || 1,
-            wifiPass: isAdmin ? p.policies?.wifiPass || p.wifi_pass : '********',
-            accessCode: isAdmin ? p.policies?.accessCode || p.access_code : 'CONFIDENCIAL'
-          }
-        })) as Property[];
+        const mapped: Property[] = (data as PropertyRow[]).map(p => {
+          // Safe JSON parsing for policies
+          const rawPolicies: any = p.policies;
+          const policies = {
+            checkInTime: rawPolicies?.checkInTime || '15:00',
+            checkOutTime: rawPolicies?.checkOutTime || '11:00',
+            guests: Number(rawPolicies?.guests || p.guests) || 1,
+            wifiName: rawPolicies?.wifiName || '',
+            wifiPass: isAdmin ? rawPolicies?.wifiPass || 'N/A' : '********',
+            accessCode: isAdmin ? rawPolicies?.accessCode || 'N/A' : 'CONFIDENCIAL',
+            cancellationPolicy: rawPolicies?.cancellationPolicy,
+            houseRules: p.house_rules || rawPolicies?.houseRules || []
+          };
+
+          return {
+            ...p,
+            id: String(p.id),
+            title: p.title || 'Propiedad sin título',
+            subtitle: p.subtitle || '',
+            location: p.location || '',
+            address: p.address || '',
+            description: p.description || '',
+            price: Number(p.price) || 0,
+            original_price: p.original_price != null ? Number(p.original_price) : null,
+            cleaning_fee: Number(p.cleaning_fee) || 0,
+            service_fee: Number(p.service_fee) || 0,
+            security_deposit: Number(p.security_deposit) || 0,
+            rating: Number(p.rating) || 0,
+            reviews_count: Number(p.reviews) || 0,
+            images: p.images || [],
+            amenities: p.amenities || [],
+            guests: Number(p.guests) || 1,
+            bedrooms: Number(p.bedrooms) || 0,
+            beds: Number(p.beds) || 0,
+            baths: Number(p.baths) || 0,
+            fees: (p.fees as any) || {},
+            policies: policies,
+            blockedDates: p.blockedDates || [],
+            calendarSync: (p.calendarSync as any[]) || [],
+            seasonal_prices: (p.seasonal_prices as any[]) || [],
+            host: (p.host as any) || { name: 'Anfitrión', image: '', badges: [], yearsHosting: 0 }
+          } as Property;
+        });
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
         // 1b. Fetch System Settings (Guidebook)
         const { data: settings } = await supabase.from('system_settings').select('key, value');
         if (settings) {
-          const guide = settings.find((s: any) => s.key === 'local_guide_data')?.value;
-          if (guide) {
-            setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(guide) ? prev : guide);
-          }
+          const typedSettings = settings as SettingRow[];
+          const guide = typedSettings.find(s => s.key === 'local_guide_data')?.value;
+          if (guide) setLocalGuideData(guide as any);
+
+          const secrets = typedSettings.find(s => s.key === 'secret_spots')?.value;
+          if (secrets) setSecretSpots(secrets as any[]);
+
+          const knowledge = typedSettings.find(s => s.key === 'villa_knowledge')?.value;
+          if (knowledge) setVillaKnowledge(knowledge);
         }
       }
     } catch (err: any) {
@@ -145,13 +190,15 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const value = useMemo(() => ({
     properties,
     localGuideData,
+    secretSpots,
+    villaKnowledge,
     favorites,
     isLoading,
     toggleFavorite,
     updateProperties,
     updateGuide,
     refreshProperties: fetchPropertiesFromDB
-  }), [properties, localGuideData, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, fetchPropertiesFromDB]);
+  }), [properties, localGuideData, secretSpots, villaKnowledge, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, fetchPropertiesFromDB]);
 
   return (
     <PropertyContext.Provider value={value}>

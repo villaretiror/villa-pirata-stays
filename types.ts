@@ -2,12 +2,16 @@ export type ViewState = 'guest' | 'host';
 
 export interface Review {
   id: string;
+  booking_id?: string | null;       // FK → bookings.id. null = importada de Airbnb/Booking.com
+  property_id?: string;
+  user_id?: string | null;           // FK → auth.users
   author: string;
-  date: string;
-  rating: number;
+  date: string;                      // ISO string (created_at formateado para display)
+  rating: number;                    // 1.0 – 5.0
   text: string;
-  source: 'Airbnb' | 'Booking.com' | 'Google';
-  avatar?: string;
+  source: 'Airbnb' | 'Booking.com' | 'Google' | 'Direct';
+  avatar?: string;                   // avatar_url de la DB (opcional)
+  is_visible?: boolean;
 }
 
 export interface Offer {
@@ -68,6 +72,7 @@ export interface Property {
   address: string;
   description: string;
   price: number;
+  original_price?: number | null;   // Precio de referencia para mostrar tachado. Si es null, no se muestra.
   cleaning_fee: number;
   service_fee: number;
   security_deposit: number;
@@ -95,6 +100,8 @@ export interface Property {
   review_url?: string;
   isOffline?: boolean;
   seasonal_prices?: SeasonalPrice[];
+  created_at?: string;
+  updated_at?: string;
   host: {
     name: string;
     image: string;

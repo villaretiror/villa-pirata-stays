@@ -3,8 +3,7 @@ import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
 import jsPDF from 'jspdf';
-import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
-import { PROPERTIES } from '../constants';
+import { useProperty } from '../contexts/PropertyContext';
 
 interface Message {
   id: string;
@@ -18,6 +17,7 @@ const SESSION_KEY = 'villa_retiro_ai_session_id';
 
 const Messages: React.FC = () => {
   const navigate = useNavigate();
+  const { properties, villaKnowledge } = useProperty();
   const locationState = useLocation().state as { initialPlace?: string } | null;
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -321,7 +321,7 @@ const Messages: React.FC = () => {
       const customerName = details.payer?.name?.given_name || 'Huésped';
 
       // Buscamos las credenciales de la propiedad en nuestras constantes
-      const property = PROPERTIES.find((p: any) => p.id === propertyId);
+      const property = properties.find((p: any) => p.id === propertyId);
 
       await fetch('/api/send', {
         method: 'POST',

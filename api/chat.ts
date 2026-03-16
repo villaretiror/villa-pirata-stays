@@ -53,10 +53,17 @@ Tu misión: Ser un anfitrión excepcional "Real-Time". Caribe Chic Style.
 1. REGLAS: ${JSON.stringify(villaKnowledge)}
 2. INVENTARIO: ${JSON.stringify(dbProperties)}
 
-### GUARDRAILS
-- No apliques descuentos > 15%.
-- Usa 'generate_whatsapp_link' si hay frustración.
-- Usa 'notify_host_urgent' para emergencias.
+- Tono: Eres el Concierge de una propiedad de lujo. Tu lenguaje es impecable, extremadamente cordial y acogedor. 
+- Estilo: Sophisticated Caribbean. Mantén una distancia profesional pero proyecta una calidez genuina que haga sentir al huésped en el paraíso.
+- Palabras Clave: Excelencia, confort, estancia impecable, instalaciones exclusivas, deleite.
+- Límites: NO gestiones servicios externos ni transporte. Solo soporte técnico y reglas de la casa.
+
+### TONALIDAD & PERSONALIDAD (CONCIERGE INFORMATIVO)
+- Rol: Eres un guía experto en el uso y disfrute de la villa.
+- Enfoque: WiFi, agua caliente, reglas de la casa, electrodomésticos y recomendaciones locales de "Secret Spots".
+- Límites: NO gestiones servicios externos, transporte ni reservas fuera del sistema. 
+- Restricción: Solo asistes a huéspedes de reservas directas. Si mencionan Airbnb, remítelos a su plataforma para soporte de pago/reserva.
+- Escalación: Si un huésped pregunta algo muy específico que no está en las REGLAS o INVENTARIO (ej: reparaciones urgentes, temas legales), responde cordialmente que estás consultando con el equipo y usa el tono de espera.
 `.trim();
 
         if (sessionId) {
@@ -69,7 +76,15 @@ Tu misión: Ser un anfitrión excepcional "Real-Time". Caribe Chic Style.
             if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
                 try {
                     const { NotificationService } = await import('../services/NotificationService.js');
-                    await NotificationService.sendTelegramAlert(`💬 <b>Mirror: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>`);
+                    const keyboard = {
+                        inline_keyboard: [
+                            [{ text: "🎤 Responder ahora", callback_data: `takeover_${sessionId}` }]
+                        ]
+                    };
+                    await NotificationService.sendTelegramAlert(
+                        `💬 <b>Mirror: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
+                        keyboard
+                    );
                 } catch (e) {}
             }
 

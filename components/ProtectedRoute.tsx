@@ -1,28 +1,82 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../lib/supabase';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   role?: 'guest' | 'host' | 'admin';
 }
 
+/**
+ * 🔐 PROTECTED ROUTE — MULTINIVEL v2
+ *
+ * Access to /host is granted if:
+ *   1. User is the owner (villaretiror@gmail.com) ← always bypasses
+ *   2. User has role='host' or role='admin' in profiles table
+ *   3. User's email appears in property_cohosts with status='active' ← NEW
+ *
+ * The cohost check is done with a Supabase query on every /host navigation.
+ * It uses a secondary loading state so the spinner doesn't block other routes.
+ */
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
   const { user, loading, logout } = useAuth();
   const location = useLocation();
   const [timedOut, setTimedOut] = React.useState(false);
 
+  // ── Cohost check state ─────────────────────────────────────────────────────
+  const [cohostChecked, setCohostChecked] = useState(false);
+  const [isCohostActive, setIsCohostActive] = useState(false);
+
   React.useEffect(() => {
     let timer: NodeJS.Timeout;
     if (loading) {
-      timer = setTimeout(() => {
-        setTimedOut(true);
-      }, 5000);
+      timer = setTimeout(() => { setTimedOut(true); }, 5000);
     }
     return () => clearTimeout(timer);
   }, [loading]);
 
-  if (loading) {
+  // Only run the cohost check when:
+  //   - Auth is done loading
+  //   - A role is required ('host')
+  //   - User exists but is NOT already an owner/host by role
+  const isAdminEmail = user?.email?.toLowerCase() === 'villaretiror@gmail.com';
+  const isOwnerOrHost = user?.role === 'host' || user?.role === 'admin' || isAdminEmail;
+
+  useEffect(() => {
+    if (loading) return;
+    if (!user || !role) { setCohostChecked(true); return; }
+    if (isOwnerOrHost) { setCohostChecked(true); return; }
+
+    // Check property_cohosts table for this user's email
+    const checkCohostAccess = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('property_cohosts')
+          .select('id, status')
+          .eq('email', user.email?.toLowerCase() ?? '')
+          .eq('status', 'active')
+          .limit(1);
+
+        if (error) {
+          console.error('[ProtectedRoute] Cohost check error:', error.message);
+          setIsCohostActive(false);
+        } else {
+          setIsCohostActive((data?.length ?? 0) > 0);
+        }
+      } catch (e) {
+        console.error('[ProtectedRoute] Cohost check exception:', e);
+        setIsCohostActive(false);
+      } finally {
+        setCohostChecked(true);
+      }
+    };
+
+    checkCohostAccess();
+  }, [loading, user, role, isOwnerOrHost]);
+
+  // ── Loading spinner (auth + cohost check) ─────────────────────────────────
+  if (loading || (role === 'host' && !cohostChecked)) {
     return (
       <div className="fixed inset-0 bg-[#FDFCFB] z-50 flex flex-col items-center justify-center gap-6 animate-fade-in">
         <div className="relative">
@@ -63,11 +117,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  // Bypass for Admin email regardless of metadata
-  const isAdminEmail = user.email?.toLowerCase() === 'villaretiror@gmail.com';
-
-  if (role && user.role !== role && user.role !== 'admin' && !isAdminEmail) {
-    return <Navigate to="/" replace />;
+  // ── Role check: Owner / Host / Admin / Active Co-host ─────────────────────
+  if (role) {
+    const hasAccess = isOwnerOrHost || isCohostActive;
+    if (!hasAccess) {
+      return <Navigate to="/" replace />;
+    }
   }
 
   return children as React.ReactElement;

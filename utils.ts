@@ -1,4 +1,4 @@
-import { Property } from './types';
+import { Property, SeasonalPrice } from './types';
 
 
 // 1. iCal Helpers - Precision & Robustness
@@ -181,7 +181,7 @@ export const validatePromoCode = (promo: any, nights: number, hasSeasonalNight: 
   return { valid: true };
 };
 
-export const isSeasonalDate = (dateStr: string, seasonalPrices: any[] = []): boolean => {
+export const isSeasonalDate = (dateStr: string, seasonalPrices: SeasonalPrice[] = []): boolean => {
   const checkDate = new Date(`${dateStr}T12:00:00`);
   return seasonalPrices.some(s => {
     const start = new Date(`${s.startDate}T12:00:00`);
@@ -190,7 +190,7 @@ export const isSeasonalDate = (dateStr: string, seasonalPrices: any[] = []): boo
   });
 };
 
-export const getNightlyPrice = (basePrice: number, dateStr: string, seasonalPrices: any[] = []): number => {
+export const getNightlyPrice = (basePrice: number, dateStr: string, seasonalPrices: SeasonalPrice[] = []): number => {
   const checkDate = new Date(`${dateStr}T12:00:00`);
 
   const activeSeason = seasonalPrices.find(s => {

@@ -1,6 +1,10 @@
 import { supabase } from './lib/supabase.js';
 import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
+import type { Tables } from './supabase_types.js';
+
+type ProfileRow = Tables<'profiles'>;
+type GivenConcession = { date: string; type: string; discount: number };
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { generateText } from 'ai';
 
@@ -12,59 +16,91 @@ const google = createGoogleGenerativeAI({
  * Architecture: Bridge between LLM and Backend Logic
  */
 
-// 1. Availability Connector (DB + iCal Real-time)
-export const checkAvailabilityWithICal = async (villaId: string, checkIn: string, checkOut: string): Promise<{ available: boolean; reason?: string }> => {
-    // Query DB
-    const { data: dbBookings } = await supabase
-        .from('bookings')
-        .select('check_in, check_out, status, hold_expires_at')
-        .eq('property_id', villaId)
-        .neq('status', 'cancelled');
+// 1. Availability Connector — DB-First Architecture
+//
+// ARCHITECTURE NOTE:
+// sync-ical.ts runs on every master-cron execution (every ~15 min via Vercel cron).
+// It reads iCal feeds from Airbnb/Booking.com and UPSERTS them into the 'bookings'
+// table with source='Airbnb' / 'Booking.com'. This means:
+//
+//   SOURCE OF TRUTH = bookings table (local + iCal-synced reservations, unified)
+//
+// We NO LONGER need a live iCal fetch here. That path was slow (~2-5s per feed),
+// fragile (external URL timeouts), blocked by CORS, and returned stale data anyway.
+// Instead we query Supabase, which already has the latest synced data.
+//
+// FALLBACK: If the cron hasn't run yet (first boot), we also check the property's
+// 'blockedDates' array as a fast secondary guard.
+export const checkAvailabilityWithICal = async (
+    villaId: string,
+    checkIn: string,
+    checkOut: string
+): Promise<{ available: boolean; reason?: string }> => {
 
     const qIn = new Date(checkIn);
     const qOut = new Date(checkOut);
+    const now = new Date();
 
-    const dbOverlap = (dbBookings || []).some((b: any) => {
-        // Skip if it's an expired AI hold
-        if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < new Date()) {
+    // ── Step 1: Query unified bookings table (local + iCal-synced) ──────────
+    type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
+    const { data: dbBookings, error: dbError } = await supabase
+        .from('bookings')
+        .select('check_in, check_out, status, hold_expires_at, source')
+        .eq('property_id', villaId)
+        .neq('status', 'cancelled');
+
+    if (dbError) {
+        console.error('[checkAvailability] DB error:', dbError.message);
+        // Fail-open: don't block a booking due to a DB read error
+        return { available: true };
+    }
+
+    const hasOverlap = (dbBookings as BookingAvailRow[] || []).some((b: BookingAvailRow) => {
+        // Skip expired AI holds
+        if (
+            b.status === 'pending_ai_validation' &&
+            b.hold_expires_at &&
+            new Date(b.hold_expires_at) < now
+        ) {
             return false;
         }
 
         const bIn = new Date(b.check_in);
         const bOut = new Date(b.check_out);
+        // Standard overlap: query starts before booking ends AND query ends after booking starts
         return qIn < bOut && qOut > bIn;
     });
 
-    if (dbOverlap) return { available: false, reason: 'Ocupado por reserva interna.' };
-
-    // Query iCal (needs to fetch property for URLs)
-    const { data: property } = await supabase.from('properties').select('calendarSync').eq('id', villaId).single();
-    if (property?.calendarSync && property.calendarSync.length > 0) {
-        const syncPromises = property.calendarSync.map(async (sync: any) => {
-            try {
-                const response = await fetch(sync.url);
-                const icalText = await response.text();
-                const bookedDates = parseICalData(icalText);
-
-                // Check dates in this feed
-                let current = new Date(qIn);
-                while (current < qOut) {
-                    const dateStr = current.toISOString().split('T')[0];
-                    if (bookedDates.includes(dateStr)) {
-                        return { available: false, reason: `Ocupado en ${sync.platform}.` };
-                    }
-                    current.setDate(current.getDate() + 1);
-                }
-                return { available: true };
-            } catch (e) {
-                console.error(`iCal Check Error for ${sync.platform}:`, e);
-                return { available: true }; // Continue if one feed fails
-            }
+    if (hasOverlap) {
+        const conflictingBooking = (dbBookings as BookingAvailRow[] | null || []).find((b: BookingAvailRow) => {
+            if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
+            return new Date(b.check_in) < qOut && new Date(b.check_out) > qIn;
         });
 
-        const results = await Promise.all(syncPromises);
-        const conflict = results.find(r => !r.available);
-        if (conflict) return conflict;
+        const source = conflictingBooking?.source;
+        const reason = source && source !== 'Direct Web'
+            ? `Fechas no disponibles — reservado vía ${source}.`
+            : 'Fechas no disponibles — reserva directa existente.';
+
+        return { available: false, reason };
+    }
+
+    // ── Step 2: Fallback — check property.blockedDates (manual blocks by host) ─
+    const { data: property } = await supabase
+        .from('properties')
+        .select('"blockedDates"')
+        .eq('id', villaId)
+        .single();
+
+    if (property?.blockedDates && Array.isArray(property.blockedDates)) {
+        let curr = new Date(qIn);
+        while (curr < qOut) {
+            const ds = curr.toISOString().split('T')[0];
+            if ((property.blockedDates as string[]).includes(ds)) {
+                return { available: false, reason: 'Fechas bloqueadas manualmente por el anfitrión.' };
+            }
+            curr.setDate(curr.getDate() + 1);
+        }
     }
 
     return { available: true };
@@ -73,9 +109,12 @@ export const checkAvailabilityWithICal = async (villaId: string, checkIn: string
 // 2. Lead & Abandonment Manager
 export const logAbandonmentLead = async (data: { name: string; email?: string; phone?: string; interest: string }) => {
     const { error } = await supabase.from('leads').insert({
-        ...data,
+        name: data.name,
+        email: data.email || 'sin-email@anonymous.com',
+        phone: data.phone || null,
+        message: data.interest,   // Schema: 'interest' → maps to 'message' column
         status: 'new',
-        created_at: new Date().toISOString()
+        tags: ['abandonment']     // Schema: tags[] column — mark origin for analytics
     });
     return !error;
 };
@@ -144,13 +183,16 @@ export const handleCrisisAlert = async (name: string, message: string, contact: 
 
 export const checkUserConcessions = async (userId: string): Promise<{ allowed: boolean; lastGrant?: string }> => {
     const { data: profile } = await supabase.from('profiles').select('given_concessions').eq('id', userId).single();
-    if (!profile || !profile.given_concessions || profile.given_concessions.length === 0) return { allowed: true };
+    if (!profile || !profile.given_concessions) return { allowed: true };
+
+    const concessions = profile.given_concessions as GivenConcession[];
+    if (!Array.isArray(concessions) || concessions.length === 0) return { allowed: true };
 
     // Check last 12 months
     const twelveMonthsAgo = new Date();
     twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
 
-    const recentConcession = profile.given_concessions.find((c: any) => new Date(c.date) > twelveMonthsAgo);
+    const recentConcession = concessions.find((c) => new Date(c.date) > twelveMonthsAgo);
     if (recentConcession) return { allowed: false, lastGrant: recentConcession.date };
 
     return { allowed: true };
@@ -195,47 +237,50 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
 
 // 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)
 export const generateOnboardingDraft = async (
-    stage: 'mid_stay' | 'check_out',
+    stage: 'check_in' | 'check_in_followup' | 'mid_stay' | 'check_out',
     guestName: string,
     propertyTitle: string,
     checkOutDate: string
 ): Promise<string> => {
     let mission = "";
-    if (stage === 'mid_stay') {
-        mission = `Escribe un mensaje de 'Hospitality Check' para el huésped.
-        - Saluda cálidamente por su nombre.
-        - Pregunta si todo está fluyendo perfecto en la villa.
-        - Invítales a descubrir los 'Secret Spots' (menciona que Ostiones o Guaniquilla son joyas de la zona si quieren aventura).
-        - Recuerda que estás a un mensaje de distancia si necesitan cualquier tip local.`;
+    if (stage === 'check_in') {
+        mission = `Escribe un mensaje de 'Bienvenida e Instrucciones de Acceso'.
+        - Saluda con entusiasmo por su llegada mañana a la villa.
+        - Indica que el check-in es a las 3:00 PM.
+        - Dile que para Salty es un placer asistirles con cualquier duda sobre el funcionamiento de la casa (WiFi, Agua caliente, Equipos).
+        - Deséales un viaje seguro.`;
+    } else if (stage === 'check_in_followup') {
+        mission = `Escribe un mensaje de 'Confirmación de Bienestar' (24h después de la llegada).
+        - Pregunta si la primera noche fue perfecta y si todo está según lo prometido.
+        - Recuérdales que el Manual de la Casa completo está disponible en la web para cualquier duda técnica.
+        - Reitera que eres su Concierge Informativo para temas de la propiedad.`;
+    } else if (stage === 'mid_stay') {
+        mission = `Escribe un mensaje de 'Hospitality Check' Informativo.
+        - Saluda y pregunta si el WiFi y los servicios de la villa están funcionando a su gusto.
+        - Invítales a revisar el Manual si tienen dudas sobre el uso de la piscina o equipos.
+        - Sé cordial y servicial sin ofrecer servicios externos.`;
     } else {
-        mission = `Escribe un mensaje de 'Despedida Impecable' para el día antes del check-out.
-        - Agradece la confianza de habernos elegido.
-        - Recordatorios logísticos suaves (basados en VILLA_KNOWLEDGE):
-          1. El check-out es a las 11:00 AM.
-          2. Depositar la basura en los zafacones exteriores.
-          3. Cerrar bien el portón y puertas.
-          4. Dejar las llaves en su lugar (lockbox).
-        - Deséales un viaje de regreso seguro.`;
+        mission = `Escribe un mensaje de 'Logística de Salida'.
+        - Agradece que hayan cuidado la villa.
+        - Recordatorios: Check-out 11:00 AM, basura en zafacones exteriores, apagar A/Cs y luces, llaves en lockbox.
+        - Deséales un regreso seguro.`;
     }
 
     const prompt = `
-        Eres "Salty", el concierge ejecutivo de Villa & Pirata Stays.
-        Tono: Modern Luxury, extremadamente cordial, ejecutivo y acogedor. Usa el "Tú" para conectar.
-        
-        Datos:
-        - Huésped: ${guestName}
-        - Propiedad: ${propertyTitle}
-        - Salida: ${checkOutDate}
-        
-        Misión:
-        ${mission}
-        
-        Reglas:
-        - NO uses placeholders. Firma como "Salty, Concierge".
-        - REDACTA SOLO EL CUERPO. Sin etiquetas HTML.
-        - Sé breve, pulido y profesional.
-    `;
+    Eres Salty, el Caribbean Luxury Concierge.
+    
+    MISIÓN: ${mission}
+    HUESPED: ${guestName}
+    PROPIEDAD: ${propertyTitle}
+    FECHA CLAVE: ${checkOutDate}
 
+    REGLAS DE ETIQUETA (CRÍTICO):
+    1. Comienza SIEMPRE con una frase de cortesía extrema, calidez y hospitalidad (ej: "Espero que su mañana en el paraíso esté siendo maravillosa...").
+    2. La logística técnica (basura, llaves, reglas) debe ir en el segundo párrafo.
+    3. Tono Sophisticated Caribbean. No ofrezcas servicios externos.
+
+    Escribe solo el cuerpo del mensaje, sin asuntos ni firmas.
+    `.trim();
     try {
         const { text } = await generateText({
             model: google('gemini-1.5-flash'),

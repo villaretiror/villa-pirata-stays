@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import ical from 'node-ical';
-import { PROPERTIES } from '../constants.js';
 import { NotificationService } from '../services/NotificationService.js';
 
 /**
@@ -30,17 +29,29 @@ export const HealthMonitorService = {
     },
 
     /**
-     * Verifica la disponibilidad de los Feeds de iCal definidos en las constantes
+     * Verifica la disponibilidad de los Feeds de iCal desde la Base de Datos
      */
     async checkICals() {
         const reports: any[] = [];
+        
+        // 🛰️ DIRECTIVA DE CONECTIVIDAD: Fetch properties from DB, not from constants
+        const { data: dbProperties, error: pError } = await supabase
+            .from('properties')
+            .select('id, title, "calendarSync"');
 
-        for (const property of PROPERTIES) {
-            if (!property.calendarSync) continue;
+        if (pError || !dbProperties) {
+            console.error('[HealthMonitor] Error fetching properties for iCal check:', pError?.message);
+            return [];
+        }
 
-            for (const sync of property.calendarSync) {
+        for (const property of dbProperties) {
+            const syncFeeds = Array.isArray(property.calendarSync) ? property.calendarSync : [];
+            if (syncFeeds.length === 0) continue;
+
+            for (const sync of syncFeeds) {
                 const start = Date.now();
                 try {
+                    if (!sync.url) continue;
                     // Validamos que el feed sea accesible y contenga datos iCal válidos
                     const data = await ical.fromURL(sync.url);
                     const events = Object.values(data).filter(e => e && e.type === 'VEVENT');
