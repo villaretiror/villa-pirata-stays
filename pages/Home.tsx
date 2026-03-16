@@ -215,7 +215,7 @@ const Home: React.FC = () => {
       </div>
 
       {/* Categories - Modern Pills */}
-      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2">
+      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2 relative z-10">
         {categories.map((cat) => (
           <button
             key={cat.id}
@@ -232,9 +232,40 @@ const Home: React.FC = () => {
       </div>
 
       {/* Main Content Area */}
-      <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-8 pb-32">
+      <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-10 pb-32">
+        {/* Sabor Local Header & Filters */}
+        <div className="mb-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Experience</p>
+              <h2 className="font-serif font-bold text-4xl text-text-main leading-tight">Sabor Local & <span className="text-secondary italic">Aventura.</span></h2>
+            </div>
+            
+            {/* Experience Pills */}
+            <div className="flex gap-2 p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-2xl border border-white/50 w-fit">
+              {[
+                { id: 'beaches', label: 'Playas', icon: 'beach_access' },
+                { id: 'gastronomy', label: 'Gastronomía', icon: 'restaurant' },
+                { id: 'nearby', label: 'Cerca de Ti', icon: 'place' }
+              ].map(tab => (
+                <button
+                  key={tab.id}
+                  onClick={() => {
+                    const el = document.getElementById(`section-${tab.id}`);
+                    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  }}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-text-light hover:bg-white hover:text-primary transition-all shadow-sm active:scale-95"
+                >
+                  <span className="material-icons text-[14px]">{tab.icon}</span>
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* Playas del Paraíso Section */}
-        <div className="mb-20">
+        <div id="section-beaches" className="mb-20 scroll-mt-24">
           <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
@@ -252,7 +283,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* Ruta Gastronómica Section - Unificación de Grilla Premium */}
-        <div className="mb-20">
+        <div id="section-gastronomy" className="mb-20 scroll-mt-24">
           <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
@@ -270,7 +301,7 @@ const Home: React.FC = () => {
         </div>
 
         {/* Cerca de Ti Section */}
-        <div className="mb-20">
+        <div id="section-nearby" className="mb-20 scroll-mt-24">
           <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
@@ -323,7 +354,7 @@ const Home: React.FC = () => {
         )}
 
         {/* Listings Header */}
-        <div ref={resultsRef} className="flex justify-between items-center mb-6 scroll-mt-32">
+        <div id="property-grid" ref={resultsRef} className="flex justify-between items-center mb-6 scroll-mt-32">
           <h3 className="font-serif font-bold text-xl text-text-main">
             {getSectionTitle()}
           </h3>

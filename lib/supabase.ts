@@ -53,6 +53,8 @@ const createMockClient = () => {
       signOut: () => Promise.resolve({ error: null }),
     },
     channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
+    removeChannel: () => Promise.resolve(),
+    removeAllChannels: () => Promise.resolve(),
   } as any;
 };
 

@@ -59,7 +59,7 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
         name: 'Milla de Oro (Joyuda)',
         distance: '15 min',
         desc: 'La capital del marisco en Puerto Rico. Más de 30 restaurantes frente al mar con los pescados y mariscos más frescos del Caribe. Pide el chillo entero frito — no te arrepentirás.',
-        image: 'https://images.unsplash.com/photo-1551218808-94e220e034a8?auto=format&fit=crop&q=80&w=1200',
+        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
         mapUrl: mapRoute('Milla de Oro Joyuda, Cabo Rojo, Puerto Rico')
       },
       {

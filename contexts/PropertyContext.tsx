@@ -69,7 +69,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (guideError) console.error("Guide Fetch Error:", guideError);
 
-      if (guideRows) {
+      if (guideRows && guideRows.length > 0) {
         const categories = [
           { id: 'beaches', category: 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
           { id: 'gastronomy', category: 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
@@ -83,19 +83,26 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             .map(r => ({
               id: r.id,
               name: r.title,
-              distance: r.distance,
-              desc: r.description,
-              image: r.image_url,
-              mapUrl: r.map_url,
-              saltyTip: r.salty_tip,
-              sortOrder: r.sort_order
+              distance: r.distance || '5-10 min',
+              desc: r.description || '',
+              image: r.image_url?.startsWith('http') 
+                ? r.image_url 
+                : r.image_url 
+                  ? `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/${r.image_url}`
+                  : 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200', // Alt fallback
+              mapUrl: r.map_url || '',
+              saltyTip: r.salty_tip || '',
+              sortOrder: r.sort_order || 0
             }))
         }));
         setLocalGuideData(mappedGuide);
+      } else {
+        // Anti-Error Protection: If DB results are empty, restore the luxury baseline immediately
+        setLocalGuideData(INITIAL_LOCAL_GUIDE);
       }
       
-      if (propData) {
-        console.log('Propiedades recibidas del DB:', propData);
+      if (propData && propData.length > 0) {
+        console.log('Propiedades recibidas del DB:', propData.length);
         const isAdmin = session?.user?.email === 'villaretiror@gmail.com';
         const mapped: Property[] = (propData as PropertyRow[]).map(p => {
           // Safe JSON parsing for policies
@@ -147,7 +154,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
-        // 1c. Fetch Global System Settings (Integridad 360)
+        // C. Fetch Global System Settings (Integridad 360)
         const { data: settings } = await supabase.from('system_settings').select('key, value');
         if (settings) {
           const typedSettings = settings as SettingRow[];
@@ -159,11 +166,29 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (knowledge) setVillaKnowledge(knowledge as any);
 
           const content = typedSettings.find(s => s.key === 'site_content')?.value;
-          if (content) setSiteContent(prev => ({ ...prev, ...(content as any) }));
+          if (content) {
+            setSiteContent(prev => ({ 
+              ...prev, 
+              ...(content as any),
+              // Sanctuary of Data Rules: Ensure crucial sections (hero, contact) are merged, never wiped
+              contact: { ...(prev.contact), ...((content as any).contact || {}) },
+              hero: { ...(prev.hero), ...((content as any).hero || {}) },
+              sections: { ...(prev.sections), ...((content as any).sections || {}) }
+            }));
+          }
         }
+      } else {
+        // Hybrid Mode Safe-Guard: If Supabase returns nothing, maintain local sanctuary
+        console.warn("Properties table is empty or null, preserving local sanctuary data.");
+        setProperties(prev => prev.length > 0 ? prev : PROPERTIES);
       }
     } catch (err: any) {
-      if (err.name !== 'AbortError') console.error("fetchPropertiesFromDB Error:", err);
+      if (err.name !== 'AbortError') {
+        console.error("fetchPropertiesFromDB Error:", err);
+        // Emergency Fallback on Network Error
+        setProperties(prev => prev.length > 0 ? prev : PROPERTIES);
+        setLocalGuideData(prev => prev.length > 0 ? prev : INITIAL_LOCAL_GUIDE);
+      }
     } finally {
       setIsLoading(false);
     }
