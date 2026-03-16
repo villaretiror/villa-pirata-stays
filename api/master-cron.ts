@@ -22,7 +22,12 @@ export default async function handler(req: any, res: any) {
     // 🛡️ Security Check: Header o Query
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
     const querySecret = req.query?.secret || '';
-    const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
+    const secret = getEnv('CRON_SECRET');
+
+    if (!secret) {
+        console.error('[master-cron] CRON_SECRET not configured.');
+        return res.status(500).json({ error: 'CRON_SECRET_NOT_CONFIGURED' });
+    }
 
     const isAuthorized = (authHeader === `Bearer ${secret}`) || (querySecret === secret);
 
@@ -44,10 +49,10 @@ export default async function handler(req: any, res: any) {
     results.tasks.calendar_sync = await taskCalendarSync(req);
     results.tasks.cleanup = await taskCleanupMocks(supabase);
 
-    // 2. DIARIO (10:00 UTC): Feedback Request, Daily Alerts & Onboarding Journey
-    if (utcHour === 10 && utcMinute < 15) {
+    // 2. REPORTE MAÑANERO (12:00 UTC = 8:00 AM AST): Operative Report & Journey
+    if (utcHour === 12 && utcMinute < 15) {
         results.tasks.feedback = await taskFeedback(supabase);
-        results.tasks.alerts = await taskDailyAlerts(supabase);
+        results.tasks.morning_report = await taskMorningReport(supabase, req);
         results.tasks.journey = await taskGuestJourney(supabase);
     }
     
@@ -82,8 +87,8 @@ async function taskCleanupMocks(supabase: any) {
 async function taskCalendarSync(req: any) {
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const host = req.headers['host'];
-    const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
-    const syncUrl = `${protocol}://${host}/api/sync-ical?secret=${secret}`;
+    const secret = getEnv('CRON_SECRET');
+    const syncUrl = `${protocol}://${host}/api/sync-ical?secret=${secret || ''}`;
 
     try {
         const resp = await fetch(syncUrl, { signal: AbortSignal.timeout(55000) });
@@ -110,15 +115,84 @@ async function taskFeedback(supabase: any) {
     return { status: 'ok', emails_sent: sent };
 }
 
-async function taskDailyAlerts(supabase: any) {
+async function taskMorningReport(supabase: SupabaseClient, req: any) {
     const today = new Date().toISOString().split('T')[0];
-    const { data: ins } = await supabase.from('bookings').select('id, profiles(full_name), properties(title)').eq('check_in', today).eq('status', 'confirmed');
-    const { data: outs } = await supabase.from('bookings').select('id, profiles(full_name), properties(title)').eq('check_out', today).eq('status', 'confirmed');
+    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    // 1. System Health Status
+    const { data: health } = await supabase.from('system_health').select('*');
+    const healthyServices = health?.filter(s => s.status === 'healthy').length || 0;
+    const totalServices = health?.length || 0;
+    const healthEmoji = healthyServices === totalServices ? "✅" : "⚠️";
 
-    if ((ins?.length || 0) + (outs?.length || 0) > 0) {
-        await NotificationService.sendTelegramAlert(`📊 <b>Reporte Diario</b>\n🔑 Check-ins: ${ins?.length || 0}\n🧹 Check-outs: ${outs?.length || 0}`);
-    }
-    return { status: 'ok' };
+    // 2. Agenda del Día
+    const { data: ins } = await supabase.from('bookings').select('profiles(full_name), properties(title)').eq('check_in', today).eq('status', 'confirmed');
+    const { data: outs } = await supabase.from('bookings').select('profiles(full_name), properties(title)').eq('check_out', today).eq('status', 'confirmed');
+    const { data: active } = await supabase.from('bookings').select('id').eq('status', 'confirmed').lte('check_in', today).gte('check_out', today);
+
+    // 3. iCal Sync Details
+    const syncStatus = health?.filter(s => s.metadata?.type !== 'database').map(s => {
+        const platform = s.metadata?.platform || 'Sync';
+        return `${s.status === 'healthy' ? '🟢' : '🔴'} ${platform}`;
+    }).join(' ') || '• Sin feeds activos.';
+
+    // 4. Guest Journey (Borradores mañaneros)
+    // Buscamos si hay check-ins para hoy o mañana que necesiten onboarding
+    const { data: upcoming } = await supabase.from('bookings')
+        .select('profiles(full_name)')
+        .in('check_in', [today, tomorrow])
+        .eq('status', 'confirmed')
+        .not('profiles', 'is', null)
+        .not('source', 'ilike', '%airbnb%');
+    
+    const journeyAlert = upcoming && upcoming.length > 0 
+        ? `🛎 <b>Journey:</b> Borrador de bienvenida listo para ${upcoming.map(u => (u.profiles as any)?.full_name).join(', ')}.`
+        : `🛎 <b>Journey:</b> Sin check-ins directos hoy.`;
+
+    // 5. Salty & Interactions
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { count: interactions } = await supabase.from('chat_logs').select('*', { count: 'exact', head: true }).gt('last_interaction', twentyFourHoursAgo);
+
+    // 6. Clima / Entorno
+    let weatherAlert = "☀️ Cielo despejado.";
+    try {
+        const weatherResp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.0829&longitude=-67.1458&current_weather=true&timezone=auto`);
+        const weatherData = await weatherResp.json();
+        if (weatherData.current_weather.weathercode >= 61) weatherAlert = "🌧️ Posibilidad de lluvia en Cabo Rojo.";
+    } catch { }
+
+    const report = `
+📊 <b>FUTURA OS: Reporte Operativo Diario</b>
+───────────────────────
+📅 <b>Fecha:</b> ${today}
+───────────────────────
+
+🛠 <b>SYSTEM HEALTH</b> ${healthEmoji}
+• Servicios Activos: ${healthyServices}/${totalServices}
+• Cron Activity: 🟢 Activo (Master Cron)
+• iCal Sync: ${syncStatus}
+
+📅 <b>AGENDA DEL DÍA</b>
+• 🔑 Check-ins: ${ins?.length || 0}
+• 🧹 Check-outs: ${outs?.length || 0}
+• 🏠 En Casa: ${active?.length || 0} Huéspedes
+
+🧠 <b>SALTY CONCIERGE</b>
+• Interacciones (24h): ${interactions || 0}
+• ${journeyAlert}
+
+🌦 <b>ENTORNO & CLIMA</b>
+• ${weatherAlert}
+
+───────────────────────
+<i>"Villa operando bajo estándares de lujo. Buen día, Host."</i>
+    `.trim();
+
+    await NotificationService.sendTelegramAlert(report, {
+        inline_keyboard: [[{ text: "🛰 Ver Dashboard", url: `${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host/dashboard` }]]
+    });
+
+    return { status: 'ok', report_sent: true };
 }
 
 async function taskGuestJourney(supabase: any) {

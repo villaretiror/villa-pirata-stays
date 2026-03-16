@@ -15,7 +15,9 @@ const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPA
 export default async function handler(req: any, res: any) {
     // 🛡️ Security Check: Bearer Token
     const authHeader = req.headers['authorization'];
-    const secret = getEnv('CRON_SECRET') || "villaretiror_master_key_2026";
+    const secret = getEnv('CRON_SECRET');
+    if (!secret) return res.status(500).json({ error: 'CRON_SECRET_NOT_CONFIGURED' });
+
     if (!authHeader || authHeader !== `Bearer ${secret}`) {
         return res.status(401).json({ error: 'Unauthorized' });
     }

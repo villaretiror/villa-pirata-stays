@@ -19,9 +19,14 @@ import { NotificationService } from '../services/NotificationService.js';
  */
 
 export default async function handler(req: any, res: any) {
-    const CRON_SECRET = process.env.CRON_SECRET || 'villaretiror_master_key_2026';
+    const CRON_SECRET = process.env.CRON_SECRET;
     const authHeader  = req.headers?.authorization || req.headers?.Authorization || '';
     const querySecret = req.query?.secret || '';
+
+    if (!CRON_SECRET) {
+        console.error('[sync-ical] CRON_SECRET environment variable is not defined.');
+        return res.status(500).json({ error: 'MISSING_CRON_SECRET_CONFIG' });
+    }
 
     if (authHeader !== `Bearer ${CRON_SECRET}` && querySecret !== CRON_SECRET) {
         return res.status(401).json({ error: 'Unauthorized' });
