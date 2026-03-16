@@ -96,7 +96,7 @@ const Messages: React.FC = () => {
         { event: 'UPDATE', schema: 'public', table: 'chat_logs', filter: `session_id=eq.${sessionId}` },
         (payload: any) => {
           if (payload.new.is_host_typing !== undefined) {
-             setHostIsTyping(payload.new.is_host_typing);
+            setHostIsTyping(payload.new.is_host_typing);
           }
         }
       )
@@ -302,7 +302,8 @@ const Messages: React.FC = () => {
         doc.text(`Total Pagado: $${total} USD (PayPal)`, 20, 70);
         doc.text(`Términos y Condiciones:`, 20, 90);
         doc.setFontSize(10);
-        const splitRules = doc.splitTextToSize(VILLA_KNOWLEDGE.policies.rules + ' ' + VILLA_KNOWLEDGE.policies.cancellation, 170);
+        // Línea 305 corregida:
+        const splitRules = doc.splitTextToSize(villaKnowledge.policies.rules + ' ' + villaKnowledge.policies.cancellation, 170);
         doc.text(splitRules, 20, 100);
         doc.text(`Firma Digital (Términos Aceptados en Checkout)`, 20, 200);
 
