@@ -30,14 +30,18 @@ export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
     try {
-        const { messages: rawMessages, sessionId, userId, propertyId, currentUrl } = req.body;
+        const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = req.body;
 
         const { data: dbProperties } = await supabase.from('properties').select('*');
         const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
         const { data: saltySetting } = await supabase.from('system_settings').select('value').eq('key', 'salty_config').single();
+        const { data: familyKnowledge } = await supabase.from('salty_family_knowledge').select('key, value');
         
         const villaKnowledge = knowledgeSetting?.value || {};
         const saltyConfig: any = saltySetting?.value || {};
+        const memoryContext = familyKnowledge && familyKnowledge.length > 0
+            ? `\n\n### MEMORIAS PRIVADAS (FAMILIA):\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
+            : "";
 
         const propertyTitles: Record<string, string> = {};
         dbProperties?.forEach((p: any) => { propertyTitles[p.id] = p.title; });
@@ -65,13 +69,23 @@ Ya no eres solo un asistente. Eres un **Concierge de Élite y Estratega de Negoc
 ${saltyConfig.personality || 'Caribbean Luxury Strategist.'}
 - URL Actual: ${currentUrl}
 - Propiedad en Vista: ${activePropertyName}
+- Estado del Huésped: ${inStay ? 'ESTÁ EN LA PROPIEDAD (Soporte Operativo prioritario)' : 'Navegando / Buscando reserva'}
+
+### MODALIDAD DE SERVICIO
+${inStay 
+    ? 'EL HUÉSPED ESTÁ DENTRO DE UNA PROPIEDAD AHORA. Tu misión es ser un anfitrión impecable. Prioriza dudas sobre cómo usar las cosas (A/C, Piscina, Sistema Solar), reglas de la casa, WiFi y qué hacer cerca HOY. Evita el "pitch" de venta y enfócate en el confort.' 
+    : 'El cliente está en fase de exploración. Tu misión es ser un estratega de ventas inspirado. Vende la experiencia de Cabo Rojo y nuestras villas.'}
 
 ### PRIORIDAD DE CONOCIMIENTO
 1. REGLAS/GESTIÓN: ${JSON.stringify(villaKnowledge)}
 2. INVENTARIO: ${JSON.stringify(dbProperties)}
+${memoryContext}
 
 ### REGLAS DE ETIQUETA
 ${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophisticated Caribbean.'}
+
+### GAP OPTIMIZATION (PROACTIVE)
+Si detectas que el usuario pregunta por disponibilidad de forma vaga o si ves que hay un hueco de 1-3 noches en el calendario, usa la herramienta "analyze_marketing_opportunity" proactivamente para ofrecer un descuento especial.
 `.trim();
 
         if (sessionId) {
@@ -86,6 +100,17 @@ ${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophist
                 else if (msgLower.includes('como llegar') || msgLower.includes('ubicacion') || msgLower.includes('parking') || msgLower.includes('check') || msgLower.includes('donde')) intentCategory = 'Logística';
                 else if (msgLower.includes('hacer') || msgLower.includes('comer') || msgLower.includes('visitar') || msgLower.includes('restaurante')) intentCategory = 'Actividades';
                 else if (msgLower.includes('wifi') || msgLower.includes('piscina') || msgLower.includes('amenidad') || msgLower.includes('aire')) intentCategory = 'Amenidades';
+                
+                // 🕵️ SENTIMENT TRIGGER: Cancellation or Frustration
+                if (msgLower.includes('cancela') || msgLower.includes('reembolso') || msgLower.includes('devolucion') || msgLower.includes('molesto') || msgLower.includes('queja') || msgLower.includes('estafa')) {
+                    intentCategory = 'ALERTA_CRÍTICA';
+                    try {
+                        const { NotificationService } = await import('../services/NotificationService.js');
+                        await NotificationService.sendTelegramAlert(
+                            `⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${userId || 'Invitado'}\n🏠 ${activePropertyName}\n🗨️ <i>"${lastMsg}"</i>\n\n📌 <i>Salty está manejando la situación, pero el Host debe estar atento.</i>`
+                        );
+                    } catch (e) {}
+                }
             }
 
             supabase.from('chat_logs').upsert({

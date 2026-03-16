@@ -96,6 +96,27 @@ const StayDashboard: React.FC = () => {
                     </div>
                 </section>
 
+                {/* Salty Stay Context - ACCIÓN PRIORITARIA */}
+                <section className="bg-gradient-to-br from-primary/10 to-secondary/10 p-6 rounded-[2rem] border border-primary/20 shadow-sm relative overflow-hidden group">
+                    <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/40 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-1000"></div>
+                    <div className="relative z-10 flex items-center justify-between gap-4">
+                        <div className="flex-1">
+                            <h2 className="font-serif font-bold text-lg text-text-main mb-1 flex items-center gap-2">
+                                <span className="material-icons text-primary">auto_awesome</span> Asistente Salty (VIP)
+                            </h2>
+                            <p className="text-[10px] text-text-light leading-relaxed">
+                                Pregunta sobre el uso del A/C, la piscina o reglas de la casa. Salty te dará prioridad.
+                            </p>
+                        </div>
+                        <button 
+                            onClick={() => navigate('/messages', { state: { in_stay: true, property_id: booking.property_id, villa: booking.property?.title } })}
+                            className="bg-primary text-white px-5 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20 active:scale-95 transition-all whitespace-nowrap"
+                        >
+                            💬 Preguntar a Salty sobre la Villa
+                        </button>
+                    </div>
+                </section>
+
                 {/* Services & Wi-Fi */}
                 <section className="bg-white p-6 rounded-[2rem] shadow-card border border-gray-100">
                     <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
@@ -113,43 +134,78 @@ const StayDashboard: React.FC = () => {
                     </div>
                 </section>
 
-                {/* GPS Map */}
+                {/* GPS Map Dinámico */}
                 <section className="bg-white p-6 rounded-[2rem] shadow-card border border-gray-100">
                     <h2 className="font-bold text-lg mb-4 flex items-center gap-2">
                         <span className="material-icons text-green-500">pin_drop</span> Ubicación Exacta
                     </h2>
-                    <p className="text-xs text-text-light mb-4">Ubicada en Cabo Rojo, muy cerca de puntos VIP: Playa Buyé, Poblado de Boquerón y Faro Los Morrillos.</p>
-                    <div className="w-full h-48 bg-gray-200 rounded-xl overflow-hidden relative border border-gray-100">
-                        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-                            <iframe
-                                title="Google Maps"
-                                width="100%"
-                                height="100%"
-                                frameBorder="0"
-                                scrolling="no"
-                                marginHeight={0}
-                                marginWidth={0}
-                                src={`https://maps.google.com/maps?width=100%25&height=600&hl=en&q=Poblado%20de%20Boqueron,%20Cabo%20Rojo,%20Puerto%20Rico&t=&z=14&ie=UTF8&iwloc=B&output=embed`}>
-                            </iframe>
-                        </div>
-                    </div>
+                    <p className="text-xs text-text-light mb-4">Ubicada en {booking.property?.location || 'Cabo Rojo'}, muy cerca de los mejores puntos VIP del suroeste.</p>
+                    {(() => {
+                        const coords = isPirata ? '18.0267,-67.1706' : '18.07065,-67.16544';
+                        const address = booking.property?.address || (isPirata ? 'Boquerón, Cabo Rojo, PR' : 'Carr 307 Km 6.2, Cabo Rojo, PR');
+                        
+                        return (
+                            <div className="w-full h-48 bg-gray-200 rounded-xl overflow-hidden relative border border-gray-100 shadow-inner group">
+                                <iframe
+                                    title="Google Maps"
+                                    width="100%"
+                                    height="100%"
+                                    style={{ border: 0 }}
+                                    loading="lazy"
+                                    src={`https://www.google.com/maps?q=${coords}&z=15&output=embed`}
+                                >
+                                </iframe>
+                                <div className="absolute bottom-3 right-3">
+                                    <a 
+                                        href={`https://www.google.com/maps/search/?api=1&query=${coords}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="bg-white/90 backdrop-blur-md text-[9px] font-black uppercase tracking-widest px-3 py-2 rounded-lg shadow-lg flex items-center gap-1 hover:bg-primary hover:text-white transition-all shadow-primary/10"
+                                    >
+                                        <span className="material-icons text-[12px]">navigation</span> Iniciar GPS
+                                    </a>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </section>
 
-                {/* Contrato de Alquiler */}
+                {/* Contrato & Check-out */}
                 <section className="bg-white p-6 rounded-[2rem] shadow-card border border-gray-100">
                     <h2 className="font-bold text-lg mb-2 flex items-center gap-2">
-                        <span className="material-icons text-gray-500">description</span> Documentos
+                        <span className="material-icons text-gray-500">description</span> Gestión de Estancia
                     </h2>
-                    <p className="text-xs text-text-light mb-4 text-justify">Su Contrato Digital de Alquiler firmado al momento del pago está guardado de forma segura.</p>
+                    <p className="text-xs text-text-light mb-4 text-justify">Sus documentos y gestiones de salida están centralizados aquí.</p>
                     <div className="space-y-3">
-                        <button className="w-full flex items-center justify-center gap-2 p-3 bg-gray-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md active:scale-95 transition-transform">
-                            <span className="material-icons">download</span> Cargar PDF Firmado
+                        {/* Check-out Express (Priority Visibility) */}
+                        {new Date().toISOString().split('T')[0] === booking.check_out && (
+                            <button 
+                                onClick={async () => {
+                                    if (confirm("¿Está listo para dejar la propiedad? Esto notificará a nuestro equipo de limpieza.")) {
+                                        const { NotificationService } = await import('../services/NotificationService');
+                                        await NotificationService.sendTelegramAlert(
+                                            `🔔 <b>Check-out Express Realizado</b>\n\n` +
+                                            `🏠 <b>Villa:</b> ${booking.property?.title}\n` +
+                                            `👤 <b>Huésped:</b> ${booking.customer_name || 'Huésped del Portal'}\n\n` +
+                                            `🧼 <i>La propiedad está lista para limpieza. El huésped acaba de salir.</i>`
+                                        );
+                                        alert("¡Buen viaje! Hemos notificado a nuestro equipo de su salida.");
+                                    }
+                                }}
+                                className="w-full flex items-center justify-center gap-2 p-4 bg-secondary text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-secondary/20 active:scale-95 transition-transform"
+                            >
+                                <span className="material-icons">logout</span> Check-out Express
+                            </button>
+                        )}
+
+                        <button className="w-full flex items-center justify-center gap-2 p-3 bg-gray-900/5 text-gray-900 border border-gray-200 rounded-xl text-[10px] font-bold uppercase tracking-widest active:scale-95 transition-transform">
+                            <span className="material-icons text-sm">download</span> Cargar Contrato Firmado
                         </button>
                         
                         {booking.status !== 'cancelled' && (
                             <button 
                                 onClick={() => setShowCancelModal(true)}
-                                className="w-full p-3 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors"
+                                className="w-full p-2 text-red-300 text-[10px] font-bold uppercase tracking-widest hover:text-red-500 transition-colors"
                             >
                                 Cancelar mi Estancia
                             </button>

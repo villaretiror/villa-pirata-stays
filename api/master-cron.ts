@@ -149,11 +149,21 @@ async function taskMorningReport(supabase: SupabaseClient, req: any) {
         ? `🛎 <b>Journey:</b> Borrador de bienvenida listo para ${upcoming.map(u => (u.profiles as any)?.full_name).join(', ')}.`
         : `🛎 <b>Journey:</b> Sin check-ins directos hoy.`;
 
-    // 5. Salty & Interactions
+    // 5. Salty & Email Interactions
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { count: interactions } = await supabase.from('chat_logs').select('*', { count: 'exact', head: true }).gt('last_interaction', twentyFourHoursAgo);
+    
+    // 6. Email Tracking (Consolidado)
+    const { data: opens } = await supabase.from('email_logs')
+        .select('guest_name')
+        .eq('status', 'opened')
+        .gt('opened_at', twentyFourHoursAgo);
+    
+    const emailSummary = opens && opens.length > 0
+        ? `• 📩 Lectura: ${opens.length} aperturas detectadas.`
+        : `• 📩 Lectura: Sin aperturas recientes.`;
 
-    // 6. Clima / Entorno
+    // 7. Clima / Entorno
     let weatherAlert = "☀️ Cielo despejado.";
     try {
         const weatherResp = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=18.0829&longitude=-67.1458&current_weather=true&timezone=auto`);
@@ -179,6 +189,7 @@ async function taskMorningReport(supabase: SupabaseClient, req: any) {
 
 🧠 <b>SALTY CONCIERGE</b>
 • Interacciones (24h): ${interactions || 0}
+${emailSummary}
 • ${journeyAlert}
 
 🌦 <b>ENTORNO & CLIMA</b>

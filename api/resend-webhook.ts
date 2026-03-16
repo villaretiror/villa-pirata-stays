@@ -30,17 +30,6 @@ export default async function handler(req: any, res: any) {
                 .single();
 
             if (logEntry) {
-                // 2. Notificar al Bot de Telegram
-                const guest = logEntry.guest_name || 'Un huésped';
-                const subject = logEntry.subject || 'el correo';
-                
-                await NotificationService.sendTelegramAlert(
-                    `✅ <b>Lectura Confirmada</b>\n\n` +
-                    `👤 <b>${guest}</b> acaba de abrir el correo:\n` +
-                    `📩 <i>"${subject}"</i>\n\n` +
-                    `📌 <i>Interés detectado en las instrucciones.</i>`
-                );
-
                 // 3. Actualizar log
                 await supabase
                     .from('email_logs')

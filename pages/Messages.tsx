@@ -18,7 +18,7 @@ const SESSION_KEY = 'villa_retiro_ai_session_id';
 const Messages: React.FC = () => {
   const navigate = useNavigate();
   const { properties, villaKnowledge } = useProperty();
-  const locationState = useLocation().state as { initialPlace?: string } | null;
+  const locationState = useLocation().state as { initialPlace?: string, in_stay?: boolean, property_id?: string, villa?: string } | null;
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputText, setInputText] = useState("");
@@ -73,7 +73,9 @@ const Messages: React.FC = () => {
 
     const initialMessages: Message[] = [{
       id: crypto.randomUUID(),
-      text: '¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en Villa Retiro sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?',
+      text: locationState?.in_stay 
+        ? `¡Hola! Veo que estás disfrutando de tu estancia en ${locationState.villa || 'nuestra villa'}. Soy Salty, tu concierge VIP. Pregúntame lo que necesites sobre la casa, reglas o lugares cerca para hoy.`
+        : '¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en Villa Retiro sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?',
       sender: 'ai',
       created_at: new Date().toISOString()
     }];
@@ -203,8 +205,9 @@ const Messages: React.FC = () => {
             messages: apiMessages,
             sessionId: getSessionId(),
             userId,
-            propertyId: propertyIdFromUrl || (locationState?.initialPlace ? '1081171030449673920' : null),
-            currentUrl: window.location.href
+            propertyId: propertyIdFromUrl || locationState?.property_id || (locationState?.initialPlace ? '1081171030449673920' : null),
+            currentUrl: window.location.href,
+            inStay: locationState?.in_stay || false
           }),
           signal: controller.signal
         });

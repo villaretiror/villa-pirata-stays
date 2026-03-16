@@ -363,8 +363,22 @@ const Home: React.FC = () => {
           </span>
         </div>
 
-        {/* Listings Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Listings Grid - Luxury Stagger Entry */}
+        <motion.div 
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: { opacity: 0 },
+            show: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.15,
+                delayChildren: 0.1
+              }
+            }
+          }}
+        >
           {isLoading ? (
             Array(4).fill(0).map((_, i) => <PropertyCardSkeleton key={i} />)
           ) : filteredProperties.length > 0 ? (
@@ -373,13 +387,22 @@ const Home: React.FC = () => {
                 <motion.div
                   key={property.id}
                   layout
-                  initial={{ opacity: 0, y: 30, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
-                  transition={{ 
-                    duration: 0.7, 
-                    delay: index * 0.08,
-                    ease: [0.16, 1, 0.3, 1]
+                  variants={{
+                    hidden: { opacity: 0, y: 40, scale: 0.96 },
+                    show: { 
+                      opacity: 1, 
+                      y: 0, 
+                      scale: 1,
+                      transition: {
+                        duration: 0.8,
+                        ease: [0.16, 1, 0.3, 1]
+                      }
+                    },
+                    exit: { 
+                      opacity: 0, 
+                      scale: 0.9, 
+                      transition: { duration: 0.4 } 
+                    }
                   }}
                 >
                   <PropertyCard
@@ -393,7 +416,7 @@ const Home: React.FC = () => {
               ))}
             </AnimatePresence>
           ) : (
-            <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200">
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200">
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
                 <span className="material-icons text-4xl text-gray-300">search_off</span>
               </div>
@@ -409,7 +432,7 @@ const Home: React.FC = () => {
               </button>
             </div>
           )}
-        </div>
+        </motion.div>
 
         {/* Contact / Leads Form Section */}
         <div className="mt-20 mb-10 bg-white rounded-[3rem] p-8 lg:p-12 shadow-float border border-gray-100/50 relative overflow-hidden">

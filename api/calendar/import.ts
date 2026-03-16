@@ -36,7 +36,7 @@ export default async function handler(req: any, res: any) {
     let totalImported = 0;
     const results: Record<string, any> = {};
 
-    // 🤖 FEEDBACK LOOP: Notificar sobre "Human Takeovers" expirados
+    // 🤖 FEEDBACK LOOP: Notificar sobre "Human Takeovers" expirados (CONSOLIDADO)
     try {
         const { data: expiredLogs } = await supabase.from('chat_logs')
             .select('session_id')
@@ -44,31 +44,35 @@ export default async function handler(req: any, res: any) {
             .eq('takeover_notified', false);
 
         if (expiredLogs && expiredLogs.length > 0) {
-            for (const log of expiredLogs) {
-                await NotificationService.sendTelegramAlert(
-                    `🤖 <b>Salty:</b> Retomando guardia activa. (Sesión: <code>${log.session_id}</code>)\n¿Hubo algo importante en esta charla que deba aprender para futuras consultas?`
-                );
-                await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', log.session_id);
-            }
+            const sessions = expiredLogs.map(l => `<code>${l.session_id}</code>`).join(', ');
+            await NotificationService.sendTelegramAlert(
+                `🤖 <b>Salty: Guardia Activa Recuperada</b>\n\n` +
+                `He retomado el control de ${expiredLogs.length} sesiones expiradas:\n${sessions}\n\n` +
+                `¿Deseas revisar si hubo aprendizajes en estas charlas?`
+            );
+            
+            const sessionIds = expiredLogs.map(l => l.session_id);
+            await supabase.from('chat_logs').update({ takeover_notified: true }).in('session_id', sessionIds);
         }
     } catch (err) {
-        console.error("Error comprobando takeover logs en import crons", err);
+        console.error("Error comprobando takeover logs", err);
     }
+
+    const syncAlerts: string[] = [];
 
     for (const [propertyId, url] of Object.entries(ICAL_URLS)) {
         results[propertyId] = { status: 'skipped', newBlocks: 0 };
 
         try {
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 5000);
+            const timeout = setTimeout(() => controller.abort(), 8000);
 
             const tsUrl = url + (url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
             const response = await fetch(tsUrl, {
                 signal: controller.signal,
                 headers: {
                     'User-Agent': 'VillaRetiro-Calendar-Sync/1.0',
-                    'Cache-Control': 'no-cache, no-store, must-revalidate',
-                    'Pragma': 'no-cache'
+                    'Cache-Control': 'no-cache, no-store, must-revalidate'
                 }
             });
             clearTimeout(timeout);
@@ -79,50 +83,26 @@ export default async function handler(req: any, res: any) {
             }
 
             const icsText = await response.text();
-
-            // Parser iCal nativo sin dependencias de node-ical (evita errores en runtime Vercel Edge)
             const lines = icsText.split(/\r?\n/);
-            let inEvent = false;
-            let dtStart = '';
-            let dtEnd = '';
-            let newBlocks = 0;
+            let inEvent = false, dtStart = '', dtEnd = '', newBlocks = 0;
 
             for (const rawLine of lines) {
                 const line = rawLine.trim();
-
                 if (line === 'BEGIN:VEVENT') { inEvent = true; dtStart = ''; dtEnd = ''; continue; }
-
                 if (line === 'END:VEVENT' && inEvent) {
                     inEvent = false;
                     if (dtStart.length >= 8 && dtEnd.length >= 8) {
-                        const checkIn = parseIcsDate(dtStart);
-                        const checkOut = parseIcsDate(dtEnd);
-
+                        const checkIn = parseIcsDate(dtStart), checkOut = parseIcsDate(dtEnd);
                         try {
-                            const { data: existing } = await supabase
-                                .from('bookings')
-                                .select('id')
-                                .eq('property_id', propertyId)
-                                .eq('check_in', checkIn)
-                                .eq('status', 'external_block')
-                                .limit(1);
-
+                            const { data: existing } = await supabase.from('bookings').select('id').eq('property_id', propertyId).eq('check_in', checkIn).eq('status', 'external_block').limit(1);
                             if (!existing || existing.length === 0) {
-                                const { error: insErr } = await supabase.from('bookings').insert({
-                                    property_id: propertyId,
-                                    status: 'external_block',
-                                    check_in: checkIn,
-                                    check_out: checkOut,
-                                    guests: 1,
-                                    total_price: 0
-                                });
+                                const { error: insErr } = await supabase.from('bookings').insert({ property_id: propertyId, status: 'external_block', check_in: checkIn, check_out: checkOut, guests: 1, total_price: 0 });
                                 if (!insErr) { newBlocks++; totalImported++; }
                             }
-                        } catch (_) { /* fallo silencioso individual */ }
+                        } catch (_) {}
                     }
                     continue;
                 }
-
                 if (inEvent) {
                     if (line.startsWith('DTSTART')) dtStart = (line.split(':').pop() || '').trim();
                     if (line.startsWith('DTEND')) dtEnd = (line.split(':').pop() || '').trim();
@@ -130,28 +110,23 @@ export default async function handler(req: any, res: any) {
             }
 
             results[propertyId] = { status: 'synced', newBlocks };
-
             if (newBlocks > 0) {
-                const message = `
-🔄 <b>Sincronización Automática (iCal)</b>
-━━━━━━━━━━━━━━━━━━━━
-<b>Propiedad:</b> ${getPropertyName(propertyId)}
-<b>Fechas Bloqueadas:</b> +${newBlocks} noches
-⚠️ <i>El calendario se ha cerrado para las nuevas fechas descubiertas. Revisa el Dashboard.</i>`;
-                await NotificationService.sendTelegramAlert(message);
+                syncAlerts.push(`🏠 <b>${getPropertyName(propertyId)}</b>: +${newBlocks} noches bloqueadas.`);
             }
 
         } catch (err: any) {
             const isTimeout = err.name === 'AbortError';
-            console.warn(`iCal sync ${isTimeout ? 'TIMEOUT' : 'ERROR'} para propiedad ${propertyId}: ${err.message}`);
-            results[propertyId] = { status: isTimeout ? 'timeout_using_cache' : 'error', newBlocks: 0 };
-            // No lanzar — seguir con siguiente propiedad usando cache de Supabase
+            results[propertyId] = { status: isTimeout ? 'timeout' : 'error', message: err.message };
         }
     }
 
-    return res.status(200).json({
-        success: true,
-        totalNewBlocksAdded: totalImported,
-        details: results
-    });
+    if (syncAlerts.length > 0) {
+        await NotificationService.sendTelegramAlert(
+            `🔄 <b>Sync iCal (Legacy): Bloqueos Nuevos</b>\n\n` +
+            syncAlerts.join('\n') +
+            `\n\n⚡ <i>Calendario actualizado.</i>`
+        );
+    }
+
+    return res.status(200).json({ success: true, totalNewBlocksAdded: totalImported, details: results });
 }

@@ -58,6 +58,8 @@ export default async function handler(req: any, res: any) {
     let totalSynced = 0;
     let totalCancelled = 0;
 
+    const propertyChanges = new Map<string, { news: string[], cancels: number }>();
+
     for (const prop of properties) {
         try {
             const propertyId = prop.id;
@@ -70,7 +72,6 @@ export default async function handler(req: any, res: any) {
             }
 
             // ── Pre-fetch: all iCal-sourced bookings currently in DB (non-cancelled) ─
-            // These are what we'll reconcile against the live iCal snapshot.
             const platformFilter = syncFeeds
                 .map(f => `source.eq.${f.platform || 'iCal External'}`)
                 .join(',');
@@ -83,26 +84,22 @@ export default async function handler(req: any, res: any) {
                 .or(platformFilter);
 
             type DbBookingRef = { id: string; check_in: string; check_out: string; source: string | null };
-            // Map: "check_in_check_out_source" → booking DB id (used for cancellation matching)
             const dbICalMap = new Map<string, string>(
                 (dbICalBookings as DbBookingRef[] || []).map(b =>
                     [`${b.check_in}_${b.check_out}_${b.source ?? 'iCal External'}`, b.id]
                 )
             );
 
-            // Track all existing bookings (any source) for new-booking detection
             const { data: existingBookings } = await supabase
                 .from('bookings')
                 .select('property_id, check_in, check_out, notified_external_at')
                 .eq('property_id', propertyId)
                 .neq('status', 'cancelled');
 
-            // Robust Key: Normalize dates (DB might return T00:00:00.000Z)
             const existingSet = new Set(
                 (existingBookings || []).map(b => `${b.property_id}_${String(b.check_in).split('T')[0]}_${String(b.check_out).split('T')[0]}`)
             );
 
-            // Notification Memory: Map check-in+check-out to notified status
             const notifiedMap = new Map<string, boolean>(
                 (existingBookings || []).map(b => [
                     `${b.property_id}_${String(b.check_in).split('T')[0]}_${String(b.check_out).split('T')[0]}`,
@@ -111,9 +108,7 @@ export default async function handler(req: any, res: any) {
             );
 
             const allBookingsToUpsert: any[] = [];
-            // Tracks which iCal keys exist in the current live snapshot
             const activeICalKeys = new Set<string>();
-
             const processedFeeds: any[] = [];
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
@@ -137,16 +132,14 @@ export default async function handler(req: any, res: any) {
                         if (!ev?.start || !ev?.end) continue;
 
                         const endDate = new Date(ev.end);
-                        if (endDate < oneMonthAgo) continue; // Skip historical events
+                        if (endDate < oneMonthAgo) continue;
 
                         const bIn  = new Date(ev.start).toISOString().split('T')[0];
                         const bOut = new Date(ev.end).toISOString().split('T')[0];
-                        const icalKey   = `${bIn}_${bOut}_${platform}`;  // reconciliation key
-                        const globalKey = `${propertyId}_${bIn}_${bOut}`; // new-booking detection key
+                        const icalKey   = `${bIn}_${bOut}_${platform}`;
+                        const globalKey = `${propertyId}_${bIn}_${bOut}`;
 
-                        // Register as ACTIVE in current iCal snapshot
                         activeICalKeys.add(icalKey);
-
                         const isAlreadyNotified = notifiedMap.get(globalKey) || existingSet.has(globalKey);
 
                         allBookingsToUpsert.push({
@@ -157,21 +150,14 @@ export default async function handler(req: any, res: any) {
                             source: platform,
                             customer_name: ev.summary || 'Reserva Externa',
                             total_price: 0,
-                            // If we notify now, mark it for the upsert
                             notified_external_at: !isAlreadyNotified ? new Date().toISOString() : undefined
                         });
 
-                        // 🔔 STRATEGIC SILENCE: Notify ONLY if it's truly new and NOT notified before
                         if (!isAlreadyNotified) {
-                            await NotificationService.sendTelegramAlert(
-                                `🔔 <b>Nueva Reserva (iCal Sync)</b>\n\n` +
-                                `🏠 <b>Villa:</b> ${propertyTitle}\n` +
-                                `📅 <b>Fechas:</b> ${bIn} al ${bOut}\n` +
-                                `📱 <b>Plataforma:</b> ${platform}\n` +
-                                `👤 <b>Huésped:</b> ${ev.summary || 'Reserva Externa'}\n\n` +
-                                `⚡ <i>Calendario bloqueado automáticamente.</i>`
-                            ).catch(e => console.error('Error notification sync:', e));
-                            // Add to local set to avoid duplicates from multiple feeds in the same run
+                            if (!propertyChanges.has(propertyTitle)) {
+                                propertyChanges.set(propertyTitle, { news: [], cancels: 0 });
+                            }
+                            propertyChanges.get(propertyTitle)!.news.push(`📅 ${bIn} al ${bOut} (${platform})`);
                             existingSet.add(globalKey);
                             notifiedMap.set(globalKey, true);
                         }
@@ -185,14 +171,11 @@ export default async function handler(req: any, res: any) {
                     });
 
                 } catch (feedErr: any) {
-                    // 🛡️ SAFETY: Feed fetch failed → do NOT reconcile this source.
-                    // A network timeout is not the same as a cancellation.
-                    console.error(`[sync-ical] Feed error for ${feed.platform}: ${feedErr.message}`);
                     processedFeeds.push({ ...feed, syncStatus: 'error', db_error: feedErr.message });
                 }
             }
 
-            // ── Step 2: UPSERT active events into bookings table ─────────────────────
+            // ── Step 2: UPSERT active events ─────────────────────────────────────────
             if (allBookingsToUpsert.length > 0) {
                 const { error: upsertError } = await supabase
                     .from('bookings')
@@ -201,39 +184,18 @@ export default async function handler(req: any, res: any) {
                         ignoreDuplicates: false
                     });
 
-                if (!upsertError) {
-                    totalSynced += allBookingsToUpsert.length;
-                } else {
-                    console.error(`[sync-ical] Upsert error for ${propertyTitle}:`, upsertError.message);
-                }
+                if (!upsertError) totalSynced += allBookingsToUpsert.length;
             }
 
-            // ── Step 3: RECONCILE — detect ghost bookings (external cancellations) ───
-            //
-            // Algorithm: For every DB booking that came from a successfully-fetched feed,
-            // check if its key (check_in + check_out + source) still appears in the live
-            // iCal snapshot. If NOT → the reservation was cancelled on Airbnb/Booking.com.
-            const failedPlatforms = new Set(
-                processedFeeds
-                    .filter(f => f.syncStatus === 'error')
-                    .map(f => f.platform || 'iCal External')
-            );
-
+            // ── Step 3: RECONCILE (Cancellations) ────────────────────────────────────
+            const failedPlatforms = new Set(processedFeeds.filter(f => f.syncStatus === 'error').map(f => f.platform || 'iCal External'));
             const ghostBookingIds: string[] = [];
 
             for (const [icalKey, bookingId] of dbICalMap.entries()) {
                 const parts = icalKey.split('_');
-                // icalKey format: "YYYY-MM-DD_YYYY-MM-DD_SourcePlatform"
-                // source is the 3rd segment (may contain underscores, use last parts)
                 const source = parts.slice(2).join('_');
-
-                // Skip reconciliation for feeds that errored — don't false-cancel
                 if (failedPlatforms.has(source)) continue;
-
-                // If this booking's key is no longer in the live iCal → mark as ghost
-                if (!activeICalKeys.has(icalKey)) {
-                    ghostBookingIds.push(bookingId);
-                }
+                if (!activeICalKeys.has(icalKey)) ghostBookingIds.push(bookingId);
             }
 
             if (ghostBookingIds.length > 0) {
@@ -244,41 +206,49 @@ export default async function handler(req: any, res: any) {
 
                 if (!cancelError) {
                     totalCancelled += ghostBookingIds.length;
-                    console.log(`[sync-ical] ✅ Marked ${ghostBookingIds.length} ghost booking(s) as cancelled for ${propertyTitle}`);
-
-                    // Notify host about detected external cancellations
-                    await NotificationService.sendTelegramAlert(
-                        `🚫 <b>Cancelación Detectada (iCal Sync)</b>\n\n` +
-                        `🏠 <b>Villa:</b> ${propertyTitle}\n` +
-                        `🔢 <b>Reservas canceladas:</b> ${ghostBookingIds.length}\n\n` +
-                        `<i>Estas fechas ya no aparecen en el feed externo (Airbnb/Booking.com).\n` +
-                        `El calendario ha sido liberado automáticamente.</i>`
-                    ).catch(e => console.error('Error cancellation notification:', e));
-                } else {
-                    console.error(`[sync-ical] Cancel error for ${propertyTitle}:`, cancelError.message);
+                    if (!propertyChanges.has(propertyTitle)) {
+                        propertyChanges.set(propertyTitle, { news: [], cancels: 0 });
+                    }
+                    propertyChanges.get(propertyTitle)!.cancels += ghostBookingIds.length;
                 }
             }
 
-            // ── Update feed metadata on property ────────────────────────────────────
-            await supabase.from('properties')
-                .update({ calendarSync: processedFeeds })
-                .eq('id', propertyId);
+            await supabase.from('properties').update({ calendarSync: processedFeeds }).eq('id', propertyId);
 
             results.push({
                 property: propertyTitle,
                 feeds: processedFeeds.length,
                 bookings_upserted: allBookingsToUpsert.length,
                 cancellations_detected: ghostBookingIds.length,
-                feeds_detail: processedFeeds.map(f => ({
-                    platform: f.platform,
-                    status: f.syncStatus,
-                    events: f.events_found ?? 0
-                }))
+                feeds_detail: processedFeeds.map(f => ({ platform: f.platform, status: f.syncStatus, events: f.events_found ?? 0 }))
             });
 
         } catch (propErr: any) {
             results.push({ property: prop.title, error: propErr.message });
         }
+    }
+
+    // ── STEP 4: FLUSH NOTIFICATION BUFFER ───────────────────────────────────────────
+    if (propertyChanges.size > 0) {
+        const changeBlocks = Array.from(propertyChanges.entries()).map(([title, data]) => {
+            let block = `🏰 <b>${title}</b>`;
+            if (data.news.length > 0) {
+                block += `\n🆕 <b>${data.news.length} Nuevas:</b>\n- ${data.news.join('\n- ')}`;
+            }
+            if (data.cancels > 0) {
+                block += `\n🚫 <b>${data.cancels} Cancelaciones detectadas</b>`;
+            }
+            return block;
+        });
+
+        const summaryMsg = `
+🛰 <b>iCal Sync: Resumen de Actividad</b>
+━━━━━━━━━━━━━━━━━━━━
+${changeBlocks.join('\n\n')}
+
+⚡ <i>Calendario actualizado y blindado.</i>`.trim();
+        
+        await NotificationService.sendTelegramAlert(summaryMsg).catch(e => console.error('Error notification buffer:', e));
     }
 
     return res.status(200).json({
