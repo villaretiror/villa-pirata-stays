@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { Property, LocalGuideCategory, SiteContent, VillaKnowledge } from '../types';
-import { INITIAL_LOCAL_GUIDE, DEFAULT_SITE_CONTENT, DEFAULT_VILLA_KNOWLEDGE } from '../constants';
+import { INITIAL_LOCAL_GUIDE, DEFAULT_SITE_CONTENT, DEFAULT_VILLA_KNOWLEDGE, PROPERTIES } from '../constants';
 import { supabase, isConfigured } from '../lib/supabase';
 import { Database } from '../supabase_types';
 
@@ -32,11 +32,11 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
       const saved = localStorage.getItem('vp_properties');
-      return saved ? JSON.parse(saved) : [];
-    } catch { return []; }
+      return (saved && JSON.parse(saved).length > 0) ? JSON.parse(saved) : PROPERTIES;
+    } catch { return PROPERTIES; }
   });
 
-  const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>([]);
+  const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>(INITIAL_LOCAL_GUIDE);
   const [secretSpots, setSecretSpots] = useState<any[]>([]);
   const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
   const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
@@ -55,9 +55,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       
       // A. Fetch Properties
       const { data: propData, error: propError } = await supabase.from('properties')
-        .select('*')
-        .or('is_offline.eq.false,is_offline.is.null')
-        .abortSignal(signal || new AbortController().signal);
+        .select('*', { abortSignal: signal || new AbortController().signal })
+        .or('is_offline.eq.false,is_offline.is.null');
       
       if (propError) throw propError;
 
@@ -160,7 +159,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           if (knowledge) setVillaKnowledge(knowledge as any);
 
           const content = typedSettings.find(s => s.key === 'site_content')?.value;
-          if (content) setSiteContent(content as any);
+          if (content) setSiteContent(prev => ({ ...prev, ...(content as any) }));
         }
       }
     } catch (err: any) {

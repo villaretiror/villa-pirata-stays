@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import PropertyCard from '../components/PropertyCard';
 import GuideCard from '../components/GuideCard';
 import ReviewCarousel from '../components/ReviewCarousel';
@@ -336,16 +337,26 @@ const Home: React.FC = () => {
           {isLoading ? (
             Array(4).fill(0).map((_, i) => <PropertyCardSkeleton key={i} />)
           ) : filteredProperties.length > 0 ? (
-            filteredProperties.map((property, index) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                index={index}
-                onClick={(id) => navigate(`/property/${id}`)}
-                isFavorite={favorites.includes(property.id)}
-                onToggleFavorite={toggleFavorite}
-              />
-            ))
+            <AnimatePresence mode="popLayout">
+              {filteredProperties.map((property, index) => (
+                <motion.div
+                  key={property.id}
+                  layout
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                >
+                  <PropertyCard
+                    property={property}
+                    index={index}
+                    onClick={(id) => navigate(`/property/${id}`)}
+                    isFavorite={favorites.includes(property.id)}
+                    onToggleFavorite={toggleFavorite}
+                  />
+                </motion.div>
+              ))}
+            </AnimatePresence>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200">
               <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
@@ -372,10 +383,17 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-serif font-bold text-text-main mb-4 leading-tight">
-                {siteContent?.contact.title.split('.')[0]} con <span className="text-primary italic">{siteContent?.contact.title.split('.')[1] || 'Salty'}.</span>
+                {siteContent?.contact?.title?.includes('Salty') ? (
+                  <>
+                    {siteContent.contact.title.replace('Salty', '').replace('.', '')}
+                    <span className="text-primary italic"> Salty.</span>
+                  </>
+                ) : (
+                  siteContent?.contact?.title
+                )}
               </h2>
               <p className="text-sm text-text-light mb-8 leading-relaxed">
-                {siteContent?.contact.subtitle}
+                {siteContent?.contact?.subtitle}
               </p>
 
               <div className="space-y-4">
@@ -383,13 +401,13 @@ const Home: React.FC = () => {
                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                     <span className="material-icons">phone</span>
                   </div>
-                  {siteContent?.contact.phone}
+                  {siteContent?.contact?.phone}
                 </div>
                 <div className="flex items-center gap-4 text-sm font-bold text-text-main">
                   <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
                     <span className="material-icons">email</span>
                   </div>
-                  {siteContent?.contact.email}
+                  {siteContent?.contact?.email}
                 </div>
               </div>
             </div>

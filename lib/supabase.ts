@@ -37,13 +37,22 @@ const createMockClient = () => {
     upsert: () => handler,
     delete: () => handler,
     eq: () => handler,
+    or: () => handler,
+    order: () => handler,
+    limit: () => handler,
     single: () => Promise.resolve(mockResponse(null)),
     maybeSingle: () => Promise.resolve(mockResponse(null)),
-    then: (resolve: any) => resolve(mockResponse()),
+    then: (resolve: any) => resolve(mockResponse([])),
   };
   return {
     from: () => handler,
-    auth: { getSession: () => Promise.resolve({ data: { session: null }, error: null }) }
+    auth: { 
+      getSession: () => Promise.resolve({ data: { session: null }, error: null }),
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+      signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
+      signOut: () => Promise.resolve({ error: null }),
+    },
+    channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
   } as any;
 };
 
