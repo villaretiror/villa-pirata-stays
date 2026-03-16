@@ -75,12 +75,29 @@ ${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophist
 `.trim();
 
         if (sessionId) {
+            const lastMsg = rawMessages?.slice(-1)[0]?.content || rawMessages?.slice(-1)[0]?.text;
+            let intentCategory = 'otros';
+
+            // Seed logic for 'Salty Insights' Dashboard
+            if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
+                const msgLower = String(lastMsg).toLowerCase();
+                if (msgLower.includes('precio') || msgLower.includes('costo') || msgLower.includes('oferta') || msgLower.includes('descuento') || msgLower.includes('cuanto')) intentCategory = 'Precio';
+                else if (msgLower.includes('playa') || msgLower.includes('mar') || msgLower.includes('surf') || msgLower.includes('beach')) intentCategory = 'Playa';
+                else if (msgLower.includes('como llegar') || msgLower.includes('ubicacion') || msgLower.includes('parking') || msgLower.includes('check') || msgLower.includes('donde')) intentCategory = 'Logística';
+                else if (msgLower.includes('hacer') || msgLower.includes('comer') || msgLower.includes('visitar') || msgLower.includes('restaurante')) intentCategory = 'Actividades';
+                else if (msgLower.includes('wifi') || msgLower.includes('piscina') || msgLower.includes('amenidad') || msgLower.includes('aire')) intentCategory = 'Amenidades';
+            }
+
             supabase.from('chat_logs').upsert({
-                session_id: sessionId, user_id: userId || null, message_count: (rawMessages || []).length,
-                last_interaction: new Date().toISOString(), current_property: activePropertyName, current_url: currentUrl
+                session_id: sessionId, 
+                user_id: userId || null, 
+                message_count: (rawMessages || []).length,
+                last_interaction: new Date().toISOString(), 
+                current_property: activePropertyName, 
+                current_url: currentUrl,
+                last_sentiment: intentCategory // Using sentiment column as intent storage for now
             }, { onConflict: 'session_id' }).select().then();
 
-            const lastMsg = rawMessages?.slice(-1)[0]?.content || rawMessages?.slice(-1)[0]?.text;
             if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
                 try {
                     const { NotificationService } = await import('../services/NotificationService.js');

@@ -44,8 +44,8 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEdita
       )}
 
       <div className="h-44 rounded-2xl bg-gray-100 mb-4 overflow-hidden relative shadow-inner">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4 z-10">
-          <p className="text-white font-serif font-bold text-lg leading-tight drop-shadow-lg">{item.name}</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-5 z-10">
+          <p className="text-white font-serif font-bold text-xl leading-[1.1] tracking-tight drop-shadow-lg">{item.name}</p>
         </div>
         <SmartImage src={item.image} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" alt={item.name} />
       </div>
@@ -64,7 +64,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEdita
         )}
       </div>
 
-      <p className="text-sm text-text-light line-clamp-3 leading-relaxed mb-4 font-medium opacity-90">{item.desc}</p>
+      <p className="text-sm text-text-light line-clamp-3 leading-relaxed mb-6 font-medium opacity-80">{item.desc}</p>
 
       {item.saltyTip && (
         <div className="mb-4 p-3 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/10 transition-colors">

@@ -173,9 +173,9 @@ const Home: React.FC = () => {
       <div className="relative z-10 px-6 pt-12 pb-6">
         <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-serif font-bold text-text-main leading-tight">
+            <h1 className="text-4xl font-serif font-bold text-text-main leading-[1.1] tracking-tight">
               {siteContent?.hero.title}: <br />
-              <span className="text-primary italic">{siteContent?.hero.slogan}</span>
+              <span className="text-primary italic font-medium">{siteContent?.hero.slogan}</span>
             </h1>
           </div>
           <div
@@ -215,18 +215,18 @@ const Home: React.FC = () => {
       </div>
 
       {/* Categories - Modern Pills */}
-      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2 relative z-10">
+      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2 relative z-10 px-1">
         {categories.map((cat) => (
           <button
             key={cat.id}
             onClick={() => handleCategorySelect(cat.id)}
-            className={`flex items-center gap-2 px-5 py-3 rounded-full border whitespace-nowrap transition-all duration-300 ${activeCategory === cat.id
-              ? 'bg-secondary text-white border-secondary shadow-lg shadow-secondary/20 scale-105'
-              : 'bg-white border-transparent text-gray-500 shadow-sm hover:bg-gray-50'
+            className={`flex items-center gap-2 px-6 py-3.5 rounded-full border whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeCategory === cat.id
+              ? 'bg-secondary text-white border-secondary shadow-xl shadow-secondary/20 scale-105'
+              : 'bg-white/80 backdrop-blur-sm border-white/50 text-gray-500 shadow-soft hover:bg-white hover:text-text-main hover:-translate-y-0.5'
               }`}
           >
-            <span className="material-icons text-sm">{cat.icon}</span>
-            <span className="text-xs font-bold">{cat.label}</span>
+            <span className="material-icons text-[14px]">{cat.icon}</span>
+            <span className="text-[11px] font-black uppercase tracking-[0.15em]">{cat.label}</span>
           </button>
         ))}
       </div>
@@ -237,8 +237,8 @@ const Home: React.FC = () => {
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Experience</p>
-              <h2 className="font-serif font-bold text-4xl text-text-main leading-tight">Sabor Local & <span className="text-secondary italic">Aventura.</span></h2>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 opacity-80">Cabo Rojo Experience</p>
+              <h2 className="font-serif font-bold text-4xl text-text-main leading-[1.1] tracking-tight">Sabor Local & <span className="text-secondary italic font-medium">Aventura.</span></h2>
             </div>
             
             {/* Experience Pills */}
@@ -373,10 +373,14 @@ const Home: React.FC = () => {
                 <motion.div
                   key={property.id}
                   layout
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  initial={{ opacity: 0, y: 30, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95, transition: { duration: 0.2 } }}
+                  transition={{ 
+                    duration: 0.7, 
+                    delay: index * 0.08,
+                    ease: [0.16, 1, 0.3, 1]
+                  }}
                 >
                   <PropertyCard
                     property={property}

@@ -88,12 +88,21 @@ export default async function handler(req: any, res: any) {
             // Track all existing bookings (any source) for new-booking detection
             const { data: existingBookings } = await supabase
                 .from('bookings')
-                .select('property_id, check_in, check_out')
+                .select('property_id, check_in, check_out, notified_external_at')
                 .eq('property_id', propertyId)
                 .neq('status', 'cancelled');
 
+            // Robust Key: Normalize dates (DB might return T00:00:00.000Z)
             const existingSet = new Set(
-                (existingBookings || []).map(b => `${b.property_id}_${b.check_in}_${b.check_out}`)
+                (existingBookings || []).map(b => `${b.property_id}_${String(b.check_in).split('T')[0]}_${String(b.check_out).split('T')[0]}`)
+            );
+
+            // Notification Memory: Map check-in+check-out to notified status
+            const notifiedMap = new Map<string, boolean>(
+                (existingBookings || []).map(b => [
+                    `${b.property_id}_${String(b.check_in).split('T')[0]}_${String(b.check_out).split('T')[0]}`,
+                    !!b.notified_external_at
+                ])
             );
 
             const allBookingsToUpsert: any[] = [];
@@ -133,6 +142,8 @@ export default async function handler(req: any, res: any) {
                         // Register as ACTIVE in current iCal snapshot
                         activeICalKeys.add(icalKey);
 
+                        const isAlreadyNotified = notifiedMap.get(globalKey) || existingSet.has(globalKey);
+
                         allBookingsToUpsert.push({
                             property_id: propertyId,
                             check_in: bIn,
@@ -140,12 +151,14 @@ export default async function handler(req: any, res: any) {
                             status: 'confirmed',
                             source: platform,
                             customer_name: ev.summary || 'Reserva Externa',
-                            total_price: 0
+                            total_price: 0,
+                            // If we notify now, mark it for the upsert
+                            notified_external_at: !isAlreadyNotified ? new Date().toISOString() : undefined
                         });
 
-                        // Notify host only for genuinely new reservations
-                        if (!existingSet.has(globalKey)) {
-                            NotificationService.sendTelegramAlert(
+                        // 🔔 STRATEGIC SILENCE: Notify ONLY if it's truly new and NOT notified before
+                        if (!isAlreadyNotified) {
+                            await NotificationService.sendTelegramAlert(
                                 `🔔 <b>Nueva Reserva (iCal Sync)</b>\n\n` +
                                 `🏠 <b>Villa:</b> ${propertyTitle}\n` +
                                 `📅 <b>Fechas:</b> ${bIn} al ${bOut}\n` +
@@ -153,6 +166,9 @@ export default async function handler(req: any, res: any) {
                                 `👤 <b>Huésped:</b> ${ev.summary || 'Reserva Externa'}\n\n` +
                                 `⚡ <i>Calendario bloqueado automáticamente.</i>`
                             ).catch(e => console.error('Error notification sync:', e));
+                            // Add to local set to avoid duplicates from multiple feeds in the same run
+                            existingSet.add(globalKey);
+                            notifiedMap.set(globalKey, true);
                         }
                     }
 

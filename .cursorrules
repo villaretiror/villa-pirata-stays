@@ -1,36 +1,36 @@
 # Villa Retiro: AI-Driven Architecture Rules
-# Role: Senior Full-Stack Architect & Salty's Mentor
+# Role: Supreme Architect (UX Specialist, Database Admin, Business Strategist)
 
-## 1. Hybrid Mode & Sanctuary of Data (SAFETY FIRST)
-- **Local Fallback**: `constants.ts` and `villasData.ts` are sanctuaries. NEVER delete or ignore local data.
-- **Merge Logic**: Always merge Supabase data with local constants. If Supabase returns empty (`[]`) or fails, the site MUST preserve and display local data.
-- **No Amnesia**: The site must never render a blank screen. If a dynamic field is missing in Supabase, use the local fallback immediately.
+## 1. Multidisciplinary Analysis (3-Front Strategy)
+Before any code change, analyze the impact through three lenses:
+- **Luxury Aesthetic (UX)**: Does it feel premium? Is the typography, whitespace, and animation (Framer Motion) world-class?
+- **Data Integrity (Supabase)**: Is the database schema scalable? Is the data typed, commented, and secured via RLS?
+- **Business Resilience (Sanctuary)**: Is there a local fallback in `constants.ts`? Does the "Hybrid Mode" ensure zero downtime?
 
-## 2. Supabase Integration (Dynamic Enrichment)
-- Use Supabase to **enrich** the local baseline. 
-- BEFORE proposing any code, ALWAYS inspect the Supabase schema.
-- NEVER guess column names. Use `snake_case` for all database entities.
-- Any change in the UI that requires data must have a corresponding SQL migration script.
+## 2. Hybrid Mode & Sanctuary of Data (Indestructible Core)
+- **Sanctuary Primacy**: `constants.ts` and `villasData.ts` are the source of truth for continuity. enrichment happens via Supabase.
+- **Merge Logic**: Always merge Supabase data with local constants. If Supabase is empty, unreachable, or 500s, the site MUST render the local baseline.
+- **Zero Amnesia**: Blank screens or missing sections are unacceptable. Always use defensive coding with optional chaining and fallbacks.
 
-## 3. Salty's Cognitive Alignment
-- Salty (the AI Agent) is the Vice-President. He must never have "amnesia".
-- Dynamic content (prices, tips) SHOULD be fetched from Supabase, but must have a local fallback if the connection fails.
-- Every database column should have a comment describing its purpose.
+## 3. Evolutionary Architecture (Scalability Vision)
+- **Future-Proof Design**: Avoid hardcoded logic for features like payments, co-host management, or iCal sync. Use dynamic tables and meta-configuration.
+- **Edge Performance**: Proactively propose improvements like Edge Functions, advanced caching layers, or optimized Supabase queries to minimize latency.
+- **Data Connectivity**: Every interaction (clicks, search intents, chat history) should be tracked as anonymous telemetry in Supabase to train Salty's predictive concierge capabilities.
 
-## 4. UI/UX Luxury Standards
-- Maintain the "Salty & Luxury" aesthetic: Serif fonts for titles, generous whitespace, and high-quality image cards.
-- Layouts must be consistent: 2-3 column grids for lists (Beaches, Food). No more stretched horizontal banners.
-- Clean Navigation: Keep the header focused on "Designer Villas" and "Experiences". 
+## 4. Salty's Cognitive Intelligence
+- Salty is not just a chatbot; he is the Digital Concierge. He must consume all data points from Supabase to personalize responses.
+- Every database column must be self-documenting for Salty's context.
+- Salty must be pro-active: noticing availability gaps or suggesting experiences based on visitor behavior.
 
-## 5. Host Dashboard (The CEO Console)
-- Every user-facing feature must be editable from the Host Dashboard.
-- Use a "One-Click Sync" pattern: changes in the Dashboard must reflect instantly in the Frontend.
+## 5. UI/UX Luxury Standards (Irmaris Identity)
+- **Palette**: Crema, Naranja, and Verde (Vintage-Premium).
+- **Typography**: Serif for elegance, high-contrast Sans-Serif for readability.
+- **Consistency**: 2-3 column grids only. No layout shifts. Premium micro-animations on every interaction.
 
-## 6. Performance & Safety
-- Use TypeScript strictly. No `any` types.
-- Ensure all Supabase calls use existing hooks. Do not duplicate logic.
-- Implement Row Level Security (RLS) in every SQL proposal.
+## 6. Host Dashboard (The CEO Console)
+- **One-Click Governance**: Every piece of site content must be editable.
+- **Realtime Sync**: Use Supabase Realtime so changes reflect instantly without refreshes.
 
 ## 7. Preservation of the "Santuario"
-- Visual components, animations (Framer Motion), and established sections like "Sabor Local" are untouchable unless a superior visual upgrade is proposed.
-- Deleting functional UI sections to "clean up" is a violation of the CEO's trust.
+- Visual components and established logic are untouchable unless a demonstrable "1000x" improvement is proposed.
+- "Cleaning up" is never an excuse to remove functional UI or local data.
