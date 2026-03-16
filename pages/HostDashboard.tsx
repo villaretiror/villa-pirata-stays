@@ -2777,14 +2777,14 @@ const HostDashboard: React.FC = () => {
       };
       
       // Eliminar variantes basura para mantener limpieza de tráfico y evitar errores de Schema Cache
-      const junkFields = ['isOffline', 'isoffline', 'reviews_count', 'blockedDates', 'calendarSync'];
+      const junkFields = ['isOffline', 'isoffline', 'reviews_count', 'blockedDates'];
       junkFields.forEach(f => delete payload[f]);
 
-      // Unificar nombres JSONB a minúsculas/snake_case para la DB
-      payload.calendarsync = updated.calendarSync || [];
+      // Unificar nombres JSONB: Mantenemos calendarSync (PascalCase citado en DB)
+      payload.calendarSync = updated.calendarSync || [];
 
       // Aseguramos que los objetos JSONB se mantengan intactos
-      const jsonFields = ['fees', 'policies', 'seasonal_prices', 'offers', 'reviews_list', 'calendarsync'];
+      const jsonFields = ['fees', 'policies', 'seasonal_prices', 'offers', 'reviews_list', 'calendarSync'];
       jsonFields.forEach(field => {
         if (!payload[field]) payload[field] = (updated as any)[field] || (['fees', 'policies'].includes(field) ? {} : []);
       });

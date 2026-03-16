@@ -15,9 +15,9 @@ ALTER TABLE properties ADD COLUMN IF NOT EXISTS is_offline BOOLEAN DEFAULT false
 ALTER TABLE properties DROP COLUMN IF EXISTS "blockedDates";
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS blockeddates JSONB DEFAULT '[]';
 
--- Unificación de Sync
-ALTER TABLE properties DROP COLUMN IF EXISTS "calendarSync";
-ALTER TABLE properties ADD COLUMN IF NOT EXISTS calendarsync JSONB DEFAULT '[]';
+-- Unificación de Sync: Mantenemos "calendarSync" (camelCase citado) como el estándar de la App
+ALTER TABLE properties DROP COLUMN IF EXISTS calendarsync;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS "calendarSync" JSONB DEFAULT '[]';
 
 -- 3. Consistencia en Reservas (Audit Req: total_paid_at_booking)
 -- El usuario solicitó total_paid_at_booking como estándar. 
