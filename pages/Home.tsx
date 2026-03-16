@@ -11,7 +11,7 @@ type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, localGuideData, favorites, toggleFavorite, isLoading } = useProperty();
+  const { properties, localGuideData, favorites, toggleFavorite, isLoading, siteContent } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,7 +101,6 @@ const Home: React.FC = () => {
     { id: 'todo', label: 'Designer Villas', icon: 'grid_view' },
     { id: 'piscina', label: 'Pool Retreats', icon: 'pool' },
     { id: 'playa', label: 'Coastal Stays', icon: 'beach_access' },
-    { id: 'mascotas', label: 'Pet Friendly', icon: 'pets' },
   ];
 
   // Helper Component for the Search Modal
@@ -174,16 +173,16 @@ const Home: React.FC = () => {
         <div className="flex justify-between items-center mb-6">
           <div>
             <h1 className="text-3xl font-serif font-bold text-text-main leading-tight">
-              Villa & Pirata Stays: <br />
-              <span className="text-primary italic">Donde la vida tiene sabor a sal y libertad.</span>
+              {siteContent?.hero.title}: <br />
+              <span className="text-primary italic">{siteContent?.hero.slogan}</span>
             </h1>
           </div>
           <div
             onClick={() => {
               const el = document.getElementById('notif-status');
               if (el) {
-                el.innerText = "¡Pronto! Notificaciones de Élite.";
-                setTimeout(() => { if (el) el.innerText = "¡Hola, Viajero! 👋"; }, 3000);
+                el.innerText = siteContent?.hero.notif_promo || "¡Pronto! Notificaciones de Élite.";
+                setTimeout(() => { if (el) el.innerText = siteContent?.hero.notif_status || "¡Hola, Viajero! 👋"; }, 3000);
               }
             }}
             className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group"
@@ -193,7 +192,7 @@ const Home: React.FC = () => {
         </div>
 
         <div className="h-6 -mt-4 mb-4">
-          <p id="notif-status" className="text-text-light text-sm font-medium transition-all duration-500">¡Hola, Viajero! 👋</p>
+          <p id="notif-status" className="text-text-light text-sm font-medium transition-all duration-500">{siteContent?.hero.notif_status || "¡Hola, Viajero! 👋"}</p>
         </div>
       </div>
 
@@ -234,31 +233,35 @@ const Home: React.FC = () => {
       {/* Main Content Area */}
       <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-8 pb-32">
         {/* Playas del Paraíso Section */}
-        <div className="mb-16">
-          <div className="flex justify-between items-end mb-6">
+        <div className="mb-20">
+          <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
-              <h2 className="font-serif font-bold text-2xl text-text-main">Playas del Paraíso</h2>
+              <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.beaches || "Playas del Paraíso"}</h2>
             </div>
-            <span className="material-icons text-primary/30">beach_access</span>
+            <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
+              <span className="material-icons text-primary text-xl">beach_access</span>
+            </div>
           </div>
-          <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {localGuideData.find(g => g.id === 'beaches')?.items.map((item, i) => (
               <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
             ))}
           </div>
         </div>
 
-        {/* Ruta Gastronómica Section */}
-        <div className="mb-16">
-          <div className="flex justify-between items-end mb-6">
+        {/* Ruta Gastronómica Section - Unificación de Grilla Premium */}
+        <div className="mb-20">
+          <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
-              <h2 className="font-serif font-bold text-2xl text-text-main">Ruta Gastronómica</h2>
+              <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.gastronomy || "Ruta Gastronómica"}</h2>
             </div>
-            <span className="material-icons text-secondary/30">restaurant</span>
+            <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center border border-secondary/10">
+              <span className="material-icons text-secondary text-xl">restaurant</span>
+            </div>
           </div>
-          <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {localGuideData.find(g => g.id === 'gastronomy')?.items.map((item, i) => (
               <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
             ))}
@@ -266,15 +269,17 @@ const Home: React.FC = () => {
         </div>
 
         {/* Cerca de Ti Section */}
-        <div className="mb-16">
-          <div className="flex justify-between items-end mb-6">
+        <div className="mb-20">
+          <div className="flex justify-between items-end mb-8">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
-              <h2 className="font-serif font-bold text-2xl text-text-main">Cerca de Ti</h2>
+              <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.nearby || "Cerca de Ti"}</h2>
             </div>
-            <span className="material-icons text-text-light/30">place</span>
+            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
+              <span className="material-icons text-text-light text-xl">place</span>
+            </div>
           </div>
-          <div className="flex overflow-x-auto gap-4 pb-4 -mx-6 px-6 no-scrollbar">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {localGuideData.find(g => g.id === 'nearby')?.items.map((item, i) => (
               <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
             ))}
@@ -287,10 +292,10 @@ const Home: React.FC = () => {
           <div className="relative z-10">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-2">📍 Sector Samán, Cabo Rojo</p>
             <h3 className="font-serif font-bold text-lg text-text-main leading-snug mb-2">
-              Hospédate en el corazón del Paraíso.<br />
-              <span className="text-primary italic">Todo lo que amas de Cabo Rojo a menos de 20 minutos.</span>
+              {siteContent?.cta.title || "Hospédate en el corazón del Paraíso."}<br />
+              <span className="text-primary italic">{siteContent?.cta.subtitle || "Todo lo que amas de Cabo Rojo a menos de 20 minutos."}</span>
             </h3>
-            <p className="text-xs text-text-light mb-4 max-w-md">Nuestras propiedades están ubicadas estratégicamente cerca de Boquerón, las mejores playas y restaurantes del suroeste.</p>
+            <p className="text-xs text-text-light mb-4 max-w-md">{siteContent?.cta.description || "Nuestras propiedades están ubicadas estratégicamente cerca de Boquerón, las mejores playas y restaurantes del suroeste."}</p>
             <div className="flex gap-3 flex-wrap">
               <a href="https://share.google/LBxZV0NwKZps4rliR" target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
@@ -367,11 +372,10 @@ const Home: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-serif font-bold text-text-main mb-4 leading-tight">
-                Reserva con <span className="text-primary italic">Salty.</span>
+                {siteContent?.contact.title.split('.')[0]} con <span className="text-primary italic">{siteContent?.contact.title.split('.')[1] || 'Salty'}.</span>
               </h2>
               <p className="text-sm text-text-light mb-8 leading-relaxed">
-                Sin comisiones de plataforma, solo el mejor trato directo garantizado.
-                Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales, déjanos un mensaje.
+                {siteContent?.contact.subtitle}
               </p>
 
               <div className="space-y-4">
@@ -379,13 +383,13 @@ const Home: React.FC = () => {
                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
                     <span className="material-icons">phone</span>
                   </div>
-                  +1 (787) 356-0895
+                  {siteContent?.contact.phone}
                 </div>
                 <div className="flex items-center gap-4 text-sm font-bold text-text-main">
                   <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
                     <span className="material-icons">email</span>
                   </div>
-                  villaretiror@gmail.com
+                  {siteContent?.contact.email}
                 </div>
               </div>
             </div>

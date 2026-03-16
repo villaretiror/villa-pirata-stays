@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge';
+import { useBooking } from '../contexts/BookingContext';
+import { useProperty } from '../contexts/PropertyContext';
+import { format } from 'date-fns';
 
 const StayDashboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+    const { calculateRefund } = useBooking();
+    const { properties, villaKnowledge } = useProperty();
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);
+    const [showCancelModal, setShowCancelModal] = useState(false);
+    const [isCancelling, setIsCancelling] = useState(false);
 
     useEffect(() => {
         const loadBooking = async () => {
@@ -86,7 +92,7 @@ const StayDashboard: React.FC = () => {
                                 <p className="text-2xl font-black text-slate-800 tracking-[0.2em] font-mono select-all">{lockCode}</p>
                             </div>
                         </div>
-                        <p className="text-[10px] text-red-400 italic font-bold">*El código se activa a las {VILLA_KNOWLEDGE.policies.checkIn}</p>
+                        <p className="text-[10px] text-red-400 italic font-bold">*El código se activa a las {villaKnowledge?.policies.checkIn}</p>
                     </div>
                 </section>
 
@@ -135,11 +141,94 @@ const StayDashboard: React.FC = () => {
                         <span className="material-icons text-gray-500">description</span> Documentos
                     </h2>
                     <p className="text-xs text-text-light mb-4 text-justify">Su Contrato Digital de Alquiler firmado al momento del pago está guardado de forma segura.</p>
-                    <button className="w-full flex items-center justify-center gap-2 p-3 bg-gray-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md active:scale-95 transition-transform">
-                        <span className="material-icons">download</span> Cargar PDF Firmado
-                    </button>
+                    <div className="space-y-3">
+                        <button className="w-full flex items-center justify-center gap-2 p-3 bg-gray-900 text-white rounded-xl text-xs font-bold uppercase tracking-widest shadow-md active:scale-95 transition-transform">
+                            <span className="material-icons">download</span> Cargar PDF Firmado
+                        </button>
+                        
+                        {booking.status !== 'cancelled' && (
+                            <button 
+                                onClick={() => setShowCancelModal(true)}
+                                className="w-full p-3 text-red-500 text-[10px] font-black uppercase tracking-widest hover:bg-red-50 rounded-xl transition-colors"
+                            >
+                                Cancelar mi Estancia
+                            </button>
+                        )}
+                    </div>
                 </section>
             </div>
+
+            {/* CANCELLATION MODAL */}
+            {showCancelModal && (
+                <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-center justify-center p-6 animate-fade-in">
+                    <div className="bg-white w-full max-w-sm rounded-[3rem] overflow-hidden shadow-2xl animate-slide-up">
+                        <div className="bg-red-50 p-8 text-center">
+                            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-red-500 shadow-sm mx-auto mb-4">
+                                <span className="material-icons text-3xl">warning</span>
+                            </div>
+                            <h3 className="text-xl font-serif font-bold text-red-900">Confirmar Cancelación</h3>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mt-1">Impacto de Reembolso</p>
+                        </div>
+                        
+                        <div className="p-8 space-y-6">
+                            {(() => {
+                                const prop = properties.find(p => p.id === booking.property_id);
+                                if (!prop) return <p>Calculando impacto...</p>;
+                                const calculation = calculateRefund(booking, prop);
+                                return (
+                                    <>
+                                        <div className="bg-sand/30 p-8 rounded-[2.5rem] border border-orange-100/50 flex flex-col items-center justify-center text-center">
+                                            <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Monto a reembolsar</p>
+                                            <p className="text-4xl font-serif font-black text-text-main">${calculation.refundAmount}</p>
+                                            <p className="text-[10px] text-text-light mt-2">A su método de pago original</p>
+                                        </div>
+                                        
+                                        <p className="text-[10px] text-text-light leading-relaxed italic text-center">
+                                            "{calculation.explanation}"
+                                        </p>
+                                        
+                                        <div className="space-y-3">
+                                            <button 
+                                                disabled={isCancelling}
+                                                onClick={async () => {
+                                                    setIsCancelling(true);
+                                                    const { error } = await supabase
+                                                        .from('bookings')
+                                                        .update({ 
+                                                            status: 'cancelled',
+                                                            cancelled_at: new Date().toISOString(),
+                                                            refund_amount_calculated: calculation.refundAmount,
+                                                            retained_amount_calculated: calculation.retainedAmount,
+                                                            cancellation_snapshot: calculation
+                                                        })
+                                                        .eq('id', id);
+                                                    
+                                                    if (!error) {
+                                                        alert("Su reserva ha sido cancelada. El reembolso se procesará según los tiempos de su banco.");
+                                                        navigate('/');
+                                                    } else {
+                                                        alert("Error al cancelar: " + error.message);
+                                                        setIsCancelling(false);
+                                                    }
+                                                }}
+                                                className="w-full bg-black text-white py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                                            >
+                                                {isCancelling ? 'Procesando...' : 'Confirmar y Cancelar'}
+                                            </button>
+                                            <button 
+                                                onClick={() => setShowCancelModal(false)}
+                                                className="w-full py-2 text-[10px] font-bold text-text-light uppercase tracking-widest"
+                                            >
+                                                Mantener mi Reserva
+                                            </button>
+                                        </div>
+                                    </>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

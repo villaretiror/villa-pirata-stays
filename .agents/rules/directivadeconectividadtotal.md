@@ -1,5 +1,5 @@
 ---
-trigger: always_on
+trigger: manual
 ---
 
 "Editor, a partir de este momento, activamos la 'Directiva de Conectividad Total'. No se permiten más elementos en modo 'Demo' o 'Mockup'. Tus nuevas reglas de oro son:

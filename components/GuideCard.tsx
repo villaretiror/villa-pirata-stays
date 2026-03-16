@@ -31,44 +31,58 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEdita
   return (
     <article
       onClick={handleClick}
-      className={`min-w-[260px] bg-white rounded-2xl p-3 shadow-card border border-gray-100 flex flex-col h-full relative group ${item.mapUrl && !isEditable ? 'cursor-pointer hover:shadow-float hover:-translate-y-1 transition-all duration-300' : ''}`}
+      className={`bg-white rounded-[2rem] p-4 shadow-card border border-gray-100 flex flex-col h-full relative group transition-all duration-500 ${item.mapUrl && !isEditable ? 'cursor-pointer hover:shadow-float hover:-translate-y-1' : ''}`}
     >
       {isEditable && (
         <button
           onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
           aria-label="Editar lugar"
-          className="absolute top-2 right-2 z-10 bg-black/60 hover:bg-black text-white p-1.5 rounded-full backdrop-blur-sm transition-all"
+          className="absolute top-4 right-4 z-10 bg-black/60 hover:bg-black text-white p-2 rounded-full backdrop-blur-sm transition-all shadow-xl"
         >
-          <span className="material-icons text-xs">edit</span>
+          <span className="material-icons text-sm">edit</span>
         </button>
       )}
 
-      <div className="h-36 rounded-xl bg-gray-200 mb-3 overflow-hidden relative">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-3 z-10">
-          <p className="text-white font-bold text-sm shadow-black drop-shadow-md">{item.name}</p>
+      <div className="h-44 rounded-2xl bg-gray-100 mb-4 overflow-hidden relative shadow-inner">
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-4 z-10">
+          <p className="text-white font-serif font-bold text-lg leading-tight drop-shadow-lg">{item.name}</p>
         </div>
-        <SmartImage src={item.image} className="w-full h-full object-cover transform transition-transform duration-500 group-hover:scale-110" alt={item.name} />
+        <SmartImage src={item.image} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" alt={item.name} />
       </div>
-      <div className="flex justify-between items-center mb-1.5">
-        <div className="bg-sand px-2 py-0.5 rounded text-[10px] font-bold text-secondary border border-orange-100 flex items-center gap-1">
-          <span className="material-icons text-[10px]">directions_car</span> Aprox. {item.distance}
+
+      <div className="flex justify-between items-center mb-3">
+        <div className="bg-sand/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-secondary border border-orange-100/50 flex items-center gap-1.5 shadow-sm">
+          <span className="material-icons text-[12px]">directions_car</span> {item.distance}
         </div>
         {item.mapUrl && (
           <button
             onClick={handleMapClick}
-            className="map-trigger bg-blue-50 px-2 py-0.5 rounded text-[10px] font-bold text-blue-600 border border-blue-100 flex items-center gap-1 hover:bg-blue-100 transition-colors"
+            className="map-trigger bg-blue-50/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100/50 flex items-center gap-1.5 hover:bg-blue-100 transition-all shadow-sm active:scale-95"
           >
-            <span className="material-icons text-[10px]">near_me</span> Ver Ruta
+            <span className="material-icons text-[12px]">near_me</span> Mapa
           </button>
         )}
       </div>
-      <p className="text-xs text-text-light line-clamp-2 leading-relaxed mb-3">{item.desc}</p>
 
-      <div className="mt-auto pt-2 border-t border-dashed border-gray-100 flex items-center justify-between group/salty">
-        <span className="text-[9px] font-black uppercase tracking-widest text-primary/60 group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>
-        <div className="flex items-center gap-1 text-[10px] font-bold text-primary">
+      <p className="text-sm text-text-light line-clamp-3 leading-relaxed mb-4 font-medium opacity-90">{item.desc}</p>
+
+      {item.saltyTip && (
+        <div className="mb-4 p-3 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/10 transition-colors">
+          <div className="absolute top-0 right-0 p-1 opacity-10">
+            <span className="material-icons text-primary text-xl">tips_and_updates</span>
+          </div>
+          <p className="text-[11px] text-primary/90 leading-relaxed italic relative z-10">
+            <span className="font-bold not-italic mr-1 uppercase text-[9px] tracking-wider">Salty Tip:</span> 
+            "{item.saltyTip}"
+          </p>
+        </div>
+      )}
+
+      <div className="mt-auto pt-4 border-t border-dashed border-gray-100 flex items-center justify-between group/salty">
+        <span className="text-[10px] font-black uppercase tracking-widest text-text-light group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>
+        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-3 py-2 rounded-xl group-hover/salty:bg-primary group-hover/salty:text-white transition-all shadow-sm">
           <span>Pregunta a Salty</span>
-          <span className="material-icons text-sm animate-bounce-x">arrow_forward</span>
+          <span className="material-icons text-sm">chat_bubble_outline</span>
         </div>
       </div>
     </article>

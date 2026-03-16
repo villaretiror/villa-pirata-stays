@@ -162,9 +162,12 @@ const Booking: React.FC = () => {
     }
   };
 
-  // Dynamic fees summation (SAFE NUMBER PARSING)
-  const feesList = Object.entries(property.fees || {});
-  const totalFees = feesList.reduce((sum, [_, value]) => sum + (Number(value) || 0), 0);
+  // Dynamic fees summation: Flat columns + Custom JSONB fees
+  const totalFees = (Number(property.cleaning_fee) || 0) + 
+                    (Number(property.service_fee) || 0) + 
+                    Object.entries(property.fees || {})
+                      .filter(([name]) => !['Limpieza', 'Service Fee', 'Security Deposit', 'Limpieza Corta', 'Limpieza Media', 'Limpieza Larga'].includes(name))
+                      .reduce((sum, [_, value]) => sum + (Number(value) || 0), 0);
 
   let total = basePrice + totalFees;
   let discountAmount = 0;
@@ -181,7 +184,7 @@ const Booking: React.FC = () => {
     // 3. Double Check: Refresh everything to avoid stale prices or expired promos
     const { data: freshProperty } = await supabase
       .from('properties')
-      .select('price, fees, seasonal_prices')
+      .select('price, fees, seasonal_prices, policies, cleaning_fee, service_fee')
       .eq('id', id)
       .single();
 
@@ -250,11 +253,18 @@ const Booking: React.FC = () => {
       check_in: format(startDate, 'yyyy-MM-dd'),
       check_out: format(endDate, 'yyyy-MM-dd'),
       total_price: reTotal,
+      total_paid_at_booking: reTotal,
       guests_count: freshProperty.guests ?? property.guests ?? null,
       status: status,
       payment_method: method,
       payment_proof_url: proofUrl || null,
-      email_sent: false
+      email_sent: false,
+      applied_policy: {
+        type: freshProperty.cancellation_policy_type || (freshProperty.policies as any)?.cancellationPolicy || 'moderate',
+        snapshot: `Regla legal de Airbnb (${freshProperty.cancellation_policy_type || 'moderate'}) activa en fecha de reserva. Reembolso calculado sobre Total Bruto.`
+      },
+      cleaning_fee_at_booking: Number(freshProperty.cleaning_fee || property.cleaning_fee || 0),
+      service_fee_at_booking: Number(freshProperty.service_fee || property.service_fee || 0)
     };
 
     const { data: bookingData, error: bookingError } = await supabase
@@ -460,17 +470,35 @@ const Booking: React.FC = () => {
 
             {promoError && <p className="text-[10px] text-red-500 font-black tracking-widest uppercase ml-2">{promoError}</p>}
 
-            <div className="bg-[#FFF8F4] p-8 rounded-[2.5rem] border border-orange-200/50 shadow-inner space-y-4">
-              <div className="flex justify-between items-center text-sm font-bold">
-                <span className="text-text-light">Estancia ({nights || 0} noches)</span>
-                <span className="text-text-main font-serif font-black text-lg">${basePrice}</span>
-              </div>
-              {feesList.map(([name, value]) => (
-                <div key={name} className="flex justify-between items-center text-sm font-bold">
-                  <span className="text-text-light">{name}</span>
-                  <span className="text-text-main font-serif font-black text-lg">${value}</span>
-                </div>
-              ))}
+      <div className="bg-[#FFF8F4] p-8 rounded-[2.5rem] border border-orange-200/50 shadow-inner space-y-4">
+               <div className="flex justify-between items-center text-sm font-bold">
+                 <span className="text-text-light">Estancia ({nights || 0} noches)</span>
+                 <span className="text-text-main font-serif font-black text-lg">${basePrice}</span>
+               </div>
+               
+               {/* Flat Fees Rendering */}
+               {Number(property.cleaning_fee) > 0 && (
+                 <div className="flex justify-between items-center text-sm font-bold">
+                   <span className="text-text-light">Limpieza</span>
+                   <span className="text-text-main font-serif font-black text-lg">${property.cleaning_fee}</span>
+                 </div>
+               )}
+               {Number(property.service_fee) > 0 && (
+                 <div className="flex justify-between items-center text-sm font-bold">
+                   <span className="text-text-light">Service Fee</span>
+                   <span className="text-text-main font-serif font-black text-lg">${property.service_fee}</span>
+                 </div>
+               )}
+
+               {/* Dynamic Fees Rendering */}
+               {Object.entries(property.fees || {})
+                 .filter(([name]) => !['Limpieza', 'Service Fee', 'Security Deposit', 'Limpieza Corta', 'Limpieza Media', 'Limpieza Larga'].includes(name))
+                 .map(([name, value]) => (
+                 <div key={name} className="flex justify-between items-center text-sm font-bold">
+                   <span className="text-text-light">{name}</span>
+                   <span className="text-text-main font-serif font-black text-lg">${value}</span>
+                 </div>
+               ))}
               {appliedPromo && (
                 <div className="flex justify-between items-center text-sm text-green-700 font-bold">
                   <span>Beneficio Directo ({appliedPromo.discount_percent}%)</span>

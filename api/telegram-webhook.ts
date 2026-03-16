@@ -29,17 +29,6 @@ const supabaseServiceRole = createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || ""
 );
-const VILLA_CONCIERGE_PROMPT = `
-### TONALIDAD & PERSONALIDAD (CONCIERGE INFORMATIVO)
-- Rol: Eres un guía experto en el funcionamiento de la villa.
-- Enfoque: WiFi, agua caliente, reglas de la casa, electrodomésticos y manual de la propiedad.
-- Límites: NO gestiones servicios externos, transporte ni reservas de terceros. 
-- Restricción: Solo asistes a huéspedes de reservas directas. Si mencionan Airbnb, remítelos a su plataforma.
-
-### RECURSOS DISPONIBLES
-- REGLAS: ${JSON.stringify(VILLA_KNOWLEDGE, null, 2)}
-- INVENTARIO: ${JSON.stringify(PROPERTIES, null, 2)}
-`.trim();
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') {
@@ -160,6 +149,33 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
         : "(Hablas con un miembro del equipo estratégico).";
 
     try {
+        // 1. Fetch Dynamic Knowledge & Config
+        const [{ data: knowledgeSetting }, { data: saltySetting }, { data: dbProperties }] = await Promise.all([
+            supabaseServiceRole.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
+            supabaseServiceRole.from('system_settings').select('value').eq('key', 'salty_config').single(),
+            supabaseServiceRole.from('properties').select('id, title, location, description, price, amenities')
+        ]);
+
+        const villaKnowledge = knowledgeSetting?.value || {};
+        const saltyConfig: any = saltySetting?.value || {};
+
+        const VILLA_CONCIERGE_PROMPT = `
+Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo. 
+
+### PERSONALIDAD & TONALIDAD
+${saltyConfig.personality || 'Caribbean Luxury Concierge. Sophisticated, warm, proactive.'}
+
+### REGLAS DE ETIQUETA
+${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophisticated Caribbean.\n- Comienza con cortesía extrema.'}
+
+### RECURSOS DISPONIBLES
+- REGLAS/GESTIÓN: ${JSON.stringify(villaKnowledge)}
+- INVENTARIO ACTUAL: ${JSON.stringify(dbProperties)}
+
+### CONTEXTO INTERNO
+Hablas directamente con el Host (Brian o Israel) o su equipo técnico. Sé eficiente, informativo y mantén tu esencia profesional.
+`.trim();
+
         // 🧠 Cargar memorias privadas de la familia
         const { data: familyKnowledge } = await supabaseServiceRole
             .from('salty_family_knowledge')

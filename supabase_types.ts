@@ -58,7 +58,16 @@ export type Database = {
           source: string | null
           status: string | null
           total_price: number
+          total_paid_at_booking: number | null
           user_id: string | null
+          applied_policy: Json | null
+          cleaning_fee_at_booking: number | null
+          service_fee_at_booking: number | null
+          refund_amount_calculated: number | null
+          retained_amount_calculated: number | null
+          cancellation_snapshot: Json | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
         }
         Insert: {
           check_in: string
@@ -79,7 +88,16 @@ export type Database = {
           source?: string | null
           status?: string | null
           total_price: number
+          total_paid_at_booking?: number | null
           user_id?: string | null
+          applied_policy?: Json | null
+          cleaning_fee_at_booking?: number | null
+          service_fee_at_booking?: number | null
+          refund_amount_calculated?: number | null
+          retained_amount_calculated?: number | null
+          cancellation_snapshot?: Json | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
         }
         Update: {
           check_in?: string
@@ -101,6 +119,14 @@ export type Database = {
           status?: string | null
           total_price?: number
           user_id?: string | null
+          applied_policy?: Json | null
+          cleaning_fee_at_booking?: number | null
+          service_fee_at_booking?: number | null
+          refund_amount_calculated?: number | null
+          retained_amount_calculated?: number | null
+          cancellation_snapshot?: Json | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
         }
         Relationships: [
           {
@@ -161,6 +187,51 @@ export type Database = {
           session_id?: string | null
           takeover_notified?: boolean | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      destination_guides: {
+        Row: {
+          id: string
+          category: string
+          title: string
+          distance: string | null
+          description: string | null
+          image_url: string | null
+          map_url: string | null
+          salty_tip: string | null
+          sort_order: number | null
+          is_active: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          category: string
+          title: string
+          distance?: string | null
+          description?: string | null
+          image_url?: string | null
+          map_url?: string | null
+          salty_tip?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          category?: string
+          title?: string
+          distance?: string | null
+          description?: string | null
+          image_url?: string | null
+          map_url?: string | null
+          salty_tip?: string | null
+          sort_order?: number | null
+          is_active?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
         }
         Relationships: []
       }
@@ -437,9 +508,13 @@ export type Database = {
           policies: Json | null
           price: number
           original_price: number | null
+          min_price_floor: number | null
+          max_discount_allowed: number | null
+          cancellation_policy_type: string | null
           property_features: Json | null
           rating: number | null
           reviews: number | null
+          reviews_count: number | null
           seasonal_prices: Json | null
           security_deposit: number | null
           service_fee: number | null
@@ -482,6 +557,8 @@ export type Database = {
           policies?: Json | null
           price: number
           original_price?: number | null
+          min_price_floor?: number | null
+          max_discount_allowed?: number | null
           property_features?: Json | null
           rating?: number | null
           reviews?: number | null
@@ -527,6 +604,8 @@ export type Database = {
           policies?: Json | null
           price?: number
           original_price?: number | null
+          min_price_floor?: number | null
+          max_discount_allowed?: number | null
           property_features?: Json | null
           rating?: number | null
           reviews?: number | null

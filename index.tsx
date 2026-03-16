@@ -5,6 +5,7 @@ import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import './src/index.css';
 import { PropertyProvider } from './contexts/PropertyContext';
+import { BookingProvider } from './contexts/BookingContext';
 
 // 1. Error Boundary Wrapper
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -65,7 +66,9 @@ root.render(
         <ScrollToTop />
         <AuthProvider>
           <PropertyProvider>
-            <App />
+            <BookingProvider>
+              <App />
+            </BookingProvider>
           </PropertyProvider>
         </AuthProvider>
       </BrowserRouter>

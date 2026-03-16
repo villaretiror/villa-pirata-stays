@@ -99,6 +99,9 @@ export interface Property {
   waze_url?: string;
   review_url?: string;
   isOffline?: boolean;
+  min_price_floor: number;
+  max_discount_allowed: number;
+  cancellation_policy_type?: CancellationPolicyType;
   seasonal_prices?: SeasonalPrice[];
   created_at?: string;
   updated_at?: string;
@@ -124,6 +127,17 @@ export interface Booking {
   payment_method?: string;
   payment_proof_url?: string;
   total_price: number;
+  applied_policy?: {
+    type: CancellationPolicyType;
+    snapshot: string; // Resumen textual de la regla legal aplicada
+  };
+  cancelled_at?: string;
+  cancellation_reason?: string;
+  cleaning_fee_at_booking?: number | null;
+  service_fee_at_booking?: number | null;
+  refund_amount_calculated?: number | null;
+  retained_amount_calculated?: number | null;
+  cancellation_snapshot?: any;
   paymentDetails: {
     method: 'Credit Card' | 'ATH Movil' | 'Cash';
     transactionId?: string;
@@ -140,11 +154,14 @@ export interface Booking {
 }
 
 export interface LocalGuideItem {
+  id?: string;
   name: string;
   distance: string;
   desc: string;
   image: string;
   mapUrl?: string;
+  saltyTip?: string;
+  sortOrder?: number;
 }
 
 export interface LocalGuideCategory {
@@ -178,6 +195,64 @@ export interface Lead {
   date_of_interest?: string;
   status: 'new' | 'contacted' | 'converted' | 'closed';
   created_at: string;
+}
+
+export interface SiteContent {
+  hero: {
+    title: string;
+    slogan: string;
+    welcome_badge: string;
+    notif_status: string;
+    notif_promo: string;
+  };
+  sections: {
+    beaches: string;
+    gastronomy: string;
+    nearby: string;
+  };
+  cta: {
+    title: string;
+    subtitle: string;
+    description: string;
+  };
+  contact: {
+    title: string;
+    subtitle: string;
+    phone: string;
+    email: string;
+    whatsapp: string;
+  };
+  seo: {
+    default_title: string;
+    description: string;
+  };
+}
+
+export interface VillaKnowledge {
+  location: {
+    description: string;
+    distances: string;
+  };
+  policies: {
+    checkIn: string;
+    checkOut: string;
+    rules: string;
+    cancellation: string;
+    deposit: string;
+  };
+  amenities: {
+    general: string;
+  };
+  emergencies: {
+    contact: string;
+    procedures: string;
+  };
+  survival_tips: {
+    parking: string;
+    cash: string;
+    hours: string;
+    cooking: string;
+  };
 }
 
 export interface UrgentAlert {

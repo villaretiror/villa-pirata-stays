@@ -13,6 +13,9 @@ import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
 import { Database, Tables } from '../supabase_types';
 import { HOST_PHONE } from '../constants';
+import ExperienceManager from '../components/host/ExperienceManager';
+import SiteSettingsManager from '../components/host/SiteSettingsManager';
+import InsightViewer from '../components/host/InsightViewer';
 
 type BookingRow = Tables<'bookings'>;
 type ExpenseRow = Tables<'property_expenses'>;
@@ -221,38 +224,6 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
   );
 };
 
-const GuideEditor = ({ item, onSave, onCancel }: { item: LocalGuideItem, onSave: (item: LocalGuideItem) => void, onCancel: () => void }) => {
-  const [form, setForm] = useState(item);
-  return (
-    <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-      <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
-        <h2 className="font-bold text-xl mb-4">Editar Lugar</h2>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold uppercase text-text-light mb-1">Nombre</label>
-            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full p-2 border rounded-lg bg-gray-50" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold uppercase text-text-light mb-1">Distancia (Tiempo)</label>
-            <input value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} className="w-full p-2 border rounded-lg bg-gray-50" placeholder="e.g. 12 min" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold uppercase text-text-light mb-1">URL Imagen</label>
-            <input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} className="w-full p-2 border rounded-lg bg-gray-50" />
-          </div>
-          <div>
-            <label className="block text-xs font-bold uppercase text-text-light mb-1">Descripción</label>
-            <textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} className="w-full p-2 border rounded-lg bg-gray-50 h-24" />
-          </div>
-          <div className="flex gap-3 pt-2">
-            <button onClick={onCancel} className="flex-1 py-3 text-sm font-bold text-gray-500 hover:bg-gray-50 rounded-xl">Cancelar</button>
-            <button onClick={() => onSave(form)} className="flex-1 py-3 text-sm font-bold bg-primary text-white rounded-xl shadow-lg shadow-primary/20">Guardar</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
 
 const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (url: string) => void }) => {
   const [url, setUrl] = useState('');
@@ -1549,35 +1520,98 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
 
         <div className="space-y-4">
           {activeSection === 'info' && (
-            <>
-              <input
-                value={form.title}
-                onChange={e => setForm({ ...form, title: e.target.value })}
-                className="w-full p-3 border rounded-xl font-bold text-lg"
-                placeholder="Título"
-              />
-              <textarea
-                value={form.description}
-                onChange={e => setForm({ ...form, description: e.target.value })}
-                className="w-full p-3 border rounded-xl h-32"
-                placeholder="Descripción"
-              />
-              <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Título de la Propiedad</label>
                 <input
-                  type="number"
-                  value={form.price}
-                  onChange={e => setForm({ ...form, price: Number(e.target.value) })}
-                  className="w-full p-3 border rounded-xl"
-                  placeholder="Precio"
+                  value={form.title}
+                  onChange={e => setForm({ ...form, title: e.target.value })}
+                  className="w-full p-3 border border-gray-100 rounded-xl font-bold text-lg bg-gray-50/50"
+                  placeholder="Título"
                 />
+              </div>
+              
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Subtítulo / Eslogan</label>
+                <input
+                  value={form.subtitle || ''}
+                  onChange={e => setForm({ ...form, subtitle: e.target.value })}
+                  className="w-full p-3 border border-gray-100 rounded-xl text-sm bg-gray-50/50"
+                  placeholder="Ej: Designer Villa · Estratégica & Íntima"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Descripción Detallada</label>
+                <textarea
+                  value={form.description}
+                  onChange={e => setForm({ ...form, description: e.target.value })}
+                  className="w-full p-3 border border-gray-100 rounded-xl h-32 text-sm bg-gray-50/50"
+                  placeholder="Descripción"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Precio Actual ($)</label>
+                  <input
+                    type="number"
+                    value={form.price}
+                    onChange={e => setForm({ ...form, price: Number(e.target.value) })}
+                    className="w-full p-3 border border-gray-100 rounded-xl font-bold text-primary bg-gray-50/50"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Precio Original (Tachado)</label>
+                  <input
+                    type="number"
+                    value={form.original_price || ''}
+                    onChange={e => setForm({ ...form, original_price: e.target.value ? Number(e.target.value) : null })}
+                    className="w-full p-3 border border-gray-100 rounded-xl font-bold text-gray-400 bg-gray-50/50"
+                    placeholder="Sin descuento"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Ubicación Corta (Display)</label>
                 <input
                   value={form.location}
                   onChange={e => setForm({ ...form, location: e.target.value })}
-                  className="w-full p-3 border rounded-xl"
-                  placeholder="Ubicación"
+                  className="w-full p-3 border border-gray-100 rounded-xl text-sm bg-gray-50/50"
+                  placeholder="Cabo Rojo, PR"
                 />
               </div>
-            </>
+
+              <div>
+                <label className="block text-[10px] font-black text-gray-400 uppercase mb-1 ml-1">Dirección Completa (Privada)</label>
+                <input
+                  value={form.address || ''}
+                  onChange={e => setForm({ ...form, address: e.target.value })}
+                  className="w-full p-3 border border-gray-100 rounded-xl text-sm bg-gray-50/50"
+                  placeholder="Carr 307 Km..."
+                />
+              </div>
+
+              <div className="grid grid-cols-4 gap-2 pt-2">
+                <div>
+                  <label className="block text-[8px] font-black text-gray-400 uppercase mb-1 ml-1">Huéspedes</label>
+                  <input type="number" value={form.guests} onChange={e => setForm({ ...form, guests: Number(e.target.value) })} className="w-full p-2 border border-gray-100 rounded-lg text-xs font-bold bg-gray-50/50" />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-black text-gray-400 uppercase mb-1 ml-1">Cuartos</label>
+                  <input type="number" value={form.bedrooms} onChange={e => setForm({ ...form, bedrooms: Number(e.target.value) })} className="w-full p-2 border border-gray-100 rounded-lg text-xs font-bold bg-gray-50/50" />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-black text-gray-400 uppercase mb-1 ml-1">Camas</label>
+                  <input type="number" value={form.beds} onChange={e => setForm({ ...form, beds: Number(e.target.value) })} className="w-full p-2 border border-gray-100 rounded-lg text-xs font-bold bg-gray-50/50" />
+                </div>
+                <div>
+                  <label className="block text-[8px] font-black text-gray-400 uppercase mb-1 ml-1">Baños</label>
+                  <input type="number" value={form.baths} onChange={e => setForm({ ...form, baths: Number(e.target.value) })} className="w-full p-2 border border-gray-100 rounded-lg text-xs font-bold bg-gray-50/50" />
+                </div>
+              </div>
+            </div>
           )}
 
           {activeSection === 'emergency' && renderEmergencySection()}
@@ -1771,26 +1805,35 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
                 </h3>
                 <p className="text-xs text-text-light mb-4">Selecciona la política que aplica a esta propiedad.</p>
                 <select
-                  value={form.policies.cancellationPolicy || 'firm'}
-                  onChange={e => setForm({ ...form, policies: { ...form.policies, cancellationPolicy: e.target.value as any } })}
+                  value={form.policies.cancellationPolicy || 'moderate'}
+                  onChange={e => {
+                    const val = e.target.value as any;
+                    setForm({ 
+                      ...form, 
+                      policies: { ...form.policies, cancellationPolicy: val },
+                      cancellation_policy_type: val 
+                    });
+                  }}
                   className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20"
                 >
-                  <option value="flexible">Flexible — Reembolso 100% hasta 24h antes</option>
-                  <option value="moderate">Moderada — Reembolso 100% hasta 5 días antes</option>
-                  <option value="firm">Firme — 100% +30d, 50% 7–30d, 0% &lt;7d</option>
-                  <option value="strict">Estricta — 50% hasta 7 días antes, luego 0%</option>
-                  <option value="non-refundable">No Reembolsable</option>
+                  <option value="flexible">Flexible (Estándar Airbnb 24h)</option>
+                  <option value="moderate">Moderada (Estándar Airbnb 5 días)</option>
+                  <option value="firm">Firme (100% +30d, 50% 7-30d, 0% &lt;7d)</option>
+                  <option value="strict">Estricta (50% hasta 7 días antes, luego 0%)</option>
                 </select>
                 {/* Policy Badge Preview */}
-                <div className="mt-4 p-3 bg-blue-50/50 rounded-xl border border-blue-100">
-                  <p className="text-xs font-bold text-blue-700 mb-1">Vista previa para el huésped:</p>
-                  <p className="text-xs text-blue-600">
-                    {form.policies.cancellationPolicy === 'flexible' && 'Reembolso completo si cancelas con al menos 24 horas de antelación.'}
-                    {form.policies.cancellationPolicy === 'moderate' && 'Reembolso completo si cancelas con al menos 5 días de antelación.'}
-                    {(form.policies.cancellationPolicy === 'firm' || !form.policies.cancellationPolicy) && 'Reembolso completo +30 días antes. 50% entre 7–30 días. Sin reembolso menos de 7 días.'}
-                    {form.policies.cancellationPolicy === 'strict' && 'Reembolso del 50% hasta 7 días antes. Sin reembolso después.'}
-                    {form.policies.cancellationPolicy === 'non-refundable' && 'Sin reembolso bajo ninguna circunstancia.'}
+                <div className="mt-4 p-4 bg-blue-50/50 rounded-2xl border border-blue-100/50">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="material-icons text-blue-500 text-sm">gavel</span>
+                    <p className="text-[10px] font-black text-blue-700 uppercase tracking-widest">Resumen Legal del Contrato</p>
+                  </div>
+                  <p className="text-xs text-blue-600 leading-relaxed italic">
+                    {form.policies.cancellationPolicy === 'flexible' && "Huéspedes reciben reembolso total si cancelan hasta 24h antes del check-in. Después, se retiene la 1ra noche."}
+                    {form.policies.cancellationPolicy === 'moderate' && "Huéspedes reciben reembolso total si cancelan hasta 5 días antes del check-in. Después, se retiene 1ra noche + 50% del resto."}
+                    {form.policies.cancellationPolicy === 'firm' && "Huéspedes reciben reembolso total si cancelan 30 días antes. Entre 7-30 días, reembolso del 50%. Menos de 7 días, sin reembolso."}
+                    {form.policies.cancellationPolicy === 'strict' && "Huéspedes reciben reembolso del 50% si cancelan al menos 7 días antes. Menos de 7 días, sin reembolso (0%)."}
                   </p>
+                  <p className="mt-2 text-[9px] font-bold text-blue-400 uppercase">* Los cargos de limpieza siempre se reembolsan si se cancela antes del check-in.</p>
                 </div>
               </div>
 
@@ -2293,12 +2336,12 @@ const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booki
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { properties, localGuideData: guideData, updateProperties: onUpdateProperties, updateGuide: onUpdateGuide } = useProperty();
+  const { properties, localGuideData: guideData, updateProperties: onUpdateProperties } = useProperty();
 
   const onNavigate = (path: string) => {
     if (path === 'home') navigate('/');
@@ -2309,7 +2352,6 @@ const HostDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('today');
   const [leads, setLeads] = useState<User[]>([]);
   const [isEditing, setIsEditing] = useState<string | null>(null);
-  const [isEditingGuide, setIsEditingGuide] = useState<{ catId: string, idx: number } | null>(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -2717,54 +2759,69 @@ const HostDashboard: React.FC = () => {
   };
 
   const handleSaveProperty = async (updated: Property) => {
-    if (isSaving || user?.email !== 'villaretiror@gmail.com') return;
+    if (isSaving || (user?.email !== 'villaretiror@gmail.com' && user?.role !== 'host')) return;
     setIsSaving(true);
     const hostId = user?.id;
     if (!hostId) return;
 
-    const payload = { 
-      ...updated, 
-      host_id: hostId,
-      reviews_list: updated.reviews_list || [], // Sincronizar con columna DB
-      availability_urgency_msg: updated.availability_urgency_msg,
-      general_area_map_url: updated.general_area_map_url,
-      exact_lat_long: updated.exact_lat_long,
-      google_maps_url: updated.google_maps_url,
-      waze_url: updated.waze_url,
-      review_url: updated.review_url
-    };
-    
-    // Limpiar campos que no van a la DB como columnas planas
-    delete (payload as any).reviews_list;
-    delete (payload as any).offers;
-    delete (payload as any).seasonal_prices;
+    try {
+      // MASTER PAYLOAD: Sincronización de campos UI con columnas snake_case de DB
+      const payload: any = { 
+        ...updated, 
+        host_id: hostId,
+        // Unificación de nombres Estándar Real-Data
+        reviews: updated.reviews_count,        
+        is_offline: updated.isOffline,         
+        cancellation_policy_type: updated.cancellation_policy_type,
+        updated_at: new Date().toISOString()
+      };
+      
+      // Eliminar variantes basura para mantener limpieza de tráfico y evitar errores de Schema Cache
+      const junkFields = ['isOffline', 'isoffline', 'reviews_count', 'blockedDates', 'calendarSync'];
+      junkFields.forEach(f => delete payload[f]);
 
-    const { error: updateError } = await supabase.from('properties').update(payload).eq('id', updated.id);
-    if (updateError) {
-      showToast(`Error al guardar: ${updateError.message}`);
-      setIsSaving(false);
-      return;
-    }
+      // Unificar nombres JSONB a minúsculas/snake_case para la DB
+      payload.calendarsync = updated.calendarSync || [];
 
-    showToast("¡Cambios guardados! ✅");
-    const updatedProperties = properties.map((p: Property) => p.id === updated.id ? updated : p);
-    onUpdateProperties(updatedProperties);
-    setIsEditing(null);
-    setIsSaving(false);
-  };
+      // Aseguramos que los objetos JSONB se mantengan intactos
+      const jsonFields = ['fees', 'policies', 'seasonal_prices', 'offers', 'reviews_list', 'calendarsync'];
+      jsonFields.forEach(field => {
+        if (!payload[field]) payload[field] = (updated as any)[field] || (['fees', 'policies'].includes(field) ? {} : []);
+      });
 
-  const handleSaveGuideItem = (updatedItem: LocalGuideItem, catId: string, itemIdx: number) => {
-    const newGuide = guideData.map((cat: LocalGuideCategory) => {
-      if (cat.id === catId) {
-        const newItems = [...cat.items];
-        newItems[itemIdx] = updatedItem;
-        return { ...cat, items: newItems };
+      const { error: updateError } = await supabase
+        .from('properties')
+        .update(payload)
+        .eq('id', updated.id);
+
+      if (updateError) {
+        let msg = `Error técnico: ${updateError.message}`;
+        
+        // Manejo amigable de errores de esquema (Master Prompt Requirement)
+        if (updateError.code === 'PGRST204') {
+          msg = "⚠️ Desconexión de Esquema: La columna 'reviews_count' no existe aún. Por favor, ejecuta el script ADD_MISSING_COLUMNS.sql en Supabase.";
+        } else if (updateError.message.includes('column') && updateError.message.includes('not found')) {
+          msg = `Falta una columna en la base de datos: ${updateError.message.split('"')[1]}. Ejecuta la migración de SQL.`;
+        }
+
+        console.error("Supabase Save Details:", updateError);
+        showToast(msg);
+        setIsSaving(false);
+        return;
       }
-      return cat;
-    });
-    onUpdateGuide(newGuide);
-    setIsEditingGuide(null);
+
+      showToast("¡Sincronización Completa con Supabase! ✅");
+      const updatedProperties = properties.map((p: Property) => p.id === updated.id ? updated : p);
+      onUpdateProperties(updatedProperties);
+      setIsEditing(null);
+    } catch (err: any) {
+      console.error("Fatal Editor Error:", err);
+      showToast("Error crítico al procesar los datos de la propiedad.");
+    } finally {
+      setIsSaving(false);
+    }
   };
+
 
   const handleImport = async (url: string) => {
     setShowImportModal(false);
@@ -2776,6 +2833,8 @@ const HostDashboard: React.FC = () => {
       const { data: dbItem, error } = await supabase.from('properties').insert({
         host_id: hostId,
         title: importedData.title || 'Nueva Propiedad',
+        subtitle: importedData.subtitle || 'Boutique Stay',
+        address: importedData.address || '',
         description: importedData.description || '',
         price: importedData.price || 150,
         email: user.email?.toLowerCase(),
@@ -2792,7 +2851,9 @@ const HostDashboard: React.FC = () => {
           guests: 4,
           wifiPass: '',
           accessCode: ''
-        }
+        },
+        offers: [],
+        reviews_list: []
       }).select().single();
 
       if (error || !dbItem) throw error || new Error("Fallo al crear en DB");
@@ -3141,8 +3202,27 @@ const HostDashboard: React.FC = () => {
           realBookings.map((booking: any) => (
             <article key={booking.id} className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-gray-100 relative overflow-hidden mb-6 group">
               <div className="flex justify-between items-center mb-8">
-                <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border border-primary/10">
-                  Reserva {booking.status}
+                <div className="flex items-center gap-2">
+                  <div className="bg-primary/5 text-primary px-4 py-1.5 rounded-full text-[9px] font-bold uppercase tracking-[0.2em] border border-primary/10">
+                    Reserva {booking.status}
+                  </div>
+                  {/* CANCELLATION SNAP BADGE */}
+                  {booking.applied_policy && (
+                    <div className="group/snap relative">
+                      <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1 cursor-help">
+                        <span className="material-icons text-[10px]">gavel</span>
+                        {booking.applied_policy.type}
+                      </div>
+                      {/* Tooltip on Hover */}
+                      <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 opacity-0 group-hover/snap:opacity-100 pointer-events-none transition-opacity">
+                        <p className="text-[10px] font-black uppercase text-blue-500 mb-1 tracking-widest pb-1 border-b border-blue-50">Snap de Política Legal</p>
+                        <p className="text-[11px] font-medium text-text-main leading-relaxed">
+                          {booking.applied_policy.snapshot}
+                        </p>
+                        <p className="text-[9px] text-text-light mt-2 italic">Aceptado el: {booking.created_at ? new Date(booking.created_at).toLocaleDateString() : 'N/A'}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 text-text-light">
                   <Clock className="w-3.5 h-3.5" />
@@ -3197,6 +3277,41 @@ const HostDashboard: React.FC = () => {
                   <MessageCircle className="w-4 h-4" /> Chat
                 </button>
               </div>
+
+              {booking.status === 'cancelled' && (
+                <div className="mt-4 mb-6 p-5 bg-red-50 rounded-[2rem] border border-red-100/50">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="material-icons text-red-500 text-sm">payments</span>
+                    <p className="text-[10px] font-black text-red-700 uppercase tracking-widest">Liquidación por Cancelación</p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-white/60 p-3 rounded-xl border border-red-50">
+                      <p className="text-[8px] font-bold text-gray-400 uppercase mb-0.5">Reembolsado (Huésped)</p>
+                      <p className="text-sm font-black text-red-600">${booking.refund_amount_calculated || 0}</p>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-xl border border-red-50">
+                      <p className="text-[8px] font-bold text-gray-400 uppercase mb-0.5">Retenido (Total)</p>
+                      <p className="text-sm font-black text-slate-800">${booking.retained_amount_calculated || 0}</p>
+                    </div>
+                  </div>
+                  
+                  {/* Desglose Interno para el Host */}
+                  <div className="mt-3 pt-3 border-t border-red-100 flex justify-between items-center">
+                    <div className="flex flex-col">
+                      <p className="text-[8px] font-black text-red-400 uppercase tracking-tighter">Limpieza Protegida</p>
+                      <p className="text-[11px] font-bold text-red-700">${booking.cleaning_fee_at_booking || 0}</p>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <p className="text-[8px] font-black text-slate-400 uppercase tracking-tighter">Margen / Penalidad</p>
+                      <p className="text-[11px] font-bold text-slate-700">${Math.max(0, (booking.retained_amount_calculated || 0) - (booking.cleaning_fee_at_booking || 0))}</p>
+                    </div>
+                  </div>
+
+                  <p className="text-[9px] text-red-400 italic mt-3 text-center">
+                    * Procentaje aplicado sobre el total bruto (All-Inclusive).
+                  </p>
+                </div>
+              )}
 
               <div className="mt-4 mb-6 p-4 bg-blue-50/50 rounded-2xl border border-blue-100 flex items-start gap-3">
                 <span className="material-icons text-blue-500 text-base">savings</span>
@@ -3366,32 +3481,11 @@ const HostDashboard: React.FC = () => {
   );
 
   const renderGuidebook = () => (
-    <div className="space-y-8 animate-fade-in">
-      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4">
-        <h3 className="font-bold text-blue-800 text-sm mb-1">Gestor de Guía Local</h3>
-        <p className="text-xs text-blue-600">Edita lugares para asegurar que los huéspedes tengan información precisa.</p>
-      </div>
+    <ExperienceManager guideData={guideData} />
+  );
 
-      {guideData.map((category: LocalGuideCategory) => (
-        <div key={category.id}>
-          <h3 className="font-bold text-xl mb-3 flex items-center gap-2">
-            <span className="material-icons text-secondary">{category.icon}</span>
-            {category.category}
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            {category.items.map((item: LocalGuideItem, idx: number) => (
-              <div key={idx} className="h-64">
-                <GuideCard
-                  item={item}
-                  isEditable={true}
-                  onEdit={() => setIsEditingGuide({ catId: category.id, idx })}
-                />
-              </div>
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
+  const renderSettings = () => (
+    <SiteSettingsManager />
   );
 
   const renderListings = () => (
@@ -3644,6 +3738,7 @@ const HostDashboard: React.FC = () => {
       <main className="px-6 mt-4">
         {activeTab === 'today' && renderToday()}
         {activeTab === 'guidebook' && renderGuidebook()}
+        {activeTab === 'settings' && renderSettings()}
         {activeTab === 'listings' && renderListings()}
         {activeTab === 'reviews' && renderReviews()}
         {activeTab === 'leads' && renderLeads()}
@@ -3660,6 +3755,7 @@ const HostDashboard: React.FC = () => {
         )}
         {activeTab === 'conversion' && renderConversion()}
         {activeTab === 'messages' && <HostMessageCenter />}
+        {activeTab === 'insights' && <InsightViewer />}
       </main>
 
       {/* Overlays */}
@@ -3676,13 +3772,6 @@ const HostDashboard: React.FC = () => {
       {editingProperty && <Editor property={editingProperty} bookings={realBookings} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} />}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
 
-      {isEditingGuide && (
-        <GuideEditor
-          item={guideData.find(c => c.id === isEditingGuide.catId)!.items[isEditingGuide.idx]}
-          onSave={(item) => handleSaveGuideItem(item, isEditingGuide.catId, isEditingGuide.idx)}
-          onCancel={() => setIsEditingGuide(null)}
-        />
-      )}
 
       {/* Host Navigation */}
       <nav className="fixed bottom-0 w-full bg-black border-t border-white/10 pb-safe pt-3 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] z-40 overflow-x-auto no-scrollbar print:hidden">
@@ -3715,6 +3804,21 @@ const HostDashboard: React.FC = () => {
             )}
             <BarChart3 strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'analytics' ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Estadísticas</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('insights')}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'insights' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            {activeTab === 'insights' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Sparkles strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'insights' ? 'scale-110' : ''} text-primary`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Insights</span>
           </button>
 
           <button
@@ -3752,6 +3856,21 @@ const HostDashboard: React.FC = () => {
             )}
             <Home strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'listings' ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Villas</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'settings' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            {activeTab === 'settings' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Sparkles strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'settings' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Config</span>
           </button>
 
           <button

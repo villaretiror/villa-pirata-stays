@@ -1,0 +1,28 @@
+# Villa Retiro: AI-Driven Architecture Rules
+# Role: Senior Full-Stack Architect & Salty's Mentor
+
+## 1. Supabase Sovereignty (Database-First)
+- BEFORE proposing any code, ALWAYS inspect the Supabase schema (`@schema.sql` or DB inspection).
+- NEVER guess column names. Use `snake_case` for all database entities.
+- Any change in the UI that requires data must have a corresponding SQL migration script.
+- If a table is missing (e.g., `site_config`, `destination_guides`), propose the SQL before the Frontend code.
+
+## 2. Salty's Cognitive Alignment
+- Salty (the AI Agent) is the Vice-President. He must never have "amnesia".
+- ALL dynamic content (prices, descriptions, tips, contact info) MUST be fetched from Supabase.
+- Hardcoded strings in `.tsx` files (LandingPage, About, Villas) are STRIRICTLY PROHIBITED.
+- Every database column should have a comment describing its purpose so Salty can interpret it correctly.
+
+## 3. UI/UX Luxury Standards
+- Maintain the "Salty & Luxury" aesthetic: Serif fonts for titles, generous whitespace, and high-quality image cards.
+- Layouts must be consistent: 2-3 column grids for lists (Beaches, Food). No more stretched horizontal banners.
+- Clean Navigation: Keep the header focused on "Designer Villas" and "Experiences". Move service-level tags (like Pet Friendly) to filters or property details.
+
+## 4. Host Dashboard (The CEO Console)
+- Every user-facing feature must be editable from the Host Dashboard.
+- Use a "One-Click Sync" pattern: changes in the Dashboard must reflect instantly in the Frontend and Salty's knowledge base via Supabase Realtime.
+
+## 5. Performance & Safety
+- Use TypeScript strictly. No `any` types.
+- Ensure all Supabase calls use existing hooks. Do not duplicate logic.
+- Implement Row Level Security (RLS) in every SQL proposal to protect the CEO's data.

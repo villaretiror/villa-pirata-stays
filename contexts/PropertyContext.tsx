@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
-import { Property, LocalGuideCategory } from '../types';
-import { INITIAL_LOCAL_GUIDE } from '../constants';
+import { Property, LocalGuideCategory, SiteContent, VillaKnowledge } from '../types';
+import { INITIAL_LOCAL_GUIDE, DEFAULT_SITE_CONTENT, DEFAULT_VILLA_KNOWLEDGE } from '../constants';
 import { supabase, isConfigured } from '../lib/supabase';
 import { Database } from '../supabase_types';
 
@@ -11,12 +11,17 @@ interface PropertyContextType {
   properties: Property[];
   localGuideData: LocalGuideCategory[];
   secretSpots: any[];
-  villaKnowledge: any;
+  villaKnowledge: VillaKnowledge;
+  siteContent: SiteContent;
   favorites: string[];
   isLoading: boolean;
   toggleFavorite: (id: string) => void;
   updateProperties: (updated: Property[]) => void;
   updateGuide: (updated: LocalGuideCategory[]) => void;
+  saveGuideItem: (item: any, category: string) => Promise<void>;
+  deleteGuideItem: (id: string) => Promise<void>;
+  saveSiteContent: (content: SiteContent) => Promise<void>;
+  saveVillaKnowledge: (knowledge: VillaKnowledge) => Promise<void>;
   refreshProperties: () => Promise<void>;
 }
 
@@ -31,15 +36,10 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch { return []; }
   });
 
-  const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>(() => {
-    try {
-      const saved = localStorage.getItem('vp_guide');
-      return saved ? JSON.parse(saved) : INITIAL_LOCAL_GUIDE;
-    } catch { return INITIAL_LOCAL_GUIDE; }
-  });
-
+  const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>([]);
   const [secretSpots, setSecretSpots] = useState<any[]>([]);
-  const [villaKnowledge, setVillaKnowledge] = useState<any>(null);
+  const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
+  const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
 
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -52,16 +52,53 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const { data, error } = await supabase.from('properties')
+      
+      // A. Fetch Properties
+      const { data: propData, error: propError } = await supabase.from('properties')
         .select('*')
-        .or('isOffline.eq.false,isOffline.is.null')
+        .or('is_offline.eq.false,is_offline.is.null')
         .abortSignal(signal || new AbortController().signal);
       
-      if (error) throw error;
-      if (data) {
-        console.log('Propiedades recibidas del DB:', data);
+      if (propError) throw propError;
+
+      // B. Fetch Dynamic Destination Guides (Integridad 360)
+      const { data: guideRows, error: guideError } = await supabase
+        .from('destination_guides')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order', { ascending: true });
+
+      if (guideError) console.error("Guide Fetch Error:", guideError);
+
+      if (guideRows) {
+        const categories = [
+          { id: 'beaches', category: 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
+          { id: 'gastronomy', category: 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
+          { id: 'nearby', category: 'Cerca de Ti', icon: 'place', dbKey: 'landmark' }
+        ];
+
+        const mappedGuide: LocalGuideCategory[] = categories.map(cat => ({
+          ...cat,
+          items: (guideRows as any[])
+            .filter(r => r.category === cat.dbKey)
+            .map(r => ({
+              id: r.id,
+              name: r.title,
+              distance: r.distance,
+              desc: r.description,
+              image: r.image_url,
+              mapUrl: r.map_url,
+              saltyTip: r.salty_tip,
+              sortOrder: r.sort_order
+            }))
+        }));
+        setLocalGuideData(mappedGuide);
+      }
+      
+      if (propData) {
+        console.log('Propiedades recibidas del DB:', propData);
         const isAdmin = session?.user?.email === 'villaretiror@gmail.com';
-        const mapped: Property[] = (data as PropertyRow[]).map(p => {
+        const mapped: Property[] = (propData as PropertyRow[]).map(p => {
           // Safe JSON parsing for policies
           const rawPolicies: any = p.policies;
           const policies = {
@@ -89,7 +126,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             service_fee: Number(p.service_fee) || 0,
             security_deposit: Number(p.security_deposit) || 0,
             rating: Number(p.rating) || 0,
-            reviews_count: Number(p.reviews) || 0,
+            reviews_count: Number(p.reviews || (p as any).reviews_count) || 0,
             images: p.images || [],
             amenities: p.amenities || [],
             guests: Number(p.guests) || 1,
@@ -98,26 +135,32 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             baths: Number(p.baths) || 0,
             fees: (p.fees as any) || {},
             policies: policies,
-            blockedDates: p.blockedDates || [],
-            calendarSync: (p.calendarSync as any[]) || [],
+            blockedDates: p.blockeddates || p.blockedDates || [],
+            calendarSync: (p.calendarsync as any[]) || (p.calendarSync as any[]) || [],
             seasonal_prices: (p.seasonal_prices as any[]) || [],
-            host: (p.host as any) || { name: 'Anfitrión', image: '', badges: [], yearsHosting: 0 }
+            isOffline: p.is_offline || (p as any).isoffline || (p as any).isOffline || false,
+            min_price_floor: Number(p.min_price_floor) || 0,
+            max_discount_allowed: Number(p.max_discount_allowed) || 15,
+            offers: (p as any).offers || [],
+            reviews_list: (p as any).reviews_list || [],
+            host: (p as any).host || { name: 'Anfitrión', image: '', badges: [], yearsHosting: 0 }
           } as Property;
         });
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
-        // 1b. Fetch System Settings (Guidebook)
+        // 1c. Fetch Global System Settings (Integridad 360)
         const { data: settings } = await supabase.from('system_settings').select('key, value');
         if (settings) {
           const typedSettings = settings as SettingRow[];
-          const guide = typedSettings.find(s => s.key === 'local_guide_data')?.value;
-          if (guide) setLocalGuideData(guide as any);
-
+          
           const secrets = typedSettings.find(s => s.key === 'secret_spots')?.value;
           if (secrets) setSecretSpots(secrets as any[]);
 
           const knowledge = typedSettings.find(s => s.key === 'villa_knowledge')?.value;
-          if (knowledge) setVillaKnowledge(knowledge);
+          if (knowledge) setVillaKnowledge(knowledge as any);
+
+          const content = typedSettings.find(s => s.key === 'site_content')?.value;
+          if (content) setSiteContent(content as any);
         }
       }
     } catch (err: any) {
@@ -131,7 +174,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const controller = new AbortController();
     fetchPropertiesFromDB(controller.signal);
 
-    // 2. Realtime Subscription (Only if production keys present)
+    // 2. Realtime Subscription
     let channel: any = null;
     if (isConfigured) {
       channel = supabase
@@ -139,10 +182,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'properties' },
-          () => {
-            console.log("Realtime: Property update detected, refreshing state...");
-            fetchPropertiesFromDB();
-          }
+          () => fetchPropertiesFromDB()
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'system_settings' },
+          () => fetchPropertiesFromDB()
         )
         .subscribe();
     }
@@ -162,10 +207,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     localStorage.setItem('vp_properties', JSON.stringify(properties));
   }, [properties]);
 
-  useEffect(() => {
-    localStorage.setItem('vp_guide', JSON.stringify(localGuideData));
-  }, [localGuideData]);
-
   const toggleFavorite = useCallback((id: string) => {
     setFavorites(prev => prev.includes(id) ? prev.filter(f => f !== id) : [...prev, id]);
   }, []);
@@ -176,29 +217,76 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const updateGuide = useCallback(async (updated: LocalGuideCategory[]) => {
     setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
-    
-    // Persistir en Supabase
+  }, []);
+
+  const saveGuideItem = useCallback(async (item: any, category: string) => {
+    const payload = {
+      category,
+      title: item.name,
+      distance: item.distance,
+      description: item.desc,
+      image_url: item.image,
+      map_url: item.mapUrl,
+      salty_tip: item.saltyTip,
+      sort_order: item.sortOrder || 0,
+      is_active: true,
+      updated_at: new Date().toISOString()
+    };
+
+    let result;
+    if (item.id) {
+      result = await supabase.from('destination_guides').update(payload).eq('id', item.id);
+    } else {
+      result = await supabase.from('destination_guides').insert(payload);
+    }
+
+    if (result.error) throw result.error;
+    await fetchPropertiesFromDB();
+  }, [fetchPropertiesFromDB]);
+
+  const deleteGuideItem = useCallback(async (id: string) => {
+    const { error } = await supabase.from('destination_guides').update({ is_active: false }).eq('id', id);
+    if (error) throw error;
+    await fetchPropertiesFromDB();
+  }, [fetchPropertiesFromDB]);
+
+  const saveSiteContent = useCallback(async (content: SiteContent) => {
     const { error } = await supabase.from('system_settings').upsert({
-      key: 'local_guide_data',
-      value: updated,
+      key: 'site_content',
+      value: content as any,
       updated_at: new Date().toISOString()
     });
-    
-    if (error) console.error("Error saving guide to DB:", error);
-  }, []);
+    if (error) throw error;
+    await fetchPropertiesFromDB();
+  }, [fetchPropertiesFromDB]);
+
+  const saveVillaKnowledge = useCallback(async (knowledge: VillaKnowledge) => {
+    const { error } = await supabase.from('system_settings').upsert({
+      key: 'villa_knowledge',
+      value: knowledge as any,
+      updated_at: new Date().toISOString()
+    });
+    if (error) throw error;
+    await fetchPropertiesFromDB();
+  }, [fetchPropertiesFromDB]);
 
   const value = useMemo(() => ({
     properties,
     localGuideData,
     secretSpots,
     villaKnowledge,
+    siteContent,
     favorites,
     isLoading,
     toggleFavorite,
     updateProperties,
     updateGuide,
+    saveGuideItem,
+    deleteGuideItem,
+    saveSiteContent,
+    saveVillaKnowledge,
     refreshProperties: fetchPropertiesFromDB
-  }), [properties, localGuideData, secretSpots, villaKnowledge, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, fetchPropertiesFromDB]);
+  }), [properties, localGuideData, secretSpots, villaKnowledge, siteContent, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge, fetchPropertiesFromDB]);
 
   return (
     <PropertyContext.Provider value={value}>

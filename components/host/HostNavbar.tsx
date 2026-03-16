@@ -25,7 +25,8 @@ const HostNavbar: React.FC<HostNavbarProps> = ({ activeTab, onNavigateHome }) =>
         messages: 'Mensajes',
         leads: 'Clientes',
         payments: 'Pagos',
-        analytics: 'Estadísticas'
+        analytics: 'Estadísticas',
+        insights: 'Insights 🔥'
     };
 
     return (
