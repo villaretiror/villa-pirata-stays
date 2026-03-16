@@ -104,8 +104,15 @@ export const HealthMonitorService = {
             ...icalReports
         ];
 
+        // 1. Fetch current health state to check previous failure counts
+        const { data: previousHealth } = await supabase.from('system_health').select('service_name, consecutive_failures');
+        const failureMap = new Map<string, number>(previousHealth?.map(h => [h.service_name, h.consecutive_failures || 0]) || []);
+
         for (const report of allReports) {
             try {
+                const prevFailures = failureMap.get(report.service_name) || 0;
+                const currentFailures = report.status === 'error' ? prevFailures + 1 : 0;
+
                 const { error } = await supabase.from('system_health').upsert({
                     service_name: report.service_name,
                     status: report.status,
@@ -113,26 +120,27 @@ export const HealthMonitorService = {
                     error_details: report.error_details,
                     property_id: report.property_id,
                     metadata: report.metadata,
+                    consecutive_failures: currentFailures,
                     last_check: new Date().toISOString()
                 }, { onConflict: 'service_name' });
 
                 if (error) console.error(`[HealthMonitor] Error upserting ${report.service_name}:`, error.message);
+
+                // 🚨 TELEGRAM STRATEGIC ALERT: 3-Strike Rule (Threshold of 3 failures)
+                if (report.status === 'error' && currentFailures === 3) {
+                    const platform = report.metadata?.platform || 'Sistema';
+                    const propertyTitle = report.metadata?.title || 'General';
+
+                    await NotificationService.sendTelegramAlert(
+                        `⚠️ <b>FALLO PERSISTENTE (3/3)</b>: La conexión con <b>${platform}</b> en <i>${propertyTitle}</i> ha fallado 3 veces consecutivas.\n\n` +
+                        `<b>Error actual:</b> ${report.error_details || 'Fallo de timeout'}\n` +
+                        `📅 <b>Última revisión:</b> ${new Date().toLocaleString()}\n\n` +
+                        `Escalando a revisión técnica. <a href="https://villaretiror.com/host/dashboard">Ver Status</a>`
+                    );
+                }
             } catch (e: any) {
                 console.error(`[HealthMonitor] Critical exception upserting ${report.service_name}:`, e.message);
                 // Fail silently, don't crash the main thread
-            }
-
-            // 🚨 TELEGRAM CRITICAL ALERT: Notifica al Host si un canal clave falla
-            if (report.status === 'error') {
-                const platform = report.metadata?.platform || 'Sistema';
-                const propertyTitle = report.metadata?.title || 'General';
-
-                await NotificationService.sendTelegramAlert(
-                    `⚠️ <b>ALERTA TÉCNICA</b>: Se ha perdido la conexión con <b>${platform}</b> en <i>${propertyTitle}</i>.\n\n` +
-                    `<b>Error:</b> ${report.error_details || 'Fallo de timeout'}\n` +
-                    `📅 <b>Fecha:</b> ${new Date().toLocaleString()}\n\n` +
-                    `Revisa el Dashboard: <a href="https://villaretiror.com/host/dashboard">Abrir Control Center</a>`
-                );
             }
         }
 

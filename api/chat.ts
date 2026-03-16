@@ -98,22 +98,31 @@ ${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophist
                 last_sentiment: intentCategory // Using sentiment column as intent storage for now
             }, { onConflict: 'session_id' }).select().then();
 
+            const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until, takeover_notified').eq('session_id', sessionId).single();
+
+            // 🛡️ Gov-Mode: Grouped Alerter (One alert per session to avoid fatigue)
             if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
-                try {
-                    const { NotificationService } = await import('../services/NotificationService.js');
-                    const keyboard = {
-                        inline_keyboard: [
-                            [{ text: "🎤 Responder ahora", callback_data: `takeover_${sessionId}` }]
-                        ]
-                    };
-                    await NotificationService.sendTelegramAlert(
-                        `🛡️ <b>Gov-Mode: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
-                        keyboard
-                    );
-                } catch (e) {}
+                const alreadyNotified = logInfo?.takeover_notified || false;
+                
+                if (!alreadyNotified) {
+                    try {
+                        const { NotificationService } = await import('../services/NotificationService.js');
+                        const keyboard = {
+                            inline_keyboard: [
+                                [{ text: "🎤 Responder ahora", callback_data: `takeover_${sessionId}` }]
+                            ]
+                        };
+                        const success = await NotificationService.sendTelegramAlert(
+                            `🛡️ <b>Gov-Mode: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
+                            keyboard
+                        );
+                        if (success) {
+                            await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', sessionId);
+                        }
+                    } catch (e) {}
+                }
             }
 
-            const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until').eq('session_id', sessionId).single();
             if (logInfo?.human_takeover_until && new Date(logInfo.human_takeover_until) > new Date()) {
                 return new Response("Un miembro del equipo estratégico está respondiendo...", { status: 200 });
             }
