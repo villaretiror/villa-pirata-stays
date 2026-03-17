@@ -29,6 +29,9 @@ const google = createGoogleGenerativeAI({
     baseURL: 'https://generativelanguage.googleapis.com/v1', 
 });
 
+const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
+console.log(`🤖 [Salty 2.5 Engine]: Using Key starting with ${activeKey || 'NONE'}`);
+
 // 🕵️ CRITICAL AUDIT: Verificar presencia de llave en tiempo de ejecución
 if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY && !process.env.GEMINI_API_KEY) {
     console.warn("⚠️ [Principal Systems Engineer] AI_KEY_MISSING: Motor de IA operando en modo degradado (Sin Llave).");
@@ -477,18 +480,9 @@ ${inStay
         const result = await streamText({
             model: google('gemini-2.5-flash'),
             messages: finalMessages,
-            maxSteps: 5,
+            maxSteps: 3,
             temperature: 0.7,
             tools: filteredTools,
-            onStepFinish: ({ text, toolCalls, toolResults, usage, finishReason }) => {
-                console.log(`📡 [Step Context]: Reason: ${finishReason} | Tools called: ${toolCalls?.length || 0}`);
-                if (toolResults && toolResults.length > 0) {
-                    console.log(`🧪 [Tool Sync]: ${JSON.stringify(toolResults.map(r => ({ tool: r.toolName, status: 'complete' })))}`);
-                }
-            },
-            onFinish: ({ usage, finishReason }) => {
-                console.log(`✅ [Stream Finalized]: Tokens: ${usage.totalTokens} - Outcome: ${finishReason}`);
-            }
         });
 
         return result.toTextStreamResponse();

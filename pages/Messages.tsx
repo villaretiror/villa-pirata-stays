@@ -192,9 +192,9 @@ const Messages: React.FC = () => {
         content: m.text
       }));
 
-      // Timeout de 8 segundos
+      // Timeout de 45 segundos para dar espacio a tool calls y razonamiento profundo (Salty 2.5)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), 45000);
 
       let response;
       try {
