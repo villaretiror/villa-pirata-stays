@@ -114,11 +114,17 @@ export default async function handler(req: Request) {
         const activePropertyName = activeProperty?.title || 'Villa Desconocida';
 
         // 🔒 SECURITY AUDIT: Tiered Access Chronology (Gobernanza de Seguridad)
-        // Only Reveal Access Details to confirmed, paid guests 24h before check-in.
-        const accessLevel = await SecurityGovernanceService.getAccessLevel(
-            userId || sessionId || "anon", 
-            effectivePropertyId
-        );
+        // Senior Integration Audit: Wrapped in try-catch to prevent engine stall
+        let accessLevel: any = 0;
+        try {
+            accessLevel = await SecurityGovernanceService.getAccessLevel(
+                userId || sessionId || "anon", 
+                effectivePropertyId
+            );
+        } catch (e) {
+            console.error("🚨 [Security Governance Stall]:", e);
+            accessLevel = 1; // Fallback to basic level
+        }
 
         const wifiName = accessLevel >= 2 ? (activeProperty?.wifi_name || activeProperty?.policies?.wifiName || "VillaRetiro_HighSpeed_WiFi") : "Reservado";
         const wifiPass = accessLevel >= 3 ? (activeProperty?.wifi_pass || activeProperty?.policies?.wifiPass || "Tropical2024!") : "REVELADO_24H_ANTES";
@@ -469,18 +475,28 @@ ${inStay
         });
 
         const result = await streamText({
-            model: google('gemini-2.0-flash'),
+            model: google('gemini-2.5-flash'),
             messages: finalMessages,
             maxSteps: 5,
             temperature: 0.7,
             tools: filteredTools,
+            onStepFinish: ({ text, toolCalls, toolResults, usage, finishReason }) => {
+                console.log(`📡 [Step Context]: Reason: ${finishReason} | Tools called: ${toolCalls?.length || 0}`);
+                if (toolResults && toolResults.length > 0) {
+                    console.log(`🧪 [Tool Sync]: ${JSON.stringify(toolResults.map(r => ({ tool: r.toolName, status: 'complete' })))}`);
+                }
+            },
+            onFinish: ({ usage, finishReason }) => {
+                console.log(`✅ [Stream Finalized]: Tokens: ${usage.totalTokens} - Outcome: ${finishReason}`);
+            }
         });
 
         return result.toTextStreamResponse();
     } catch (error: any) {
         // 🆘 PRINCIPAL ENGINEER EMERGENCY LOGGER
-        console.error("🚨 [CRITICAL BRIDGE FAILURE]: Full Context Audit\n", {
+        console.error("🚨 [CRITICAL BRIDGE FAILURE]: Status Code Audit\n", {
             message: error.message,
+            status: error.status || error.statusCode || 500,
             stack: error.stack,
             cause: error.cause,
             sessionId: req.headers.get('x-session-id') || 'untracked'
