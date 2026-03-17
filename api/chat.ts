@@ -26,6 +26,7 @@ const supabase = createClient(
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
+    baseURL: 'https://generativelanguage.googleapis.com/v1', 
 });
 
 // 🕵️ CRITICAL AUDIT: Verificar presencia de llave en tiempo de ejecución
