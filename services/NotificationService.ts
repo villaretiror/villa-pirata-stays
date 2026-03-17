@@ -10,14 +10,12 @@ export const NotificationService = {
      * @param keyboard Opcional. Inline Keyboard Markup
      */
     async sendTelegramAlert(message: string, keyboard?: any): Promise<boolean> {
-        // En un entorno de producción, el TOKEN y el CHAT_ID vendrían de variables de entorno
-        const TELEGRAM_TOKEN = "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
-
-        // ID Real del Host capturado desde Telegram
+        // 🛡️ PROTOCOLO DE RESILIENCIA: TOKEN y CHAT_ID con fallbacks industriales
+        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
         const CHAT_ID = process.env.TELEGRAM_CHAT_ID || "2085187904";
 
         if (!TELEGRAM_TOKEN || !CHAT_ID) {
-            console.warn("[NotificationService] Telegram Token o Chat ID faltante.");
+            console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
             return false;
         }
 

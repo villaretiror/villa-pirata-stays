@@ -23,8 +23,12 @@ import {
   Phone, 
   Mail,
   ChevronRight,
-  CheckCircle2
+  CheckCircle2,
+  Map as MapIcon
 } from 'lucide-react';
+import MapModal from '../components/MapModal';
+import StickyBookingBar from '../components/StickyBookingBar';
+import { LocalGuideItem } from '../types';
 
 type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
@@ -39,9 +43,11 @@ const Home: React.FC = () => {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [pets, setPets] = useState(0);
-
   const [activeCategory, setActiveCategory] = useState<Category>('todo');
-  const [activeGuideTab, setActiveGuideTab] = useState(0);
+
+  const [activeGuideTab, setActiveGuideTab] = useState<string | null>(null);
+  const [selectedGuideItem, setSelectedGuideItem] = useState<LocalGuideItem | null>(null);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   // Ref for auto-scrolling to results
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -253,14 +259,14 @@ const Home: React.FC = () => {
       <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-10 pb-32">
         {/* Sabor Local Header & Filters */}
         <div className="mb-12">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 text-center md:text-left">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 opacity-80">Cabo Rojo Experience</p>
               <h2 className="font-serif font-bold text-4xl text-text-main leading-[1.1] tracking-tight">Sabor Local & <span className="text-secondary italic font-medium">Aventura.</span></h2>
             </div>
             
-            {/* Experience Pills */}
-            <div className="flex gap-2 p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-2xl border border-white/50 w-fit">
+            {/* Experience Pills - ACTIVADORES DINÁMICOS */}
+            <div className="flex gap-2 p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-[2rem] border border-white/50 w-fit mx-auto md:mx-0 shadow-inner">
               {[
                 { id: 'beaches', label: 'Playas', icon: Palmtree },
                 { id: 'gastronomy', label: 'Gastronomía', icon: Utensils },
@@ -269,10 +275,21 @@ const Home: React.FC = () => {
                 <button
                   key={tab.id}
                   onClick={() => {
-                    const el = document.getElementById(`section-${tab.id}`);
-                    el?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    if (activeGuideTab === tab.id) {
+                      setActiveGuideTab(null);
+                    } else {
+                      setActiveGuideTab(tab.id);
+                      setTimeout(() => {
+                        const el = document.getElementById(`section-${tab.id}`);
+                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                      }, 100);
+                    }
                   }}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-text-light hover:bg-white hover:text-primary transition-all shadow-sm active:scale-95"
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-500 shadow-sm active:scale-95 ${
+                    activeGuideTab === tab.id 
+                    ? 'bg-primary text-white scale-105 shadow-primary/20' 
+                    : 'bg-white text-text-light hover:text-primary hover:bg-white'
+                  }`}
                 >
                   <tab.icon size={14} />
                   {tab.label}
@@ -282,59 +299,103 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* Playas del Paraíso Section */}
-        <div id="section-beaches" className="mb-20 scroll-mt-24">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
-              <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.beaches || "Playas del Paraíso"}</h2>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10 text-primary">
-              <Palmtree size={24} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {localGuideData.find(g => g.id === 'beaches')?.items.map((item, i) => (
-              <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
-            ))}
-          </div>
-        </div>
+        {/* ON-DEMAND LOCAL CONTENT (Filtros Foto 4) */}
+        <AnimatePresence mode="wait">
+          {activeGuideTab && (
+            <motion.div
+              key={activeGuideTab}
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+              className="mb-20"
+            >
+              {/* Playas del Paraíso Section */}
+              {activeGuideTab === 'beaches' && (
+                <div id="section-beaches" className="scroll-mt-32">
+                  <div className="flex justify-between items-end mb-8">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
+                      <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.beaches || "Playas del Paraíso"}</h2>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10 text-primary">
+                      <Palmtree size={24} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {localGuideData.find(g => g.id === 'beaches')?.items.map((item, i) => (
+                      <GuideCard 
+                        key={i} 
+                        item={item} 
+                        onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} 
+                        onMapClick={(guideItem) => {
+                          setSelectedGuideItem(guideItem);
+                          setIsMapModalOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {/* Ruta Gastronómica Section - Unificación de Grilla Premium */}
-        <div id="section-gastronomy" className="mb-20 scroll-mt-24">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
-              <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.gastronomy || "Ruta Gastronómica"}</h2>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center border border-secondary/10 text-secondary">
-              <Utensils size={24} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {localGuideData.find(g => g.id === 'gastronomy')?.items.map((item, i) => (
-              <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
-            ))}
-          </div>
-        </div>
+              {/* Ruta Gastronómica Section */}
+              {activeGuideTab === 'gastronomy' && (
+                <div id="section-gastronomy" className="scroll-mt-32">
+                  <div className="flex justify-between items-end mb-8">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
+                      <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.gastronomy || "Ruta Gastronómica"}</h2>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center border border-secondary/10 text-secondary">
+                      <Utensils size={24} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {localGuideData.find(g => g.id === 'gastronomy')?.items.map((item, i) => (
+                      <GuideCard 
+                        key={i} 
+                        item={item} 
+                        onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} 
+                        onMapClick={(guideItem) => {
+                          setSelectedGuideItem(guideItem);
+                          setIsMapModalOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-        {/* Cerca de Ti Section */}
-        <div id="section-nearby" className="mb-20 scroll-mt-24">
-          <div className="flex justify-between items-end mb-8">
-            <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
-              <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.nearby || "Cerca de Ti"}</h2>
-            </div>
-            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 text-text-light">
-              <MapPin size={24} />
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {localGuideData.find(g => g.id === 'nearby')?.items.map((item, i) => (
-              <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
-            ))}
-          </div>
-        </div>
+              {/* Cerca de Ti Section */}
+              {activeGuideTab === 'nearby' && (
+                <div id="section-nearby" className="scroll-mt-32">
+                  <div className="flex justify-between items-end mb-8">
+                    <div>
+                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
+                      <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.nearby || "Cerca de Ti"}</h2>
+                    </div>
+                    <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 text-text-light">
+                      <MapPin size={24} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {localGuideData.find(g => g.id === 'nearby')?.items.map((item, i) => (
+                      <GuideCard 
+                        key={i} 
+                        item={item} 
+                        onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} 
+                        onMapClick={(guideItem) => {
+                          setSelectedGuideItem(guideItem);
+                          setIsMapModalOpen(true);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* CTA Banner */}
         <div className="mb-10 bg-gradient-to-br from-secondary/10 via-primary/5 to-transparent rounded-3xl p-6 border border-secondary/20 relative overflow-hidden">
@@ -558,6 +619,23 @@ const Home: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* MODALS & STICKY ELEMENTS */}
+      <StickyBookingBar 
+        villaName={properties[0]?.title || "Villa Retiro R & Pirata Family"} 
+        onAction={scrollToResults} 
+      />
+
+      {selectedGuideItem && (
+        <MapModal
+            isOpen={isMapModalOpen}
+            onClose={() => setIsMapModalOpen(false)}
+            placeName={selectedGuideItem.name}
+            villaName={properties[0]?.title || "Nuestra Villa"}
+            mapUrl={selectedGuideItem.mapUrl}
+            distance={selectedGuideItem.distance}
+        />
+      )}
     </div>
   );
 };

@@ -277,7 +277,7 @@ const Messages: React.FC = () => {
       // 1. Crear Reserva Confirmada en Supabase
       const { data: insertedBooking, error } = await supabase.from('bookings').insert({
         property_id: propertyId,
-        guest_id: null,
+        user_id: null,
         check_in: checkIn,
         check_out: checkOut,
         guests: guests,

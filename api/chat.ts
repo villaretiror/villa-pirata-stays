@@ -134,21 +134,26 @@ ${inStay
                 const alreadyNotified = logInfo?.takeover_notified || false;
                 
                 if (!alreadyNotified) {
+                    let success = false;
                     try {
                         const { NotificationService } = await import('../services/NotificationService.js');
+                        const siteUrl = parsedBody.currentUrl || process.env.VITE_SITE_URL || 'https://villaretiror.com';
                         const keyboard = {
                             inline_keyboard: [
-                                [{ text: "🎤 Responder ahora", callback_data: `takeover_${sessionId}` }]
+                                [{ text: "🎤 Responder ahora", callback_data: `takeover_${sessionId}` }],
+                                [{ text: "📊 Ver en Dashboard", url: `${siteUrl}/host` }]
                             ]
                         };
-                        const success = await NotificationService.sendTelegramAlert(
+                        success = await NotificationService.sendTelegramAlert(
                             `🛡️ <b>Gov-Mode: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
                             keyboard
                         );
-                        if (success) {
-                            await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', sessionId);
-                        }
-                    } catch (e) {}
+                    } catch (e) {
+                         console.error("[Telegram Resilience Error]:", e);
+                    }
+                    if (success) {
+                        await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', sessionId);
+                    }
                 }
             }
 
@@ -263,9 +268,12 @@ ${inStay
                     parameters: z.object({
                         issue_type: z.enum(['water', 'electricity', 'access', 'noise', 'other']),
                         description: z.string(),
-                        severity: z.enum(['medium', 'high', 'critical'])
+                        severity: z.enum(['medium', 'high', 'critical']),
+                        user_id: z.string().optional(), // Added user_id
+                        user_name: z.string().optional(), // Added user_name
+                        user_phone: z.string().optional(), // Added user_phone
                     }),
-                    execute: async ({ issue_type, description, severity }) => {
+                    execute: async ({ issue_type, description, severity, user_id, user_name, user_phone }) => {
                         const { data: providers } = await supabase
                             .from('service_providers')
                             .select('*')
@@ -286,15 +294,33 @@ ${inStay
                             description,
                             severity,
                             provider_id: recommendedProvider?.id || null,
-                            status: 'open'
+                            status: 'open',
+                            user_id: user_id || null, // Storing user_id
+                            user_name: user_name || null, // Storing user_name
+                            user_phone: user_phone || null, // Storing user_phone
                         }).select().single();
 
                         try {
                             const { NotificationService } = await import('../services/NotificationService.js');
+                            const siteUrl = process.env.VITE_SITE_URL || 'https://villaretiror.com';
+                            const keyboard = {
+                                inline_keyboard: [
+                                    [{ text: "📲 WhatsApp Directo (Huésped)", url: `https://wa.me/${user_phone?.replace(/\D/g, '') || ''}` }],
+                                    [{ text: "🏦 Ver en Dashboard", url: `${siteUrl}/host` }]
+                                ]
+                            };
                             await NotificationService.sendTelegramAlert(
-                                `🚨 <b>¡EMERGENCIA CRÍTICA!</b>\nPropiedad: ${activePropertyName}\nTipo: ${issue_type}\nSeveridad: ${severity}\n\nDescripción: ${description}\n\nTécnico Sugerido: ${recommendedProvider?.name || 'No definido'}`,
+                                `🚨 <b>¡EMERGENCIA CRÍTICA!</b>\n` +
+                                `👤 <b>${user_name || 'Invitado'}</b>\n` +
+                                `🏠 Propiedad: <code>${activePropertyName}</code>\n` +
+                                `📞 Contacto: ${user_phone || 'No proveído'}\n` +
+                                `Tipo: ${issue_type}\nSeveridad: ${severity}\n\nDescripción: ${description}\n\n` +
+                                `Técnico Sugerido: ${recommendedProvider?.name || 'No definido'}`,
+                                keyboard
                             );
-                        } catch (e) {}
+                        } catch (e) {
+                            console.error("[Emergency Tool Error]:", e);
+                        }
 
                         return {
                             status: 'emergency_active',

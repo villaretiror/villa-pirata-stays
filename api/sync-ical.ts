@@ -285,8 +285,10 @@ export default async function handler(req: any, res: any) {
                             changeBlocks.join('\n\n') + 
                             `\n───────────────────────\n<i>Sincronización Multicanal Completada.</i>`;
 
+        const siteUrl = process.env.VITE_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://villaretiror.com');
+
         await NotificationService.sendDirectTelegramMessage(process.env.TELEGRAM_CHAT_ID || '', finalMessage, {
-            inline_keyboard: [[{ text: '🛰️ Ver en Dashboard', url: `${process.env.VITE_SITE_URL}/host` }]]
+            inline_keyboard: [[{ text: '🛰️ Ver en Dashboard', url: `${siteUrl}/host` }]]
         });
     }
 

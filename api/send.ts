@@ -187,7 +187,19 @@ export default async function handler(req: any, res: any) {
         </div>`
       });
 
-      await NotificationService.sendTelegramAlert(`🚨 <b>¡ALERTA DE SOPORTE!</b>\n\n👤 ${clientFullName}\n📞 ${contact}\n🏝️ ${p.name}\n📟 <b>MSG:</b> ${message}`);
+      try {
+        const waButton = {
+          inline_keyboard: [
+            [{ text: "📲 WhatsApp Directo", url: `https://wa.me/${contact?.replace(/\D/g, '') || '17873560895'}` }]
+          ]
+        };
+        await NotificationService.sendTelegramAlert(
+          `🚨 <b>¡ALERTA DE SOPORTE!</b>\n\n👤 ${clientFullName}\n📞 ${contact}\n🏝️ ${p.name}\n📟 <b>MSG:</b> ${message}`,
+          waButton
+        );
+      } catch (e) {
+        console.error("[Telegram Alert Error]:", e);
+      }
     }
     else if (type === 'cohost_invitation') {
       const inviteUrl = `${process.env.VITE_SITE_URL}/login?invite=true${rest.token ? `&token=${rest.token}` : ''}`;

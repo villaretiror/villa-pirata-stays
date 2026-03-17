@@ -6,14 +6,15 @@ interface GuideCardProps {
   item: LocalGuideItem;
   onEdit?: () => void;
   onAskSalty?: (name: string) => void;
+  onMapClick?: (item: LocalGuideItem) => void;
   isEditable?: boolean;
 }
 
-const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEditable = false }) => {
+const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, onMapClick, isEditable = false }) => {
   const handleClick = (e: React.MouseEvent) => {
     if (isEditable) return;
 
-    // Si el click fue en un botón de mapa, no hacemos nada (el botón tiene su propio handler o enlace)
+    // Si el click fue en un botón de mapa, no hacemos nada
     if ((e.target as HTMLElement).closest('.map-trigger')) return;
 
     if (onAskSalty) {
@@ -23,7 +24,9 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEdita
 
   const handleMapClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (item.mapUrl && !isEditable) {
+    if (onMapClick) {
+      onMapClick(item);
+    } else if (item.mapUrl && !isEditable) {
       window.open(item.mapUrl, '_blank', 'noopener,noreferrer');
     }
   };
