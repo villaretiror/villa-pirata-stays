@@ -20,7 +20,7 @@ export class SecurityGovernanceService {
       const { data: booking, error } = await supabase
         .from('bookings')
         .select('id, status, check_in, check_out, total_paid_at_booking, total_price')
-        .eq(userIdOrSessionId.includes('-') ? 'user_id' : 'session_id', userIdOrSessionId) // Heuristic check for UUID vs short session_id if applicable
+        .or(`user_id.eq.${userIdOrSessionId},session_id.eq.${userIdOrSessionId}`) // Check both to be safe
         .eq('property_id', propertyId)
         .in('status', ['confirmed', 'Paid', 'completed', 'emergency_support'])
         .order('check_in', { ascending: true })

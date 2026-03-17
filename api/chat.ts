@@ -13,6 +13,7 @@ import {
     createTemporaryHold,
     } from '../aiServices.js';
 import { SecurityGovernanceService } from '../services/SecurityGovernanceService.js';
+import { NotificationService } from '../services/NotificationService.js';
 
 export const config = {
     runtime: 'edge',
@@ -200,7 +201,6 @@ ${inStay
                 if (msgLower.includes('cancela') || msgLower.includes('reembolso') || msgLower.includes('devolucion') || msgLower.includes('molesto') || msgLower.includes('queja') || msgLower.includes('estafa')) {
                     intentCategory = 'ALERTA_CRÍTICA';
                     try {
-                        const { NotificationService } = await import('../services/NotificationService.js');
                         await NotificationService.sendTelegramAlert(
                             `⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${userId || 'Guest Session (' + sessionId + ')'}\n🏠 ${activePropertyName}\n🗨️ <i>"${lastMsg}"</i>\n\n📌 <i>Salty está manejando la situación, pero el Host debe estar atento.</i>`
                         );
@@ -234,7 +234,6 @@ ${inStay
                 if (!alreadyNotified) {
                     let success = false;
                     try {
-                        const { NotificationService } = await import('../services/NotificationService.js');
                         const siteUrl = parsedBody.currentUrl || process.env.VITE_SITE_URL || 'https://villaretiror.com';
                         const keyboard = {
                             inline_keyboard: [
@@ -402,7 +401,6 @@ ${inStay
                     }).select().single();
 
                     try {
-                        const { NotificationService } = await import('../services/NotificationService.js');
                         const siteUrl = process.env.VITE_SITE_URL || 'https://villaretiror.com';
                         const waContact = resolvedPhone.replace(/\D/g, '');
                         const keyboard = {
@@ -477,7 +475,7 @@ ${inStay
             tools: filteredTools,
         });
 
-        return result.toDataStreamResponse();
+        return result.toTextStreamResponse();
     } catch (error: any) {
         // 🆘 PRINCIPAL ENGINEER EMERGENCY LOGGER
         console.error("🚨 [CRITICAL BRIDGE FAILURE]: Full Context Audit\n", {
