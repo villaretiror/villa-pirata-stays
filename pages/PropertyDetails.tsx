@@ -6,7 +6,35 @@ import SmartImage from '../components/SmartImage';
 import { HOST_PHONE } from '../constants';
 import { PropertyDetailsSkeleton } from '../components/Skeleton';
 
-// --- STYLES HELPER ---
+import { 
+  Users, 
+  Bed, 
+  Bath, 
+  Star, 
+  MapPin, 
+  ChevronLeft, 
+  ChevronRight, 
+  Share2, 
+  Heart, 
+  ShieldCheck, 
+  Zap, 
+  Droplets,
+  Calendar,
+  ArrowLeft,
+  Info,
+  CheckCircle2,
+  Phone,
+  MessageSquare,
+  X,
+  Compass,
+  Award,
+  LogOut,
+  LogIn,
+  Gavel,
+  Shield,
+  FireExtinguisher
+} from 'lucide-react';
+
 const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
 const SECTION_TITLE_STYLE = "text-2xl font-serif text-text-main mb-6";
 
@@ -98,8 +126,8 @@ export const PropertyDetails: React.FC = () => {
   if (!property) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-[#FDFCFB] p-6 text-center animate-fade-in">
-        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6">
-          <span className="material-icons text-4xl text-gray-300">search_off</span>
+        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6 text-gray-300">
+          <ChevronRight size={40} />
         </div>
         <h2 className="text-2xl font-serif font-bold text-text-main mb-2">Estancia No Encontrada</h2>
         <p className="text-sm text-text-light mb-8 max-w-xs">Lo sentimos, esta propiedad no está disponible en este momento.</p>
@@ -113,7 +141,11 @@ export const PropertyDetails: React.FC = () => {
     );
   }
 
-  // Local constant to satisfy TS that property is non-null for the rest of the component
+  // 🛡️ Safety Stack Detection
+  const hasSolar = property.amenities.some(am => am.toLowerCase().includes('solar') || am.toLowerCase().includes('generador'));
+  const hasCistern = property.amenities.some(am => am.toLowerCase().includes('cisterna') || am.toLowerCase().includes('agua'));
+
+  // Local constant to satisfy TS
   const p = property;
 
   const handleNextImage = () => {
@@ -208,9 +240,9 @@ export const PropertyDetails: React.FC = () => {
         <motion.button
           onClick={() => navigate(-1)}
           style={{ backgroundColor: headerIconBg, color: headerIconColor }}
-          className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95"
+          className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
         >
-          <span className="material-icons">arrow_back</span>
+          <ArrowLeft size={20} />
         </motion.button>
         <div className="flex gap-2">
           {/* Currency Switcher Pill */}
@@ -228,16 +260,16 @@ export const PropertyDetails: React.FC = () => {
           <motion.button
             onClick={handleShare}
             style={{ backgroundColor: headerIconBg, color: headerIconColor }}
-            className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95"
+            className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
           >
-            <span className="material-icons">ios_share</span>
+            <Share2 size={20} />
           </motion.button>
           <motion.button
             onClick={() => id && toggleFavorite(id)}
             style={{ backgroundColor: headerIconBg, color: isFavorite ? '#EF4444' : headerIconColor }}
-            className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95"
+            className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
           >
-            <span className="material-icons">{isFavorite ? 'favorite' : 'favorite_border'}</span>
+            <Heart size={20} fill={isFavorite ? '#EF4444' : 'none'} />
           </motion.button>
         </div>
       </motion.div>
@@ -269,20 +301,20 @@ export const PropertyDetails: React.FC = () => {
               onClick={handlePrevImage}
               className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-xl hover:bg-white/30 rounded-full text-white border border-white/20 shadow-2xl transition-all active:scale-90"
             >
-              <span className="material-icons">chevron_left</span>
+              <ChevronLeft size={24} />
             </button>
             <button
               onClick={handleNextImage}
               className="pointer-events-auto w-12 h-12 flex items-center justify-center bg-white/10 backdrop-blur-xl hover:bg-white/30 rounded-full text-white border border-white/20 shadow-2xl transition-all active:scale-90"
             >
-              <span className="material-icons">chevron_right</span>
+              <ChevronRight size={24} />
             </button>
           </div>
         )}
 
         <div className="absolute bottom-8 left-8 flex gap-2">
           <div className="bg-black/40 text-white font-bold px-4 py-2 rounded-2xl backdrop-blur-xl border border-white/10 flex items-center gap-2 shadow-2xl">
-            <span className="material-icons text-xs">photo_library</span>
+            <Compass size={14} />
             <span className={TAG_STYLE}>{currentImageIndex + 1} / {property.images.length}</span>
           </div>
         </div>
@@ -299,7 +331,7 @@ export const PropertyDetails: React.FC = () => {
               {property.title}
             </h1>
             <div className="flex items-center gap-2 text-secondary font-bold">
-              <span className="material-icons">location_on</span>
+              <MapPin size={20} className="text-primary" />
               <span className="text-lg underline decoration-primary/30 underline-offset-8">{property.location}</span>
             </div>
           </div>
@@ -307,20 +339,38 @@ export const PropertyDetails: React.FC = () => {
           {/* Luxury Stats Bar */}
           <div className="grid grid-cols-4 gap-0.5 bg-white rounded-[2.5rem] overflow-hidden p-1 shadow-card border border-black/5">
             {[
-              { val: property.rating, label: 'Valoración', icon: 'star', color: 'text-orange-400' },
-              { val: property.guests, label: 'Huéspedes', icon: 'groups', color: 'text-text-main' },
-              { val: property.bedrooms, label: 'Alcobas', icon: 'bed', color: 'text-text-main' },
-              { val: property.baths, label: 'Baños', icon: 'bathtub', color: 'text-text-main' }
+              { val: property.rating, label: 'Valoración', icon: Star, color: 'text-orange-400' },
+              { val: property.guests, label: 'Huéspedes', icon: Users, color: 'text-text-main' },
+              { val: property.bedrooms, label: 'Alcobas', icon: Bed, color: 'text-text-main' },
+              { val: property.baths, label: 'Baños', icon: Bath, color: 'text-text-main' }
             ].map((stat, i) => (
               <div key={i} className={`flex flex-col items-center justify-center p-6 ${i !== 3 ? 'border-r border-black/5' : ''}`}>
                 <div className="flex items-center gap-1 mb-1">
-                  <span className={`material-icons text-sm ${stat.color}`}>{stat.icon}</span>
+                  <stat.icon size={16} className={stat.color} />
                   <span className="font-serif font-black text-2xl text-text-main">{stat.val}</span>
                 </div>
                 <span className={`${TAG_STYLE} text-gray-400`}>{stat.label}</span>
               </div>
             ))}
           </div>
+
+          {/* 🛡️ Strategic Safety Stacks (Sage Green) */}
+          {(hasSolar || hasCistern) && (
+            <div className="flex flex-wrap gap-3 mb-8">
+              {hasSolar && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#E1EAD1] text-[#4A5D23] rounded-full border border-[#D0DCB8] shadow-sm animate-fade-in">
+                  <Zap size={14} className="animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Energía 24/7 (Solar/Gen)</span>
+                </div>
+              )}
+              {hasCistern && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-[#E1EAD1] text-[#4A5D23] rounded-full border border-[#D0DCB8] shadow-sm animate-fade-in animation-delay-500">
+                  <Droplets size={14} className="animate-bounce" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Reserva de Agua Garantizada</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Description Section with Smooth Collapse */}
           <section className="space-y-4">
@@ -334,7 +384,7 @@ export const PropertyDetails: React.FC = () => {
                 className="mt-4 text-primary font-black uppercase tracking-tighter text-sm flex items-center gap-1 hover:gap-2 transition-all"
               >
                 {activeSection === 'desc' ? 'Leer menos' : 'Seguir leyendo'}
-                <span className="material-icons text-sm">north_east</span>
+                <ChevronRight size={14} className={activeSection === 'desc' ? '-rotate-90' : 'rotate-90'} />
               </button>
             </div>
           </section>
@@ -343,14 +393,21 @@ export const PropertyDetails: React.FC = () => {
           <section className="space-y-6">
             <h2 className="text-3xl font-serif font-bold text-text-main">Amenidades de Élite</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {property.amenities.slice(0, 8).map((am, i) => (
-                <div key={i} className="flex items-center gap-4 group p-2 hover:bg-white rounded-2xl transition-all">
-                  <div className="w-12 h-12 bg-sand rounded-2xl flex items-center justify-center text-primary shadow-sm group-hover:scale-110 transition-transform">
-                    <span className="material-icons">{getAmenityIcon(am)}</span>
+              {property.amenities.slice(0, 8).map((am, i) => {
+                const isSafety = am.toLowerCase().includes('solar') || am.toLowerCase().includes('cisterna') || am.toLowerCase().includes('agua') || am.toLowerCase().includes('generador');
+                return (
+                  <div key={i} className={`flex items-center gap-4 group p-2 rounded-2xl transition-all ${isSafety ? 'bg-[#E1EAD1]/30 border border-[#D0DCB8]/30' : 'hover:bg-white'}`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ${isSafety ? 'bg-white text-[#4A5D23]' : 'bg-sand text-primary'}`}>
+                      {am.toLowerCase().includes('piscina') ? <Droplets size={20} /> :
+                       am.toLowerCase().includes('solar') || am.toLowerCase().includes('generador') ? <Zap size={20} /> :
+                       am.toLowerCase().includes('wifi') ? <Compass size={20} /> :
+                       am.toLowerCase().includes('ac') || am.toLowerCase().includes('aire') ? <Zap size={20} /> :
+                       <CheckCircle2 size={20} />}
+                    </div>
+                    <span className="font-bold text-text-main">{am}</span>
                   </div>
-                  <span className="font-bold text-text-main">{am}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
             <button
               onClick={() => setShowAmenities(true)}
@@ -369,7 +426,7 @@ export const PropertyDetails: React.FC = () => {
               <div className="relative">
                 <SmartImage src={property.host.image} className="w-20 h-20 rounded-full object-cover shadow-2xl border-2 border-white" alt={property.host.name} />
                 <div className="absolute -bottom-1 -right-1 bg-primary text-white p-1.5 rounded-full shadow-lg">
-                  <span className="material-icons">verified</span>
+                  <ShieldCheck size={14} />
                 </div>
               </div>
               <div>
@@ -378,28 +435,28 @@ export const PropertyDetails: React.FC = () => {
               </div>
             </div>
             <div className="w-14 h-14 bg-gray-50 rounded-full flex items-center justify-center group-hover:bg-primary group-hover:text-white transition-all">
-              <span className="material-icons">arrow_forward_ios</span>
+              <ChevronRight size={20} />
             </div>
           </section>
 
           {/* Reglas & Políticas */}
           <section className="space-y-6 bg-sand/20 p-8 rounded-[3.5rem] border border-orange-100">
             <h2 className="text-3xl font-serif font-bold text-text-main flex items-center gap-3">
-              <span className="material-icons text-primary">gavel</span>
+              <Gavel size={32} className="text-primary" />
               Reglas y Políticas
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-black/5">
                 <div className="flex items-center gap-2 mb-2 text-green-600">
-                  <span className="material-icons">login</span>
+                  <LogIn size={14} />
                   <span className={TAG_STYLE}>Check-in</span>
                 </div>
                 <p className="text-2xl font-serif font-black">{property.policies.checkInTime}</p>
               </div>
               <div className="bg-white p-6 rounded-3xl shadow-sm border border-black/5">
                 <div className="flex items-center gap-2 mb-2 text-red-500">
-                  <span className="material-icons">logout</span>
+                  <LogOut size={14} />
                   <span className={TAG_STYLE}>Check-out</span>
                 </div>
                 <p className="text-2xl font-serif font-black">{property.policies.checkOutTime}</p>
@@ -409,7 +466,7 @@ export const PropertyDetails: React.FC = () => {
             <div className="space-y-3">
               {(property.policies.houseRules || []).map((rule, i) => (
                 <div key={i} className="flex items-center gap-4 p-4 bg-white/60 rounded-2xl border border-white/40">
-                  <span className="material-icons text-primary/60 text-sm">task_alt</span>
+                  <CheckCircle2 size={16} className="text-primary/60" />
                   <span className="text-sm font-bold text-text-main italic">"{rule}"</span>
                 </div>
               ))}
@@ -428,7 +485,7 @@ export const PropertyDetails: React.FC = () => {
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                   </span>
                   <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">
-                    {p.availability_urgency_msg || `${viewers} personas viendo ahora`}
+                    {p.availability_urgency_msg || `${viewers} personas viendo esta villa`}
                   </span>
                 </div>
                 <p className={TAG_STYLE + " text-gray-400 mb-1"}>Inversión Preferencial</p>
@@ -439,7 +496,7 @@ export const PropertyDetails: React.FC = () => {
                   <span className="text-text-light font-bold">/ noche {currency}</span>
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 text-[#FF7F3F]">
-                  <span className="material-icons text-sm">local_fire_department</span>
+                  <Zap size={14} className="fill-[#FF7F3F]" />
                   <span className="text-[10px] font-black uppercase tracking-widest">Reservado 3 veces en las últimas 48h</span>
                 </div>
               </div>
@@ -447,11 +504,11 @@ export const PropertyDetails: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex flex-col gap-2 p-4 bg-sand/30 rounded-3xl border border-orange-100/50">
                   <div className="flex items-center gap-3 text-text-main">
-                    <span className="material-icons text-primary">calendar_today</span>
+                    <Calendar size={18} className="text-primary" />
                     <span className="font-bold text-sm">Estancia mínima: 2 noches</span>
                   </div>
                   <div className="flex items-center gap-3 text-text-main">
-                    <span className="material-icons text-primary">bolt</span>
+                    <Zap size={18} className="text-primary" />
                     <span className="font-bold text-sm">Reserva 100% inmediata</span>
                   </div>
                 </div>
@@ -461,12 +518,12 @@ export const PropertyDetails: React.FC = () => {
                   className="w-full bg-[#FF7F3F] text-white py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl shadow-[#FF7F3F]/30 hover:scale-[1.02] active:scale-95 transition-all outline outline-2 outline-white/20"
                 >
                   Vivir la Experiencia
-                  <span className="material-icons">beach_access</span>
+                  <Compass size={20} />
                 </Link>
 
                 <div className="bg-green-50 p-4 rounded-3xl border border-green-200/50 flex items-center gap-3">
                   <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-green-600 shadow-sm">
-                    <span className="material-icons text-sm">shield</span>
+                    <ShieldCheck size={18} />
                   </div>
                   <div>
                     <p className="text-[10px] font-black uppercase tracking-tighter text-green-700">Mejor Tarifa Garantizada</p>
@@ -490,7 +547,7 @@ export const PropertyDetails: React.FC = () => {
                 />
                 <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
                   <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
-                    <span className="material-icons text-primary text-sm">explore</span>
+                    <Compass size={16} className="text-primary" />
                     <span className="text-[10px] font-black uppercase tracking-tighter">Explorar Zona</span>
                   </div>
                 </div>
@@ -517,7 +574,7 @@ export const PropertyDetails: React.FC = () => {
                 <div>
                   <div className="flex items-center gap-1 text-orange-400 mb-4">
                     {Array(5).fill(0).map((_, j) => (
-                      <span key={j} className="material-icons text-sm">{j < rev.rating ? 'star' : 'star_border'}</span>
+                      <Star key={j} size={14} fill={j < rev.rating ? 'currentColor' : 'none'} />
                     ))}
                   </div>
                   <p className="text-lg text-text-main font-serif italic leading-relaxed mb-6">
@@ -567,17 +624,17 @@ export const PropertyDetails: React.FC = () => {
                     <p className="text-white/60 text-sm font-medium mt-2">{other.subtitle}</p>
                     <div className="flex items-center gap-3 mt-4">
                       <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
-                        <span className="material-icons text-xs text-orange-400">star</span>
+                        <Star size={12} className="text-orange-400 fill-orange-400" />
                         <span className="text-[10px] font-black text-white">{other.rating}</span>
                       </div>
                       <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
-                        <span className="material-icons text-xs text-white">groups</span>
+                        <Users size={12} className="text-white" />
                         <span className="text-[10px] font-black text-white">{other.guests} Guests</span>
                       </div>
                     </div>
                   </div>
                   <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-black group-hover:bg-primary group-hover:text-white transition-all shadow-2xl">
-                    <span className="material-icons">arrow_forward</span>
+                    <ChevronRight size={24} />
                   </div>
                 </div>
               </Link>
@@ -606,7 +663,7 @@ export const PropertyDetails: React.FC = () => {
               className="relative w-full max-w-lg bg-white h-full shadow-2xl p-8 overflow-y-auto no-scrollbar"
             >
               <button onClick={() => setShowHostDrawer(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
-                <span className="material-icons text-gray-400">close</span>
+                <X size={24} className="text-gray-400" />
               </button>
 
               <div className="mt-12 space-y-8">
@@ -614,7 +671,7 @@ export const PropertyDetails: React.FC = () => {
                   <div className="relative">
                     <SmartImage src={property.host.image} className="w-40 h-40 rounded-[3rem] object-cover shadow-2xl" alt={property.host.name} />
                     <div className="absolute -bottom-2 -right-2 bg-secondary text-white p-3 rounded-full shadow-2xl border-4 border-white">
-                      <span className="material-icons">verified_user</span>
+                      <ShieldCheck size={20} />
                     </div>
                   </div>
                   <div>
@@ -643,11 +700,11 @@ export const PropertyDetails: React.FC = () => {
 
                 <div className="space-y-4 pt-8 border-t border-black/5">
                   <button onClick={() => window.open(`tel:${HOST_PHONE}`)} className="w-full bg-black text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
-                    <span className="material-icons">phone</span>
+                    <Phone size={14} />
                     Llamada Directa
                   </button>
                   <button onClick={() => window.open(`https://wa.me/${HOST_PHONE}`)} className="w-full bg-white border-2 border-green-100 text-green-700 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
-                    <span className="material-icons">chat</span>
+                    <MessageSquare size={14} />
                     WhatsApp Business
                   </button>
                 </div>
@@ -676,7 +733,7 @@ export const PropertyDetails: React.FC = () => {
                   onClick={() => setShowAmenities(false)}
                   className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center hover:bg-black hover:text-white transition-all active:scale-95"
                 >
-                  <span className="material-icons">close</span>
+                  <X size={20} />
                 </button>
               </div>
 
@@ -686,7 +743,11 @@ export const PropertyDetails: React.FC = () => {
                   {property.amenities.map((amenity, i) => (
                     <div key={i} className="flex items-center gap-5 p-5 rounded-[2rem] bg-sand/30 border border-orange-50/50">
                       <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft">
-                        <span className="material-icons text-2xl">{getAmenityIcon(amenity)}</span>
+                        {amenity.toLowerCase().includes('piscina') ? <Droplets size={24} /> :
+                         amenity.toLowerCase().includes('solar') || amenity.toLowerCase().includes('generador') ? <Zap size={24} /> :
+                         amenity.toLowerCase().includes('wifi') ? <Compass size={24} /> :
+                         amenity.toLowerCase().includes('ac') || amenity.toLowerCase().includes('aire') ? <Zap size={24} /> :
+                         <CheckCircle2 size={24} />}
                       </div>
                       <div className="flex flex-col">
                         <span className="font-bold text-text-main">{amenity}</span>
@@ -750,7 +811,7 @@ export const PropertyDetails: React.FC = () => {
                   onClick={() => setShowShareModal(false)}
                   className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center hover:bg-black hover:text-white transition-all"
                 >
-                  <span className="material-icons">close</span>
+                  <X size={20} />
                 </button>
               </div>
 
@@ -760,7 +821,7 @@ export const PropertyDetails: React.FC = () => {
                   className="flex items-center gap-6 p-6 rounded-[2rem] bg-green-50/50 border border-green-100 hover:bg-green-50 transition-all text-left group"
                 >
                   <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-green-600 shadow-soft group-hover:scale-110 transition-transform">
-                    <span className="material-icons text-3xl">chat</span>
+                    <MessageSquare size={24} />
                   </div>
                   <div>
                     <p className="font-bold text-lg text-text-main">WhatsApp</p>
@@ -773,7 +834,7 @@ export const PropertyDetails: React.FC = () => {
                   className="flex items-center gap-6 p-6 rounded-[2rem] bg-blue-50/50 border border-blue-100 hover:bg-blue-50 transition-all text-left group"
                 >
                   <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-blue-600 shadow-soft group-hover:scale-110 transition-transform">
-                    <span className="material-icons text-3xl">mail</span>
+                    <Share2 size={24} />
                   </div>
                   <div>
                     <p className="font-bold text-lg text-text-main">Email</p>
@@ -786,7 +847,7 @@ export const PropertyDetails: React.FC = () => {
                   className="flex items-center gap-6 p-6 rounded-[2rem] bg-sand border border-orange-100 hover:bg-orange-50 transition-all text-left group"
                 >
                   <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
-                    <span className="material-icons text-3xl">content_copy</span>
+                    <Compass size={24} />
                   </div>
                   <div>
                     <p className="font-bold text-lg text-text-main">Copiar Enlace</p>

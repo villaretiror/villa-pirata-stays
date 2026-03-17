@@ -37,9 +37,9 @@ module.exports = {
                 "4xl": "50px",
             },
             boxShadow: {
-                'soft': '0 10px 40px -10px rgba(0,0,0,0.05)',
-                'card': '0 20px 40px -15px rgba(0,0,0,0.08)',
-                'float': '0 25px 50px -12px rgba(255, 107, 53, 0.15)',
+                'soft': '0 10px 40px -10px hsla(37, 41%, 74%, 0.1)',
+                'card': '0 20px 40px -15px hsla(37, 41%, 74%, 0.15)',
+                'float': '0 25px 50px -12px hsla(17, 100%, 60%, 0.2)',
                 'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
             },
             animation: {

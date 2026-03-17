@@ -7,6 +7,24 @@ import ReviewCarousel from '../components/ReviewCarousel';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
 import { PropertyCardSkeleton } from '../components/Skeleton';
+import { 
+  X, 
+  Search, 
+  LayoutGrid, 
+  Droplets, 
+  Palmtree, 
+  Plus, 
+  Minus, 
+  Bell, 
+  Sliders, 
+  Utensils, 
+  MapPin, 
+  Home as HomeIcon, 
+  Phone, 
+  Mail,
+  ChevronRight,
+  CheckCircle2
+} from 'lucide-react';
 
 type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
@@ -98,10 +116,10 @@ const Home: React.FC = () => {
     return parts.join(', ');
   };
 
-  const categories: { id: Category; label: string; icon: string }[] = [
-    { id: 'todo', label: 'Designer Villas', icon: 'grid_view' },
-    { id: 'piscina', label: 'Pool Retreats', icon: 'pool' },
-    { id: 'playa', label: 'Coastal Stays', icon: 'beach_access' },
+  const categories: { id: Category; label: string; icon: any }[] = [
+    { id: 'todo', label: 'Designer Villas', icon: LayoutGrid },
+    { id: 'piscina', label: 'Pool Retreats', icon: Droplets },
+    { id: 'playa', label: 'Coastal Stays', icon: Palmtree },
   ];
 
   // Helper Component for the Search Modal
@@ -117,14 +135,14 @@ const Home: React.FC = () => {
           className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${val <= min ? 'text-gray-300 opacity-50' : 'bg-white text-text-main shadow-sm hover:scale-105 active:scale-95'}`}
           disabled={val <= min}
         >
-          <span className="material-icons text-sm">remove</span>
+          <Minus size={14} />
         </button>
         <span className="font-bold text-lg w-5 text-center select-none">{val}</span>
         <button
           onClick={() => setVal(Math.min(10, val + 1))} // Cap at 10 for safety
           className="w-9 h-9 rounded-full flex items-center justify-center bg-white text-primary shadow-sm hover:scale-105 active:scale-95 transition-all"
         >
-          <span className="material-icons text-sm">add</span>
+          <Plus size={14} />
         </button>
       </div>
     </div>
@@ -148,7 +166,7 @@ const Home: React.FC = () => {
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold font-serif text-text-main">Tu viaje</h2>
               <button onClick={() => setIsSearchOpen(false)} className="p-2 -mr-2 rounded-full hover:bg-gray-100 transition-colors">
-                <span className="material-icons text-gray-400">close</span>
+                <X size={20} className="text-gray-400" />
               </button>
             </div>
 
@@ -162,7 +180,7 @@ const Home: React.FC = () => {
               onClick={handleSearch}
               className="w-full bg-primary text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all hover:bg-primary-dark"
             >
-              <span className="material-icons text-xl">search</span>
+              <Search size={20} />
               Explorar {filteredProperties.length} propiedades
             </button>
           </div>
@@ -188,7 +206,7 @@ const Home: React.FC = () => {
             }}
             className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group"
           >
-            <span className="material-icons text-secondary group-hover:scale-110 transition-transform">notifications_none</span>
+            <Bell size={24} className="text-secondary group-hover:scale-110 transition-transform" />
           </div>
         </div>
 
@@ -203,14 +221,14 @@ const Home: React.FC = () => {
         className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10"
       >
         <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform">
-          <span className="material-icons">search</span>
+          <Search size={20} />
         </div>
         <div className="flex-1 px-4">
           <p className="font-bold text-text-main text-sm">Cabo Rojo, PR</p>
           <p className="text-xs text-text-light">{getGuestSummary()}</p>
         </div>
         <div className="bg-gray-100 p-2 rounded-xl text-gray-400 group-hover:text-primary transition-colors">
-          <span className="material-icons text-xl">tune</span>
+          <Sliders size={20} />
         </div>
       </div>
 
@@ -225,7 +243,7 @@ const Home: React.FC = () => {
               : 'bg-white/80 backdrop-blur-sm border-white/50 text-gray-500 shadow-soft hover:bg-white hover:text-text-main hover:-translate-y-0.5'
               }`}
           >
-            <span className="material-icons text-[14px]">{cat.icon}</span>
+            <cat.icon size={14} />
             <span className="text-[11px] font-black uppercase tracking-[0.15em]">{cat.label}</span>
           </button>
         ))}
@@ -244,9 +262,9 @@ const Home: React.FC = () => {
             {/* Experience Pills */}
             <div className="flex gap-2 p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-2xl border border-white/50 w-fit">
               {[
-                { id: 'beaches', label: 'Playas', icon: 'beach_access' },
-                { id: 'gastronomy', label: 'Gastronomía', icon: 'restaurant' },
-                { id: 'nearby', label: 'Cerca de Ti', icon: 'place' }
+                { id: 'beaches', label: 'Playas', icon: Palmtree },
+                { id: 'gastronomy', label: 'Gastronomía', icon: Utensils },
+                { id: 'nearby', label: 'Cerca de Ti', icon: MapPin }
               ].map(tab => (
                 <button
                   key={tab.id}
@@ -256,7 +274,7 @@ const Home: React.FC = () => {
                   }}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest text-text-light hover:bg-white hover:text-primary transition-all shadow-sm active:scale-95"
                 >
-                  <span className="material-icons text-[14px]">{tab.icon}</span>
+                  <tab.icon size={14} />
                   {tab.label}
                 </button>
               ))}
@@ -271,8 +289,8 @@ const Home: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
               <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.beaches || "Playas del Paraíso"}</h2>
             </div>
-            <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10">
-              <span className="material-icons text-primary text-xl">beach_access</span>
+            <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10 text-primary">
+              <Palmtree size={24} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -289,8 +307,8 @@ const Home: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
               <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.gastronomy || "Ruta Gastronómica"}</h2>
             </div>
-            <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center border border-secondary/10">
-              <span className="material-icons text-secondary text-xl">restaurant</span>
+            <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center border border-secondary/10 text-secondary">
+              <Utensils size={24} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -307,8 +325,8 @@ const Home: React.FC = () => {
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
               <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.nearby || "Cerca de Ti"}</h2>
             </div>
-            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100">
-              <span className="material-icons text-text-light text-xl">place</span>
+            <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 text-text-light">
+              <MapPin size={24} />
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -331,12 +349,12 @@ const Home: React.FC = () => {
             <div className="flex gap-3 flex-wrap">
               <a href="https://share.google/LBxZV0NwKZps4rliR" target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
-                <span className="material-icons text-sm text-primary">villa</span>
+                <HomeIcon size={14} className="text-primary" />
                 Villa Retiro R en Google
               </a>
               <a href="https://share.google/iQA2MMS4C2Vv7HBIx" target="_blank" rel="noopener noreferrer"
                 className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
-                <span className="material-icons text-sm text-secondary">house</span>
+                <HomeIcon size={14} className="text-secondary" />
                 Pirata Family en Google
               </a>
             </div>
@@ -417,8 +435,8 @@ const Home: React.FC = () => {
             </AnimatePresence>
           ) : (
             <div className="col-span-full flex flex-col items-center justify-center py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 animate-pulse">
-                <span className="material-icons text-4xl text-gray-300">search_off</span>
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 animate-pulse text-gray-300">
+                <Search size={40} />
               </div>
               <p className="text-text-main font-bold text-lg">Sin estancias disponibles</p>
               <p className="text-sm text-text-light mt-1 mb-6 max-w-[200px]">
@@ -457,13 +475,13 @@ const Home: React.FC = () => {
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-sm font-bold text-text-main">
                   <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                    <span className="material-icons">phone</span>
+                    <Phone size={18} />
                   </div>
                   {siteContent?.contact?.phone}
                 </div>
                 <div className="flex items-center gap-4 text-sm font-bold text-text-main">
                   <div className="w-10 h-10 bg-secondary/10 rounded-xl flex items-center justify-center text-secondary">
-                    <span className="material-icons">email</span>
+                    <Mail size={18} />
                   </div>
                   {siteContent?.contact?.email}
                 </div>

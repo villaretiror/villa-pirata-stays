@@ -1,6 +1,16 @@
 import React, { useState } from 'react';
 import SmartImage from './SmartImage';
 import { Property } from '../types';
+import { 
+  Star, 
+  Users, 
+  Eye, 
+  Flame, 
+  AlertTriangle, 
+  Heart, 
+  ChevronLeft, 
+  ChevronRight 
+} from 'lucide-react';
 
 interface PropertyCardProps {
   property: Property;
@@ -23,12 +33,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
         {property.rating >= 4.9 && (
           <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-text-main shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in">
-            <span className="material-icons text-sm text-primary">local_fire_department</span>
+            <Flame size={12} className="text-primary fill-primary" />
             Popular
           </div>
         )}
         <div className="bg-black/80 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-white shadow-lg flex items-center gap-1.5 animate-slide-up" style={{ animationDelay: '200ms' }}>
-          <span className="material-icons text-sm text-primary animate-pulse">visibility</span>
+          <Eye size={12} className="text-primary animate-pulse" />
           {viewers} Viendo ahora
         </div>
       </div>
@@ -67,7 +77,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
         />
 
-        {/* Gradient Overlay for Text Readability at bottom (if we put text over image) - Used here for depth */}
+        {/* Gradient Overlay for depth */}
         <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent opacity-60"></div>
 
         {/* Badges */}
@@ -76,7 +86,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
         {/* Emergency Badge */}
         {property.isOffline && (
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-20 flex flex-col items-center justify-center text-white p-6 text-center animate-fade-in">
-            <span className="material-icons text-5xl mb-3 text-red-500 animate-pulse">report_problem</span>
+            <AlertTriangle size={48} className="mb-3 text-red-500 animate-pulse" />
             <h4 className="font-bold text-lg uppercase tracking-widest">Fuera de Servicio</h4>
             <p className="text-xs opacity-80 mt-1">Esta propiedad está en mantenimiento o bajo emergencia. Regresa pronto.</p>
           </div>
@@ -88,9 +98,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           aria-label={isFavorite ? "Quitar de favoritos" : "Añadir a favoritos"}
           className="absolute top-4 right-4 p-2.5 rounded-full bg-black/20 backdrop-blur-md hover:bg-white transition-all z-10 flex items-center justify-center border border-white/20 group/fav"
         >
-          <span className={`material-icons text-xl drop-shadow-sm transition-transform group-active/fav:scale-75 ${isFavorite ? 'text-red-500 scale-110' : 'text-white group-hover/fav:text-red-500'}`}>
-            {isFavorite ? 'favorite' : 'favorite_border'}
-          </span>
+          <Heart 
+            size={20} 
+            fill={isFavorite ? '#EF4444' : 'none'} 
+            className={`drop-shadow-sm transition-transform group-active/fav:scale-75 ${isFavorite ? 'text-red-500 scale-110' : 'text-white group-hover/fav:text-red-500'}`} 
+          />
         </button>
 
         {/* Image Nav */}
@@ -100,13 +112,13 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
               onClick={handlePrevImage}
               className="pointer-events-auto w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
             >
-              <span className="material-icons text-sm">chevron_left</span>
+              <ChevronLeft size={16} />
             </button>
             <button
               onClick={handleNextImage}
               className="pointer-events-auto w-8 h-8 rounded-full bg-white/90 shadow-md flex items-center justify-center hover:bg-white transition-colors"
             >
-              <span className="material-icons text-sm">chevron_right</span>
+              <ChevronRight size={16} />
             </button>
           </div>
         )}
@@ -134,7 +146,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
             {property.title}
           </h3>
           <div className="flex items-center gap-1 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
-            <span className="material-icons text-sm text-primary">star</span>
+            <Star size={12} className="text-primary fill-primary" />
             <span className="text-xs font-bold">{property.rating}</span>
           </div>
         </div>
@@ -145,13 +157,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           <div>
             <p className="text-[10px] font-bold uppercase text-gray-400 tracking-wider mb-0.5">{property.location}</p>
             <div className="flex items-center gap-1 text-secondary font-medium text-xs">
-              <span className="material-icons text-sm">group</span>
+              <Users size={14} />
               {Number(property.guests) || 1} Huéspedes
             </div>
           </div>
 
           <div className="text-right">
-            {/* Restored: Fallback to 1.15 if original_price is missing to maintain luxury feel */}
             <span className="block text-[10px] text-gray-400 line-through decoration-red-400 mb-0.5">
               ${property.original_price && property.original_price > property.price ? property.original_price : Math.round(property.price * 1.15)}
             </span>
