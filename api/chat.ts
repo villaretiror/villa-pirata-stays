@@ -26,7 +26,6 @@ const supabase = createClient(
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
-    baseURL: 'https://generativelanguage.googleapis.com/v1', 
 });
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
@@ -482,7 +481,7 @@ ${inStay
             messages: finalMessages,
             maxSteps: 3,
             temperature: 0.7,
-            tools: filteredTools,
+            // tools: filteredTools, // 🕵️ TEST: Comentado para verificar si Google v1/v1beta rechaza el campo 'tools'
         });
 
         return result.toTextStreamResponse();

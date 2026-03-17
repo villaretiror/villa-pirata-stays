@@ -10,9 +10,8 @@ import { generateText } from 'ai';
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
-    baseURL: 'https://generativelanguage.googleapis.com/v1',
 });
-const model = google('gemini-2.5-flash');
+const model = google('gemini-2.0-flash');
 /**
  * 👑 AI SERVICES LAYER - THE EXECUTIVE BRAIN
  * Architecture: Bridge between LLM and Backend Logic
