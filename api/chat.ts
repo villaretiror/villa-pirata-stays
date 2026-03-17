@@ -226,15 +226,25 @@ ${inStay
             }
         }
 
-        // 🚀 INDUSTRIAL OPTIMIZATION: Limit to 10 messages for sub-second Edge efficiency
-        const recentMessages = (rawMessages || []).slice(-10);
+        // 🚀 INDUSTRIAL OPTIMIZATION: Preserving Tool Calls & Results in History
+        const recentMessages = (rawMessages || []).slice(-20); // a bit more history for better context
         const finalMessages: CoreMessage[] = [
             { role: 'user', content: `INSTRUCCIONES DE GOBERNANZA: ${VILLA_CONCIERGE_PROMPT}` },
             { role: 'assistant', content: `Es un honor saludarle, ${guestName}. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?` },
-            ...recentMessages.map((m: any): CoreMessage => ({
-                role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
-                content: typeof m.content === 'string' ? m.content : (m.text || ''),
-            }))
+            ...recentMessages.map((m: any): CoreMessage => {
+                const role = (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user';
+                
+                // If content is already valid AI SDK structure, use it
+                if (Array.isArray(m.content) || (typeof m.content === 'object' && m.content !== null)) {
+                    return { role, content: m.content as any };
+                }
+                
+                // Fallback for string content or custom text fields from legacy formats
+                return { 
+                    role, 
+                    content: typeof m.content === 'string' ? m.content : (m.text || m.message || '') 
+                };
+            })
         ];
 
         const result = await streamText({

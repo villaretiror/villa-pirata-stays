@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { NotificationService } from '../../services/NotificationService.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
 // 🔄 DYNAMIC PROPERTY ENGINE: Fetch active iCal feeds from DB
 function parseIcsDate(raw: string): string {
@@ -109,6 +109,21 @@ export default async function handler(req: any, res: any) {
             const lines = icsText.split(/\r?\n/);
             let inEvent = false, dtStart = '', dtEnd = '', newBlocks = 0;
 
+            // 1. Pre-fetch all existing external blocks for this property to avoid N+1 queries
+            const { data: dbExistingBookings } = await supabase
+                .from('bookings')
+                .select('id, check_in, check_out, sync_last_hash')
+                .eq('property_id', propertyId)
+                .eq('status', 'external_block');
+
+            const existingMap = new Map();
+            (dbExistingBookings || []).forEach((b: any) => {
+                existingMap.set(`${b.check_in}_${b.check_out}`, b);
+            });
+
+            const bookingsToInsert = [];
+            const bookingsToUpdate = [];
+
             for (const rawLine of lines) {
                 const line = rawLine.trim();
                 if (line === 'BEGIN:VEVENT') { inEvent = true; dtStart = ''; dtEnd = ''; continue; }
@@ -119,64 +134,27 @@ export default async function handler(req: any, res: any) {
                         const status = 'external_block';
                         const syncHash = generateSyncHash(propertyId, checkIn, checkOut, status);
 
-                        try {
-                            const { data: existing } = await supabase
-                                .from('bookings')
-                                .select('id, sync_last_hash, notified_external_at')
-                                .eq('property_id', propertyId)
-                                .eq('check_in', checkIn)
-                                .eq('status', status)
-                                .maybeSingle();
+                        const existing = existingMap.get(`${checkIn}_${checkOut}`);
 
-                            if (!existing) {
-                                // NEW BLOCK
-                                const { data: newBooking, error: insErr } = await supabase.from('bookings').insert({ 
-                                    property_id: propertyId, 
-                                    status: status, 
-                                    check_in: checkIn, 
-                                    check_out: checkOut, 
-                                    guests_count: 1, 
-                                    total_price: 0,
-                                    source: 'Airbnb',
-                                    sync_last_hash: syncHash
-                                }).select().single();
-
-                                if (!insErr && newBooking) { 
-                                    newBlocks++; 
-                                    totalImported++; 
-                                    // Notify host
-                                    await NotificationService.notifyNewReservation(
-                                        newBooking.id, 
-                                        'Bloqueo Calendario', 
-                                        propertyTitle, 
-                                        checkIn, 
-                                        checkOut, 
-                                        '0.00', 
-                                        'Airbnb',
-                                        syncHash
-                                    );
-                                }
-                            } else if (existing.sync_last_hash !== syncHash) {
-                                // UPDATED BLOCK (e.g. check_out changed)
-                                await supabase.from('bookings').update({
-                                    check_out: checkOut,
-                                    sync_last_hash: syncHash,
-                                    notified_external_at: null // Force re-notify if needed
-                                }).eq('id', existing.id);
-
-                                await NotificationService.notifyNewReservation(
-                                    existing.id, 
-                                    'Bloqueo Actualizado', 
-                                    propertyTitle, 
-                                    checkIn, 
-                                    checkOut, 
-                                    '0.00', 
-                                    'Airbnb',
-                                    syncHash
-                                );
-                            }
-                        } catch (err) {
-                            console.error(`Error syncing event for ${propertyId}:`, err);
+                        if (!existing) {
+                            bookingsToInsert.push({ 
+                                property_id: propertyId, 
+                                status: status, 
+                                check_in: checkIn, 
+                                check_out: checkOut, 
+                                guests_count: 1, 
+                                total_price: 0,
+                                source: 'Airbnb',
+                                sync_last_hash: syncHash
+                            });
+                        } else if (existing.sync_last_hash !== syncHash) {
+                            bookingsToUpdate.push({
+                                id: existing.id,
+                                check_in: checkIn,
+                                check_out: checkOut,
+                                sync_last_hash: syncHash,
+                                notified_external_at: null
+                            });
                         }
                     }
                     continue;
@@ -184,6 +162,25 @@ export default async function handler(req: any, res: any) {
                 if (inEvent) {
                     if (line.startsWith('DTSTART')) dtStart = (line.split(':').pop() || '').trim();
                     if (line.startsWith('DTEND')) dtEnd = (line.split(':').pop() || '').trim();
+                }
+            }
+
+            // 2. Batch Operations (Atomic & Fast)
+            if (bookingsToInsert.length > 0) {
+                const { data: inserted, error: insErr } = await supabase.from('bookings').insert(bookingsToInsert).select();
+                if (!insErr && inserted) {
+                    newBlocks += inserted.length;
+                    totalImported += inserted.length;
+                    for (const b of inserted) {
+                        await NotificationService.notifyNewReservation(b.id, 'Bloqueo Calendario', propertyTitle, b.check_in, b.check_out, '0.00', 'Airbnb', b.sync_last_hash);
+                    }
+                }
+            }
+
+            if (bookingsToUpdate.length > 0) {
+                for (const b of bookingsToUpdate) {
+                    await supabase.from('bookings').update(b).eq('id', b.id);
+                    await NotificationService.notifyNewReservation(b.id, 'Bloqueo Actualizado', propertyTitle, b.check_in, b.check_out, '0.00', 'Airbnb', b.sync_last_hash);
                 }
             }
 

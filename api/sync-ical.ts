@@ -195,7 +195,7 @@ export default async function handler(req: any, res: any) {
                 }
             }
 
-            // ── Step 2: UPSERT active events ─────────────────────────────────────────
+            // ── Step 2: UPSERT active events (BATCHED) ──────────────────────────
             if (allBookingsToUpsert.length > 0) {
                 const { error: upsertError } = await supabase
                     .from('bookings')
@@ -205,6 +205,7 @@ export default async function handler(req: any, res: any) {
                     });
 
                 if (!upsertError) totalSynced += allBookingsToUpsert.length;
+                else console.error(`[sync-ical] UPSERT ERROR for ${propertyTitle}:`, upsertError.message);
             }
 
             // ── Step 3: RECONCILE (Cancellations) ────────────────────────────────────
