@@ -24,6 +24,11 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
 });
 
+const memorySchema = z.object({
+    learned_text: z.string().min(3),
+    session_id: z.string().nullable()
+});
+
 // 🛡️ ACCESO PRIVADO (Solo para Telegram)
 const supabaseServiceRole = createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
@@ -85,10 +90,11 @@ export default async function handler(req: any, res: any) {
             if (repliedText.includes('Retomando guardia activa')) {
                 // Modo Aprendizaje (Feedback Loop)
                 if (text && text.trim().length > 0) {
-                    await supabase.from('salty_memories').insert({
+                    const parsedMemory = memorySchema.parse({
                         learned_text: text,
                         session_id: sessionMatch ? sessionMatch[1] : null
                     });
+                    await supabase.from('salty_memories').insert(parsedMemory);
 
                     await NotificationService.sendDirectTelegramMessage(
                         chatId,

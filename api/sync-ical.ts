@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import ical from 'node-ical';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { NotificationService } from '../services/NotificationService.js';
 
 /**
@@ -58,7 +60,11 @@ export default async function handler(req: any, res: any) {
     let totalSynced = 0;
     let totalCancelled = 0;
 
-    const propertyChanges = new Map<string, { news: string[], cancels: number }>();
+    const propertyChanges = new Map<string, { 
+        news: { checkIn: string, checkOut: string, platform: string }[], 
+        cancels: number,
+        manualBlocks: { checkIn: string, checkOut: string, platform: string }[] 
+    }>();
 
     for (const prop of properties) {
         try {
@@ -139,6 +145,14 @@ export default async function handler(req: any, res: any) {
                         const icalKey   = `${bIn}_${bOut}_${platform}`;
                         const globalKey = `${propertyId}_${bIn}_${bOut}`;
 
+                        // 🕵️ MANUAL BLOCK DETECTION (Salty Intelligence)
+                        const summary = (ev.summary || '').toLowerCase();
+                        const isManualBlock = summary.includes('blocked') || 
+                                           summary.includes('manual') || 
+                                           summary.includes('unavailable') || 
+                                           summary.includes('dueño') ||
+                                           (platform === 'Airbnb' && summary === 'airbnb (blocked)');
+
                         activeICalKeys.add(icalKey);
                         const isAlreadyNotified = notifiedMap.get(globalKey) || existingSet.has(globalKey);
 
@@ -150,14 +164,20 @@ export default async function handler(req: any, res: any) {
                             source: platform,
                             customer_name: ev.summary || 'Reserva Externa',
                             total_price: 0,
+                            is_manual_block: isManualBlock,
                             notified_external_at: !isAlreadyNotified ? new Date().toISOString() : undefined
                         });
 
                         if (!isAlreadyNotified) {
                             if (!propertyChanges.has(propertyTitle)) {
-                                propertyChanges.set(propertyTitle, { news: [], cancels: 0 });
+                                propertyChanges.set(propertyTitle, { news: [], cancels: 0, manualBlocks: [] });
                             }
-                            propertyChanges.get(propertyTitle)!.news.push(`📅 ${bIn} al ${bOut} (${platform})`);
+                            const changeData = propertyChanges.get(propertyTitle)!;
+                            if (isManualBlock) {
+                                changeData.manualBlocks.push({ checkIn: bIn, checkOut: bOut, platform: platform });
+                            } else {
+                                changeData.news.push({ checkIn: bIn, checkOut: bOut, platform: platform });
+                            }
                             existingSet.add(globalKey);
                             notifiedMap.set(globalKey, true);
                         }
@@ -207,7 +227,7 @@ export default async function handler(req: any, res: any) {
                 if (!cancelError) {
                     totalCancelled += ghostBookingIds.length;
                     if (!propertyChanges.has(propertyTitle)) {
-                        propertyChanges.set(propertyTitle, { news: [], cancels: 0 });
+                        propertyChanges.set(propertyTitle, { news: [], cancels: 0, manualBlocks: [] });
                     }
                     propertyChanges.get(propertyTitle)!.cancels += ghostBookingIds.length;
                 }
@@ -228,27 +248,46 @@ export default async function handler(req: any, res: any) {
         }
     }
 
-    // ── STEP 4: FLUSH NOTIFICATION BUFFER ───────────────────────────────────────────
+    // ── STEP 4: FLUSH NOTIFICATION BUFFER (Visual Elite) ───────────────────────────
     if (propertyChanges.size > 0) {
+        const humanizeDate = (dateStr: string) => {
+            const [y, m, d] = dateStr.split('-').map(Number);
+            const date = new Date(y, m - 1, d, 12, 0, 0);
+            const formatted = format(date, 'eee d MMM', { locale: es });
+            return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+        };
+
         const changeBlocks = Array.from(propertyChanges.entries()).map(([title, data]) => {
-            let block = `🏰 <b>${title}</b>`;
+            let block = `🏠 <b>${title.toUpperCase()}</b>\n`;
+            
             if (data.news.length > 0) {
-                block += `\n🆕 <b>${data.news.length} Nuevas:</b>\n- ${data.news.join('\n- ')}`;
+                block += `✨ <b>Reservas Nuevas:</b>\n`;
+                data.news.forEach((n: any) => {
+                    block += `• <code>${humanizeDate(n.checkIn)}</code> ➔ <code>${humanizeDate(n.checkOut)}</code> (<i>${n.platform}</i>)\n`;
+                });
             }
+
+            if (data.manualBlocks && data.manualBlocks.length > 0) {
+                block += `\n⚠️ <b>BLOQUEOS DETECTADOS:</b>\n`;
+                data.manualBlocks.forEach((b: any) => {
+                    block += `• <code>${humanizeDate(b.checkIn)}</code> ➔ <code>${humanizeDate(b.checkOut)}</code> (<i>${b.platform}</i>)\n`;
+                });
+                block += `\n<i>Jefe, Airbnb bloqueó estas fechas manualmente. ¿Quieres que las bloquee también en la web directa?</i>\n`;
+            }
+
             if (data.cancels > 0) {
-                block += `\n🚫 <b>${data.cancels} Cancelaciones detectadas</b>`;
+                block += `\n🗑️ <b>Cancelaciones:</b> ${data.cancels} reserva(s) liberada(s).\n`;
             }
             return block;
         });
 
-        const summaryMsg = `
-🛰 <b>iCal Sync: Resumen de Actividad</b>
-━━━━━━━━━━━━━━━━━━━━
-${changeBlocks.join('\n\n')}
+        const finalMessage = `🛰️ <b>SALTY STRATEGY | iCal Sync</b>\n───────────────────────\n\n` + 
+                            changeBlocks.join('\n\n') + 
+                            `\n───────────────────────\n<i>Sincronización Multicanal Completada.</i>`;
 
-⚡ <i>Calendario actualizado y blindado.</i>`.trim();
-        
-        await NotificationService.sendTelegramAlert(summaryMsg).catch(e => console.error('Error notification buffer:', e));
+        await NotificationService.sendDirectTelegramMessage(process.env.TELEGRAM_CHAT_ID || '', finalMessage, {
+            inline_keyboard: [[{ text: '🛰️ Ver en Dashboard', url: `${process.env.VITE_SITE_URL}/host` }]]
+        });
     }
 
     return res.status(200).json({

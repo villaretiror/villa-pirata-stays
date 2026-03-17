@@ -97,23 +97,26 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         }));
         setLocalGuideData(mappedGuide);
       } else {
-        // Anti-Error Protection: If DB results are empty, restore the luxury baseline immediately
         setLocalGuideData(INITIAL_LOCAL_GUIDE);
       }
       
       if (propData && propData.length > 0) {
         console.log('Propiedades recibidas del DB:', propData.length);
-        const isAdmin = session?.user?.email === 'villaretiror@gmail.com';
+        
+        // 🛡️ REINFORCED ADMIN CHECK: Verify real role from auth server
+        const { data: { user } } = await supabase.auth.getUser();
+        const isAdmin = user?.email === 'villaretiror@gmail.com';
+
         const mapped: Property[] = (propData as PropertyRow[]).map(p => {
-          // Safe JSON parsing for policies
           const rawPolicies: any = p.policies;
           const policies = {
             checkInTime: rawPolicies?.checkInTime || '15:00',
             checkOutTime: rawPolicies?.checkOutTime || '11:00',
             guests: Number(rawPolicies?.guests || p.guests) || 1,
-            wifiName: rawPolicies?.wifiName || '',
-            wifiPass: isAdmin ? rawPolicies?.wifiPass || 'N/A' : '********',
-            accessCode: isAdmin ? rawPolicies?.accessCode || 'N/A' : 'CONFIDENCIAL',
+            wifiName: rawPolicies?.wifiName || (p as any).wifi_name || '',
+            // 🛡️ SENSITIVE DATA STRIPING: Mask credentials for non-admin sessions
+            wifiPass: isAdmin ? (rawPolicies?.wifiPass || (p as any).wifi_pass || 'N/A') : '********',
+            accessCode: isAdmin ? (rawPolicies?.accessCode || (p as any).access_code || 'N/A') : 'CONFIDENCIAL',
             cancellationPolicy: rawPolicies?.cancellationPolicy,
             houseRules: p.house_rules || rawPolicies?.houseRules || []
           };
@@ -135,6 +138,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             reviews_count: Number(p.reviews || (p as any).reviews_count) || 0,
             images: p.images || [],
             amenities: p.amenities || [],
+            featuredAmenity: (p as any).featuredAmenity,
+            category: (p as any).category,
             guests: Number(p.guests) || 1,
             bedrooms: Number(p.bedrooms) || 0,
             beds: Number(p.beds) || 0,
@@ -154,7 +159,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         });
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
-        // C. Fetch Global System Settings (Integridad 360)
+        // C. Fetch Global System Settings
         const { data: settings } = await supabase.from('system_settings').select('key, value');
         if (settings) {
           const typedSettings = settings as SettingRow[];
@@ -170,7 +175,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             setSiteContent(prev => ({ 
               ...prev, 
               ...(content as any),
-              // Sanctuary of Data Rules: Ensure crucial sections (hero, contact) are merged, never wiped
               contact: { ...(prev.contact), ...((content as any).contact || {}) },
               hero: { ...(prev.hero), ...((content as any).hero || {}) },
               sections: { ...(prev.sections), ...((content as any).sections || {}) }
@@ -178,14 +182,11 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
           }
         }
       } else {
-        // Hybrid Mode Safe-Guard: If Supabase returns nothing, maintain local sanctuary
-        console.warn("Properties table is empty or null, preserving local sanctuary data.");
         setProperties(prev => prev.length > 0 ? prev : PROPERTIES);
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error("fetchPropertiesFromDB Error:", err);
-        // Emergency Fallback on Network Error
         setProperties(prev => prev.length > 0 ? prev : PROPERTIES);
         setLocalGuideData(prev => prev.length > 0 ? prev : INITIAL_LOCAL_GUIDE);
       }
@@ -198,7 +199,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const controller = new AbortController();
     fetchPropertiesFromDB(controller.signal);
 
-    // 2. Realtime Subscription
+    // 2. INDUSTRIAL REALTIME OPTIMIZATION: Delta-Payload Merging
     let channel: any = null;
     if (isConfigured) {
       channel = supabase
@@ -206,7 +207,14 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'properties' },
-          () => fetchPropertiesFromDB()
+          (payload: any) => {
+            if (payload.eventType === 'UPDATE') {
+              const updated = payload.new as any;
+              setProperties(prev => prev.map(p => p.id === String(updated.id) ? { ...p, ...updated } : p));
+            } else {
+              fetchPropertiesFromDB();
+            }
+          }
         )
         .on(
           'postgres_changes',
@@ -222,7 +230,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [fetchPropertiesFromDB]);
 
-  // Efectos de Sincronización Local (Backup)
+  // Industrial Persistence: Sync all new geospatial & dynamic fields
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);

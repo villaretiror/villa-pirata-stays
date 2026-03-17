@@ -17,17 +17,19 @@ type PromoRow = Tables<'promo_codes'>;
 
 const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
 
+import { useAvailability } from '../hooks/useAvailability';
+
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { properties, refreshProperties, isLoading } = useProperty();
+  const { properties, refreshProperties, isLoading: isPropLoading } = useProperty();
   const { user } = useAuth();
 
   const property = properties.find(p => p.id === id);
 
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
-  const [blockedDates, setBlockedDates] = useState<Date[]>([]);
+  const { blockedDates, isLoading: isAvailabilityLoading, isRangeAvailable } = useAvailability(id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [phone, setPhone] = useState(user?.phone || '');
   const [guestMessage, setGuestMessage] = useState('');
@@ -42,57 +44,25 @@ const Booking: React.FC = () => {
     refreshProperties();
   }, [id]);
 
-  useEffect(() => {
-    const fetchBlockedDates = async () => {
-      if (!id || !property) return;
-      const manualBlocked = property.blockedDates.map((d: string) => new Date(d)) || [];
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('check_in, check_out, status, hold_expires_at')
-        .eq('property_id', id)
-        .or('status.in.(confirmed,waiting_approval,emergency_support),status.eq.pending_ai_validation');
-
-      type BookingDateRow = Pick<Tables<'bookings'>, 'check_in' | 'check_out' | 'status' | 'hold_expires_at'>;
-      const bookingDates: Date[] = [];
-      (bookings as BookingDateRow[] | null)?.forEach((b) => {
-        // Skip if it's an expired AI hold
-        if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < new Date()) {
-          return;
-        }
-
-        let start = new Date(b.check_in);
-        const end = new Date(b.check_out);
-        while (start < end) {
-          bookingDates.push(new Date(start));
-          start = addDays(start, 1);
-        }
-      });
-
-      // Fetch iCal feeds from Airbnb/Booking.com (Parallel)
-      let icalDates: Date[] = [];
-      if (property.calendarSync && property.calendarSync.length > 0) {
-        try {
-          const syncPromises = property.calendarSync.map(async (sync: any) => {
-            try {
-              const icalData = await fetchICalData(sync.url);
-              return parseICalData(icalData);
-            } catch (err) {
-              console.warn(`iCal sync failed for ${sync.platform}: `, err);
-              return [];
-            }
-          });
-
-          const results = await Promise.all(syncPromises);
-          results.flat().forEach(ds => icalDates.push(new Date(`${ds} T12:00:00`)));
-        } catch (err) {
-          console.error("Critical Multichannel Sync Error:", err);
-        }
+  const handleDateChange = (update: [Date | null, Date | null]) => {
+    const [start, end] = update;
+    
+    // 🛡️ GAP DETECTION LOGIC
+    if (start && end) {
+      if (!isRangeAvailable(start, end)) {
+        setDateRange([null, null]);
+        window.dispatchEvent(new CustomEvent('salty-push', {
+          detail: { message: "¡Ups! Hay una reserva entre esas fechas. Prueba un rango diferente. 🏝️" }
+        }));
+        return;
       }
+    }
+    
+    setDateRange(update);
+  };
 
-      setBlockedDates([...manualBlocked, ...bookingDates, ...icalDates]);
-    };
-    fetchBlockedDates();
-  }, [id, property]);
+  const isLoading = isPropLoading || isAvailabilityLoading;
+
 
   if (isLoading) return <BookingSkeleton />;
 
@@ -564,10 +534,10 @@ const Booking: React.FC = () => {
                   startDate={startDate}
                   endDate={endDate}
                   onChange={(update) => {
-                    setDateRange(update);
-                    // Si ya seleccionó rango, cerrar automáticamente con delay elegante
+                    handleDateChange(update);
+                    // Si ya seleccionó rango completo, cerrar automáticamente con delay elegante
                     if (update[0] && update[1]) {
-                      setTimeout(() => setShowCalendarModal(false), 600);
+                      setTimeout(() => setShowCalendarModal(false), 800);
                     }
                   }}
                   blockedDates={blockedDates}

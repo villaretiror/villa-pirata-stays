@@ -6,11 +6,11 @@ import { Tables } from '../supabase_types';
 type ProfileRow = Tables<'profiles'>;
 
 interface AuthContextType {
-  user: User | null;
+  user: (User & { total_bookings?: number; is_returning_guest?: boolean }) | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ user: User | null; error: string | null }>;
   register: (email: string, password: string, name: string) => Promise<{ user: User | null; error: string | null }>;
-  logout: () => Promise<void>;
+  logout: (navigate?: (path: string) => void) => Promise<void>;
   updateUser: (updated: Partial<User>) => void;
   resetPassword: (email: string) => Promise<{ error: string | null }>;
 }
@@ -23,7 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const initialFetchRef = useRef(false);
 
   // Singleton approach refinement: Singleton to map and persist users
-  const mapSupabaseUser = useCallback((sbUser: any, dbProfile: ProfileRow | null = null): User => ({
+  const mapSupabaseUser = useCallback((sbUser: any, dbProfile: ProfileRow | null = null, extraData: any = {}): User & { total_bookings?: number; is_returning_guest?: boolean } => ({
     id: sbUser.id,
     email: sbUser.email || '',
     name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
@@ -34,10 +34,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     bio: dbProfile?.bio || '',
     verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
     registeredAt: sbUser.created_at,
-    given_concessions: (dbProfile?.given_concessions as any[]) || []
+    given_concessions: (dbProfile?.given_concessions as any[]) || [],
+    total_bookings: extraData.total_bookings || 0,
+    is_returning_guest: (extraData.total_bookings || 0) > 0
   }), []);
 
-  const updateUserState = useCallback((newUser: User | null) => {
+  const updateUserState = useCallback((newUser: (User & { total_bookings?: number; is_returning_guest?: boolean }) | null) => {
     setUser(prev => {
       if (!prev && !newUser) return null;
       if (!prev || !newUser) return newUser;
@@ -49,22 +51,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, []);
 
-  const getExtendedProfile = useCallback(async (id: string): Promise<ProfileRow | null> => {
+  const getExtendedProfile = useCallback(async (id: string): Promise<{ profile: ProfileRow | null, extra: any }> => {
     try {
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
+      const [profileRes, bookingsRes] = await Promise.all([
+        supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
+        supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('guest_id', id)
+      ]);
 
-      if (error) {
-        console.warn("AuthContext: Profile fetch error:", error.message);
-        return null;
-      }
-      return profile as ProfileRow;
+      return {
+        profile: profileRes.data as ProfileRow,
+        extra: { total_bookings: bookingsRes.count || 0 }
+      };
     } catch (err) {
       console.error("AuthContext: Critical profile fetch error:", err);
-      return null;
+      return { profile: null, extra: { total_bookings: 0 } };
     }
   }, []);
 
@@ -93,10 +93,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isSubscribed) {
           if (session?.user) {
             console.log(`AuthContext: Valid session for ${session.user.email}. Fetching profile...`);
-            const isAdmin = session.user.email?.toLowerCase() === 'villaretiror@gmail.com';
-            const profile = await getExtendedProfile(session.user.id);
+            const { profile, extra } = await getExtendedProfile(session.user.id);
             if (isSubscribed) {
-              updateUserState(mapSupabaseUser(session.user, profile));
+              updateUserState(mapSupabaseUser(session.user, profile, extra));
             }
           } else {
             console.log("AuthContext: No initial session.");
@@ -121,9 +120,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
           if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
             if (session?.user) {
-              const profile = await getExtendedProfile(session.user.id);
+              const { profile, extra } = await getExtendedProfile(session.user.id);
+              
+              // 🕵️ AUDIT LOG: Secure Host Event Tracking
+              if (event === 'SIGNED_IN' && session.user.email === 'villaretiror@gmail.com') {
+                supabase.from('auth_logs').insert({
+                  user_id: session.user.id,
+                  email: session.user.email,
+                  event_type: 'login',
+                  user_agent: navigator.userAgent
+                }).then();
+              }
+
               if (isSubscribed) {
-                updateUserState(mapSupabaseUser(session.user, profile));
+                updateUserState(mapSupabaseUser(session.user, profile, extra));
                 setLoading(false);
               }
             }
@@ -160,8 +170,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) throw error;
 
-      const profile = await getExtendedProfile(data.user.id);
-      const mappedUser = mapSupabaseUser(data.user, profile);
+      const { profile, extra } = await getExtendedProfile(data.user.id);
+      const mappedUser = mapSupabaseUser(data.user, profile, extra);
       setUser(mappedUser);
       return { user: mappedUser, error: null };
     } catch (err: any) {
@@ -179,33 +189,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (error) return { user: null, error: error.message };
 
-    // PROACTIVE: Ensure physical profile row exists in DB immediately
-    if (data.user) {
-      await supabase.from('profiles').upsert({
-        id: data.user.id,
-        full_name: name,
-        email: email,
-        role: 'guest'
-      });
-    }
-
+    // 🏗️ INDUSTRIAL ATOMIC REGISTRATION (Trigger-based)
+    // Client-side profiles upsert removed in favor of Supabase Database Trigger
+    
     const mappedUser = data.user ? mapSupabaseUser(data.user) : null;
     return { user: mappedUser, error: null };
   }, [mapSupabaseUser]);
 
-  const logout = useCallback(async () => {
+  const logout = useCallback(async (navigate?: (path: string) => void) => {
     setLoading(true);
     try {
       console.log("AuthContext: Initiating logout...");
       await supabase.auth.signOut();
       localStorage.clear();
       setUser(null);
-      window.location.href = '/';
+      if (navigate) navigate('/');
+      else window.location.href = '/';
     } catch (err: any) {
       console.error("AuthContext: Logout failed:", err.message);
       // Even if it fails, clear local state and redirect
       setUser(null);
-      window.location.href = '/';
+      if (navigate) navigate('/');
+      else window.location.href = '/';
     } finally {
       setLoading(false);
     }
@@ -227,8 +232,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         updated_at: new Date().toISOString()
       });
       
-      const profile = await getExtendedProfile(data.user.id);
-      setUser(mapSupabaseUser(data.user, profile));
+      const { profile, extra } = await getExtendedProfile(data.user.id);
+      setUser(mapSupabaseUser(data.user, profile, extra));
     }
     if (error) throw error;
   }, [mapSupabaseUser, getExtendedProfile]);

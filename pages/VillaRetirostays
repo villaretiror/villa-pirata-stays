@@ -1,0 +1,540 @@
+# Query: salty
+# ContextLines: 1
+
+151 results - 37 files
+
+.cursorrules:
+  17  - **Edge Performance**: Proactively propose improvements like Edge Functions, advanced caching layers, or optimized Supabase queries to minimize latency.
+  18: - **Data Connectivity**: Every interaction (clicks, search intents, chat history) should be tracked as anonymous telemetry in Supabase to train Salty's predictive concierge capabilities.
+  19  
+  20: ## 4. Salty's Cognitive Intelligence
+  21: - Salty is not just a chatbot; he is the Digital Concierge. He must consume all data points from Supabase to personalize responses.
+  22: - Every database column must be self-documenting for Salty's context.
+  23: - Salty must be pro-active: noticing availability gaps or suggesting experiences based on visitor behavior.
+  24  
+
+AI_AUTONOMY_SCHEMA.sql:
+  1  -- 🧠 AI AUTONOMY LAYER: INSIGHTS & PROPOSALS TABLE
+  2: -- Misión: Proveer memoria estratégica a Salty para evolución autónoma.
+  3  
+
+  8      status TEXT DEFAULT 'pending', -- 'pending', 'applied', 'archived'
+  9:     impact_score INT DEFAULT 0, -- 1-10 (estimado por Salty)
+  10      created_at TIMESTAMPTZ DEFAULT now()
+
+aiServices.ts:
+  237  
+  238: // 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)
+  239  export const generateOnboardingDraft = async (
+
+  249          - Indica que el check-in es a las 3:00 PM.
+  250:         - Dile que para Salty es un placer asistirles con cualquier duda sobre el funcionamiento de la casa (WiFi, Agua caliente, Equipos).
+  251          - Deséales un viaje seguro.`;
+
+  269      const prompt = `
+  270:     Eres Salty, el Caribbean Luxury Concierge.
+  271      
+
+  293          return stage === 'mid_stay'
+  294:             ? `¡Hola ${guestName}! Soy Salty. Pasaba a saludarte y verificar que estés disfrutando de tu estancia en ${propertyTitle}. Si quieres una aventura hoy, no dejes de visitar los spots locales. ¡Cualquier cosa, aquí estoy!`
+  295              : `Hola ${guestName}, esperamos que hayas disfrutado tu estancia en ${propertyTitle}. Solo un recordatorio de que el check-out es a las 11:00 AM. Por favor, recuerda dejar la basura fuera y cerrar bien puertas y portón. ¡Buen viaje de regreso!`;
+
+App.tsx:
+   20  import FloatingWhatsApp from './components/FloatingWhatsApp';
+   21: import SaltyToast from './components/SaltyToast';
+   22  import Footer from './components/Footer';
+
+  111        {showWhatsApp && <FloatingWhatsApp propertyTitle={propertyTitle} />}
+  112:       {showWhatsApp && <SaltyToast propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
+  113        <Footer />
+
+CONSOLIDATE_SITE_DATA.sql:
+  10  
+  11: -- 2. Migración de VILLA_KNOWLEDGE (Conocimiento de Salty)
+  12  INSERT INTO system_settings (key, value)
+
+  60      "contact": {
+  61:         "title": "Reserva con Salty.",
+  62          "subtitle": "Sin comisiones de plataforma, solo el mejor trato directo garantizado. Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales, déjanos un mensaje.",
+
+  72  
+  73: -- 4. Inserción de Salty System Prompt (Consolidación de Identidad)
+  74  INSERT INTO system_settings (key, value)
+  75: VALUES ('salty_config', '{
+  76      "personality": "Luxury Caribbean Strategist. Sophisticated, warm, impeccable, and highly proactive. You act as a partner to the host and a premium guide to the guest.",
+
+constants.ts:
+  313    contact: {
+  314:     title: "Reserva con Salty.",
+  315      subtitle: "Sin comisiones de plataforma, solo el mejor trato directo garantizado. Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales, déjanos un mensaje.",
+
+index.html:
+  5    <meta charset="utf-8" />
+  6:   <meta name="version" content="2.1.2-SALTY-LIVE" />
+  7    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+
+MIGRACION_DESTINOS_V1.sql:
+  12      map_url TEXT,
+  13:     salty_tip TEXT, -- El toque personal de Salty
+  14      sort_order INTEGER DEFAULT 0,
+
+  26  
+  27: INSERT INTO destination_guides (category, title, distance, description, image_url, map_url, salty_tip, sort_order)
+  28  VALUES 
+
+package-lock.json:
+  2    "name": "villa-pirata-stays",
+  3:   "version": "1.1.2-SALTY",
+  4    "lockfileVersion": 3,
+
+  8        "name": "villa-pirata-stays",
+  9:       "version": "1.1.2-SALTY",
+  10        "dependencies": {
+
+package.json:
+  3    "private": true,
+  4:   "version": "1.1.2-SALTY",
+  5    "engines": {
+
+PEACE_OF_MIND_SCHEMA.sql:
+  44      maintenance_tasks INTEGER DEFAULT 0,
+  45:     salty_efficiency_score NUMERIC, -- AI calculated
+  46      created_at TIMESTAMPTZ DEFAULT now()
+
+  53  
+  54: -- Policies (Admin only for editing, Salty can read)
+  55  DROP POLICY IF EXISTS "Admin All Access" ON public.service_providers;
+
+SALTY_GOVERNANCE_SCHEMA.sql:
+   1  -- 🛡️ GOVERNANCE & SECURITY PROTOCOL: FINANCIAL & LEGAL BOUNDARIES
+   2: -- Misión: Blindar la integridad financiera y legal del sistema Salty.
+   3  
+
+  13  -- 3. Comentario de Auditoría
+  14: COMMENT ON COLUMN properties.min_price_floor IS 'Precio mínimo absoluto que Salty puede ofertar tras descuentos.';
+  15: COMMENT ON COLUMN properties.max_discount_allowed IS 'Porcentaje máximo de descuento que Salty puede proponer autónomamente.';
+
+supabase_types.ts:
+  201            map_url: string | null
+  202:           salty_tip: string | null
+  203            sort_order: number | null
+
+  215            map_url?: string | null
+  216:           salty_tip?: string | null
+  217            sort_order?: number | null
+
+  229            map_url?: string | null
+  230:           salty_tip?: string | null
+  231            sort_order?: number | null
+
+  732        }
+  733:       salty_memories: {
+  734          Row: {
+
+  756            {
+  757:             foreignKeyName: "fk_salty_memories_property"
+  758              columns: ["property_id"]
+
+types.ts:
+  162    mapUrl?: string;
+  163:   saltyTip?: string;
+  164    sortOrder?: number;
+
+api/chat.ts:
+   36          const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
+   37:         const { data: saltySetting } = await supabase.from('system_settings').select('value').eq('key', 'salty_config').single();
+   38          
+   39          const villaKnowledge = knowledgeSetting?.value || {};
+   40:         const saltyConfig: any = saltySetting?.value || {};
+   41  
+
+   47          const VILLA_CONCIERGE_PROMPT = `
+   48: Eres "Salty", el alma vibrante y CONSULTOR DE ESTRATEGIA de Villa & Pirata Stays en Cabo Rojo. 
+   49  
+
+   64  ### CONTEXTO DINÁMICO
+   65: ${saltyConfig.personality || 'Caribbean Luxury Strategist.'}
+   66  - URL Actual: ${currentUrl}
+
+   73  ### REGLAS DE ETIQUETA
+   74: ${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophisticated Caribbean.'}
+   75  `.trim();
+
+   80  
+   81:             // Seed logic for 'Salty Insights' Dashboard
+   82              if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
+
+  133              { role: 'user', content: `INSTRUCCIONES DE GOBERNANZA: ${VILLA_CONCIERGE_PROMPT}` },
+  134:             { role: 'assistant', content: "Es un honor saludarle. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?" },
+  135              ...recentMessages.map((m: any): CoreMessage => ({
+
+api/daily-report.ts:
+  39  
+  40:         // 3. Salty Activity
+  41          const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  71  
+  72: 🧠 <b>SALTY CONCIERGE</b>
+  73  • Interacciones (24h): ${interactions || 0}
+
+api/guest-journey.ts:
+  75                  const messageText = `
+  76: 🛎 <b>Salty: Revisión de Onboarding</b>
+  77  ───────────────────────
+
+api/master-cron.ts:
+  151  
+  152:     // 5. Salty & Email Interactions
+  153      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+
+  189  
+  190: 🧠 <b>SALTY CONCIERGE</b>
+  191  • Interacciones (24h): ${interactions || 0}
+
+  247                          `👤 <b>Etapa:</b> ${stage === 'check_in' ? 'Bienvenida y Acceso' : stage === 'mid_stay' ? 'Check de Felicidad' : 'Logística de Salida'}\n\n` +
+  248:                         `📝 <b>Borrador de Salty:</b>\n<i>"${draft}"</i>\n\n` +
+  249                          `¿Ejecutamos el envío a <code>${(b.profiles as any)?.email}</code>?`;
+
+  285      const prompt = (mission: string, guestName: string, propertyTitle: string, checkOutDate: string) => `
+  286:     Eres Salty, el Caribbean Luxury Concierge.
+  287      
+
+api/send.ts:
+  155                <p style="font-size: 17px; margin-bottom: 25px;">
+  156:                 Soy <strong>Salty</strong>, tu concierge digital. La brisa de Cabo Rojo ya te espera y yo he preparado cada detalle para que tu estancia en <strong>${p.name}</strong> sea legendaria.
+  157                </p>
+
+  181                <p style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
+  182:                 "En la Villa, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
+  183                </p>
+
+api/telegram-webhook.ts:
+   87                  if (text && text.trim().length > 0) {
+   88:                     await supabase.from('salty_memories').insert({
+   89                          learned_text: text,
+
+  103  
+  104:                 // 1. Silent Mode para Salty (30 mins), reset typing y reset de notificación
+  105                  await supabase.from('chat_logs').update({
+
+  120                      chatId,
+  121:                     "✅ <i>Mensaje entregado en la web. Salty ha sido silenciado por 30 mins para esta sesión.</i>"
+  122                  );
+
+  124          }
+  125:         // --- 🧠 NUEVO: NLP & IA INTELLIGENCE (Salty Brain) ---
+  126:         else if (text.toLowerCase().includes('salty') || text.startsWith('/') || update.message.chat.type === 'private') {
+  127              await handleAIConsultation(chatId, text, update.message.from);
+
+  129          else {
+  130:             // Ignorar mensajes que no mencionen a Salty o no sean comandos para no spamear en grupos
+  131          }
+
+  152          // 1. Fetch Dynamic Knowledge & Config
+  153:         const [{ data: knowledgeSetting }, { data: saltySetting }, { data: dbProperties }] = await Promise.all([
+  154              supabaseServiceRole.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
+  155:             supabaseServiceRole.from('system_settings').select('value').eq('key', 'salty_config').single(),
+  156              supabaseServiceRole.from('properties').select('id, title, location, description, price, amenities')
+
+  159          const villaKnowledge = knowledgeSetting?.value || {};
+  160:         const saltyConfig: any = saltySetting?.value || {};
+  161  
+  162          const VILLA_CONCIERGE_PROMPT = `
+  163: Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo. 
+  164  
+  165  ### PERSONALIDAD & TONALIDAD
+  166: ${saltyConfig.personality || 'Caribbean Luxury Concierge. Sophisticated, warm, proactive.'}
+  167  
+  168  ### REGLAS DE ETIQUETA
+  169: ${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophisticated Caribbean.\n- Comienza con cortesía extrema.'}
+  170  
+
+  180          const { data: familyKnowledge } = await supabaseServiceRole
+  181:             .from('salty_family_knowledge')
+  182              .select('key, value');
+
+  202                          const { error } = await supabaseServiceRole
+  203:                             .from('salty_family_knowledge')
+  204                              .upsert({ key, value, category: category || 'general' });
+
+  319  
+  320:         // Limpiar comillas iniciales/finales si Salty las puso en la previsualización
+  321          draftContent = draftContent.replace(/^"(.*)"$/, '$1').trim();
+
+  339                  const resend = new Resend(process.env.RESEND_API_KEY);
+  340:                 const fromAddress = 'Salty <reservas@villaretiror.com>';
+  341  
+  342:                 let subject = 'Mensaje de Salty Concierge';
+  343                  if (text.includes('Bienvenida y Acceso')) subject = '🏠 Instrucciones de Acceso y Bienvenida';
+
+  427                  callback_query_id: callbackQuery.id,
+  428:                 text: '🎤 Human Takeover Activado. Salty silenciado por 30 mins.'
+  429              })
+
+  433              chatId,
+  434:             `⚠️ <b>Control Manual:</b> Has tomado el control de la sesión <code>${sessionId}</code>.\n\nSalty no responderá hasta que el tiempo expire o vuelvas a hablar.`
+  435          );
+
+api/calendar/import.ts:
+  48              await NotificationService.sendTelegramAlert(
+  49:                 `🤖 <b>Salty: Guardia Activa Recuperada</b>\n\n` +
+  50                  `He retomado el control de ${expiredLogs.length} sesiones expiradas:\n${sessions}\n\n` +
+
+components/FloatingWhatsApp.tsx:
+  12    const message = propertyTitle
+  13:     ? `¡Hola! Salty me recomendó la propiedad "${propertyTitle}". Me encantaría saber más sobre la disponibilidad.`
+  14:     : "¡Hola! Quisiera vivir la experiencia en Cabo Rojo con la ayuda de Salty. ¿Qué fechas tienen disponibles?";
+  15  
+
+components/Footer.tsx:
+  10              <span className="material-icons text-primary text-2xl">sailing</span>
+  11:             <span className="font-serif font-black text-xl tracking-tight text-text-main">Salty</span>
+  12            </div>
+
+  22            <p className="text-[9px] text-text-light/60 max-w-[250px] leading-relaxed italic">
+  23:             Salty™ es una marca de Villa Retiro LLC.
+  24            </p>
+
+components/GuideCard.tsx:
+   7    onEdit?: () => void;
+   8:   onAskSalty?: (name: string) => void;
+   9    isEditable?: boolean;
+
+  11  
+  12: const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, isEditable = false }) => {
+  13    const handleClick = (e: React.MouseEvent) => {
+
+  18  
+  19:     if (onAskSalty) {
+  20:       onAskSalty(item.name);
+  21      }
+
+  68  
+  69:       {item.saltyTip && (
+  70          <div className="mb-4 p-3 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/10 transition-colors">
+
+  74            <p className="text-[11px] text-primary/90 leading-relaxed italic relative z-10">
+  75:             <span className="font-bold not-italic mr-1 uppercase text-[9px] tracking-wider">Salty Tip:</span> 
+  76:             "{item.saltyTip}"
+  77            </p>
+
+  80  
+  81:       <div className="mt-auto pt-4 border-t border-dashed border-gray-100 flex items-center justify-between group/salty">
+  82:         <span className="text-[10px] font-black uppercase tracking-widest text-text-light group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>
+  83:         <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-3 py-2 rounded-xl group-hover/salty:bg-primary group-hover/salty:text-white transition-all shadow-sm">
+  84:           <span>Pregunta a Salty</span>
+  85            <span className="material-icons text-sm">chat_bubble_outline</span>
+
+components/SaltyToast.tsx:
+   4  
+   5: interface SaltyToastProps {
+   6      propertyTitle?: string;
+
+   9  
+  10: const SaltyToast: React.FC<SaltyToastProps> = ({ propertyTitle, amenities }) => {
+  11      const [show, setShow] = useState(false);
+
+  16          "¿Sabías que si reservas conmigo aquí mismo te ahorras ese 15% de comisión? Así sobra para los mofongos.",
+  17:         "¡Ey! Soy Salty. Si estás buscando fechas y no te cuadran, avísame y buscamos un hueco.",
+  18          "¿Planes de playa? Buyé está espectacular esta semana, ¡te lo digo yo!",
+
+  29  
+  30:         window.addEventListener('salty-push', handleCustomMessage);
+  31  
+
+  34                  const topAmenity = amenities.find(a => a.includes('Piscina') || a.includes('BBQ') || a.includes('WiFi')) || amenities[0];
+  35:                 setMessage(`Salty dice: "En ${propertyTitle} tienes ${topAmenity} esperándote. ¿Te imaginas?"`);
+  36              } else {
+  37:                 setMessage(`Salty dice: "${suggestions[Math.floor(Math.random() * suggestions.length)]}"`);
+  38              }
+
+  43              clearTimeout(timer);
+  44:             window.removeEventListener('salty-push', handleCustomMessage);
+  45          };
+
+  65                              <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 flex justify-between">
+  66:                                 Salty Concierge
+  67                                  <button
+
+  84  
+  85: export default SaltyToast;
+
+components/host/BusinessHealthSnapshot.tsx:
+  91          <div className="space-y-1">
+  92:           <p className="text-[9px] font-black uppercase tracking-widest text-white/50">Eficiencia Salty</p>
+  93            <div className="flex items-center gap-2">
+
+components/host/ExperienceManager.tsx:
+  113      image: '',
+  114:     saltyTip: '',
+  115      sortOrder: 0
+
+  163              <label className="block text-[10px] font-black uppercase tracking-widest text-primary ml-1 flex items-center gap-1">
+  164:               <span className="material-icons text-xs">tips_and_updates</span> Salty Tip (Tu secreto)
+  165              </label>
+  166:             <textarea value={form.saltyTip} onChange={e => setForm({ ...form, saltyTip: e.target.value })} className="w-full p-3.5 border border-primary/10 rounded-2xl bg-primary/5 text-sm font-medium text-primary outline-none focus:ring-2 focus:ring-primary/20 h-20 resize-none" placeholder="Un consejo personal de experto..." />
+  167            </div>
+
+components/host/HostMessageCenter.tsx:
+   6      guestName: string;
+   7:     source: 'Airbnb' | 'Booking' | 'Directo' | 'Salty AI';
+   8      lastMessage: string;
+
+  24      { id: '2', guestName: 'Michael Brown', source: 'Airbnb', lastMessage: 'We just landed in San Juan! Ready for the drive.', timestamp: 'Ayer', unread: 0, avatar: 'https://i.pravatar.cc/150?img=11', status: 'active' },
+  25:     { id: '3', guestName: 'Ana Smith', source: 'Salty AI', lastMessage: '[Lead Capturado] El cliente preguntó por fechas en diciembre y dejó su correo.', timestamp: 'Martes', unread: 0, avatar: 'https://i.pravatar.cc/150?img=5', status: 'active' },
+  26  ];
+
+  86              case 'Booking': return <span className="bg-[#003580]/10 text-[#003580] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">Booking.com</span>;
+  87:             case 'Salty AI': return <span className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">Salty AI</span>;
+  88              default: return <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider">Directo</span>;
+
+components/host/InsightViewer.tsx:
+   62              <h3 className="text-sm font-black uppercase tracking-widest text-text-main leading-tight">Módulo de Supervisión CEO</h3>
+   63:             <p className="text-[10px] text-text-light font-medium uppercase tracking-wider">Insights Tácticos de Salty</p>
+   64            </div>
+
+  129            <span className="material-icons text-gray-300 text-5xl mb-4">insights</span>
+  130:           <p className="text-xs font-bold text-text-light uppercase tracking-widest">Salty está analizando tendencias...</p>
+  131          </div>
+
+components/host/SiteSettingsManager.tsx:
+   70        await saveVillaKnowledge(knowledgeForm);
+   71:       alert("Base de conocimientos de Salty actualizada.");
+   72      } catch (error) {
+   73:       alert("Error al actualizar Salty: " + (error as any).message);
+   74      } finally {
+
+   91          >
+   92:           Cerebro de Salty
+   93          </button>
+
+  137                <span className="material-icons text-secondary">contact_support</span>
+  138:               Contacto & Salty Chat
+  139              </h3>
+
+  143                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Título de Contacto (usa . para separar italic)</label>
+  144:                   <input value={siteForm.contact.title} onChange={e => setSiteForm({...siteForm, contact: {...siteForm.contact, title: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" placeholder="Reserva con.Salty" />
+  145                  </div>
+
+  177              <div>
+  178:               <h3 className="font-serif font-bold text-primary text-xl mb-1">Cerebro de Salty</h3>
+  179:               <p className="text-sm text-text-light">Lo que configures aquí es lo que Salty le dirá a los huéspedes. Sé preciso.</p>
+  180              </div>
+
+  219            <section className="bg-white rounded-[2.5rem] p-8 border border-gray-100 shadow-sm space-y-6">
+  220:             <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-text-light">Tips de Supervivencia (Salty Style)</h4>
+  221              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+  239                {isSaving && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>}
+  240:               Sincronizar Cerebro Salty
+  241              </button>
+
+  253                <h3 className="font-serif font-bold text-white text-xl mb-1">Protocolo de Gobernanza CEO</h3>
+  254:               <p className="text-sm text-gray-400 font-medium">Límites financieros obligatorios para las ofertas autónomas de Salty.</p>
+  255              </div>
+
+  290                  <p className="text-[9px] text-text-light font-medium italic">
+  291:                   * Salty nunca ofrecerá un precio menor a ${prop.min_price_floor} ni un descuento superior al {prop.max_discount_allowed}%.
+  292                  </p>
+
+contexts/PropertyContext.tsx:
+   93                mapUrl: r.map_url || '',
+   94:               saltyTip: r.salty_tip || '',
+   95                sortOrder: r.sort_order || 0
+
+  253        map_url: item.mapUrl,
+  254:       salty_tip: item.saltyTip,
+  255        sort_order: item.sortOrder || 0,
+
+lib/ExternalSyncService.ts:
+   8  /**
+   9:  * 🛰️ EXTERNAL SYNC SERVICE (SALTY AGENT)
+  10   * Handles data extraction from platforms like Airbnb.
+
+  84  
+  85:         await supabase.from('salty_memories').insert({
+  86              learned_text: `Sincronización automática completada desde Airbnb para la propiedad ${villaId}.`,
+
+pages/Booking.tsx:
+  123  
+  124:   // 15s Abandonment Push from Salty
+  125    useEffect(() => {
+
+  127        const timer = setTimeout(() => {
+  128:         window.dispatchEvent(new CustomEvent('salty-push', {
+  129            detail: { message: "¡Buenas fechas! ¿Tienes alguna duda con el proceso de pago o la política de cancelación? Estoy aquí para aclararlo." }
+
+pages/Home.tsx:
+  279              {localGuideData.find(g => g.id === 'beaches')?.items.map((item, i) => (
+  280:               <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
+  281              ))}
+
+  297              {localGuideData.find(g => g.id === 'gastronomy')?.items.map((item, i) => (
+  298:               <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
+  299              ))}
+
+  315              {localGuideData.find(g => g.id === 'nearby')?.items.map((item, i) => (
+  316:               <GuideCard key={i} item={item} onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} />
+  317              ))}
+
+  420                <h2 className="text-3xl font-serif font-bold text-text-main mb-4 leading-tight">
+  421:                 {siteContent?.contact?.title?.includes('Salty') ? (
+  422                    <>
+  423:                     {siteContent.contact.title.replace('Salty', '').replace('.', '')}
+  424:                     <span className="text-primary italic"> Salty.</span>
+  425                    </>
+
+pages/HostDashboard.tsx:
+  2947      >
+  2948:       {/* Salty Morning Briefing Slot */}
+  2949        <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group border border-white/10">
+
+  2954            <div className="flex items-center gap-3 mb-6">
+  2955:             <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10">Salty Morning Briefing</span>
+  2956              <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+
+  3374          <p className="text-[11px] font-medium opacity-60 leading-relaxed mb-6">
+  3375:           Salty está analizando el comportamiento de los clientes y asignando etiquetas inteligentes para tu marketing proactivo.
+  3376          </p>
+
+  3431                        {lead.message && (
+  3432:                         <p className="text-[10px] text-text-light mt-1 italic line-clamp-1 opacity-60">Salty Note: "{lead.message}"</p>
+  3433                        )}
+
+pages/Messages.tsx:
+   75        id: crypto.randomUUID(),
+   76:       text: '¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en Villa Retiro sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?',
+   77        sender: 'ai',
+
+  380              <div className="flex justify-between items-center mb-1.5">
+  381:               <span className="font-serif font-black italic text-lg text-text-main tracking-tighter">Salty: Concierge 360</span>
+  382                <span className="text-[9px] font-bold text-white bg-primary px-3 py-1 rounded-full uppercase tracking-widest shadow-sm">En Vivo</span>
+
+  401              <div>
+  402:               <p className="font-serif font-black italic text-lg text-text-main tracking-tighter">Salty - Concierge</p>
+  403                <p className="text-[9px] text-green-600 font-bold uppercase tracking-[0.2em] flex items-center gap-1.5">
+
+  461                        <span className="material-icons text-[12px]">auto_awesome</span>
+  462:                       <span className="font-serif font-black italic tracking-tighter text-[11px]">Salty Concierge</span>
+  463                      </span>
+
+pages/SecretSpots.tsx:
+  14              title: "Cargando Spots...",
+  15:             desc: "Salty está buscando sus lugares favoritos en la base de datos...",
+  16              image: "https://images.unsplash.com/photo-1544148103-0773bf10d32b?auto=format&fit=crop&q=80&w=800",
+
+  21      useEffect(() => {
+  22:         document.title = "Salty's Secret Spots | Cabo Rojo";
+  23          const meta = document.createElement('meta');
+
+  49                      >
+  50:                         <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Regalo Exclusivo de Salty</span>
+  51                      </motion.div>
+
+  66                          <p className="text-lg text-text-light italic leading-relaxed">
+  67:                             "Hola, soy Salty. He volado por todo Cabo Rojo y estos son los lugares donde realmente dejo que mi alma descanse. Guárdalos para ti, hablemos de esto como un secreto entre amigos."
+  68                          </p>
+
+  94                                          <p className="text-[11px] font-bold text-primary/80 uppercase tracking-wider leading-tight">
+  95:                                             TIP DE SALTY: <span className="text-text-main normal-case">{spot.tip}</span>
+  96                                          </p>

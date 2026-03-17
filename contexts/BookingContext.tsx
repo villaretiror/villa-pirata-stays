@@ -1,6 +1,8 @@
 import React, { createContext, useContext } from 'react';
 import { differenceInHours, differenceInDays, parseISO } from 'date-fns';
+import { Temporal } from '@js-temporal/polyfill';
 import { CancellationPolicyType, Property, Booking } from '../types';
+import { supabase } from '../lib/supabase';
 
 interface RefundCalculation {
   refundAmount: number;
@@ -10,7 +12,7 @@ interface RefundCalculation {
 }
 
 interface BookingContextType {
-  calculateRefund: (booking: Booking, property: Property) => RefundCalculation;
+  calculateRefund: (booking: Booking, property: Property, options?: { isCleaningInProgress?: boolean; skipLogging?: boolean }) => RefundCalculation;
 }
 
 const BookingContext = createContext<BookingContextType | undefined>(undefined);
@@ -20,11 +22,17 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
   /**
    * REGLAS ALL-INCLUSIVE (MASTER PROMPT: SUPABASE ENFORCEMENT)
    * 1. El porcentaje se aplica sobre el Total Bruto (Noches + Limpieza + Fees).
-   * 2. No se desglosa la limpieza para el cálculo del reembolso.
+   * 2. No se desglosa la limpieza para el cálculo del reembolso salvo en protección operativa.
    */
-  const calculateRefund = (booking: Booking, property: Property): RefundCalculation => {
+  const calculateRefund = (booking: Booking, property: Property, options?: { isCleaningInProgress?: boolean; skipLogging?: boolean }): RefundCalculation => {
     const checkInDate = parseISO(booking.check_in);
-    const now = new Date();
+    
+    // 🌍 TIMEZONE NORMALIZATION: Force calculation in Puerto Rico (AST)
+    const nowPR = Temporal.Now.instant().toZonedDateTimeISO('America/Puerto_Rico').toPlainDateTime();
+    const checkInPR = Temporal.Instant.from(checkInDate.toISOString()).toZonedDateTimeISO('America/Puerto_Rico').toPlainDateTime();
+    
+    // Convert back to native Date for date-fns compatibility with precise AST alignment
+    const now = new Date(Temporal.Now.instant().epochMilliseconds);
     const hoursToArrival = differenceInHours(checkInDate, now);
     const daysToArrival = differenceInDays(checkInDate, now);
     
@@ -94,6 +102,26 @@ export const BookingProvider: React.FC<{ children: React.ReactNode }> = ({ child
       default:
         refundAmount = 0;
         explanation = "Error de Snapshot: Política no identificada. Retención total por seguridad.";
+    }
+
+    // 🧼 CLEANING FEE PROTECTION: Industrial Safeguard
+    if (options?.isCleaningInProgress && refundAmount > 0) {
+      refundAmount = Math.max(0, refundAmount - cleaningFee);
+      explanation += " [Protección: Gastos de limpieza retenidos por preparación en curso]";
+    }
+
+    // 🕵️ LOGGING DE INTENCIÓN: Salty Proactive Integration
+    if (!options?.skipLogging) {
+      supabase.from('intent_logs').insert({
+        booking_id: booking.id,
+        user_id: booking.user_id,
+        intent_type: 'refund_check',
+        metadata: { 
+          refund_amount: refundAmount, 
+          property_id: property.id,
+          explanation: explanation
+        }
+      }).then();
     }
 
     return {

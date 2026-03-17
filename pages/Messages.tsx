@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
-import jsPDF from 'jspdf';
 import { useProperty } from '../contexts/PropertyContext';
 
 interface Message {
@@ -292,8 +291,9 @@ const Messages: React.FC = () => {
         return;
       }
 
-      // Generate PDF Contract
+      // 🚀 INDUSTRIAL OPTIMIZATION: Code Splitting for PDF Generation
       try {
+        const jsPDF = (await import('jspdf')).default;
         const doc = new jsPDF();
         doc.setFontSize(22);
         doc.text(`CONTRATO DE ALQUILER - VILLA RETIRO R LLC`, 20, 20);

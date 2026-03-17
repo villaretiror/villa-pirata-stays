@@ -1,4 +1,6 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { generateOnboardingDraft } from '../aiServices.js';
 import { NotificationService } from '../services/NotificationService.js';
 
@@ -116,8 +118,16 @@ async function taskFeedback(supabase: any) {
 }
 
 async function taskMorningReport(supabase: SupabaseClient, req: any) {
-    const today = new Date().toISOString().split('T')[0];
-    const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const dateObj = new Date();
+    const today = dateObj.toISOString().split('T')[0];
+    const tomorrow = new Date(dateObj.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    
+    const humanDate = (dateStr: string) => {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dObj = new Date(y, m - 1, d, 12, 0, 0);
+        const formatted = format(dObj, 'eee d MMM', { locale: es });
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    };
     
     // 1. System Health Status
     const { data: health } = await supabase.from('system_health').select('*');
@@ -172,36 +182,35 @@ async function taskMorningReport(supabase: SupabaseClient, req: any) {
     } catch { }
 
     const report = `
-📊 <b>FUTURA OS: Reporte Operativo Diario</b>
+🛰️ <b>SALTY STRATEGY | Reporte Operativo Diario</b>
 ───────────────────────
-📅 <b>Fecha:</b> ${today}
+📅 <b>Fecha:</b> ${humanDate(today)}
 ───────────────────────
 
 🛠 <b>SYSTEM HEALTH</b> ${healthEmoji}
-• Servicios Activos: ${healthyServices}/${totalServices}
-• Cron Activity: 🟢 Activo (Master Cron)
-• iCal Sync: ${syncStatus}
+• Servicios Activos: <b>${healthyServices}/${totalServices}</b>
+• iCal Sync Status: ${syncStatus}
+• Cron Activity: 🟢 Activo
 
 📅 <b>AGENDA DEL DÍA</b>
-• 🔑 Check-ins: ${ins?.length || 0}
-• 🧹 Check-outs: ${outs?.length || 0}
-• 🏠 En Casa: ${active?.length || 0} Huéspedes
+• 🔑 Check-ins: <b>${ins?.length || 0}</b>
+• 🧹 Check-outs: <b>${outs?.length || 0}</b>
+• 🏠 En Casa: <b>${active?.length || 0}</b> Huéspedes
 
 🧠 <b>SALTY CONCIERGE</b>
 • Interacciones (24h): ${interactions || 0}
 ${emailSummary}
-• ${journeyAlert}
+${journeyAlert}
 
 🌦 <b>ENTORNO & CLIMA</b>
 • ${weatherAlert}
 
 ───────────────────────
 <i>"Villa operando bajo estándares de lujo. Buen día, Host."</i>
+<a href="${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host">🔗 Abrir Centro de Control</a>
     `.trim();
 
-    await NotificationService.sendTelegramAlert(report, {
-        inline_keyboard: [[{ text: "🛰 Ver Dashboard", url: `${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host/dashboard` }]]
-    });
+    await NotificationService.sendTelegramAlert(report).catch(e => console.error('Error morning report:', e));
 
     return { status: 'ok', report_sent: true };
 }

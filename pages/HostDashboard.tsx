@@ -30,10 +30,18 @@ type BookingWithDetails = BookingRow & {
   properties: { title: string; images: string[] | null; policies?: any } | null;
 };
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area
-} from 'recharts';
+import { Suspense, lazy } from 'react';
+
+// 🚀 INDUSTRIAL OPTIMIZATION: Code Splitting for Analytics (Recharts)
+const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
+const Line = lazy(() => import('recharts').then(m => ({ default: m.Line })));
+const XAxis = lazy(() => import('recharts').then(m => ({ default: m.XAxis })));
+const YAxis = lazy(() => import('recharts').then(m => ({ default: m.YAxis })));
+const CartesianGrid = lazy(() => import('recharts').then(m => ({ default: m.CartesianGrid })));
+const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })));
+const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
+const AreaChart = lazy(() => import('recharts').then(m => ({ default: m.AreaChart })));
+const Area = lazy(() => import('recharts').then(m => ({ default: m.Area })));
 import {
   Zap,
   BarChart3,
@@ -444,36 +452,50 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         </div>
 
         <div className="h-64 w-full" style={{ minHeight: '300px' }}>
-          <ResponsiveContainer width="100%" height="100%" minHeight={300}>
-            <AreaChart data={stats}>
-              <defs>
-                <linearGradient id="colorWeb" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorOTA" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8} />
-                  <stop offset="95%" stopColor="#60A5FA" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-              <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
-              <Tooltip
-                contentStyle={{ borderRadius: '1.5rem', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', padding: '1rem', fontSize: '10px' }}
-                itemStyle={{ fontWeight: 900, textTransform: 'uppercase' }}
-              />
-              {showOrigin ? (
-                <>
-                  <Area type="monotone" dataKey="Web" stackId="1" stroke="#CBB28A" fillOpacity={1} fill="url(#colorWeb)" strokeWidth={3} />
-                  <Area type="monotone" dataKey="OTA" stackId="1" stroke="#60A5FA" fillOpacity={1} fill="url(#colorOTA)" strokeWidth={3} />
-                </>
-              ) : (
-                <Area type="monotone" dataKey="Total" stroke="#CBB28A" fillOpacity={1} fill="url(#colorWeb)" strokeWidth={3} />
-              )}
+          <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl border border-dashed border-gray-100 flex items-center justify-center text-[10px] font-black uppercase text-gray-300">Cargando Gráficas...</div>}>
+            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+              <AreaChart data={stats}>
+                <defs>
+                  <linearGradient id="colorWeb" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorOTA" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#60A5FA" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
+                <YAxis hide domain={[0, 'auto']} />
+                <Tooltip
+                  contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}
+                  itemStyle={{ padding: '2px 0' }}
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="Web" 
+                  stroke="#CBB28A" 
+                  strokeWidth={4} 
+                  fillOpacity={1} 
+                  fill="url(#colorWeb)" 
+                  animationDuration={2500} 
+                  name="Web"
+                />
+                <Area 
+                  type="monotone" 
+                  dataKey="OTA" 
+                  stroke="#60A5FA" 
+                  strokeWidth={4} 
+                  fillOpacity={1} 
+                  fill="url(#colorOTA)" 
+                  animationDuration={3000} 
+                  name="Airbnb/Booking"
+                />
               <Area type="monotone" dataKey="Gastos" stroke="#F87171" fillOpacity={0.1} fill="#F87171" strokeWidth={3} />
             </AreaChart>
           </ResponsiveContainer>
+          </Suspense>
         </div>
       </div>
 
@@ -513,14 +535,14 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
         <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
           <h4 className="text-[10px] font-black uppercase tracking-widest text-text-light mb-4">Tasa de Ocupación</h4>
-          <div className="h-32 w-full" style={{ minHeight: '150px' }}>
-            <ResponsiveContainer width="100%" height="100%" minHeight={150}>
-              <LineChart data={stats}>
-                <XAxis dataKey="name" hide />
-                <Tooltip />
-                <Line type="monotone" dataKey="Ocupación" stroke="#10B981" strokeWidth={4} dot={{ r: 4, fill: '#10B981' }} />
-              </LineChart>
-            </ResponsiveContainer>
+          <div className="h-40 w-full">
+            <Suspense fallback={<div className="h-full w-full bg-gray-50/20 animate-pulse rounded-2xl flex items-center justify-center text-[8px] font-black uppercase text-gray-300">Minimapa de Ocupación...</div>}>
+              <ResponsiveContainer width="100%" height="100%" minHeight={150}>
+                <LineChart data={stats}>
+                  <Line type="monotone" dataKey="Ocupación" stroke="#FF7F3F" strokeWidth={3} dot={false} animationDuration={4000} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Suspense>
           </div>
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-50">
             <span className="text-[10px] font-black uppercase text-gray-400">Promedio Ocupación</span>

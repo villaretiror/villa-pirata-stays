@@ -14,7 +14,9 @@ import {
     checkUserConcessions
 } from '../aiServices.js';
 
-export const maxDuration = 30;
+export const config = {
+    runtime: 'edge',
+};
 
 const supabase = createClient(
     process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || "",
@@ -25,12 +27,23 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
 });
 
-export default async function handler(req: any, res: any) {
-    if (req.method === 'OPTIONS') return res.status(204).end();
-    if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+const chatRequestSchema = z.object({
+    messages: z.array(z.any()),
+    sessionId: z.string().optional(),
+    userId: z.string().optional(),
+    propertyId: z.string().optional(),
+    currentUrl: z.string().optional(),
+    inStay: z.boolean().optional()
+});
+
+export default async function handler(req: Request) {
+    if (req.method === 'OPTIONS') return new Response(null, { status: 204 });
+    if (req.method !== 'POST') return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405 });
 
     try {
-        const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = req.body;
+        const body = await req.json();
+        const parsedBody = chatRequestSchema.parse(body);
+        const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = parsedBody;
 
         const { data: dbProperties } = await supabase.from('properties').select('*');
         const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
@@ -153,13 +166,14 @@ Si detectas que el usuario pregunta por disponibilidad de forma vaga o si ves qu
             }
         }
 
-        const recentMessages = (rawMessages || []).slice(-15);
+        // 🚀 INDUSTRIAL OPTIMIZATION: Limit to 10 messages for sub-second Edge efficiency
+        const recentMessages = (rawMessages || []).slice(-10);
         const finalMessages: CoreMessage[] = [
             { role: 'user', content: `INSTRUCCIONES DE GOBERNANZA: ${VILLA_CONCIERGE_PROMPT}` },
             { role: 'assistant', content: "Es un honor saludarle. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?" },
             ...recentMessages.map((m: any): CoreMessage => ({
                 role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
-                content: String(m.content || m.text || ''),
+                content: typeof m.content === 'string' ? m.content : (m.text || ''),
             }))
         ];
 
@@ -322,8 +336,11 @@ Si detectas que el usuario pregunta por disponibilidad de forma vaga o si ves qu
             },
         });
 
-        return result.pipeTextStreamToResponse(res);
+        return result.toDataStreamResponse();
     } catch (error: any) {
-        return res.status(500).json({ error: 'Sync error', details: error.message });
+        return new Response(JSON.stringify({ error: 'Sync error', details: error.message }), { 
+            status: 500, 
+            headers: { 'Content-Type': 'application/json' } 
+        });
     }
 }

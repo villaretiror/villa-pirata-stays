@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { NotificationService } from '../services/NotificationService.js';
 
 // 🛡️ Safe Environment Access (Resilient Protocol)
@@ -23,7 +25,15 @@ export default async function handler(req: any, res: any) {
     }
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    const today = new Date().toISOString().split('T')[0];
+    const dateObj = new Date();
+    const today = dateObj.toISOString().split('T')[0];
+    
+    const humanDate = (dateStr: string) => {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        const dObj = new Date(y, m - 1, d, 12, 0, 0);
+        const formatted = format(dObj, 'eee d MMM', { locale: es });
+        return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+    };
 
     try {
         // 1. System Health Status
@@ -52,38 +62,35 @@ export default async function handler(req: any, res: any) {
             if (code >= 95) weatherAlert = "⛈️ Alerta Crítica: Tormentas eléctricas detectadas.";
         } catch { }
 
-        // 🏗️ CONSTRUCCIÓN DEL REPORTE
         const report = `
-📊 <b>FUTURA OS: Reporte Operativo Diario</b>
+🛰️ <b>SALTY STRATEGY | Reporte Operativo Diario</b>
 ───────────────────────
-📅 <b>Fecha:</b> ${today}
+📅 <b>Fecha:</b> ${humanDate(today)}
 ───────────────────────
 
 🛠 <b>SYSTEM HEALTH</b> ${healthEmoji}
-• Servicios Activos: ${healthyServices}/${totalServices}
+• Servicios Activos: <b>${healthyServices}/${totalServices}</b>
+• iCal Sync Status: 🟢 Conexión estable con Airbnb
 • Cron Activity: 🟢 Activo (Master Cron)
-• iCal Sync: Conexión estable con Airbnb
 
 📅 <b>AGENDA DEL DÍA</b>
-• 🔑 Check-ins: ${checkIns?.length || 0}
-• 🧹 Check-outs: ${checkOuts?.length || 0}
-• 🏠 En Casa: ${active?.length || 0} Huéspedes
+• 🔑 Check-ins: <b>${checkIns?.length || 0}</b>
+• 🧹 Check-outs: <b>${checkOuts?.length || 0}</b>
+• 🏠 En Casa: <b>${active?.length || 0}</b> Huéspedes
 
 🧠 <b>SALTY CONCIERGE</b>
 • Interacciones (24h): ${interactions || 0}
 • Host Takeovers: ${pendingTakeover?.length || 0} activos
-• Status: 🦾 Guardia operativa
 
 🌦 <b>ENTORNO & CLIMA</b>
 • ${weatherAlert}
 
 ───────────────────────
 <i>"Villa operando bajo estándares de lujo. Buen día, Host."</i>
-        `;
+<a href="${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host">🔗 Abrir Centro de Control</a>
+        `.trim();
 
-        await NotificationService.sendTelegramAlert(report, {
-            inline_keyboard: [[{ text: "🛰 Ver Dashboard Real-time", url: "https://villaretiror.com/host/dashboard" }]]
-        });
+        await NotificationService.sendTelegramAlert(report).catch(e => console.error('Error daily report:', e));
 
         return res.status(200).json({ success: true, timestamp: new Date().toISOString() });
 

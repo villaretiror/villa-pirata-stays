@@ -99,6 +99,7 @@ export interface Property {
   waze_url?: string;
   review_url?: string;
   isOffline?: boolean;
+  is_cleaning_in_progress?: boolean;
   min_price_floor: number;
   max_discount_allowed: number;
   cancellation_policy_type?: CancellationPolicyType;

@@ -20,7 +20,7 @@ const StayDashboard: React.FC = () => {
             // Mockup o fetch de base de datos
             const { data, error } = await supabase
                 .from('bookings')
-                .select('*, property:properties(title, location, address)')
+                .select('*, property:properties(title, location, address, location_coords, wifi_name, wifi_pass, access_code, lockbox_image_url, is_cleaning_in_progress)')
                 .eq('id', id)
                 .single();
 
@@ -44,11 +44,12 @@ const StayDashboard: React.FC = () => {
         </div>
     );
 
-    const isPirata = booking.property?.title?.toLowerCase().includes('pirata') || booking.property_id?.toString() === '42839458' || booking.property_id?.toString() === '2';
-    const lockCode = isPirata ? "2197" : "0895";
-    const lockImage = isPirata ? "/assets/lockboxes/pirata.jpg" : "/assets/lockboxes/retiro.jpg";
-    const wifiNetwork = "Wifivacacional";
-    const wifiPass = "Wifivacacional";
+    const prop = booking.property;
+    const lockCode = prop?.access_code || "0000";
+    const lockImage = prop?.lockbox_image_url || "/assets/lockboxes/retiro.jpg";
+    const wifiNetwork = prop?.wifi_name || "VillaRetiro_Guest";
+    const wifiPass = prop?.wifi_pass || "Guest2024!";
+    const coords = prop?.location_coords || '18.07065,-67.16544';
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -141,8 +142,7 @@ const StayDashboard: React.FC = () => {
                     </h2>
                     <p className="text-xs text-text-light mb-4">Ubicada en {booking.property?.location || 'Cabo Rojo'}, muy cerca de los mejores puntos VIP del suroeste.</p>
                     {(() => {
-                        const coords = isPirata ? '18.0267,-67.1706' : '18.07065,-67.16544';
-                        const address = booking.property?.address || (isPirata ? 'Boquerón, Cabo Rojo, PR' : 'Carr 307 Km 6.2, Cabo Rojo, PR');
+                        const address = booking.property?.address || 'Cabo Rojo, PR';
                         
                         return (
                             <div className="w-full h-48 bg-gray-200 rounded-xl overflow-hidden relative border border-gray-100 shadow-inner group">
@@ -230,7 +230,7 @@ const StayDashboard: React.FC = () => {
                             {(() => {
                                 const prop = properties.find(p => p.id === booking.property_id);
                                 if (!prop) return <p>Calculando impacto...</p>;
-                                const calculation = calculateRefund(booking, prop);
+                                const calculation = calculateRefund(booking, prop, { isCleaningInProgress: prop.is_cleaning_in_progress });
                                 return (
                                     <>
                                         <div className="bg-sand/30 p-8 rounded-[2.5rem] border border-orange-100/50 flex flex-col items-center justify-center text-center">
