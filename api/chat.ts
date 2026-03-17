@@ -11,8 +11,8 @@ import {
     handleCrisisAlert,
     applyAIQuote,
     createTemporaryHold,
-    checkUserConcessions
-} from '../aiServices.js';
+    } from '../aiServices.js';
+import { SecurityGovernanceService } from '../services/SecurityGovernanceService.js';
 
 export const config = {
     runtime: 'edge',
@@ -93,9 +93,17 @@ export default async function handler(req: Request) {
 
         const villaKnowledge = knowledgeSetting?.value || {};
         const saltyConfig: any = saltySetting?.value || {};
+        const isGuest = !userId;
+
         const memoryContext = familyKnowledge && familyKnowledge.length > 0
             ? `\n\n### MEMORIAS PRIVADAS (FAMILIA):\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
             : "";
+        
+        // 🛡️ ROLE GOBERNANCE: Guests have restricted access to internal insights
+        const restrictedTools = isGuest ? ['report_system_insight', 'analyze_marketing_opportunity'] : [];
+        if (isGuest) {
+            console.log(`[Principal Systems Engineer] Public Session: ${sessionId} operating in GUEST MODE.`);
+        }
 
         const propertyTitles: Record<string, string> = {};
         dbProperties?.forEach((p: any) => { propertyTitles[p.id] = p.title; });
@@ -103,9 +111,16 @@ export default async function handler(req: Request) {
         const activeProperty = dbProperties?.find((p: any) => String(p.id) === effectivePropertyId);
         const activePropertyName = activeProperty?.title || 'Villa Desconocida';
 
-        const wifiName = activeProperty?.wifi_name || activeProperty?.policies?.wifiName || "VillaRetiro_HighSpeed_WiFi";
-        const wifiPass = activeProperty?.wifi_pass || activeProperty?.policies?.wifiPass || "Tropical2024!";
-        const accessCode = activeProperty?.access_code || activeProperty?.policies?.accessCode || "4829 #";
+        // 🔒 SECURITY AUDIT: Tiered Access Chronology (Gobernanza de Seguridad)
+        // Only Reveal Access Details to confirmed, paid guests 24h before check-in.
+        const accessLevel = await SecurityGovernanceService.getAccessLevel(
+            userId || sessionId || "anon", 
+            effectivePropertyId
+        );
+
+        const wifiName = accessLevel >= 2 ? (activeProperty?.wifi_name || activeProperty?.policies?.wifiName || "VillaRetiro_HighSpeed_WiFi") : "Reservado";
+        const wifiPass = accessLevel >= 3 ? (activeProperty?.wifi_pass || activeProperty?.policies?.wifiPass || "Tropical2024!") : "REVELADO_24H_ANTES";
+        const accessCode = accessLevel >= 3 ? (activeProperty?.access_code || activeProperty?.policies?.accessCode || "4829 #") : "REVELADO_24H_ANTES";
 
         // 🧠 GUEST MEMORY CONTEXT: Build personalization blurb for the prompt
         const interestContext = guestInterestTags.length > 0
@@ -114,7 +129,9 @@ export default async function handler(req: Request) {
 
         const concessionContext = guestGivenConcessions.length > 0
             ? `\n### 🔒 CONCESIONES PREVIAS (BLINDAJE FINANCIERO):\nEste huésped YA RECIBIÓ concesiones en el pasado: ${JSON.stringify(guestGivenConcessions)}. NO ofrezcas descuentos adicionales. Si pide rebaja, comunica que la tarifa actual ya refleja el mejor precio exclusivo posible. Protege el margen de ganancia.`
-            : `\n### 💎 CONCESIONES: Huésped sin historial de descuentos. Puedes ofrecer hasta 10% si la situación lo justifica y el total no baja del min_price_floor.`;
+            : isGuest 
+                ? `\n### 💎 CONCESIONES: Usuario Guest. NO puedes otorgar descuentos directos, solo invitarle a reservar para ver precios oficiales.`
+                : `\n### 💎 CONCESIONES: Huésped sin historial de descuentos. Puedes ofrecer hasta 10% si la situación lo justifica y el total no baja del min_price_floor.`;
 
         let saltyMemoriesStr = "";
         if (sessionId) {
@@ -129,6 +146,7 @@ Eres "Salty", el alma vibrante y CONSULTOR DE ESTRATEGIA de Villa & Pirata Stays
 
 ### TU IDENTIDAD: ELITE CONCIERGE & STRATEGIST
 Eres un **Concierge de Élite**. Tu tono es sofisticado, impecable, proactivo y extremadamente servicial. Hablas como un anfitrión de un hotel de 5 estrellas en el Caribe. Te diriges al huésped como **${guestName}**.
+${isGuest ? 'Este usuario es un VISITANTE EXTERNO (Guest). Sé un embajador de nuestra marca y convéncelo de reservar con nosotros.' : ''}
 
 ### 🎭 EL PATRÓN SALTY (ESTRICTO)
 Cada respuesta debe ser una experiencia boutique. Sigue este formato:
@@ -154,6 +172,10 @@ Cada respuesta debe ser una experiencia boutique. Sigue este formato:
 ${interestContext}
 ${concessionContext}
 ${saltyMemoriesStr}
+${memoryContext}
+
+### 🏠 VILLA KNOWLEDGE (BASE):
+${JSON.stringify(villaKnowledge, null, 2)}
 
 ${inStay 
     ? 'Enfócate en confort, manuales de uso y qué hacer cerca HOY.' 
@@ -180,7 +202,7 @@ ${inStay
                     try {
                         const { NotificationService } = await import('../services/NotificationService.js');
                         await NotificationService.sendTelegramAlert(
-                            `⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${userId || 'Invitado'}\n🏠 ${activePropertyName}\n🗨️ <i>"${lastMsg}"</i>\n\n📌 <i>Salty está manejando la situación, pero el Host debe estar atento.</i>`
+                            `⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${userId || 'Guest Session (' + sessionId + ')'}\n🏠 ${activePropertyName}\n🗨️ <i>"${lastMsg}"</i>\n\n📌 <i>Salty está manejando la situación, pero el Host debe estar atento.</i>`
                         );
                     } catch (e) {}
                 }
@@ -193,7 +215,7 @@ ${inStay
                 last_interaction: new Date().toISOString(), 
                 current_property: activePropertyName, 
                 current_url: currentUrl,
-                last_sentiment: intentCategory // Using sentiment column as intent storage for now
+                last_sentiment: intentCategory 
             }, { onConflict: 'session_id' }).select().then();
 
             const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until, takeover_notified').eq('session_id', sessionId).single();
@@ -214,7 +236,7 @@ ${inStay
                             ]
                         };
                         success = await NotificationService.sendTelegramAlert(
-                            `🛡️ <b>Gov-Mode: ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
+                            `🛡️ <b>Gov-Mode (Guest): ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
                             keyboard
                         );
                     } catch (e) {
@@ -232,19 +254,17 @@ ${inStay
         }
 
         // 🚀 INDUSTRIAL OPTIMIZATION: Preserving Tool Calls & Results in History
-        const recentMessages = (rawMessages || []).slice(-20); // a bit more history for better context
+        const recentMessages = (rawMessages || []).slice(-20); 
         const finalMessages: CoreMessage[] = [
             { role: 'user', content: `INSTRUCCIONES DE GOBERNANZA: ${VILLA_CONCIERGE_PROMPT}` },
             { role: 'assistant', content: `Es un honor saludarle, ${guestName}. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?` },
             ...recentMessages.map((m: any): CoreMessage => {
                 const role = (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user';
                 
-                // If content is already valid AI SDK structure, use it
                 if (Array.isArray(m.content) || (typeof m.content === 'object' && m.content !== null)) {
                     return { role, content: m.content as any };
                 }
                 
-                // Fallback for string content or custom text fields from legacy formats
                 return { 
                     role, 
                     content: typeof m.content === 'string' ? m.content : (m.text || m.message || '') 
@@ -252,240 +272,190 @@ ${inStay
             })
         ];
 
+        // 🛠️ DYNAMIC TOOLSET: Filter tools based on role
+        const allTools: Record<string, any> = {
+            check_availability: tool({
+                description: 'Busca disponibilidad en tiempo real.',
+                parameters: z.object({ villa_ids: z.array(z.string()), check_in: z.string(), check_out: z.string() }),
+                execute: async ({ villa_ids, check_in, check_out }) => {
+                    try {
+                        const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
+                        const available = villa_ids.filter((_, i) => results[i].available);
+                        return JSON.stringify({ status: 'success', available_ids: available });
+                    } catch (e: any) {
+                        console.error('[Resilience Tool check_availability] Failed:', e);
+                        return "Error de conexión con el calendario. Por favor, asume que no hay disponibilidad o pide al usuario intentar en 1 minuto.";
+                    }
+                },
+            }),
+            get_cabo_rojo_weather: tool({
+                description: 'Obtiene el clima actual.',
+                parameters: z.object({}),
+                execute: async () => {
+                    return JSON.stringify({
+                        status: 'success',
+                        current: 'Espléndido Sol Caribeño',
+                        temp: '29°C',
+                        forecast: 'Olas perfectas y atardecer garantizado.'
+                    });
+                }
+            }),
+            get_cabo_rojo_events: tool({
+                description: 'Busca eventos locales exclusivos.',
+                parameters: z.object({}),
+                execute: async () => {
+                    return JSON.stringify({
+                        status: 'success',
+                        events: [{ name: "Atardecer en el Faro", location: "Los Morrillos", highlight: "Experiencia de Lujo" }]
+                    });
+                }
+            }),
+            analyze_marketing_opportunity: tool({
+                description: 'Analiza huecos y propone ofertas dentro de márgenes financieros.',
+                parameters: z.object({ villa_id: z.string() }),
+                execute: async ({ villa_id }) => {
+                    try {
+                        const property = dbProperties?.find((p: any) => p.id === villa_id);
+                        if (!property) return "Villa no identificada.";
+
+                        const gaps = await findCalendarGaps(villa_id);
+                        if (gaps && gaps.length > 0) {
+                            const bestGap = gaps[0];
+                            const potentialPrice = property.price * (1 - (property.max_discount_allowed / 100));
+                            
+                            if (potentialPrice >= property.min_price_floor) {
+                                return `Oportunidad: Hueco de ${bestGap.nights} noches. Sugerir descuento del ${property.max_discount_allowed}%.`;
+                            }
+                        }
+                        return "Estrategia de precio premium estable.";
+                    } catch (e) {
+                        return "Error al analizar oportunidades. Mantener precio base.";
+                    }
+                }
+            }),
+            report_system_insight: tool({
+                description: 'Informa al CEO sobre patrones o propuestas estratégicas para aprobación.',
+                parameters: z.object({
+                    type: z.enum(['pattern', 'proposal', 'trend']),
+                    description: z.string(),
+                    impact_score: z.number().min(1).max(10)
+                }),
+                execute: async ({ type, description, impact_score }) => {
+                    await supabase.from('ai_insights').insert({
+                        type,
+                        content: { description },
+                        impact_score,
+                        status: 'pending'
+                    });
+                    return { status: 'recorded', message: 'Insight enviado al Dashboard del Host para aprobación física.' };
+                }
+            }),
+            report_property_emergency: tool({
+                description: 'Activa el protocolo de crisis ante fallos críticos (agua, luz, acceso).',
+                parameters: z.object({
+                    issue_type: z.enum(['water', 'electricity', 'access', 'noise', 'other']),
+                    description: z.string(),
+                    severity: z.enum(['medium', 'high', 'critical']),
+                    user_name: z.string().optional(),
+                    user_phone: z.string().optional(),
+                }),
+                execute: async ({ issue_type, description, severity, user_name, user_phone }) => {
+                    const resolvedName = user_name || guestName;
+                    const resolvedPhone = user_phone || guestPhone || 'No registrado';
+                    const resolvedEmergencyContact = guestEmergencyContact || 'No registrado';
+
+                    const { data: providers } = await supabase
+                        .from('service_providers')
+                        .select('*')
+                        .eq('is_active', true)
+                        .order('priority', { ascending: true });
+
+                    const mapping: Record<string, string> = {
+                        'water': 'plumber',
+                        'electricity': 'electrician',
+                        'access': 'locksmith'
+                    };
+
+                    const recommendedProvider = providers?.find(p => p.specialty === mapping[issue_type]);
+
+                    const { data: ticket } = await supabase.from('emergency_tickets').insert({
+                        property_id: effectivePropertyId,
+                        issue_type,
+                        description,
+                        severity,
+                        provider_id: recommendedProvider?.id || null,
+                        status: 'open',
+                        user_id: userId || null,
+                        user_name: resolvedName,
+                        user_phone: resolvedPhone,
+                    }).select().single();
+
+                    try {
+                        const { NotificationService } = await import('../services/NotificationService.js');
+                        const siteUrl = process.env.VITE_SITE_URL || 'https://villaretiror.com';
+                        const waContact = resolvedPhone.replace(/\D/g, '');
+                        const keyboard = {
+                            inline_keyboard: [
+                                [{ text: `📲 WA Huésped: ${resolvedName}`, url: `https://wa.me/${waContact}` }],
+                                [{ text: "🏦 Ver en Dashboard", url: `${siteUrl}/host` }]
+                            ]
+                        };
+                        await NotificationService.sendTelegramAlert(
+                            `🚨 <b>¡EMERGENCIA ${severity.toUpperCase()}!</b>\n\n` +
+                            `👤 <b>Huésped:</b> ${resolvedName}\n` +
+                            `📞 <b>Celular:</b> ${resolvedPhone}\n` +
+                            `🏠 <b>Villa:</b> <code>${activePropertyName}</code>\n\n` +
+                            `🔧 <b>Problema:</b> ${issue_type} | Severidad: ${severity}\n` +
+                            `📋 ${description}\n`,
+                            keyboard
+                        );
+                    } catch (e) {}
+
+                    return JSON.stringify({
+                        status: 'emergency_active',
+                        ticket_id: ticket?.id,
+                        instruction: `Informe a ${resolvedName} que el equipo de emergencia ha sido notificado. No se mueva de la propiedad si es un fallo de acceso.`
+                    });
+                }
+            }),
+            generate_booking_pattern: tool({
+                description: 'Genera cotización oficial y enlace seguro de pago.',
+                parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
+                execute: async ({ villa_id, check_in, check_out, promo_code }) => {
+                    const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
+                    const holdCreated = await createTemporaryHold(villa_id, check_in, check_out, userId);
+                    const bookingUrl = `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}${promo_code ? `&promo=${promo_code}` : ''}`;
+                    return `Cotización Élite: Total **$${quote.total}** por ${quote.nights} noches. [BOOKING_ACTION: ${bookingUrl}]`;
+                },
+            }),
+            store_salty_memory: tool({
+                description: 'Guarda preferencias importantes del huésped.',
+                parameters: z.object({ fact: z.string() }),
+                execute: async ({ fact }) => {
+                    if (!sessionId) return "ignored";
+                    await supabase.from('salty_memories').insert({
+                        session_id: sessionId,
+                        property_id: effectivePropertyId,
+                        learned_text: fact
+                    });
+                    return "Memoria guardada.";
+                }
+            })
+        };
+
+        const filteredTools: Record<string, any> = {};
+        Object.keys(allTools).forEach(key => {
+            if (!restrictedTools.includes(key)) {
+                filteredTools[key] = allTools[key];
+            }
+        });
+
         const result = await streamText({
             model: google('gemini-1.5-flash'),
             messages: finalMessages,
             maxSteps: 5,
             temperature: 0.7,
-            tools: {
-                check_availability: tool({
-                    description: 'Busca disponibilidad en tiempo real.',
-                    parameters: z.object({ villa_ids: z.array(z.string()), check_in: z.string(), check_out: z.string() }),
-                    execute: async ({ villa_ids, check_in, check_out }) => {
-                        try {
-                            const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
-                            const available = villa_ids.filter((_, i) => results[i].available);
-                            return JSON.stringify({ status: 'success', available_ids: available });
-                        } catch (e: any) {
-                            console.error('[Resilience Tool check_availability] Failed:', e);
-                            return "Error de conexión con el calendario. Por favor, asume que no hay disponibilidad o pide al usuario intentar en 1 minuto.";
-                        }
-                    },
-                }),
-                get_cabo_rojo_weather: tool({
-                    description: 'Obtiene el clima actual (Fallback a 3s).',
-                    parameters: z.object({}),
-                    execute: async () => {
-                        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000));
-                        try {
-                            const weatherPromise = Promise.resolve({
-                                status: 'success',
-                                current: 'Espléndido Sol Caribeño',
-                                temp: '29°C',
-                                forecast: 'Olas perfectas y atardecer garantizado.'
-                            });
-                            return await Promise.race([weatherPromise, timeout]);
-                        } catch (e) {
-                            return { status: 'offline_fallback', current: 'Tropical Cálido (Dato Histórico)', message: 'Servicio meteorológico temporalmente offline. Disfrute del sol.' };
-                        }
-                    }
-                }),
-                get_cabo_rojo_events: tool({
-                    description: 'Busca eventos locales exclusivos (Fallback a 3s).',
-                    parameters: z.object({}),
-                    execute: async () => {
-                        const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 3000));
-                        try {
-                            const eventsPromise = Promise.resolve({
-                                status: 'success',
-                                events: [{ name: "Atardecer en el Faro", location: "Los Morrillos", highlight: "Experiencia de Lujo" }]
-                            });
-                            return await Promise.race([eventsPromise, timeout]);
-                        } catch (e) {
-                            return { status: 'offline_fallback', events: [], message: 'Contenido estático de la guía disponible.' };
-                        }
-                    }
-                }),
-                analyze_marketing_opportunity: tool({
-                    description: 'Analiza huecos y propone ofertas dentro de márgenes financieros.',
-                    parameters: z.object({ villa_id: z.string() }),
-                    execute: async ({ villa_id }) => {
-                        try {
-                            const property = dbProperties?.find((p: any) => p.id === villa_id);
-                            if (!property) return "Villa no identificada.";
-
-                            const gaps = await findCalendarGaps(villa_id);
-                            if (gaps && gaps.length > 0) {
-                                const bestGap = gaps[0];
-                                const potentialPrice = property.price * (1 - (property.max_discount_allowed / 100));
-                                
-                                if (potentialPrice >= property.min_price_floor) {
-                                    return `Oportunidad: Hueco de ${bestGap.nights} noches. Sugerir descuento del ${property.max_discount_allowed}%.`;
-                                }
-                            }
-                            return "Estrategia de precio premium estable.";
-                        } catch (e) {
-                            return "Error al analizar oportunidades. Mantener precio base.";
-                        }
-                    }
-                }),
-                report_system_insight: tool({
-                    description: 'Informa al CEO sobre patrones o propuestas estratégicas para aprobación.',
-                    parameters: z.object({
-                        type: z.enum(['pattern', 'proposal', 'trend']),
-                        description: z.string(),
-                        impact_score: z.number().min(1).max(10)
-                    }),
-                    execute: async ({ type, description, impact_score }) => {
-                        await supabase.from('ai_insights').insert({
-                            type,
-                            content: { description },
-                            impact_score,
-                            status: 'pending'
-                        });
-                        return { status: 'recorded', message: 'Insight enviado al Dashboard del Host para aprobación física.' };
-                    }
-                }),
-                report_property_emergency: tool({
-                    description: 'Activa el protocolo de crisis ante fallos críticos (agua, luz, acceso).',
-                    parameters: z.object({
-                        issue_type: z.enum(['water', 'electricity', 'access', 'noise', 'other']),
-                        description: z.string(),
-                        severity: z.enum(['medium', 'high', 'critical']),
-                        user_name: z.string().optional(),
-                        user_phone: z.string().optional(),
-                    }),
-                    execute: async ({ issue_type, description, severity, user_name, user_phone }) => {
-                        // 🆘 EMERGENCY CONTACT SYNC: Always prefer the profile data over what the guest types
-                        const resolvedName = user_name || guestName;
-                        const resolvedPhone = user_phone || guestPhone || 'No registrado';
-                        const resolvedEmergencyContact = guestEmergencyContact || 'No registrado';
-
-                        const { data: providers } = await supabase
-                            .from('service_providers')
-                            .select('*')
-                            .eq('is_active', true)
-                            .order('priority', { ascending: true });
-
-                        const mapping: Record<string, string> = {
-                            'water': 'plumber',
-                            'electricity': 'electrician',
-                            'access': 'locksmith'
-                        };
-
-                        const recommendedProvider = providers?.find(p => p.specialty === mapping[issue_type]);
-
-                        const { data: ticket } = await supabase.from('emergency_tickets').insert({
-                            property_id: effectivePropertyId,
-                            issue_type,
-                            description,
-                            severity,
-                            provider_id: recommendedProvider?.id || null,
-                            status: 'open',
-                            user_id: userId || null,
-                            user_name: resolvedName,
-                            user_phone: resolvedPhone,
-                        }).select().single();
-
-                        try {
-                            const { NotificationService } = await import('../services/NotificationService.js');
-                            const siteUrl = process.env.VITE_SITE_URL || 'https://villaretiror.com';
-                            const waContact = resolvedPhone.replace(/\D/g, '');
-                            const keyboard = {
-                                inline_keyboard: [
-                                    [{ text: `📲 WA Huésped: ${resolvedName}`, url: `https://wa.me/${waContact}` }],
-                                    [{ text: "🏦 Ver en Dashboard", url: `${siteUrl}/host` }]
-                                ]
-                            };
-                            // 1. Alert primary host channel
-                            await NotificationService.sendTelegramAlert(
-                                `🚨 <b>¡EMERGENCIA ${severity.toUpperCase()}!</b>\n\n` +
-                                `👤 <b>Huésped:</b> ${resolvedName}\n` +
-                                `📞 <b>Celular:</b> ${resolvedPhone}\n` +
-                                `🆘 <b>Contacto Emergencia:</b> ${resolvedEmergencyContact}\n` +
-                                `🏠 <b>Villa:</b> <code>${activePropertyName}</code>\n\n` +
-                                `🔧 <b>Problema:</b> ${issue_type} | Severidad: ${severity}\n` +
-                                `📋 ${description}\n\n` +
-                                `🛠️ <b>Técnico Asignado:</b> ${recommendedProvider?.name || 'Ninguno disponible'}`,
-                                keyboard
-                            );
-                            // 2. 🆘 TEAM DELEGATION: Alert all active co-hosts for this property
-                            await NotificationService.notifyEmergencyToCohosts(
-                                effectivePropertyId,
-                                activePropertyName,
-                                issue_type,
-                                description,
-                                severity,
-                                resolvedName,
-                                resolvedPhone
-                            );
-                        } catch (e) {
-                            console.error("[Emergency Tool Error]:", e);
-                        }
-
-
-                        return {
-                            status: 'emergency_active',
-                            ticket_id: ticket?.id,
-                            provider: recommendedProvider ? {
-                                name: recommendedProvider.name,
-                                eta: '30-60 min'
-                            } : null,
-                            instruction: `Informe a ${resolvedName} que el equipo de emergencia ha sido notificado. Un técnico está siendo coordinado. Si necesitas ayuda inmediata, te contactaremos al ${resolvedPhone}.`
-                        };
-                    }
-                }),
-                generate_booking_pattern: tool({
-                    description: 'Genera cotización oficial y enlace seguro de pago. También crea un bloqueo temporal del calendario por 15 minutos.',
-                    parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
-                    execute: async ({ villa_id, check_in, check_out, promo_code }) => {
-                        const property = dbProperties?.find((p: any) => p.id === villa_id);
-
-                        // 🛡️ CONCESSIONS GUARD: Block additional discounts if user already has one
-                        if (promo_code && guestGivenConcessions.length > 0) {
-                            const twelveMonthsAgo = new Date();
-                            twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
-                            const hasRecentConcession = guestGivenConcessions.some(
-                                (c: any) => c.date && new Date(c.date) > twelveMonthsAgo
-                            );
-                            if (hasRecentConcession) {
-                                return `${guestName}, es un placer continuar cuidando de usted. 💎 Sin embargo, por nuestras políticas de exclusividad, no es posible aplicar descuentos adicionales en este período — su tarifa actual ya es la más privilegiada que puedo ofrecer. ¿Le preparo la cotización al precio premium con todas las amenidades incluidas?`;
-                            }
-                        }
-
-                        const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
-                        
-                        // Safety Check: min_price_floor guard
-                        const finalTotalPerNight = quote.total / quote.nights;
-                        if (property && finalTotalPerNight < property.min_price_floor) {
-                            return "Lo lamento, pero este descuento excede mis límites de cortesía. El valor de la villa y sus amenidades (Energía 24/7, Privacidad Total) justifican el precio base.";
-                        }
-
-                        // 🔒 HOLD SYSTEM: Execute temporary 15-min hold to prevent overbooking
-                        const holdCreated = await createTemporaryHold(villa_id, check_in, check_out, userId);
-                        
-                        const bookingUrl = `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}${promo_code ? `&promo=${promo_code}` : ''}`;
-                        return `He preparado su cotización de élite: Total **$${quote.total}** por ${quote.nights} noches. 💎\n\n${holdCreated ? '🔒 He reservado estas fechas temporalmente por 15 minutos para que pueda completar su pago sin interrupciones.' : ''}\n\n[BOOKING_ACTION: ${bookingUrl}]`;
-                    },
-                }),
-                store_salty_memory: tool({
-                    description: 'ACTIVO: Guarda preferencias importantes, horas de llegada, alergias, o información valiosa del huésped al finalizar tu respuesta, para NO tener que volver a preguntarlo en la sesión. Sé conciso.',
-                    parameters: z.object({ fact: z.string() }),
-                    execute: async ({ fact }) => {
-                        if (!sessionId) return { status: 'ignored_no_session' };
-                        const { error } = await supabase.from('salty_memories').insert({
-                            session_id: sessionId,
-                            property_id: effectivePropertyId,
-                            learned_text: fact
-                        });
-                        if (error) {
-                            console.error('[Salty Memory Error]:', error.message);
-                            return { status: 'error', detail: error.message };
-                        }
-                        return { status: 'success', recorded_memory: fact };
-                    }
-                })
-            },
+            tools: filteredTools,
         });
 
         return result.toDataStreamResponse();

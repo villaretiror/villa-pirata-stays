@@ -155,12 +155,34 @@ export default async function handler(req: any, res: any) {
                 
                 <div class="code-box" style="background-color: #2C2B29; color: #ffffff; padding: 35px; border-radius: 25px; margin: 30px 0; position: relative; overflow: hidden;">
                   <h3 style="color: ${p.accentColor}; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Protocolo de Acceso</h3>
-                  <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">Código Seguro:</p>
-                  <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${p.accessCode}</span></p>
-                  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                    <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${p.wifiName}</p>
-                    <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${p.wifiPass}</code></p>
-                  </div>
+                  
+                  ${(() => {
+                    const checkInDate = rest.checkIn ? new Date(rest.checkIn) : null;
+                    const now = new Date();
+                    const isWithin24h = checkInDate && (checkInDate.getTime() - now.getTime()) <= (24 * 3600 * 1000);
+                    
+                    if (isWithin24h) {
+                      return `
+                        <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">Código Seguro:</p>
+                        <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${p.accessCode}</span></p>
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                          <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${p.wifiName}</p>
+                          <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${p.wifiPass}</code></p>
+                        </div>
+                      `;
+                    } else {
+                      return `
+                        <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">🔑 Tu acceso es digital y seguro.</p>
+                        <p style="margin: 15px 0; font-size: 12px; color: ${p.accentColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                          Los códigos de acceso y WiFi se revelarán automáticamente en tu Portal de Estadía 24 horas antes de tu check-in.
+                        </p>
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                          <p style="margin: 5px 0; font-size: 14px;">📍 Ubicación: ${dbProperty?.location || 'Cabo Rojo'}</p>
+                          <p style="margin: 5px 0; font-size: 11px; opacity: 0.6;">Check-in: ${rest.checkIn || 'Confirmado'}</p>
+                        </div>
+                      `;
+                    }
+                  })()}
                 </div>
 
                 <div style="text-align: center; margin: 35px 0;">

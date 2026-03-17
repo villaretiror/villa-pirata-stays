@@ -45,11 +45,28 @@ const StayDashboard: React.FC = () => {
     );
 
     const prop = booking.property;
-    const lockCode = prop?.access_code || "0000";
-    const lockImage = prop?.lockbox_image_url || "/assets/lockboxes/retiro.jpg";
-    const wifiNetwork = prop?.wifi_name || "VillaRetiro_Guest";
-    const wifiPass = prop?.wifi_pass || "Guest2024!";
-    const coords = prop?.location_coords || '18.07065,-67.16544';
+    
+    // 🔒 SECURITY GOVERNANCE: Tiered Access Chronology
+    const checkInDate = new Date(booking.check_in);
+    const checkOutDate = new Date(booking.check_out);
+    const now = new Date();
+    
+    const diffDays = (checkInDate.getTime() - now.getTime()) / (1000 * 3600 * 24);
+    const diffHours = (checkInDate.getTime() - now.getTime()) / (1000 * 3600);
+    const hoursPostCheckOut = (now.getTime() - checkOutDate.getTime()) / (1000 * 3600);
+    
+    const isPaid = booking.status === 'Paid' || booking.status === 'confirmed';
+    
+    let accessLevel = 1; // Level 1: Immediate/Confirmed
+    if (diffDays <= 7) accessLevel = 2; // Level 2: Guide
+    if (diffHours <= 24 && isPaid) accessLevel = 3; // Level 3: Total Access
+    if (hoursPostCheckOut > 12) accessLevel = 1; // Security Lock
+    
+    const lockCode = accessLevel >= 3 ? (prop?.access_code || "0000") : "REVELADO_24H_ANTES";
+    const lockImage = accessLevel >= 3 ? (prop?.lockbox_image_url || "/assets/lockboxes/retiro.jpg") : null;
+    const wifiNetwork = accessLevel >= 2 ? (prop?.wifi_name || "VillaRetiro_Guest") : "RESERVADO";
+    const wifiPass = accessLevel >= 3 ? (prop?.wifi_pass || "Guest2024!") : "REVELADO_24H_ANTES";
+    const coords = accessLevel >= 3 ? (prop?.location_coords || '18.07065,-67.16544') : '18.0772,-67.1477'; // General area if not level 3
 
     const copyToClipboard = (text: string) => {
         navigator.clipboard.writeText(text);
@@ -85,15 +102,27 @@ const StayDashboard: React.FC = () => {
                     </h2>
                     <div className="bg-sand/30 p-4 rounded-xl border border-gray-100 space-y-4">
                         <div className="flex gap-4 items-center">
-                            <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0 shadow-sm">
-                                <img src={lockImage} alt="Lockbox Reference" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1558235338-23212852179b?w=200&h=200&fit=crop' }} />
-                            </div>
+                            {lockImage && (
+                                <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0 shadow-sm">
+                                    <img src={lockImage} alt="Lockbox Reference" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1558235338-23212852179b?w=200&h=200&fit=crop' }} />
+                                </div>
+                            )}
                             <div>
                                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Código Caja de Llaves</p>
-                                <p className="text-2xl font-black text-slate-800 tracking-[0.2em] font-mono select-all">{lockCode}</p>
+                                <p className={`font-black text-slate-800 tracking-[0.2em] font-mono select-all ${accessLevel < 3 ? 'text-sm opacity-50 italic' : 'text-2xl'}`}>
+                                    {lockCode}
+                                </p>
                             </div>
                         </div>
-                        <p className="text-[10px] text-red-400 italic font-bold">*El código se activa a las {villaKnowledge?.policies.checkIn}</p>
+                        {accessLevel < 3 && !isPaid && (
+                            <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 flex items-center gap-2">
+                                <span className="material-icons text-orange-400 text-sm">lock</span>
+                                <p className="text-[9px] font-bold text-orange-800 uppercase tracking-tighter">Pendiente de Pago Completo para revelar códigos.</p>
+                            </div>
+                        )}
+                        <p className="text-[10px] text-red-400 italic font-bold">
+                            {accessLevel < 3 ? `*Disponible 24h antes del check-in (${booking.check_in})` : `*Válido hasta 12h después del check-out`}
+                        </p>
                     </div>
                 </section>
 
@@ -127,11 +156,15 @@ const StayDashboard: React.FC = () => {
                         <div>
                             <p className="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Red Wi-Fi</p>
                             <p className="text-sm font-bold text-text-main">{wifiNetwork}</p>
-                            <p className="text-xs font-mono text-gray-500 mt-1">Pass: {wifiPass}</p>
+                            <p className={`text-xs font-mono text-gray-500 mt-1 ${accessLevel < 3 ? 'italic opacity-50' : ''}`}>
+                                Pass: {wifiPass}
+                            </p>
                         </div>
-                        <button onClick={() => copyToClipboard(wifiPass)} className="flex items-center gap-1 bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm hover:bg-blue-50 active:scale-95 transition-all">
-                            <span className="material-icons text-[14px]">content_copy</span> Copiar Clave
-                        </button>
+                        {accessLevel >= 3 && (
+                            <button onClick={() => copyToClipboard(wifiPass)} className="flex items-center gap-1 bg-white border border-blue-200 text-blue-600 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm hover:bg-blue-50 active:scale-95 transition-all">
+                                <span className="material-icons text-[14px]">content_copy</span> Copiar Clave
+                            </button>
+                        )}
                     </div>
                 </section>
 
