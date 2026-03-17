@@ -131,7 +131,7 @@ export default async function handler(req: Request) {
             ? `\n### 🔒 CONCESIONES PREVIAS (BLINDAJE FINANCIERO):\nEste huésped YA RECIBIÓ concesiones en el pasado: ${JSON.stringify(guestGivenConcessions)}. NO ofrezcas descuentos adicionales. Si pide rebaja, comunica que la tarifa actual ya refleja el mejor precio exclusivo posible. Protege el margen de ganancia.`
             : isGuest 
                 ? `\n### 💎 CONCESIONES: Usuario Guest. NO puedes otorgar descuentos directos, solo invitarle a reservar para ver precios oficiales.`
-                : `\n### 💎 CONCESIONES: Huésped sin historial de descuentos. Puedes ofrecer hasta 10% si la situación lo justifica y el total no baja del min_price_floor.`;
+                : `\n### 💎 CONCESIONES: No tenemos ofertas activas en este momento. Si el huésped pide un descuento, indícale cordialmente que nuestras tarifas actuales son exclusivas y directas para garantizar el mejor valor.`;
 
         let saltyMemoriesStr = "";
         if (sessionId) {
@@ -208,7 +208,7 @@ ${inStay
                 }
             }
 
-            supabase.from('chat_logs').upsert({
+            const loggingTask = supabase.from('chat_logs').upsert({
                 session_id: sessionId, 
                 user_id: userId || null, 
                 message_count: (rawMessages || []).length,
@@ -216,7 +216,14 @@ ${inStay
                 current_property: activePropertyName, 
                 current_url: currentUrl,
                 last_sentiment: intentCategory 
-            }, { onConflict: 'session_id' }).select().then();
+            }, { onConflict: 'session_id' });
+
+            // 📊 ASYNC LOGGING: BLOCKING until essential log is set
+            try {
+                await loggingTask;
+            } catch (e) {
+                console.error("[Session Log Fail]: Non-critical, proceeding...", e);
+            }
 
             const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until, takeover_notified').eq('session_id', sessionId).single();
 
@@ -284,13 +291,13 @@ ${inStay
                         return JSON.stringify({ status: 'success', available_ids: available });
                     } catch (e: any) {
                         console.error('[Resilience Tool check_availability] Failed:', e);
-                        return "Error de conexión con el calendario. Por favor, asume que no hay disponibilidad o pide al usuario intentar en 1 minuto.";
+                        return JSON.stringify({ status: 'error', message: "Error de conexión con el calendario. Por favor, intenta en 1 minuto." });
                     }
                 },
             }),
             get_cabo_rojo_weather: tool({
-                description: 'Obtiene el clima actual.',
-                parameters: z.object({}),
+                description: 'Obtiene el clima actual en el área.',
+                parameters: z.object({ unit: z.string().optional() }),
                 execute: async () => {
                     return JSON.stringify({
                         status: 'success',
@@ -301,8 +308,8 @@ ${inStay
                 }
             }),
             get_cabo_rojo_events: tool({
-                description: 'Busca eventos locales exclusivos.',
-                parameters: z.object({}),
+                description: 'Busca eventos locales exclusivos en Cabo Rojo.',
+                parameters: z.object({ category: z.string().optional() }),
                 execute: async () => {
                     return JSON.stringify({
                         status: 'success',
@@ -316,7 +323,7 @@ ${inStay
                 execute: async ({ villa_id }) => {
                     try {
                         const property = dbProperties?.find((p: any) => p.id === villa_id);
-                        if (!property) return "Villa no identificada.";
+                        if (!property) return JSON.stringify({ status: 'error', message: "Villa no identificada." });
 
                         const gaps = await findCalendarGaps(villa_id);
                         if (gaps && gaps.length > 0) {
@@ -324,12 +331,12 @@ ${inStay
                             const potentialPrice = property.price * (1 - (property.max_discount_allowed / 100));
                             
                             if (potentialPrice >= property.min_price_floor) {
-                                return `Oportunidad: Hueco de ${bestGap.nights} noches. Sugerir descuento del ${property.max_discount_allowed}%.`;
+                                return JSON.stringify({ status: 'success', advice: `Oportunidad: Hueco de ${bestGap.nights} noches. Sugerir descuento del ${property.max_discount_allowed}%.` });
                             }
                         }
-                        return "Estrategia de precio premium estable.";
+                        return JSON.stringify({ status: 'success', advice: "Estrategia de precio premium estable." });
                     } catch (e) {
-                        return "Error al analizar oportunidades. Mantener precio base.";
+                        return JSON.stringify({ status: 'error', advice: "Error al analizar oportunidades. Mantener precio base." });
                     }
                 }
             }),
@@ -341,13 +348,17 @@ ${inStay
                     impact_score: z.number().min(1).max(10)
                 }),
                 execute: async ({ type, description, impact_score }) => {
-                    await supabase.from('ai_insights').insert({
-                        type,
-                        content: { description },
-                        impact_score,
-                        status: 'pending'
-                    });
-                    return { status: 'recorded', message: 'Insight enviado al Dashboard del Host para aprobación física.' };
+                    try {
+                        await supabase.from('ai_insights').insert({
+                            type,
+                            content: { description },
+                            impact_score,
+                            status: 'pending'
+                        });
+                        return JSON.stringify({ status: 'recorded', message: 'Insight enviado al Dashboard del Host para aprobación física.' });
+                    } catch (e) {
+                        return JSON.stringify({ status: 'error', message: 'Fallo al registrar insight.' });
+                    }
                 }
             }),
             report_property_emergency: tool({
@@ -422,23 +433,31 @@ ${inStay
                 description: 'Genera cotización oficial y enlace seguro de pago.',
                 parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
                 execute: async ({ villa_id, check_in, check_out, promo_code }) => {
-                    const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
-                    const holdCreated = await createTemporaryHold(villa_id, check_in, check_out, userId);
-                    const bookingUrl = `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}${promo_code ? `&promo=${promo_code}` : ''}`;
-                    return `Cotización Élite: Total **$${quote.total}** por ${quote.nights} noches. [BOOKING_ACTION: ${bookingUrl}]`;
+                    try {
+                        const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
+                        await createTemporaryHold(villa_id, check_in, check_out, userId);
+                        const bookingUrl = `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}${promo_code ? `&promo=${promo_code}` : ''}`;
+                        return JSON.stringify({ status: 'success', quote, action_url: bookingUrl });
+                    } catch (e) {
+                        return JSON.stringify({ status: 'error', message: 'Fallo al generar cotización.' });
+                    }
                 },
             }),
             store_salty_memory: tool({
                 description: 'Guarda preferencias importantes del huésped.',
                 parameters: z.object({ fact: z.string() }),
                 execute: async ({ fact }) => {
-                    if (!sessionId) return "ignored";
-                    await supabase.from('salty_memories').insert({
-                        session_id: sessionId,
-                        property_id: effectivePropertyId,
-                        learned_text: fact
-                    });
-                    return "Memoria guardada.";
+                    try {
+                        if (!sessionId) return JSON.stringify({ status: 'ignored' });
+                        await supabase.from('salty_memories').insert({
+                            session_id: sessionId,
+                            property_id: effectivePropertyId,
+                            learned_text: fact
+                        });
+                        return JSON.stringify({ status: 'success', message: "Memoria guardada." });
+                    } catch (e) {
+                        return JSON.stringify({ status: 'error', message: "Fallo al guardar memoria." });
+                    }
                 }
             })
         };
