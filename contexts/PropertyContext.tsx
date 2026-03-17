@@ -71,15 +71,15 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
       if (guideRows && guideRows.length > 0) {
         const categories = [
-          { id: 'beaches', category: 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
-          { id: 'gastronomy', category: 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
-          { id: 'nearby', category: 'Cerca de Ti', icon: 'place', dbKey: 'landmark' }
+          { id: 'beaches', category: siteContent?.sections.beaches || 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
+          { id: 'gastronomy', category: siteContent?.sections.gastronomy || 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
+          { id: 'nearby', category: siteContent?.sections.nearby || 'Cerca de Ti', icon: 'place', dbKey: 'landmark' }
         ];
 
         const mappedGuide: LocalGuideCategory[] = categories.map(cat => ({
           ...cat,
           items: (guideRows as any[])
-            .filter(r => r.category === cat.dbKey)
+            .filter(r => (r.category || '').trim().toLowerCase() === cat.dbKey.toLowerCase())
             .map(r => ({
               id: r.id,
               name: r.title,

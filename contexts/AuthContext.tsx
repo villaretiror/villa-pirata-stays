@@ -55,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const [profileRes, bookingsRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
-        supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('guest_id', id)
+        supabase.from('bookings').select('id', { count: 'exact', head: true }).eq('user_id', id)
       ]);
 
       return {

@@ -45,6 +45,9 @@ export default async function handler(req: Request) {
         const parsedBody = chatRequestSchema.parse(body);
         const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = parsedBody;
 
+        // INDUSTRIAL FALLBACK: If propertyId is missing, assume Villa Retiro R to prevent Zod/DB failures
+        const effectivePropertyId = propertyId || "1081171030449673920";
+
         const { data: dbProperties } = await supabase.from('properties').select('*');
         const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
         const { data: saltySetting } = await supabase.from('system_settings').select('value').eq('key', 'salty_config').single();
@@ -59,7 +62,7 @@ export default async function handler(req: Request) {
         const propertyTitles: Record<string, string> = {};
         dbProperties?.forEach((p: any) => { propertyTitles[p.id] = p.title; });
 
-        const activePropertyName = propertyId ? (propertyTitles[propertyId] || 'Villa Desconocida') : 'Navegación General';
+        const activePropertyName = effectivePropertyId ? (propertyTitles[effectivePropertyId] || 'Villa Desconocida') : 'Navegación General';
 
         const VILLA_CONCIERGE_PROMPT = `
 Eres "Salty", el alma vibrante y CONSULTOR DE ESTRATEGIA de Villa & Pirata Stays en Cabo Rojo. 
@@ -289,7 +292,7 @@ ${inStay
                         const recommendedProvider = providers?.find(p => p.specialty === mapping[issue_type]);
 
                         const { data: ticket } = await supabase.from('emergency_tickets').insert({
-                            property_id: propertyId,
+                            property_id: effectivePropertyId,
                             issue_type,
                             description,
                             severity,
