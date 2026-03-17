@@ -69,17 +69,15 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, onMapCl
 
       <p className="text-sm text-text-light line-clamp-3 leading-relaxed mb-6 font-medium opacity-80">{item.desc}</p>
 
-      {item.saltyTip && (
-        <div className="mb-4 p-3 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/10 transition-colors">
-          <div className="absolute top-0 right-0 p-1 opacity-10">
-            <span className="material-icons text-primary text-xl">tips_and_updates</span>
-          </div>
-          <p className="text-[11px] text-primary/90 leading-relaxed italic relative z-10">
-            <span className="font-bold not-italic mr-1 uppercase text-[9px] tracking-wider">Salty Tip:</span> 
-            "{item.saltyTip}"
-          </p>
+      <div className="mb-4 p-3 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/10 transition-colors">
+        <div className="absolute top-0 right-0 p-1 opacity-10">
+          <span className="material-icons text-primary text-xl">tips_and_updates</span>
         </div>
-      )}
+        <p className="text-[11px] text-primary/90 leading-relaxed italic relative z-10">
+          <span className="font-bold not-italic mr-1 uppercase text-[9px] tracking-wider">Salty Tip:</span> 
+          "{item.saltyTip || "Pregúntame para obtener un consejo de experto sobre este lugar. ¡Cabo Rojo tiene sus secretos!"}"
+        </p>
+      </div>
 
       <div className="mt-auto pt-4 border-t border-dashed border-gray-100 flex items-center justify-between group/salty">
         <span className="text-[10px] font-black uppercase tracking-widest text-text-light group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>

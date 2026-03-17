@@ -85,18 +85,18 @@ export const checkAvailabilityWithICal = async (
         return { available: false, reason };
     }
 
-    // ── Step 2: Fallback — check property.blockedDates (manual blocks by host) ─
+    // ── Step 2: Fallback — check property.blockeddates (manual blocks by host) ─
     const { data: property } = await supabase
         .from('properties')
-        .select('"blockedDates"')
-        .eq('id', villaId)
+        .select('blockeddates')
+        .eq('id', String(villaId))
         .single();
 
-    if (property?.blockedDates && Array.isArray(property.blockedDates)) {
+    if (property?.blockeddates && Array.isArray(property.blockeddates)) {
         let curr = new Date(qIn);
         while (curr < qOut) {
             const ds = curr.toISOString().split('T')[0];
-            if ((property.blockedDates as string[]).includes(ds)) {
+            if ((property.blockeddates as string[]).includes(ds)) {
                 return { available: false, reason: 'Fechas bloqueadas manualmente por el anfitrión.' };
             }
             curr.setDate(curr.getDate() + 1);
@@ -122,16 +122,31 @@ export const logAbandonmentLead = async (data: { name: string; email?: string; p
 // 2.1 Temporary AI-Hold (Overbooking Prevention)
 export const createTemporaryHold = async (propertyId: string, checkIn: string, checkOut: string, userId?: string) => {
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
-    const { error } = await supabase.from('bookings').insert({
-        property_id: propertyId,
+    const status = 'pending_ai_validation';
+    const source = 'Salty AI';
+    
+    // Generate sync hash for de-duplication and change detection
+    const content = `${propertyId}|${checkIn}|${checkOut}|${status}`;
+    const syncHash = Buffer.from(content).toString('base64');
+
+    const { data: newHold, error } = await supabase.from('bookings').insert({
+        property_id: String(propertyId),
         check_in: checkIn,
         check_out: checkOut,
         user_id: userId || null,
-        status: 'pending_ai_validation',
+        status: status,
         hold_expires_at: holdExpiresAt,
-        total_price: 0 // Placeholder
-    });
-    return !error;
+        total_price: 0,
+        source: source,
+        sync_last_hash: syncHash
+    }).select().single();
+
+    if (!error && newHold) {
+        // Silently notify if this is a significant hold (optional)
+        // For now we just let the system know it's blocked.
+        return true;
+    }
+    return false;
 };
 
 // 3. Payment Verification Status
@@ -199,7 +214,7 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
 };
 
 export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string) => {
-    const { data: property } = await supabase.from('properties').select('*').eq('id', propertyId).single();
+        const { data: property } = await supabase.from('properties').select('*').eq('id', String(propertyId)).single();
     if (!property) throw new Error('Propiedad no encontrada.');
 
     let basePrice = 0;

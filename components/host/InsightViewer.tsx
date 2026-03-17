@@ -14,18 +14,26 @@ interface AIInsight {
   created_at: string;
 }
 
+interface SaltyMemory {
+  id: string;
+  learned_text: string;
+  created_at: string;
+  session_id: string | null;
+}
+
 import BusinessHealthSnapshot from './BusinessHealthSnapshot';
 
 const InsightViewer: React.FC = () => {
   const [insights, setInsights] = useState<AIInsight[]>([]);
+  const [memories, setMemories] = useState<SaltyMemory[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
 
   useEffect(() => {
-    fetchInsights();
+    fetchData();
   }, [filter]);
 
-  const fetchInsights = async () => {
+  const fetchData = async () => {
     setLoading(true);
     let query = supabase.from('ai_insights').select('*').order('created_at', { ascending: false });
     
@@ -33,8 +41,16 @@ const InsightViewer: React.FC = () => {
       query = query.eq('status', 'pending');
     }
 
-    const { data, error } = await query;
-    if (!error) setInsights(data || []);
+    const { data: insightsData, error: insightsErr } = await query;
+    if (!insightsErr) setInsights(insightsData || []);
+
+    const { data: memoriesData, error: memoryErr } = await supabase
+      .from('salty_memories')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10);
+    if (!memoryErr) setMemories(memoriesData || []);
+
     setLoading(false);
   };
 
@@ -78,6 +94,29 @@ const InsightViewer: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {memories.length > 0 && (
+        <div className="bg-gradient-to-br from-blue-50 to-indigo-50/30 p-6 rounded-[2.5rem] border border-blue-100/50 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />
+          <h4 className="text-xl font-serif font-black italic text-blue-900 mb-6 flex items-center gap-2 relative z-10">
+            <span className="material-icons text-primary">memory</span> Notas del Concierge
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative z-10">
+            {memories.map((mem) => (
+              <div key={mem.id} className="bg-white/80 backdrop-blur-md p-4 rounded-2xl shadow-sm border border-white flex gap-4 items-start group hover:border-blue-200 transition-all">
+                 <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600">
+                    <span className="material-icons text-[16px]">record_voice_over</span>
+                 </div>
+                 <div>
+                    <p className="text-xs text-text-main font-bold leading-relaxed">{mem.learned_text}</p>
+                    <p className="text-[9px] text-gray-400 mt-2 font-medium uppercase tracking-widest">{new Date(mem.created_at).toLocaleDateString()} • Sesión {mem.session_id ? mem.session_id.substring(0, 5) : 'N/A'}</p>
+                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AnimatePresence>

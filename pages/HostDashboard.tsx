@@ -105,6 +105,16 @@ const CustomToast = () => {
   );
 };
 
+// --- HELPER: Source Branding ---
+const getSourceBadge = (source: string | null) => {
+  if (!source) return null;
+  const s = source.toLowerCase();
+  if (s.includes('airbnb')) return <span className="bg-[#FF5A5F]/10 text-[#FF5A5F] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">🔴 Airbnb</span>;
+  if (s.includes('booking')) return <span className="bg-[#003580]/10 text-[#003580] px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">🔵 Booking.com</span>;
+  if (s.includes('salty')) return <span className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">🧠 Salty AI</span>;
+  return <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">🟢 Directo</span>;
+};
+
 const LoadingSpinner = () => (
   <div className="fixed inset-0 z-[110] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
     <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
@@ -147,40 +157,42 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
   };
 
   return (
-    <div className="bg-white rounded-2xl p-5 shadow-card border border-gray-100 mb-6">
+    <div className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 mb-6 group transition-all">
       <div className="flex justify-between items-start mb-4">
-        <h3 className="font-bold text-text-main">{property.title}</h3>
-        <div className="flex items-center gap-1 text-primary font-bold bg-primary/10 px-2 py-0.5 rounded-lg text-sm">
-          <span className="material-icons text-sm">star</span>
+        <h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main group-hover:text-primary transition-colors">{property.title}</h3>
+        <div className="flex items-center gap-1.5 text-primary font-black bg-primary/5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest border border-primary/10">
+          <span className="material-icons text-xs">star</span>
           {property.rating}
         </div>
       </div>
 
       {/* Quick Stats Editor */}
-      <div className="bg-gray-50 p-4 rounded-xl mb-6 border border-gray-200">
-        <p className="text-xs font-bold text-gray-500 mb-3 uppercase">Sincronización Manual</p>
+      <div className="bg-sand/30 p-5 rounded-2xl mb-8 border border-orange-100/30">
+        <p className="text-[9px] font-black text-gray-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
+          <span className="material-icons text-xs">sync</span> Sincronización de Prestigio
+        </p>
         <div className="flex gap-4 items-end">
           <div className="flex-1">
-            <label className="text-[10px] text-gray-400 block mb-1">Puntuación General</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Rating Global</label>
             <input
               type="number"
               step="0.01"
               value={stats.rating}
               onChange={e => setStats({ ...stats, rating: parseFloat(e.target.value) })}
-              className="w-full p-2 rounded-lg border text-sm font-bold"
+              className="w-full p-3.5 rounded-xl border-none bg-white text-sm font-black shadow-inner shadow-black/5 outline-none focus:ring-2 ring-primary/20 transition-all"
             />
           </div>
           <div className="flex-1">
-            <label className="text-[10px] text-gray-400 block mb-1">Total Reseñas</label>
+            <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Total Reseñas</label>
             <input
               type="number"
               value={stats.count}
               onChange={e => setStats({ ...stats, count: parseInt(e.target.value) })}
-              className="w-full p-2 rounded-lg border text-sm font-bold"
+              className="w-full p-3.5 rounded-xl border-none bg-white text-sm font-black shadow-inner shadow-black/5 outline-none focus:ring-2 ring-primary/20 transition-all"
             />
           </div>
-          <button onClick={saveStats} className="bg-black text-white p-2 rounded-lg shadow-sm">
-            <span className="material-icons text-sm">save</span>
+          <button onClick={saveStats} className="bg-black text-white p-3.5 rounded-xl shadow-xl shadow-black/10 active:scale-90 transition-all hover:bg-primary group/save">
+            <span className="material-icons text-sm group-hover/save:rotate-12 transition-transform">save</span>
           </button>
         </div>
       </div>
@@ -219,12 +231,12 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
         )}
 
         {property.reviews_list?.map(review => (
-          <div key={review.id} className="text-sm border-b border-gray-100 pb-3 last:border-0">
-            <div className="flex justify-between mb-1">
-              <span className="font-bold">{review.author}</span>
-              <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-500">{review.source}</span>
+          <div key={review.id} className="p-4 bg-gray-50/30 rounded-2xl border border-gray-100/50 group/item hover:bg-white transition-all">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-serif font-black italic text-sm text-text-main tracking-tight group-hover/item:text-primary transition-colors">{review.author}</span>
+              <span className="text-[8px] font-black uppercase tracking-widest bg-white border border-gray-100 px-2.5 py-1 rounded-full text-gray-400 shadow-sm">{review.source}</span>
             </div>
-            <p className="text-text-light text-xs line-clamp-2">"{review.text}"</p>
+            <p className="text-text-light text-xs leading-relaxed italic opacity-80 line-clamp-2">"{review.text}"</p>
           </div>
         ))}
       </div>
@@ -247,7 +259,7 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
     <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
       <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="font-bold text-xl">Importar Anuncio</h2>
+          <h2 className="font-serif font-black italic text-xl tracking-tighter">Importar Anuncio</h2>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100">
             <span className="material-icons text-gray-400">close</span>
           </button>
@@ -292,6 +304,8 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId, onFilterChange }: { bookings: BookingRow[], expenses: ExpenseRow[], properties: Property[], selectedPropertyId: string, onFilterChange: (id: string) => void }) => {
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross');
   const [showOrigin, setShowOrigin] = useState(false);
+  const [newExpense, setNewExpense] = useState({ amount: '', category: 'Limpieza', description: '' });
+  const [isAddingExpense, setIsAddingExpense] = useState(false);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const creationDate = selectedProperty?.created_at ? new Date(selectedProperty.created_at) : null;
@@ -370,7 +384,8 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         OTA: adjustedOTA,
         Gastos: expense,
         Profit: income - expense,
-        Ocupación: occupancy
+        Ocupación: occupancy,
+        ProfitDiario: availableDays > 0 ? Math.round((income - expense) / availableDays) : 0
       });
     }
     return data;
@@ -389,6 +404,33 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
     document.title = `Reporte_${propName.replace(/\s+/g, '_')}_${month}_${year}`;
     window.print();
     setTimeout(() => { document.title = oldTitle; }, 500);
+  };
+
+  const handleAddExpense = async () => {
+    if (!newExpense.amount || !newExpense.description) return alert("Completa el monto y descripción para registrar el gasto.");
+    
+    // If 'all' is selected but we need an ID, default to the first property or prompt them.
+    const propId = selectedPropertyId === 'all' ? properties[0]?.id : selectedPropertyId;
+    if (!propId) return;
+
+    setIsAddingExpense(true);
+    try {
+      await supabase.from('property_expenses').insert({
+        property_id: propId,
+        amount: parseFloat(newExpense.amount),
+        category: newExpense.category,
+        description: newExpense.description
+      });
+      // Recargar para refrescar los dashboards y graficas con el nuevo NET PROFIT
+      showToast("Gasto Operativo Registrado Correctamente ✅");
+      // Pequeno delay para que vean el toast antes de recargar
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (e) {
+      console.error(e);
+      showToast("Error al registrar gasto operativo ❌");
+    } finally {
+      setIsAddingExpense(false);
+    }
   };
 
   return (
@@ -431,7 +473,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         <div className="flex justify-between items-center mb-8">
           <div>
             <h3 className="font-serif font-black text-xl italic flex items-center gap-2">
-              <span className="material-icons text-blue-500">trending_up</span> Rendimiento {viewMode === 'net' ? 'Neto' : 'Bruto'}
+              <span className="material-icons text-primary">analytics</span> Rendimiento {viewMode === 'net' ? 'Neto' : 'Bruto'}
             </h3>
             <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
               Visualizando ingresos {viewMode === 'net' ? 'después de comisiones (est.)' : 'totales antes de tasas'}
@@ -461,8 +503,8 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
                     <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="colorOTA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#60A5FA" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#60A5FA" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#FF7F3F" stopOpacity={0.8} />
+                    <stop offset="95%" stopColor="#FF7F3F" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -485,14 +527,24 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
                 <Area 
                   type="monotone" 
                   dataKey="OTA" 
-                  stroke="#60A5FA" 
+                  stroke="#FF7F3F" 
                   strokeWidth={4} 
                   fillOpacity={1} 
                   fill="url(#colorOTA)" 
                   animationDuration={3000} 
-                  name="Airbnb/Booking"
+                  name="Airbnb / Booking"
                 />
-              <Area type="monotone" dataKey="Gastos" stroke="#F87171" fillOpacity={0.1} fill="#F87171" strokeWidth={3} />
+                <Area 
+                  type="monotone" 
+                  dataKey="Profit" 
+                  stroke="#2D5A27" 
+                  strokeWidth={5} 
+                  fillOpacity={0.15} 
+                  fill="#2D5A27" 
+                  animationDuration={3500} 
+                  name="Utilidad Neta (Profit)"
+                />
+                <Area type="monotone" dataKey="Gastos" stroke="#FF7F3F" fillOpacity={0.05} fill="#FF7F3F" strokeWidth={2} opacity={0.3} name="Gastos Operativos" />
             </AreaChart>
           </ResponsiveContainer>
           </Suspense>
@@ -546,12 +598,69 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           </div>
           <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-50">
             <span className="text-[10px] font-black uppercase text-gray-400">Promedio Ocupación</span>
-            <span className="text-sm font-black text-green-600">
+            <span className="text-sm font-black text-[#2D5A27]">
               {Math.round(stats.reduce((acc, s) => acc + s.Ocupación, 0) / stats.length)}%
             </span>
           </div>
         </div>
       </div>
+
+      {/* RENDER EXPENSE REGISTER MODULE */}
+      <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm print:hidden">
+        <h3 className="font-serif font-black text-xl italic mb-6 border-b border-gray-50 pb-4">Registro Operativo (Deducciones)</h3>
+        
+        <div className="flex flex-col md:flex-row gap-4 items-end">
+          <div className="flex-1 w-full">
+            <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1 block mb-2">Monto ($)</label>
+            <input 
+              type="number" step="0.01" 
+              placeholder="0.00" 
+              value={newExpense.amount}
+              onChange={e => setNewExpense({...newExpense, amount: e.target.value})}
+              className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-bold text-red-600 focus:bg-white transition-all outline-none" 
+            />
+          </div>
+          
+          <div className="flex-1 w-full">
+            <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1 block mb-2">Categoría</label>
+            <select 
+              value={newExpense.category}
+              onChange={e => setNewExpense({...newExpense, category: e.target.value})}
+              className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-bold focus:bg-white transition-all outline-none"
+            >
+              <option value="Limpieza">Limpieza / Lavandería</option>
+              <option value="Mantenimiento">Mantenimiento / Reparaciones</option>
+              <option value="Utilidades">Utilidades (Agua, Luz, Internet)</option>
+              <option value="Suministros">Suministros (Café, Papel, etc.)</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+
+          <div className="flex-[2] w-full">
+            <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1 block mb-2">Descripción Evidencial</label>
+            <input 
+              type="text" 
+              value={newExpense.description}
+              onChange={e => setNewExpense({...newExpense, description: e.target.value})}
+              placeholder="Ej: Pintura Fachada - Factura #102..." 
+              className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-medium focus:bg-white transition-all outline-none" 
+            />
+          </div>
+
+          <button 
+            onClick={handleAddExpense}
+            disabled={isAddingExpense}
+            className="w-full md:w-auto bg-black text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
+          >
+            {isAddingExpense ? 'Guardando...' : 'Deducir Gasto'}
+          </button>
+        </div>
+
+        {selectedPropertyId === 'all' && (
+          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-4">Nota: El gasto se asignará a la propiedad predeterminada porque el filtro actual está en "Todas". Para asignar correctamente, filtra por la propiedad específica.</p>
+        )}
+      </div>
+
 
       <div className="hidden print:block space-y-8 bg-white text-black p-10 font-sans">
         <div className="flex justify-between items-start border-b-2 border-black pb-6">
@@ -576,7 +685,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           </div>
           <div className="border border-black p-4 rounded-xl text-center bg-gray-50">
             <p className="text-[10px] font-bold uppercase mb-1">Profit Neto</p>
-            <p className="text-2xl font-black text-green-700">${currentMonthData.Profit.toLocaleString()}</p>
+            <p className="text-2xl font-black text-[#2D5A27]">${currentMonthData.Profit.toLocaleString()}</p>
           </div>
         </div>
       </div>
@@ -1305,7 +1414,7 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
         <div className="p-5 bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl border border-gray-200 shadow-sm">
           <div className="flex justify-between items-center">
             <div>
-              <h3 className="font-bold text-gray-900">Modo Offline (Invisible)</h3>
+              <h3 className="font-serif font-black italic text-lg tracking-tighter text-gray-900">Modo Offline (Invisible)</h3>
               <p className="text-[10px] text-gray-500 uppercase font-black tracking-widest mt-1">La villa no aparecerá en búsquedas</p>
             </div>
             <button
@@ -2028,9 +2137,9 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
           {activeSection === 'expenses' && (
             <div className="space-y-6 animate-slide-up">
               <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
-                <h3 className="font-bold text-base mb-1 flex items-center gap-2">
-                  <span className="material-icons text-red-500">analytics</span>
-                  Gestión de Egresos
+                <h3 className="font-serif font-black italic text-lg mb-1 flex items-center gap-2 tracking-tighter">
+                  <span className="material-icons text-primary">analytics</span>
+                  Libro de Gastos Operativos
                 </h3>
                 <p className="text-xs text-text-light mb-6">Registra gastos de mantenimiento, limpieza o impuestos para calcular rentabilidad real.</p>
 
@@ -2093,11 +2202,11 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
                 </div>
 
                 {/* Task 2: Widget de Rentabilidad Neta */}
-                <div className={`p-6 rounded-[2rem] border-2 mt-8 transition-all duration-500 ${netProfit >= 0 ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                <div className={`p-6 rounded-[2rem] border-2 mt-8 transition-all duration-500 ${netProfit >= 0 ? 'bg-[#2D5A27]/5 border-[#2D5A27]/10' : 'bg-red-50 border-red-100'}`}>
                   <div className="flex justify-between items-start mb-4">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest text-text-light mb-1">Balance del Periodo</p>
-                      <h4 className={`text-2xl font-black ${netProfit >= 0 ? 'text-green-600' : 'text-red-500'}`}>
+                      <p className="text-[10px] font-black uppercase tracking-widest text-[#2D5A27] mb-1">Resultado de Explotación</p>
+                      <h4 className={`text-3xl font-serif font-black italic tracking-tighter ${netProfit >= 0 ? 'text-[#2D5A27]' : 'text-[#FF7F3F]'}`}>
                         {netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}
                       </h4>
                       <p className="text-[10px] font-bold text-gray-400">Balance de {new Date().toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}</p>
@@ -2210,7 +2319,10 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
                 <n.icon strokeWidth={1.5} className="w-5 h-5" />
               </div>
               <div>
-                <p className="text-sm font-bold text-text-main line-clamp-1">{n.name || n.profiles?.full_name || 'Novedad'}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-bold text-text-main line-clamp-1">{n.name || n.profiles?.full_name || 'Novedad'}</p>
+                  {n.type === 'payment' && getSourceBadge(n.source)}
+                </div>
                 <p className="text-[9px] font-medium uppercase tracking-widest text-text-light mt-0.5">
                   {n.type === 'lead' && 'Nuevo Lead Interesado'}
                   {n.type === 'alert' && (
@@ -2358,7 +2470,7 @@ const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booki
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -2387,6 +2499,13 @@ const HostDashboard: React.FC = () => {
   const [realBookings, setRealBookings] = useState<BookingWithDetails[]>([]);
   const [cleaningStatus, setCleaningStatus] = useState<'ready' | 'progress' | 'dirty'>('ready');
   const [pendingPayments, setPendingPayments] = useState<BookingWithDetails[]>([]);
+  const [cohosts, setCohosts] = useState<CohostRow[]>([]);
+  const [newCohostEmail, setNewCohostEmail] = useState('');
+  const [isInviting, setIsInviting] = useState(false);
+
+  // Role helpers — computed ONCE from the authenticated user
+  const isHostOrAdmin = user?.role === 'host' || user?.role === 'admin' || user?.email === 'villaretiror@gmail.com';
+  const isCoHost = !isHostOrAdmin; // If not owner = co-host (limited access)
 
   // Analytics State
   const [totalRevenue, setTotalRevenue] = useState(0);
@@ -2396,13 +2515,26 @@ const HostDashboard: React.FC = () => {
   const [analyticsFilter, setAnalyticsFilter] = useState<string>('all');
 
   // --- STABLE CALLBACKS ---
+  const fetchCohosts = useCallback(async () => {
+    if (!properties || properties.length === 0) return;
+    const propIds = properties.map((p: any) => p.id);
+    const { data } = await supabase
+      .from('property_cohosts')
+      .select('*')
+      .in('property_id', propIds)
+      .order('created_at', { ascending: false });
+    if (data) setCohosts(data as CohostRow[]);
+  }, [properties]);
+
   const fetchPayments = useCallback(async (signal?: AbortSignal) => {
+
     try {
       const { data } = await supabase
         .from('bookings')
-        .select('*, profiles(full_name, avatar_url, phone, email), properties(title, images, policies)')
+        .select('*, profiles(full_name, avatar_url, phone, email, interest_tags, emergency_contact), properties(title, images, policies)')
         .eq('status', 'waiting_approval')
         .abortSignal(signal || new AbortController().signal);
+
 
       if (data) {
         setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : (data as BookingWithDetails[]));
@@ -2503,7 +2635,8 @@ const HostDashboard: React.FC = () => {
 
       const { data: allBookings } = await supabase
         .from('bookings')
-        .select(`*, profiles(full_name, avatar_url, phone, email), properties(title, images, policies)`)
+        .select(`*, profiles(full_name, avatar_url, phone, email, interest_tags, emergency_contact), properties(title, images, policies)`)
+
         .in('property_id', hostPropertyIds.map(id => String(id)))
         .abortSignal(signal || new AbortController().signal);
 
@@ -3007,7 +3140,7 @@ const HostDashboard: React.FC = () => {
       </motion.div>
 
       <motion.div variants={itemVariants} className="flex justify-between items-center mb-2 px-2">
-        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Gestión del Día</h2>
+        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Bitácora del Día</h2>
         <div className="bg-green-50 text-green-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5 border border-green-100 shadow-sm">
           <CheckCircle2 strokeWidth={2.5} className="w-3.5 h-3.5" />
           Villas Listas
@@ -3029,9 +3162,9 @@ const HostDashboard: React.FC = () => {
           <Key strokeWidth={1} className="w-24 h-24 text-primary" />
         </div>
         <div className="flex justify-between items-center mb-8 relative z-10">
-          <h3 className="text-lg font-medium text-text-main flex items-center gap-2.5">
+          <h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main flex items-center gap-2.5">
             <Calendar strokeWidth={1.5} className="w-5 h-5 text-primary" />
-            Próximos Check-ins
+            Check-ins Estratégicos
           </h3>
           <div className="flex items-center gap-3">
             {pendingPayments.filter(p => {
@@ -3078,9 +3211,12 @@ const HostDashboard: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center gap-4">
-                  <div className="text-right">
+                  <div className="text-right flex flex-col items-end gap-1">
                     <p className="text-sm font-serif font-black italic text-green-600 mb-0.5 tracking-tight">${booking.total_price}</p>
-                    <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100">Confirmado</span>
+                    <div className="flex items-center gap-2">
+                      {getSourceBadge(booking.source)}
+                      <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100">Confirmado</span>
+                    </div>
                   </div>
                   {/* Send instructions button if within 24h or manual */}
                   <button
@@ -3478,14 +3614,18 @@ const HostDashboard: React.FC = () => {
 
   const renderReviews = () => (
     <div className="space-y-6 animate-fade-in">
-      <div className="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-2">
-        <div className="flex gap-3">
-          <span className="material-icons text-blue-600">verified</span>
+      <div className="bg-[#2D5A27]/5 p-6 rounded-[2rem] border border-[#2D5A27]/10 mb-6 backdrop-blur-sm relative overflow-hidden">
+        <div className="absolute -top-4 -right-4 opacity-5 pointer-events-none">
+          <span className="material-icons text-8xl">verified</span>
+        </div>
+        <div className="flex gap-4 items-start relative z-10">
+          <div className="w-10 h-10 bg-[#2D5A27] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#2D5A27]/20">
+            <span className="material-icons text-xl">verified</span>
+          </div>
           <div>
-            <h3 className="font-bold text-blue-800 text-sm">Gestor de Reputación</h3>
-            <p className="text-xs text-blue-600 leading-relaxed">
-              Como Airbnb no permite sincronización automática, utiliza esta herramienta para
-              copiar tus mejores reseñas y mantener tu puntuación actualizada manualmente.
+            <h3 className="font-serif font-black italic text-lg text-[#2D5A27] tracking-tighter">Prestigio & Reputación</h3>
+            <p className="text-xs text-[#2D5A27]/80 leading-relaxed mt-1 font-medium italic">
+              "La excelencia es un hábito." — Mantén tu legado actualizado sincronizando manualmente tus mejores testimonios de Airbnb y plataformas externas para maximizar tu conversión.
             </p>
           </div>
         </div>
@@ -3513,13 +3653,13 @@ const HostDashboard: React.FC = () => {
   const renderListings = () => (
     <div className="space-y-8 animate-slide-up pb-12">
       <div className="flex justify-between items-center mb-4 px-2">
-        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Tus Propiedades</h2>
+        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Villas de Autor</h2>
         <div className="flex gap-4">
-          <button
+            <button
             onClick={() => setShowImportModal(true)}
-            className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[10px] font-bold uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95"
+            className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95 group"
           >
-            <Download strokeWidth={2} className="w-3.5 h-3.5 text-[#FF385C]" /> Importar
+            <Download strokeWidth={2} className="w-3.5 h-3.5 text-[#FF7F3F] group-hover:scale-110 transition-transform" /> Sincronizar Anuncio
           </button>
           <button className="bg-black text-white rounded-full p-3 w-12 h-12 flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-primary">
             <Plus strokeWidth={2} className="w-6 h-6" />
@@ -3554,14 +3694,21 @@ const HostDashboard: React.FC = () => {
                 <div className="flex justify-between items-end mt-4">
                   <div className="flex items-baseline gap-0.5">
                     <span className="text-xl font-serif font-black italic text-text-main tracking-tighter">${p.price}</span>
-                    <span className="text-text-light text-[8px] font-bold uppercase tracking-widest ml-1 opacity-40">/noche</span>
+                    <span className="text-text-light text-[8px] font-black uppercase tracking-widest ml-1 opacity-40">/noche</span>
                   </div>
-                  <button
-                    onClick={() => setIsEditing(p.id)}
-                    className="bg-gray-50 text-text-main font-bold text-[9px] uppercase tracking-[0.2em] px-6 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm active:scale-95"
-                  >
-                    Gestionar
-                  </button>
+                  {/* 🛡️ ROLE-BASED ACCESS: Only host/admin can edit listings */}
+                  {(user?.role === 'host' || user?.role === 'admin' || user?.email === 'villaretiror@gmail.com') ? (
+                    <button
+                      onClick={() => setIsEditing(p.id)}
+                      className="bg-gray-50 text-text-main font-bold text-[9px] uppercase tracking-[0.2em] px-6 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm active:scale-95"
+                    >
+                      Gestionar
+                    </button>
+                  ) : (
+                    <span className="bg-gray-50 text-text-light/60 font-bold text-[9px] uppercase tracking-[0.2em] px-6 py-3 rounded-2xl border border-gray-100 cursor-not-allowed select-none">
+                      Solo Vista
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -3746,6 +3893,115 @@ const HostDashboard: React.FC = () => {
     </div>
   );
 
+  const renderTeam = () => (
+    <div className="space-y-8 animate-slide-up pb-12">
+      <div className="flex justify-between items-center mb-4 px-2">
+        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Equipe de Élite</h2>
+      </div>
+
+      <div className="bg-white rounded-[2rem] p-8 shadow-soft border border-gray-100 mb-8">
+        <h3 className="font-serif font-black italic text-xl mb-2 tracking-tighter">Añadir Aliado</h3>
+        <p className="text-sm text-gray-500 mb-6 leading-relaxed max-w-2xl">Invita a un miembro de confianza para co-gestionar el santuario. El anfitrión principal mantiene el control supremo del tablero.</p>
+        
+        {isHostOrAdmin ? (
+          <div className="flex gap-4 items-end max-w-xl">
+            <div className="flex-1">
+              <label className="text-[10px] font-black uppercase tracking-widest text-[#2D5A27] ml-1 mb-2 block">Correo del Colaborador</label>
+              <input 
+                type="email"
+                value={newCohostEmail}
+                onChange={e => setNewCohostEmail(e.target.value)}
+                placeholder="equipo@villaretiror.com"
+                className="w-full p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:bg-white transition-all shadow-inner"
+              />
+            </div>
+            <button 
+              onClick={async () => {
+                if (!newCohostEmail || !properties[0]) return;
+                setIsInviting(true);
+                try {
+                  const token = Math.random().toString(36).substring(2, 15);
+                  await supabase.from('property_cohosts').insert({
+                    property_id: properties[0].id,
+                    email: newCohostEmail.toLowerCase().trim(),
+                    status: 'pending',
+                    invitation_token: token
+                  });
+                  setNewCohostEmail('');
+                  showToast("Invitación enviada al correo.");
+                  fetchCohosts();
+                } catch (e) {
+                  console.error(e);
+                  showToast("Error al invitar.");
+                } finally {
+                  setIsInviting(false);
+                }
+              }}
+              disabled={isInviting || !newCohostEmail}
+              className="bg-black text-white rounded-xl px-8 py-4 font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-black/20 active:scale-95 disabled:opacity-50 min-w-[140px] transition-all"
+            >
+              {isInviting ? 'Enviando...' : 'Invitar al Equipo'}
+            </button>
+          </div>
+        ) : (
+          <div className="bg-orange-50/50 p-6 rounded-xl border border-orange-100/50 flex gap-4 items-center">
+            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center flex-shrink-0 text-orange-500 shadow-sm">
+              <span className="material-icons">security</span>
+            </div>
+            <div>
+              <p className="font-bold text-orange-900 text-sm">Privilegio de Administrador</p>
+              <p className="text-xs text-orange-700/80 mt-1">Solo los anfitriones principales pueden invitar o remover co-anfitriones.</p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
+        {cohosts.map((co: CohostRow) => (
+          <div key={co.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 flex justify-between items-center group relative overflow-hidden">
+            <div className="flex items-center gap-4 relative z-10">
+               <div className="w-12 h-12 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center text-gray-400">
+                  <UserIcon className="w-5 h-5 mx-auto opacity-50" />
+               </div>
+               <div>
+                  <h4 className="font-bold text-sm text-text-main">{co.email}</h4>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border ${co.status === 'active' ? 'bg-green-50 text-[#2D5A27] border-green-100' : 'bg-orange-50 text-[#FF7F3F] border-orange-100 shadow-[0_0_8px_rgba(255,127,63,0.1)]'}`}>
+                      {co.status === 'active' ? 'Activo' : 'Pendiente'}
+                    </span>
+                    <span className="text-[10px] text-gray-400">&bull; Para Propiedad Asignada</span>
+                  </div>
+               </div>
+            </div>
+            
+            {isHostOrAdmin && (
+              <button 
+                onClick={async () => {
+                  if (confirm('¿Estás seguro de que quieres remover a este co-anfitrión? Perderá acceso a este panel inmediatamente.')) {
+                    await supabase.from('property_cohosts').delete().eq('id', co.id);
+                    fetchCohosts();
+                    showToast("Miembro removido exitosamente.");
+                  }
+                }}
+                className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-3 rounded-xl transition-all relative z-10 opacity-0 group-hover:opacity-100"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        ))}
+
+        {cohosts.length === 0 && (
+          <div className="col-span-full py-12 text-center text-gray-400 font-serif italic flex flex-col items-center">
+            <span className="material-icons text-5xl opacity-30 mb-4">group_off</span>
+            No has añadido a ningún co-anfitrión a tu equipo.
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+
   const editingProperty = properties.find(p => p.id === isEditing);
 
   return (
@@ -3765,6 +4021,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'reviews' && renderReviews()}
         {activeTab === 'leads' && renderLeads()}
         {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} />}
+        {activeTab === 'team' && renderTeam()}
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'analytics' && (
           <AnalysisDashboard
@@ -3825,7 +4082,7 @@ const HostDashboard: React.FC = () => {
               />
             )}
             <BarChart3 strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'analytics' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Estadísticas</span>
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Inteligencia</span>
           </button>
 
           <button
@@ -3971,6 +4228,21 @@ const HostDashboard: React.FC = () => {
             )}
             <Sparkles strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'conversion' ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Optimizar</span>
+          </button>
+
+          <button
+            onClick={() => setActiveTab('team')}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'team' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            {activeTab === 'team' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Users strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'team' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Equipo</span>
           </button>
 
           <button

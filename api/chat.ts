@@ -31,7 +31,7 @@ const chatRequestSchema = z.object({
     messages: z.array(z.any()),
     sessionId: z.string().optional(),
     userId: z.string().optional(),
-    propertyId: z.string().optional(),
+    propertyId: z.string().optional().nullable(),
     currentUrl: z.string().optional(),
     inStay: z.boolean().optional()
 });
@@ -45,14 +45,47 @@ export default async function handler(req: Request) {
         const parsedBody = chatRequestSchema.parse(body);
         const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = parsedBody;
 
-        // INDUSTRIAL FALLBACK: If propertyId is missing, assume Villa Retiro R to prevent Zod/DB failures
-        const effectivePropertyId = propertyId || "1081171030449673920";
+        // 🛡️ REINFORCED FALLBACK: Ensure the default propertyId is always the one requested by the Supreme Architect
+        const effectivePropertyId = String(propertyId || "1081171030449673920");
 
         const { data: dbProperties } = await supabase.from('properties').select('*');
         const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
         const { data: saltySetting } = await supabase.from('system_settings').select('value').eq('key', 'salty_config').single();
         const { data: familyKnowledge } = await supabase.from('salty_family_knowledge').select('key, value');
         
+        let guestName = 'Viajero';
+        let guestInterestTags: string[] = [];
+        let guestGivenConcessions: any[] = [];
+        let guestPhone: string | null = null;
+        let guestEmergencyContact: string | null = null;
+
+        if (userId) {
+            // 🧠 SALTY MEMORY: Full profile fetch for personalization + safety
+            const { data: profile } = await supabase
+                .from('profiles')
+                .select('full_name, interest_tags, given_concessions, phone, emergency_contact')
+                .eq('id', userId)
+                .single();
+
+            if (profile?.full_name) {
+                guestName = profile.full_name.split(' ')[0]; // First name only for warmth
+            } else {
+                const { data: lastBooking } = await supabase
+                    .from('bookings')
+                    .select('customer_name')
+                    .eq('user_id', userId)
+                    .order('created_at', { ascending: false })
+                    .limit(1)
+                    .single();
+                if (lastBooking?.customer_name) guestName = lastBooking.customer_name.split(' ')[0];
+            }
+
+            guestInterestTags = profile?.interest_tags || [];
+            guestGivenConcessions = Array.isArray(profile?.given_concessions) ? profile.given_concessions : [];
+            guestPhone = profile?.phone || null;
+            guestEmergencyContact = profile?.emergency_contact || null;
+        }
+
         const villaKnowledge = knowledgeSetting?.value || {};
         const saltyConfig: any = saltySetting?.value || {};
         const memoryContext = familyKnowledge && familyKnowledge.length > 0
@@ -62,17 +95,39 @@ export default async function handler(req: Request) {
         const propertyTitles: Record<string, string> = {};
         dbProperties?.forEach((p: any) => { propertyTitles[p.id] = p.title; });
 
-        const activePropertyName = effectivePropertyId ? (propertyTitles[effectivePropertyId] || 'Villa Desconocida') : 'Navegación General';
+        const activeProperty = dbProperties?.find((p: any) => String(p.id) === effectivePropertyId);
+        const activePropertyName = activeProperty?.title || 'Villa Desconocida';
+
+        const wifiName = activeProperty?.wifi_name || activeProperty?.policies?.wifiName || "VillaRetiro_HighSpeed_WiFi";
+        const wifiPass = activeProperty?.wifi_pass || activeProperty?.policies?.wifiPass || "Tropical2024!";
+        const accessCode = activeProperty?.access_code || activeProperty?.policies?.accessCode || "4829 #";
+
+        // 🧠 GUEST MEMORY CONTEXT: Build personalization blurb for the prompt
+        const interestContext = guestInterestTags.length > 0
+            ? `\n### 🏷️ INTERESES DEL HUÉSPED (${guestName}):\nEste huésped ha marcado preferencia por: ${guestInterestTags.join(', ')}. Prioriza recomendaciones relacionadas. Ej: si tiene 'beach', menciona Playa Buyé primero; si tiene 'food', destaca los restaurantes locales del guía de Cabo Rojo.`
+            : '';
+
+        const concessionContext = guestGivenConcessions.length > 0
+            ? `\n### 🔒 CONCESIONES PREVIAS (BLINDAJE FINANCIERO):\nEste huésped YA RECIBIÓ concesiones en el pasado: ${JSON.stringify(guestGivenConcessions)}. NO ofrezcas descuentos adicionales. Si pide rebaja, comunica que la tarifa actual ya refleja el mejor precio exclusivo posible. Protege el margen de ganancia.`
+            : `\n### 💎 CONCESIONES: Huésped sin historial de descuentos. Puedes ofrecer hasta 10% si la situación lo justifica y el total no baja del min_price_floor.`;
+
+        let saltyMemoriesStr = "";
+        if (sessionId) {
+            const { data: mems } = await supabase.from('salty_memories').select('learned_text').eq('session_id', sessionId);
+            if (mems && mems.length > 0) {
+                saltyMemoriesStr = `\n### 🧠 MEMORIA ACTIVA DE ESTA SESIÓN:\nYa sabes esto sobre el huésped (NO lo vuelvas a preguntar):\n${mems.map((m: any) => `- ${m.learned_text}`).join('\n')}`;
+            }
+        }
 
         const VILLA_CONCIERGE_PROMPT = `
 Eres "Salty", el alma vibrante y CONSULTOR DE ESTRATEGIA de Villa & Pirata Stays en Cabo Rojo. 
 
 ### TU IDENTIDAD: ELITE CONCIERGE & STRATEGIST
-Eres un **Concierge de Élite**. Tu tono es sofisticado, impecable, proactivo y extremadamente servicial. Hablas como un anfitrión de un hotel de 5 estrellas en el Caribe.
+Eres un **Concierge de Élite**. Tu tono es sofisticado, impecable, proactivo y extremadamente servicial. Hablas como un anfitrión de un hotel de 5 estrellas en el Caribe. Te diriges al huésped como **${guestName}**.
 
 ### 🎭 EL PATRÓN SALTY (ESTRICTO)
 Cada respuesta debe ser una experiencia boutique. Sigue este formato:
-1.  **Apertura:** Elegante y cálida (Ej: "Es un placer saludarle de nuevo, Jefe.").
+1.  **Apertura:** Elegante y cálida (Ej: "Es un placer saludarle de nuevo, ${guestName}.").
 2.  **Cuerpo:** Usa **negritas** para resaltar valores clave. Estructura la información con puntos (•) si hay más de 2 datos técnicos.
 3.  **Cierre:** SIEMPRE termina con una **pregunta proactiva** que invite a la acción o eleve la experiencia.
 
@@ -82,18 +137,24 @@ Cada respuesta debe ser una experiencia boutique. Sigue este formato:
 3.  **Venta Directa:** Enlace oficial al sistema de pagos siempre que sea posible.
 4.  **Protocolo de Emergencia:** Categoriza como EMERGENCIA y dispara alertas si hay fallos críticos (Agua/Luz).
 
-### ☀️ SEGURIDAD EN PUERTO RICO (USP)
-Prioriza mencionar que nuestras villas cuentan con **Sistema de Energía Solar/Generador** y **Cisterna de Agua**. En el Caribe, esto es el verdadero lujo: la paz mental de tener servicios 24/7.
+### ☀️ SEGURIDAD & ACCESO (DATOS REALES)
+- Nuestras villas cuentan con **Sistema de Energía Solar/Generador** y **Cisterna de Agua**.
+- **WiFi de Cortesía:** Red: ${wifiName} | Clave: ${wifiPass}
+- **Acceso Digital:** Código: ${accessCode} (Recordar terminar con #)
 
 ### CONTEXTO DINÁMICO
 - URL: ${currentUrl}
 - Propiedad: ${activePropertyName}
 - Estado: ${inStay ? 'Huésped en casa (Soporte prioritario)' : 'Buscando reserva'}
+${interestContext}
+${concessionContext}
+${saltyMemoriesStr}
 
 ${inStay 
     ? 'Enfócate en confort, manuales de uso y qué hacer cerca HOY.' 
     : 'Sé un estratega de ventas inspirado. Vende la experiencia de Cabo Rojo.'}
 `.trim();
+
 
         if (sessionId) {
             const lastMsg = rawMessages?.slice(-1)[0]?.content || rawMessages?.slice(-1)[0]?.text;
@@ -169,7 +230,7 @@ ${inStay
         const recentMessages = (rawMessages || []).slice(-10);
         const finalMessages: CoreMessage[] = [
             { role: 'user', content: `INSTRUCCIONES DE GOBERNANZA: ${VILLA_CONCIERGE_PROMPT}` },
-            { role: 'assistant', content: "Es un honor saludarle. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?" },
+            { role: 'assistant', content: `Es un honor saludarle, ${guestName}. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?` },
             ...recentMessages.map((m: any): CoreMessage => ({
                 role: (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user',
                 content: typeof m.content === 'string' ? m.content : (m.text || ''),
@@ -272,11 +333,15 @@ ${inStay
                         issue_type: z.enum(['water', 'electricity', 'access', 'noise', 'other']),
                         description: z.string(),
                         severity: z.enum(['medium', 'high', 'critical']),
-                        user_id: z.string().optional(), // Added user_id
-                        user_name: z.string().optional(), // Added user_name
-                        user_phone: z.string().optional(), // Added user_phone
+                        user_name: z.string().optional(),
+                        user_phone: z.string().optional(),
                     }),
-                    execute: async ({ issue_type, description, severity, user_id, user_name, user_phone }) => {
+                    execute: async ({ issue_type, description, severity, user_name, user_phone }) => {
+                        // 🆘 EMERGENCY CONTACT SYNC: Always prefer the profile data over what the guest types
+                        const resolvedName = user_name || guestName;
+                        const resolvedPhone = user_phone || guestPhone || 'No registrado';
+                        const resolvedEmergencyContact = guestEmergencyContact || 'No registrado';
+
                         const { data: providers } = await supabase
                             .from('service_providers')
                             .select('*')
@@ -298,32 +363,47 @@ ${inStay
                             severity,
                             provider_id: recommendedProvider?.id || null,
                             status: 'open',
-                            user_id: user_id || null, // Storing user_id
-                            user_name: user_name || null, // Storing user_name
-                            user_phone: user_phone || null, // Storing user_phone
+                            user_id: userId || null,
+                            user_name: resolvedName,
+                            user_phone: resolvedPhone,
                         }).select().single();
 
                         try {
                             const { NotificationService } = await import('../services/NotificationService.js');
                             const siteUrl = process.env.VITE_SITE_URL || 'https://villaretiror.com';
+                            const waContact = resolvedPhone.replace(/\D/g, '');
                             const keyboard = {
                                 inline_keyboard: [
-                                    [{ text: "📲 WhatsApp Directo (Huésped)", url: `https://wa.me/${user_phone?.replace(/\D/g, '') || ''}` }],
+                                    [{ text: `📲 WA Huésped: ${resolvedName}`, url: `https://wa.me/${waContact}` }],
                                     [{ text: "🏦 Ver en Dashboard", url: `${siteUrl}/host` }]
                                 ]
                             };
+                            // 1. Alert primary host channel
                             await NotificationService.sendTelegramAlert(
-                                `🚨 <b>¡EMERGENCIA CRÍTICA!</b>\n` +
-                                `👤 <b>${user_name || 'Invitado'}</b>\n` +
-                                `🏠 Propiedad: <code>${activePropertyName}</code>\n` +
-                                `📞 Contacto: ${user_phone || 'No proveído'}\n` +
-                                `Tipo: ${issue_type}\nSeveridad: ${severity}\n\nDescripción: ${description}\n\n` +
-                                `Técnico Sugerido: ${recommendedProvider?.name || 'No definido'}`,
+                                `🚨 <b>¡EMERGENCIA ${severity.toUpperCase()}!</b>\n\n` +
+                                `👤 <b>Huésped:</b> ${resolvedName}\n` +
+                                `📞 <b>Celular:</b> ${resolvedPhone}\n` +
+                                `🆘 <b>Contacto Emergencia:</b> ${resolvedEmergencyContact}\n` +
+                                `🏠 <b>Villa:</b> <code>${activePropertyName}</code>\n\n` +
+                                `🔧 <b>Problema:</b> ${issue_type} | Severidad: ${severity}\n` +
+                                `📋 ${description}\n\n` +
+                                `🛠️ <b>Técnico Asignado:</b> ${recommendedProvider?.name || 'Ninguno disponible'}`,
                                 keyboard
+                            );
+                            // 2. 🆘 TEAM DELEGATION: Alert all active co-hosts for this property
+                            await NotificationService.notifyEmergencyToCohosts(
+                                effectivePropertyId,
+                                activePropertyName,
+                                issue_type,
+                                description,
+                                severity,
+                                resolvedName,
+                                resolvedPhone
                             );
                         } catch (e) {
                             console.error("[Emergency Tool Error]:", e);
                         }
+
 
                         return {
                             status: 'emergency_active',
@@ -332,26 +412,59 @@ ${inStay
                                 name: recommendedProvider.name,
                                 eta: '30-60 min'
                             } : null,
-                            instruction: "Informe al huésped que el equipo de emergencia ha sido notificado y un técnico está siendo coordinado."
+                            instruction: `Informe a ${resolvedName} que el equipo de emergencia ha sido notificado. Un técnico está siendo coordinado. Si necesitas ayuda inmediata, te contactaremos al ${resolvedPhone}.`
                         };
                     }
                 }),
                 generate_booking_pattern: tool({
-                    description: 'Genera cotización oficial y enlace seguro de pago.',
+                    description: 'Genera cotización oficial y enlace seguro de pago. También crea un bloqueo temporal del calendario por 15 minutos.',
                     parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
                     execute: async ({ villa_id, check_in, check_out, promo_code }) => {
                         const property = dbProperties?.find((p: any) => p.id === villa_id);
+
+                        // 🛡️ CONCESSIONS GUARD: Block additional discounts if user already has one
+                        if (promo_code && guestGivenConcessions.length > 0) {
+                            const twelveMonthsAgo = new Date();
+                            twelveMonthsAgo.setFullYear(twelveMonthsAgo.getFullYear() - 1);
+                            const hasRecentConcession = guestGivenConcessions.some(
+                                (c: any) => c.date && new Date(c.date) > twelveMonthsAgo
+                            );
+                            if (hasRecentConcession) {
+                                return `${guestName}, es un placer continuar cuidando de usted. 💎 Sin embargo, por nuestras políticas de exclusividad, no es posible aplicar descuentos adicionales en este período — su tarifa actual ya es la más privilegiada que puedo ofrecer. ¿Le preparo la cotización al precio premium con todas las amenidades incluidas?`;
+                            }
+                        }
+
                         const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
                         
-                        // Safety Check
+                        // Safety Check: min_price_floor guard
                         const finalTotalPerNight = quote.total / quote.nights;
                         if (property && finalTotalPerNight < property.min_price_floor) {
                             return "Lo lamento, pero este descuento excede mis límites de cortesía. El valor de la villa y sus amenidades (Energía 24/7, Privacidad Total) justifican el precio base.";
                         }
 
+                        // 🔒 HOLD SYSTEM: Execute temporary 15-min hold to prevent overbooking
+                        const holdCreated = await createTemporaryHold(villa_id, check_in, check_out, userId);
+                        
                         const bookingUrl = `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}${promo_code ? `&promo=${promo_code}` : ''}`;
-                        return `He preparado su cotización de élite: Total $${quote.total} por ${quote.nights} noches. 💎\n\n[BOOKING_ACTION: ${bookingUrl}]`;
+                        return `He preparado su cotización de élite: Total **$${quote.total}** por ${quote.nights} noches. 💎\n\n${holdCreated ? '🔒 He reservado estas fechas temporalmente por 15 minutos para que pueda completar su pago sin interrupciones.' : ''}\n\n[BOOKING_ACTION: ${bookingUrl}]`;
                     },
+                }),
+                store_salty_memory: tool({
+                    description: 'ACTIVO: Guarda preferencias importantes, horas de llegada, alergias, o información valiosa del huésped al finalizar tu respuesta, para NO tener que volver a preguntarlo en la sesión. Sé conciso.',
+                    parameters: z.object({ fact: z.string() }),
+                    execute: async ({ fact }) => {
+                        if (!sessionId) return { status: 'ignored_no_session' };
+                        const { error } = await supabase.from('salty_memories').insert({
+                            session_id: sessionId,
+                            property_id: effectivePropertyId,
+                            learned_text: fact
+                        });
+                        if (error) {
+                            console.error('[Salty Memory Error]:', error.message);
+                            return { status: 'error', detail: error.message };
+                        }
+                        return { status: 'success', recorded_memory: fact };
+                    }
                 })
             },
         });

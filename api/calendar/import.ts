@@ -15,6 +15,13 @@ function parseIcsDate(raw: string): string {
     return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`;
 }
 
+function generateSyncHash(propertyId: string, checkIn: string, checkOut: string, status: string): string {
+    const content = `${propertyId}|${checkIn}|${checkOut}|${status}`;
+    // Simple base64 "hash" for consistency without heavy crypto in edge
+    if (typeof btoa !== 'undefined') return btoa(content);
+    return Buffer.from(content).toString('base64');
+}
+
 function getPropertyName(id: string): string {
     if (id === '1081171030449673920') return 'Villa Retiro R';
     if (id === '42839458') return 'Pirata Family House';
@@ -93,13 +100,68 @@ export default async function handler(req: any, res: any) {
                     inEvent = false;
                     if (dtStart.length >= 8 && dtEnd.length >= 8) {
                         const checkIn = parseIcsDate(dtStart), checkOut = parseIcsDate(dtEnd);
+                        const status = 'external_block';
+                        const syncHash = generateSyncHash(propertyId, checkIn, checkOut, status);
+
                         try {
-                            const { data: existing } = await supabase.from('bookings').select('id').eq('property_id', propertyId).eq('check_in', checkIn).eq('status', 'external_block').limit(1);
-                            if (!existing || existing.length === 0) {
-                                const { error: insErr } = await supabase.from('bookings').insert({ property_id: propertyId, status: 'external_block', check_in: checkIn, check_out: checkOut, guests: 1, total_price: 0 });
-                                if (!insErr) { newBlocks++; totalImported++; }
+                            const { data: existing } = await supabase
+                                .from('bookings')
+                                .select('id, sync_last_hash, notified_external_at')
+                                .eq('property_id', propertyId)
+                                .eq('check_in', checkIn)
+                                .eq('status', status)
+                                .maybeSingle();
+
+                            if (!existing) {
+                                // NEW BLOCK
+                                const { data: newBooking, error: insErr } = await supabase.from('bookings').insert({ 
+                                    property_id: propertyId, 
+                                    status: status, 
+                                    check_in: checkIn, 
+                                    check_out: checkOut, 
+                                    guests_count: 1, 
+                                    total_price: 0,
+                                    source: 'Airbnb',
+                                    sync_last_hash: syncHash
+                                }).select().single();
+
+                                if (!insErr && newBooking) { 
+                                    newBlocks++; 
+                                    totalImported++; 
+                                    // Notify host
+                                    await NotificationService.notifyNewReservation(
+                                        newBooking.id, 
+                                        'Bloqueo Calendario', 
+                                        getPropertyName(propertyId), 
+                                        checkIn, 
+                                        checkOut, 
+                                        '0.00', 
+                                        'Airbnb',
+                                        syncHash
+                                    );
+                                }
+                            } else if (existing.sync_last_hash !== syncHash) {
+                                // UPDATED BLOCK (e.g. check_out changed)
+                                await supabase.from('bookings').update({
+                                    check_out: checkOut,
+                                    sync_last_hash: syncHash,
+                                    notified_external_at: null // Force re-notify if needed
+                                }).eq('id', existing.id);
+
+                                await NotificationService.notifyNewReservation(
+                                    existing.id, 
+                                    'Bloqueo Actualizado', 
+                                    getPropertyName(propertyId), 
+                                    checkIn, 
+                                    checkOut, 
+                                    '0.00', 
+                                    'Airbnb',
+                                    syncHash
+                                );
                             }
-                        } catch (_) {}
+                        } catch (err) {
+                            console.error(`Error syncing event for ${propertyId}:`, err);
+                        }
                     }
                     continue;
                 }
@@ -120,13 +182,8 @@ export default async function handler(req: any, res: any) {
         }
     }
 
-    if (syncAlerts.length > 0) {
-        await NotificationService.sendTelegramAlert(
-            `🔄 <b>Sync iCal (Legacy): Bloqueos Nuevos</b>\n\n` +
-            syncAlerts.join('\n') +
-            `\n\n⚡ <i>Calendario actualizado.</i>`
-        );
-    }
+    // Note: notifyNewReservation handles granular alerts now.
+    // Legacy generic alert removed to avoid double notification.
 
     return res.status(200).json({ success: true, totalNewBlocksAdded: totalImported, details: results });
 }

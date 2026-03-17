@@ -233,7 +233,7 @@ export default async function handler(req: any, res: any) {
                 }
             }
 
-            await supabase.from('properties').update({ calendarSync: processedFeeds }).eq('id', propertyId);
+            await supabase.from('properties').update({ "calendarSync": processedFeeds }).eq('id', propertyId);
 
             results.push({
                 property: propertyTitle,

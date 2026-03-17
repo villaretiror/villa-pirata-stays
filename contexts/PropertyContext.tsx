@@ -70,6 +70,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       if (guideError) console.error("Guide Fetch Error:", guideError);
 
       if (guideRows && guideRows.length > 0) {
+        // 🗺️ INDUSTRIAL CATEGORY MAPPING: Validated against destination_guides truth
         const categories = [
           { id: 'beaches', category: siteContent?.sections.beaches || 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
           { id: 'gastronomy', category: siteContent?.sections.gastronomy || 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
@@ -79,17 +80,26 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const mappedGuide: LocalGuideCategory[] = categories.map(cat => ({
           ...cat,
           items: (guideRows as any[])
-            .filter(r => (r.category || '').trim().toLowerCase() === cat.dbKey.toLowerCase())
+            .filter(r => {
+              const rowCat = (r.category || '').trim().toLowerCase();
+              const targetCat = cat.dbKey.toLowerCase();
+              // 🧪 GASTRONOMÍA TRUTH SEARCH: Validate against food, gastronomia or restaurante
+              if (targetCat === 'food') {
+                return ['food', 'gastronomia', 'restaurante'].includes(rowCat);
+              }
+              return rowCat === targetCat;
+            })
             .map(r => ({
               id: r.id,
               name: r.title,
               distance: r.distance || '5-10 min',
               desc: r.description || '',
+              // 📸 IMAGE LOADER FINAL: Concatenate with validated Supabase bucket if not absolute
               image: r.image_url?.startsWith('http') 
                 ? r.image_url 
                 : r.image_url 
                   ? `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/${r.image_url}`
-                  : 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200', // Alt fallback
+                  : 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
               mapUrl: r.map_url || '',
               saltyTip: r.salty_tip || '',
               sortOrder: r.sort_order || 0

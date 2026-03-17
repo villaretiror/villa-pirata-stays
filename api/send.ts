@@ -154,7 +154,7 @@ export default async function handler(req: any, res: any) {
               </div>
 
               <div style="text-align: center; margin: 40px 0;">
-                <a href="${process.env.VITE_SITE_URL}/stay/${v_propertyId}" style="background: linear-gradient(135deg, ${p.accentColor} 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
+                <a href="${process.env.VITE_SITE_URL}/stay/${v_propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-family: 'Playfair Display', serif; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
               </div>
 
               <p style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
@@ -165,7 +165,15 @@ export default async function handler(req: any, res: any) {
         `
       });
 
-      await NotificationService.notifyNewReservation(firstName, p.name, rest.checkIn || 'Fecha', rest.checkOut || 'Fecha', rest.total || '0');
+      await NotificationService.notifyNewReservation(
+        (rest as any).bookingId || 'ID_N/A',
+        firstName, 
+        p.name, 
+        rest.checkIn || 'Fecha', 
+        rest.checkOut || 'Fecha', 
+        rest.total || '0',
+        'Web Directa'
+      );
     }
     else if (type === 'urgent_alert') {
       const message = userData.message || 'Soporte Urgente Requerido';
