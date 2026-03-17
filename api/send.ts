@@ -123,45 +123,72 @@ export default async function handler(req: any, res: any) {
         bcc: hostEmail,
         subject: isReturning ? `🌊 ¡Bienvenido de vuelta a ${p.name}! (Reserva Confirmada)` : `🏝️ ¡Confirmado! Tu refugio en ${p.name} está listo`,
         html: `
-          <div style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #eee; border-radius: 40px; overflow: hidden; background-color: #ffffff; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
-            <div style="background-color: #FDFCFB; padding: 50px 40px; text-align: center; border-bottom: 2px dashed #f0f0f0;">
-              <img src="${p.logo}" width="140" style="margin-bottom: 25px;" />
-              <h1 style="color: #2C2B29; font-size: 32px; margin: 0; font-family: serif; font-weight: 700;">¡Hola, ${firstName}!</h1>
-              <p style="color: ${p.accentColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 11px; margin-top: 15px;">${welcomeHeader}</p>
-            </div>
-            
-            <div style="padding: 40px; color: #4A4A4A; line-height: 1.8;">
-              <p style="font-size: 17px; margin-bottom: 25px;">
-                ${isReturning ? 'Nos alegra verte de nuevo.' : ''} Soy <strong>Salty</strong>, tu concierge digital. La brisa de Cabo Rojo ya te espera y yo he preparado cada detalle para que tu estancia sea legendaria.
-              </p>
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <meta name="color-scheme" content="light dark" />
+            <meta name="supported-color-schemes" content="light dark" />
+            <style>
+              :root { color-scheme: light dark; supported-color-schemes: light dark; }
+              @media (prefers-color-scheme: dark) {
+                .email-container { background-color: #1a1917 !important; border: 1px solid #333 !important; }
+                .email-body { background-color: #1a1917 !important; color: #f9f6f2 !important; }
+                .hero-section { background-color: #222 !important; border-bottom: 2px dashed #333 !important; }
+                .h1-text { color: #f9f6f2 !important; }
+                .p-text { color: #ccc !important; }
+                .code-box { background-color: #000 !important; color: #fff !important; }
+              }
+            </style>
+          </head>
+          <body style="margin: 0; padding: 0;">
+            <div class="email-container" style="font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 600px; margin: 20px auto; border: 1px solid #eee; border-radius: 40px; overflow: hidden; background-color: #ffffff; box-shadow: 0 20px 50px rgba(0,0,0,0.05);">
+              <div class="hero-section" style="background-color: #FDFCFB; padding: 50px 40px; text-align: center; border-bottom: 2px dashed #f0f0f0;">
+                <img src="${p.logo}" width="140" style="margin-bottom: 25px;" />
+                <h1 class="h1-text" style="color: #2C2B29; font-size: 32px; margin: 0; font-family: 'Playfair Display', serif; font-weight: 700;">¡Hola, ${firstName}!</h1>
+                <p style="color: ${p.accentColor}; font-weight: bold; text-transform: uppercase; letter-spacing: 3px; font-size: 11px; margin-top: 15px;">${welcomeHeader}</p>
+              </div>
               
-              <div style="background-color: #2C2B29; color: #ffffff; padding: 35px; border-radius: 25px; margin: 30px 0; position: relative; overflow: hidden;">
-                <h3 style="color: ${p.accentColor}; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Protocolo de Acceso</h3>
-                <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">Código Seguro:</p>
-                <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${p.accessCode}</span></p>
-                <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
-                  <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${p.wifiName}</p>
-                  <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${p.wifiPass}</code></p>
+              <div class="email-body" style="padding: 40px; color: #4A4A4A; line-height: 1.8;">
+                <p class="p-text" style="font-size: 17px; margin-bottom: 25px;">
+                  ${isReturning ? 'Nos alegra verte de nuevo.' : ''} Soy <strong>Salty</strong>, tu concierge digital. La brisa de Cabo Rojo ya te espera y yo he preparado cada detalle para que tu estancia sea legendaria.
+                </p>
+                
+                <div class="code-box" style="background-color: #2C2B29; color: #ffffff; padding: 35px; border-radius: 25px; margin: 30px 0; position: relative; overflow: hidden;">
+                  <h3 style="color: ${p.accentColor}; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 20px;">Protocolo de Acceso</h3>
+                  <p style="margin: 10px 0; font-size: 14px; opacity: 0.8;">Código Seguro:</p>
+                  <p style="margin: 5px 0;"><span style="font-size: 32px; color: #ffffff; font-weight: 800; letter-spacing: 4px;">${p.accessCode}</span></p>
+                  <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <p style="margin: 5px 0; font-size: 14px;">📡 <b>WF:</b> ${p.wifiName}</p>
+                    <p style="margin: 5px 0; font-size: 14px;">🔑 <b>Pass:</b> <code>${p.wifiPass}</code></p>
+                  </div>
                 </div>
-              </div>
 
-              <div style="text-align: center; margin: 35px 0;">
-                <p style="font-size: 14px; color: #888; margin-bottom: 20px;">¿Cómo llegar al paraíso?</p>
-                <div style="display: flex; gap: 10px; justify-content: center;">
-                  <a href="${mapsUrl}" style="background-color: #ffffff; color: #2C2B29; border: 1px solid #ddd; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">📍 Google Maps</a>
-                  <a href="${wazeUrl}" style="background-color: #33CCFF; color: #ffffff; padding: 15px 20px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 13px; flex: 1;">🚙 Waze</a>
+                <div style="text-align: center; margin: 35px 0;">
+                  <p class="p-text" style="font-size: 14px; color: #888; margin-bottom: 20px;">¿Cómo llegar al paraíso?</p>
+                  <table width="100%" cellspacing="0" cellpadding="0">
+                    <tr>
+                      <td width="48%">
+                        <a href="${mapsUrl}" style="background-color: #ffffff; color: #2C2B29; border: 1px solid #ddd; padding: 15px 10px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 12px; display: block; text-align: center;">📍 Google Maps</a>
+                      </td>
+                      <td width="4%">&nbsp;</td>
+                      <td width="48%">
+                        <a href="${wazeUrl}" style="background-color: #33CCFF; color: #ffffff; padding: 15px 10px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 12px; display: block; text-align: center;">🚙 Waze</a>
+                      </td>
+                    </tr>
+                  </table>
                 </div>
-              </div>
 
-              <div style="text-align: center; margin: 40px 0;">
-                <a href="${process.env.VITE_SITE_URL}/stay/${v_propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-family: 'Playfair Display', serif; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
-              </div>
+                <div style="text-align: center; margin: 40px 0;">
+                  <a href="${process.env.VITE_SITE_URL}/stay/${v_propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-family: serif; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
+                </div>
 
-              <p style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
-                "En la Villa, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
-              </p>
+                <p class="p-text" style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
+                  "En la Villa, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
+                </p>
+              </div>
             </div>
-          </div>
+          </body>
+          </html>
         `
       });
 

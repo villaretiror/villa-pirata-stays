@@ -247,9 +247,18 @@ ${inStay
                     description: 'Busca disponibilidad en tiempo real.',
                     parameters: z.object({ villa_ids: z.array(z.string()), check_in: z.string(), check_out: z.string() }),
                     execute: async ({ villa_ids, check_in, check_out }) => {
-                        const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
-                        const available = villa_ids.filter((_, i) => results[i].available);
-                        return { status: 'success', available_ids: available };
+                        try {
+                            const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
+                            const available = villa_ids.filter((_, i) => results[i].available);
+                            return { status: 'success', available_ids: available };
+                        } catch (e) {
+                            console.error('[AI Tool check_availability] Failed:', e);
+                            return { 
+                                status: 'offline_fallback', 
+                                available_ids: [], 
+                                message: 'Salty indica que el motor de reservas está recibiendo mucho tráfico. Por favor, intente en 30 segundos o contacte al anfitrión directamente.' 
+                            };
+                        }
                     },
                 }),
                 get_cabo_rojo_weather: tool({

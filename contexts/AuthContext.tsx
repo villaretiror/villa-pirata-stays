@@ -114,21 +114,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // After initial check, set up listener
       if (isSubscribed) {
         const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, session: any) => {
-          console.log(`Auth Strategy [Audit]: Event type: ${event} for ${session?.user?.email || 'Guest'}`);
-
           if (!isSubscribed) return;
+          
+          console.log(`Auth Strategy [Audit]: Event type: ${event} for ${session?.user?.email || 'Guest'}`);
 
           if (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION') {
             if (session?.user) {
               const { profile, extra } = await getExtendedProfile(session.user.id);
               
-              // 🕵️ AUDIT LOG: Secure Host Event Tracking
-              if (event === 'SIGNED_IN' && session.user.email === 'villaretiror@gmail.com') {
-                supabase.from('auth_logs').insert({
+              // 🕵️ AUDIT LOG: Redirected from missing auth_logs to security_audit_logs (Real DB Table)
+              if (event === 'SIGNED_IN' && isSubscribed) {
+                supabase.from('security_audit_logs').insert({
                   user_id: session.user.id,
                   email: session.user.email,
-                  event_type: 'login',
-                  user_agent: navigator.userAgent
+                  action: 'login',
+                  category: 'SECURITY',
+                  metadata: {
+                    event_type: 'login_frontend',
+                    user_agent: navigator.userAgent,
+                    location: window.location.href
+                  }
                 }).then();
               }
 
@@ -153,7 +158,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => {
       isSubscribed = false;
       clearTimeout(safetyTimeout);
-      if (authListener) authListener.unsubscribe();
+      if (authListener) {
+        console.log("AuthContext: Cleaning up auth listener...");
+        authListener.unsubscribe();
+      }
     };
   }, []);
 

@@ -2793,6 +2793,34 @@ const HostDashboard: React.FC = () => {
     return () => controller.abort();
   }, [activeTab, fetchPayments]);
 
+  // 4. 🔥 SUPREME ARCHITECT REALTIME ENGINE (Salty Memory Link)
+  useEffect(() => {
+    if (!isAuthorized) return;
+
+    const channel = supabase
+      .channel('host_dashboard_live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leads' }, () => {
+        showToast("🧠 Salty acaba de aprender algo nuevo (Lead detectado)");
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'urgent_alerts' }, () => {
+        showToast("🚨 Alerta Crítica en Tiempo Real");
+        fetchData();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, () => {
+        showToast("✨ Nueva Reserva Entrante");
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'property_expenses' }, () => {
+        fetchData();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isAuthorized, fetchData]);
+
   // --- CONDITIONAL RETURN (SAFE AFTER ALL HOOKS) ---
   if (!user || isAuthorized === null) {
     return <div className="min-h-screen bg-sand flex items-center justify-center font-serif italic animate-pulse">Autenticando...</div>;
@@ -3110,8 +3138,10 @@ const HostDashboard: React.FC = () => {
             <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10">Salty Morning Briefing</span>
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
           </div>
-          <h2 className="text-3xl font-serif font-black italic tracking-tighter mb-4 leading-tight">
-            "La brisa de <span className="text-primary-light">Cabo Rojo</span> augura un día de 5 estrellas."
+          <h2 className="text-2xl md:text-3xl font-serif font-black italic tracking-tighter mb-4 leading-tight">
+            "{nextCheckins.length > 0 
+              ? `Salty informa: Tenemos ${nextCheckins.length} check-ins estratégicos hoy. Todo listo para la excelencia.` 
+              : "La brisa de Cabo Rojo augura un día de 5 estrellas. Paz y rentabilidad en balance."}"
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/10">
             <div className="flex items-start gap-4">

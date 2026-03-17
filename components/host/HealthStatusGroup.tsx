@@ -48,26 +48,32 @@ const HealthStatusGroup: React.FC = () => {
 
     const getGroupStatus = (group: 'Brain' | 'Airbnb' | 'Booking') => {
         const services = health.filter(h => {
-            if (group === 'Brain') return h.service_name.includes('DB') || h.service_name.includes('Brain');
+            if (group === 'Brain') return h.service_name.includes('DB') || h.service_name.includes('Brain') || h.service_name.includes('Salty');
             return h.service_name.includes(group);
         });
 
         if (services.length === 0) return 'unknown';
-        if (services.some(s => s.status === 'error')) return 'error';
-        if (services.some(s => s.status === 'warning')) return 'warning';
+        
+        // 🚀 LATENCY HEURISTICS: Supreme Architect Logic
+        const avgLatency = services.reduce((acc, s) => acc + (s.latency_ms || 0), 0) / services.length;
+        
+        if (services.some(s => s.status === 'error') || avgLatency > 3000) return 'error';
+        if (services.some(s => s.status === 'warning') || avgLatency > 1000) return 'warning';
         return 'healthy';
     };
 
     const StatusLED = ({ label, group }: { label: string, group: 'Brain' | 'Airbnb' | 'Booking' }) => {
         const status = getGroupStatus(group);
         const services = health.filter(h => {
-            if (group === 'Brain') return h.service_name.includes('DB') || h.service_name.includes('Brain');
+            if (group === 'Brain') return h.service_name.includes('DB') || h.service_name.includes('Brain') || h.service_name.includes('Salty');
             return h.service_name.includes(group);
         });
+        
+        const avgLatency = Math.round(services.reduce((acc, s) => acc + (s.latency_ms || 0), 0) / (services.length || 1));
         const lastSync = services.length > 0 ? new Date(services[0].last_check).toLocaleTimeString() : 'N/A';
 
-        const colorClass = status === 'healthy' ? 'bg-[#2D5A27]' : status === 'error' ? 'bg-[#FF7F3F] animate-pulse' : 'bg-gray-300';
-        const shadowClass = status === 'healthy' ? 'shadow-[0_0_8px_#2D5A27]' : status === 'error' ? 'shadow-[0_0_8px_#FF7F3F]' : '';
+        const colorClass = status === 'healthy' ? 'bg-[#2D5A27]' : status === 'warning' ? 'bg-[#FF9F1C]' : status === 'error' ? 'bg-[#FF7F3F] animate-pulse' : 'bg-gray-300';
+        const shadowClass = status === 'healthy' ? 'shadow-[0_0_8px_#2D5A27]' : status === 'warning' ? 'shadow-[0_0_8px_#FF9F1C]' : status === 'error' ? 'shadow-[0_0_8px_#FF7F3F]' : '';
 
         return (
             <div className="relative group/led flex items-center gap-1.5 cursor-help">
@@ -78,12 +84,25 @@ const HealthStatusGroup: React.FC = () => {
 
                 {/* Tooltip */}
                 <div className="absolute top-full mt-2 right-0 hidden group-hover/led:block z-[100] animate-slide-up">
-                    <div className="bg-secondary text-white p-2 rounded-xl shadow-xl w-40 border border-white/10 backdrop-blur-md">
-                        <p className="text-[9px] font-black uppercase mb-1 border-b border-white/10 pb-1">{label} Link</p>
+                    <div className="bg-secondary text-white p-3 rounded-[1.5rem] shadow-2xl w-48 border border-white/10 backdrop-blur-md">
+                        <p className="text-[9px] font-black uppercase mb-1 border-b border-white/10 pb-1 flex justify-between">
+                            <span>{label} Link</span>
+                            <span className="opacity-60">{avgLatency}ms</span>
+                        </p>
                         <p className="text-[8px] font-bold">Estado: <span className={status === 'healthy' ? 'text-green-400' : 'text-[#FF7F3F]'}>{status.toUpperCase()}</span></p>
                         <p className="text-[8px] opacity-60">Sinc: {lastSync}</p>
                         {status === 'error' && services[0]?.error_details && (
                             <p className="text-[7px] text-red-200 mt-1 italic line-clamp-2">{services[0].error_details}</p>
+                        )}
+                        {services.length > 1 && (
+                            <div className="mt-2 text-[7px] opacity-80 space-y-0.5">
+                                {services.map(s => (
+                                    <div key={s.service_name} className="flex justify-between">
+                                        <span>{s.service_name}</span>
+                                        <span>{s.latency_ms}ms</span>
+                                    </div>
+                                ))}
+                            </div>
                         )}
                     </div>
                 </div>

@@ -4,12 +4,7 @@ import { NotificationService } from '../../services/NotificationService.js';
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY || '';
 
-// URLs reales de Airbnb con fallback embebido
-const ICAL_URLS: Record<string, string> = {
-    '42839458': process.env.AIRBNB_ICAL_VILLA_1 || 'https://www.airbnb.com/calendar/ical/42839458.ics?t=8f3d1e089d17402f9d06589bfe85b331',
-    '1081171030449673920': process.env.AIRBNB_ICAL_VILLA_2 || 'https://www.airbnb.com/calendar/ical/1081171030449673920.ics?t=01fca69a4848449d8bb61cde5519f4ae'
-};
-
+// 🔄 DYNAMIC PROPERTY ENGINE: Fetch active iCal feeds from DB
 function parseIcsDate(raw: string): string {
     const d = raw.replace(/T.*/, '').trim(); // YYYYMMDD
     return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`;
@@ -22,10 +17,21 @@ function generateSyncHash(propertyId: string, checkIn: string, checkOut: string,
     return Buffer.from(content).toString('base64');
 }
 
-function getPropertyName(id: string): string {
-    if (id === '1081171030449673920') return 'Villa Retiro R';
-    if (id === '42839458') return 'Pirata Family House';
-    return `Propiedad ${id}`;
+async function getDynamicProperties(supabase: any) {
+    const { data, error } = await supabase
+        .from('properties')
+        .select('id, title, airbnb_url, is_offline');
+    
+    if (error) {
+        console.error('[SYNC_AUTH_ERROR]: Failed to fetch property directory', error);
+        return [];
+    }
+
+    return (data || []).filter((p: any) => 
+        !p.is_offline && 
+        p.airbnb_url && 
+        p.airbnb_url.trim() !== ''
+    );
 }
 
 export default async function handler(req: any, res: any) {
@@ -43,7 +49,13 @@ export default async function handler(req: any, res: any) {
     let totalImported = 0;
     const results: Record<string, any> = {};
 
-    // 🤖 FEEDBACK LOOP: Notificar sobre "Human Takeovers" expirados (CONSOLIDADO)
+    // 1. Fetch Dynamic Directory
+    const activeProperties = await getDynamicProperties(supabase);
+    if (activeProperties.length === 0) {
+        return res.status(200).json({ success: true, message: 'No active properties to sync' });
+    }
+
+    // 🤖 FEEDBACK LOOP: Notificar sobre "Human Takeovers" expirados
     try {
         const { data: expiredLogs } = await supabase.from('chat_logs')
             .select('session_id')
@@ -67,7 +79,11 @@ export default async function handler(req: any, res: any) {
 
     const syncAlerts: string[] = [];
 
-    for (const [propertyId, url] of Object.entries(ICAL_URLS)) {
+    for (const prop of activeProperties) {
+        const propertyId = prop.id;
+        const url = prop.airbnb_url;
+        const propertyTitle = prop.title || `Villa ${propertyId}`;
+
         results[propertyId] = { status: 'skipped', newBlocks: 0 };
 
         try {
@@ -132,7 +148,7 @@ export default async function handler(req: any, res: any) {
                                     await NotificationService.notifyNewReservation(
                                         newBooking.id, 
                                         'Bloqueo Calendario', 
-                                        getPropertyName(propertyId), 
+                                        propertyTitle, 
                                         checkIn, 
                                         checkOut, 
                                         '0.00', 
@@ -151,7 +167,7 @@ export default async function handler(req: any, res: any) {
                                 await NotificationService.notifyNewReservation(
                                     existing.id, 
                                     'Bloqueo Actualizado', 
-                                    getPropertyName(propertyId), 
+                                    propertyTitle, 
                                     checkIn, 
                                     checkOut, 
                                     '0.00', 
@@ -173,7 +189,7 @@ export default async function handler(req: any, res: any) {
 
             results[propertyId] = { status: 'synced', newBlocks };
             if (newBlocks > 0) {
-                syncAlerts.push(`🏠 <b>${getPropertyName(propertyId)}</b>: +${newBlocks} noches bloqueadas.`);
+                syncAlerts.push(`🏠 <b>${propertyTitle}</b>: +${newBlocks} noches bloqueadas.`);
             }
 
         } catch (err: any) {

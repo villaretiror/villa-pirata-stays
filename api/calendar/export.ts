@@ -18,31 +18,60 @@ export default async function handler(req: any, res: any) {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
     try {
-        const { data: bookings, error } = await supabase
-            .from('bookings')
-            .select('*')
-            .eq('property_id', id)
-            .eq('status', 'confirmed');
+        // 1. Fetch Bookings and Property Config (Blocked Dates)
+        const [bookingsRes, propertyRes] = await Promise.all([
+            supabase
+                .from('bookings')
+                .select('*')
+                .eq('property_id', id)
+                .in('status', ['confirmed', 'completed']),
+            supabase
+                .from('properties')
+                .select('title, blockeddates')
+                .eq('id', id)
+                .single()
+        ]);
 
-        if (error) throw error;
+        if (bookingsRes.error) throw bookingsRes.error;
+        if (propertyRes.error) throw propertyRes.error;
 
-        const calendar = ical({ name: `Reservas Villa ${id}` });
+        const bookings = bookingsRes.data || [];
+        const property = propertyRes.data;
+
+        const calendar = ical({ name: property.title || `Villa ${id}` });
         calendar.prodId({
             company: 'Villa Retiro PR',
             product: 'Calendar Sync',
             language: 'ES'
         });
 
-        (bookings || []).forEach((booking: any) => {
-            // Formatear fechas para iCal
+        // 2. Add Confirmed Bookings
+        bookings.forEach((booking: any) => {
             const start = new Date(booking.check_in);
             const end = new Date(booking.check_out);
 
             calendar.createEvent({
                 start: start,
                 end: end,
-                summary: 'Reservado (Villa Retiro)',
-                description: `Ocupado - Reserva ID: ${booking.id}`,
+                summary: 'Ocupado (Reserva Villa Retiro)',
+                description: `ID: ${booking.id}`,
+                allDay: true
+            });
+        });
+
+        // 3. Add Manual Blocked Dates (Jsonb column)
+        const manualBlocks = (property.blockeddates as string[]) || [];
+        manualBlocks.forEach((dateStr: string) => {
+            const date = new Date(dateStr);
+            // End date is next day for 1-day block
+            const endDate = new Date(date);
+            endDate.setDate(endDate.getDate() + 1);
+
+            calendar.createEvent({
+                start: date,
+                end: endDate,
+                summary: 'Bloqueado (Mantenimiento/Host)',
+                description: 'Bloqueo manual desde el Dashboard',
                 allDay: true
             });
         });

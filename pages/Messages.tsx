@@ -25,6 +25,7 @@ const Messages: React.FC = () => {
   const [hostIsTyping, setHostIsTyping] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [takeoverUntil, setTakeoverUntil] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Intentar obtener el propertyId si venimos de una página de villa
@@ -98,6 +99,9 @@ const Messages: React.FC = () => {
         (payload: any) => {
           if (payload.new.is_host_typing !== undefined) {
             setHostIsTyping(payload.new.is_host_typing);
+          }
+          if (payload.new.human_takeover_until !== undefined) {
+            setTakeoverUntil(payload.new.human_takeover_until);
           }
         }
       )
@@ -413,6 +417,12 @@ const Messages: React.FC = () => {
             </div>
           </div>
         </div>
+        {takeoverUntil && new Date(takeoverUntil) > new Date() && (
+          <div className="bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 flex items-center gap-2 animate-pulse">
+            <span className="material-icons text-primary text-xs">shield</span>
+            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gobernanza Manual</span>
+          </div>
+        )}
       </header>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-[#fbfaf8] scroll-smooth pb-10">
