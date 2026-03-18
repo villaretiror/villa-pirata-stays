@@ -1,0 +1,17 @@
+{
+    "check_in": "3:00 PM (Unificado)",
+    "check_out": "11:00 AM",
+    "general_rules": [
+        "1. No se permiten fiestas ni eventos masivos.",
+        "2. Horario de silencio de 10:00 PM a 8:00 AM.",
+        "3. Se admiten mascotas (Por favor, mantenga limpieza).",
+        "4. Prohibido fumar dentro de las instalaciones.",
+        "5. Apagar luces y A/C al salir de la habitación."
+    ],
+    "logistics": {
+        "parking": "Cabo Rojo: Llegar antes de las 10:00 AM fines de semana. Caguas: Espacio privado garantizado.",
+        "trash": "Depositar basura en los contenedores exteriores antes de su salida.",
+        "safety": "Cerrar portones y puertas con el código digital al salir."
+    },
+    "emergency_protocol": "Para fallos de luz o agua, el sistema solar/cisterna es automático. Si persiste por más de 10 minutos, avise a Salty inmediatamente."
+}

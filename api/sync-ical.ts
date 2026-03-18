@@ -23,14 +23,8 @@ import { NotificationService } from '../services/NotificationService.js';
 export default async function handler(req: any, res: any) {
     const CRON_SECRET = process.env.CRON_SECRET;
     const authHeader  = req.headers?.authorization || req.headers?.Authorization || '';
-    const querySecret = req.query?.secret || '';
 
-    if (!CRON_SECRET) {
-        console.error('[sync-ical] CRON_SECRET environment variable is not defined.');
-        return res.status(500).json({ error: 'MISSING_CRON_SECRET_CONFIG' });
-    }
-
-    if (authHeader !== `Bearer ${CRON_SECRET}` && querySecret !== CRON_SECRET) {
+    if (!CRON_SECRET || authHeader !== `Bearer ${CRON_SECRET}`) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -145,12 +139,12 @@ export default async function handler(req: any, res: any) {
                         const icalKey   = `${bIn}_${bOut}_${platform}`;
                         const globalKey = `${propertyId}_${bIn}_${bOut}`;
 
-                        // 🕵️ MANUAL BLOCK DETECTION (Salty Intelligence)
                         const summary = (ev.summary || '').toLowerCase();
                         const isManualBlock = summary.includes('blocked') || 
                                            summary.includes('manual') || 
                                            summary.includes('unavailable') || 
                                            summary.includes('dueño') ||
+                                           summary.includes('closed') ||
                                            (platform === 'Airbnb' && summary === 'airbnb (blocked)');
 
                         activeICalKeys.add(icalKey);

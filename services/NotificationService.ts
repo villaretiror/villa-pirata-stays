@@ -12,9 +12,8 @@ export const NotificationService = {
      * @param keyboard Opcional. Inline Keyboard Markup
      */
     async sendTelegramAlert(message: string, keyboard?: any): Promise<boolean> {
-        // 🛡️ PROTOCOLO DE RESILIENCIA: TOKEN y CHAT_ID con fallbacks industriales
-        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
-        const CHAT_ID = process.env.TELEGRAM_CHAT_ID || "2085187904";
+        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const CHAT_ID        = process.env.TELEGRAM_CHAT_ID;
 
         if (!TELEGRAM_TOKEN || !CHAT_ID) {
             console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
@@ -56,7 +55,7 @@ export const NotificationService = {
      * Enviar mensaje directo a un Chat ID específico
      */
     async sendDirectTelegramMessage(chatId: string, message: string, keyboard?: any): Promise<boolean> {
-        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
+        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
         if (!TELEGRAM_TOKEN) {
             console.warn("[NotificationService] Telegram Token faltante para envío directo.");
@@ -215,9 +214,9 @@ export const NotificationService = {
             // a known Telegram ID stored in a salty_family_knowledge entry as fallback.
             // For now we use the ALLOWED_TELEGRAM_CHAT_IDS env mapping as secondary channel.
             // Primary: add all co-host emails to a dispatch log.
-            const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "8612052249:AAEFr5Gh2JIBEbc3Xp4o91-lhUl3aZPZbdQ";
-            const hostChatId = process.env.TELEGRAM_CHAT_ID || '2085187904';
-            const allChatIds = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId).split(',').map((id: string) => id.trim());
+            const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+            const hostChatId     = process.env.TELEGRAM_CHAT_ID;
+            const allChatIds     = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId || "").split(',').map((id: string) => id.trim()).filter(Boolean);
 
             const emergencyMsg =
                 `🔔 <b>[CO-HOST ALERT] ${propertyName.toUpperCase()}</b>\n\n` +

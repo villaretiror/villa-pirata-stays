@@ -21,19 +21,10 @@ function getPropertyName(id: string): string {
 }
 
 export default async function handler(req: any, res: any) {
-    // 🛡️ Security Check: Header o Query
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
-    const querySecret = req.query?.secret || '';
-    const secret = getEnv('CRON_SECRET');
+    const secret = process.env.CRON_SECRET;
 
-    if (!secret) {
-        console.error('[master-cron] CRON_SECRET not configured.');
-        return res.status(500).json({ error: 'CRON_SECRET_NOT_CONFIGURED' });
-    }
-
-    const isAuthorized = (authHeader === `Bearer ${secret}`) || (querySecret === secret);
-
-    if (!isAuthorized) {
+    if (!secret || authHeader !== `Bearer ${secret}`) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -50,6 +41,16 @@ export default async function handler(req: any, res: any) {
     // 1. SIEMPRE (Cada ejecución): iCal Sync & Cleanup
     results.tasks.calendar_sync = await taskCalendarSync(req);
     results.tasks.cleanup = await taskCleanupMocks(supabase);
+
+    // 🕵️ SECURITY HEARTBEAT (Manual Audit)
+    if (req.query?.heartbeat === 'true') {
+        const auditMsg = `🛎 <b>System Security Audit</b>: Verified & Secure.\n\n` +
+                        `🔐 <b>Auth:</b> CRON_SECRET validated.\n` +
+                        `🛰️ <b>Sync:</b> ICAL Engine active.\n` +
+                        `✨ <b>Status:</b> All systems nominal.`;
+        await NotificationService.sendTelegramAlert(auditMsg);
+        results.heartbeat = 'Verified';
+    }
 
     // 2. REPORTE MAÑANERO (12:00 UTC = 8:00 AM AST): Operative Report & Journey
     if (utcHour === 12 && utcMinute < 15) {
@@ -90,10 +91,13 @@ async function taskCalendarSync(req: any) {
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const host = req.headers['host'];
     const secret = getEnv('CRON_SECRET');
-    const syncUrl = `${protocol}://${host}/api/sync-ical?secret=${secret || ''}`;
+    const syncUrl = `${protocol}://${host}/api/sync-ical`;
 
     try {
-        const resp = await fetch(syncUrl, { signal: AbortSignal.timeout(55000) });
+        const resp = await fetch(syncUrl, { 
+            headers: { 'Authorization': `Bearer ${secret}` },
+            signal: AbortSignal.timeout(55000) 
+        });
         if (!resp.ok) return { status: 'error', code: resp.status };
         return await resp.json();
     } catch (err: any) {

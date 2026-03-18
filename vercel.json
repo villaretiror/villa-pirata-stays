@@ -53,5 +53,11 @@
             "source": "/((?!api/|assets/|auth/|.*\\.).*)",
             "destination": "/index.html"
         }
+    ],
+    "crons": [
+        {
+            "path": "/api/master-cron",
+            "schedule": "*/15 * * * *"
+        }
     ]
 }

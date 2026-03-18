@@ -14,6 +14,7 @@ import {
     } from '../aiServices.js';
 import { SecurityGovernanceService } from '../services/SecurityGovernanceService.js';
 import { NotificationService } from '../services/NotificationService.js';
+import HOUSE_RULES from '../constants/house_rules.json' assert { type: 'json' };
 
 export const config = {
     runtime: 'edge',
@@ -54,13 +55,15 @@ export default async function handler(req: Request) {
         const parsedBody = chatRequestSchema.parse(body);
         const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = parsedBody;
 
-        // 🛡️ REINFORCED FALLBACK: Ensure the default propertyId is always the one requested by the Supreme Architect
+        // 🛡️ REINFORCED FALLBACK
         const effectivePropertyId = String(propertyId || "1081171030449673920");
 
-        const { data: dbProperties } = await supabase.from('properties').select('*');
-        const { data: knowledgeSetting } = await supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single();
-        const { data: saltySetting } = await supabase.from('system_settings').select('value').eq('key', 'salty_config').single();
-        const { data: familyKnowledge } = await supabase.from('salty_family_knowledge').select('key, value');
+        const [{ data: dbProperties }, { data: knowledgeSetting }, { data: saltySetting }, { data: familyKnowledge }] = await Promise.all([
+            supabase.from('properties').select('*'),
+            supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
+            supabase.from('system_settings').select('value').eq('key', 'salty_config').single(),
+            supabase.from('salty_family_knowledge').select('key, value')
+        ]);
         
         let guestName = 'Viajero';
         let guestInterestTags: string[] = [];
@@ -69,7 +72,6 @@ export default async function handler(req: Request) {
         let guestEmergencyContact: string | null = null;
 
         if (userId) {
-            // 🧠 SALTY MEMORY: Full profile fetch for personalization + safety
             const { data: profile } = await supabase
                 .from('profiles')
                 .select('full_name, interest_tags, given_concessions, phone, emergency_contact')
@@ -77,7 +79,7 @@ export default async function handler(req: Request) {
                 .single();
 
             if (profile?.full_name) {
-                guestName = profile.full_name.split(' ')[0]; // First name only for warmth
+                guestName = profile.full_name.split(' ')[0];
             } else {
                 const { data: lastBooking } = await supabase
                     .from('bookings')
@@ -103,7 +105,6 @@ export default async function handler(req: Request) {
             ? `\n\n### MEMORIAS PRIVADAS (FAMILIA):\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
             : "";
         
-        // 🛡️ ROLE GOBERNANCE: Guests have restricted access to internal insights
         const restrictedTools = isGuest ? ['report_system_insight', 'analyze_marketing_opportunity'] : [];
         if (isGuest) {
             console.log(`[Principal Systems Engineer] Public Session: ${sessionId} operating in GUEST MODE.`);
@@ -115,35 +116,18 @@ export default async function handler(req: Request) {
         const activeProperty = dbProperties?.find((p: any) => String(p.id) === effectivePropertyId);
         const activePropertyName = activeProperty?.title || 'Villa Desconocida';
 
-        // 🔒 SECURITY AUDIT: Tiered Access Chronology (Gobernanza de Seguridad)
-        // Senior Integration Audit: Wrapped in try-catch to prevent engine stall
         let accessLevel: any = 0;
         try {
-            accessLevel = await SecurityGovernanceService.getAccessLevel(
-                userId || sessionId || "anon", 
-                effectivePropertyId
-            );
+            accessLevel = await SecurityGovernanceService.getAccessLevel(userId || sessionId || "anon", effectivePropertyId);
         } catch (e) {
-            console.error("🚨 [Security Governance Stall]:", e);
-            accessLevel = 1; // Fallback to basic level
+            accessLevel = 1;
         }
 
         const wifiName = accessLevel >= 2 ? (activeProperty?.wifi_name || activeProperty?.policies?.wifiName || "VillaRetiro_HighSpeed_WiFi") : "Reservado";
         const wifiPass = accessLevel >= 3 ? (activeProperty?.wifi_pass || activeProperty?.policies?.wifiPass || "Tropical2024!") : "REVELADO_24H_ANTES";
         const accessCode = accessLevel >= 3 ? (activeProperty?.access_code || activeProperty?.policies?.accessCode || "4829 #") : "REVELADO_24H_ANTES";
 
-        // 🧠 GUEST MEMORY CONTEXT: Build personalization blurb for the prompt
-        const interestContext = guestInterestTags.length > 0
-            ? `\n### 🏷️ INTERESES DEL HUÉSPED (${guestName}):\nEste huésped ha marcado preferencia por: ${guestInterestTags.join(', ')}. Prioriza recomendaciones relacionadas. Ej: si tiene 'beach', menciona Playa Buyé primero; si tiene 'food', destaca los restaurantes locales del guía de Cabo Rojo.`
-            : '';
-
-        const concessionContext = guestGivenConcessions.length > 0
-            ? `\n### 🔒 CONCESIONES PREVIAS (BLINDAJE FINANCIERO):\nEste huésped YA RECIBIÓ concesiones en el pasado: ${JSON.stringify(guestGivenConcessions)}. NO ofrezcas descuentos adicionales. Si pide rebaja, comunica que la tarifa actual ya refleja el mejor precio exclusivo posible. Protege el margen de ganancia.`
-            : isGuest 
-                ? `\n### 💎 CONCESIONES: Usuario Guest. NO puedes otorgar descuentos directos, solo invitarle a reservar para ver precios oficiales.`
-                : `\n### 💎 CONCESIONES: No tenemos ofertas activas en este momento. Si el huésped pide un descuento, indícale cordialmente que nuestras tarifas actuales son exclusivas y directas para garantizar el mejor valor.`;
-
-        // 🕵️ GROWTH AUDIT: Detección de Retorno del Huésped
+        // 🕵️ GROWTH AUDIT: Detección de Retorno
         const { count: chatHistoryCount } = await supabase
             .from('ai_chat_logs')
             .select('*', { count: 'exact', head: true })
@@ -151,34 +135,61 @@ export default async function handler(req: Request) {
         
         const isReturningGuest = (chatHistoryCount || 0) > 1;
 
-        let saltyMemoriesStr = ""; // Mantener variable base
+        let saltyMemoriesStr = ""; 
         if (sessionId) {
             const { data: mems } = await supabase.from('salty_memories').select('learned_text').eq('session_id', sessionId);
             if (mems && mems.length > 0) {
-                saltyMemoriesStr = `\n### 🧠 MEMORIA ACTIVA DE ESTA SESIÓN:\nYa sabes esto sobre el huésped (NO lo vuelvas a preguntar):\n${mems.map((m: any) => `- ${m.learned_text}`).join('\n')}`;
+                saltyMemoriesStr = `\n### 🧠 MEMORIA ACTIVA DE ESTA SESIÓN:\n${mems.map((m: any) => `- ${m.learned_text}`).join('\n')}`;
             }
+        }
+
+        // 🕵️ INTENT & EMERGENCY DETECTION
+        let intentCategory = 'Consulta General';
+        const lastMsg = (rawMessages || []).slice(-1)[0]?.content || (rawMessages || []).slice(-1)[0]?.text;
+
+        if (lastMsg && sessionId) {
+            const msgLower = String(lastMsg).toLowerCase();
+            if (msgLower.includes('problema') || msgLower.includes('fallo') || msgLower.includes('roto') || msgLower.includes('no funciona') || msgLower.includes('error') || msgLower.includes('urgente')) {
+                intentCategory = 'EMERGENCIA_ACTIVA';
+                try {
+                    await handleCrisisAlert(guestName, `⚠️ EMERGENCIA EN CHAT: "${lastMsg}"`, guestPhone || 'Sesión Web', 3);
+                } catch (e) {}
+            }
+            else if (msgLower.includes('precio') || msgLower.includes('costo') || msgLower.includes('oferta') || msgLower.includes('descuento') || msgLower.includes('cuanto')) intentCategory = 'Consulta de Precio';
+            else if (msgLower.includes('playa') || msgLower.includes('mar') || msgLower.includes('surf') || msgLower.includes('beach')) intentCategory = 'Búsqueda de Playa';
+            else if (msgLower.includes('como llegar') || msgLower.includes('ubicacion') || msgLower.includes('parking') || msgLower.includes('check') || msgLower.includes('donde')) intentCategory = 'Logística';
+            else if (msgLower.includes('reserva') || msgLower.includes('separar') || msgLower.includes('fecha') || msgLower.includes('disponible')) intentCategory = 'Interés en Reserva';
+            else if (msgLower.includes('cancela') || msgLower.includes('reembolso') || msgLower.includes('devolucion') || msgLower.includes('molesto') || msgLower.includes('queja')) {
+                intentCategory = 'ALERTA_CRÍTICA';
+                try {
+                    await NotificationService.sendTelegramAlert(`⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${guestName}\n🗨️ <i>"${lastMsg}"</i>`);
+                } catch (e) {}
+            }
+
+            try {
+                await supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'guest', text: String(lastMsg), intent: intentCategory });
+            } catch (e) {}
         }
 
         const VILLA_CONCIERGE_PROMPT = `
 Eres la personificación de la hospitalidad de lujo en Puerto Rico: **Salty**, la Senior Concierge de **Villa & Pirata Stays**. Tu estilo es **Caribe Chic Profesional**: sofisticada, acogedora y **altamente orientada a la conversión**.
 
+### 🚥 MODO OPERATIVO ACTUAL:
+${intentCategory === 'EMERGENCIA_ACTIVA' || intentCategory === 'ALERTA_CRÍTICA' 
+    ? "🚨 **MODO SOPORTE VIP ACTIVADO:** El huésped reporta un problema. Prioriza la calma, ofrece soluciones técnicas inmediatas de las House Rules y confirma que el equipo está alertado." 
+    : "🌴 **MODO CRECIMIENTO:** Enfócate en la conversión, el cierre de reserva y los beneficios premium."}
+
 ### 🎭 PERSONALIZACIÓN DINÁMICA:
 • Huésped: **${guestName}**
-• Retorno: ${isReturningGuest ? "SÍ. Reconoce sutilmente que es un gusto verle de nuevo en su visita actual." : "NUEVA SESIÓN."}
+• Retorno: ${isReturningGuest ? "SÍ (Bienvenido de nuevo)." : "NUEVA SESIÓN."}
 
-### 🌴 PROTOCOLO DE CONVERSIÓN (CHIEF GROWTH OFFICER):
-1.  **Cierre de Venta (CTA):** Cuando des disponibilidad o precios, termina SIEMPRE con: "¿Le gustaría proceder con la reserva ahora o prefiere que verifiquemos alguna otra opción?".
-2.  **Defensa de Valor (The Great Three):** Si el huésped cuestiona el precio o duda, destaca que nuestras villas ofrecen:
-    • **Energía Inalcanzable:** Sistema Solar + Generador (Luz 24/7). ✨
-    • **Reserva de Agua:** Cisterna Industrial propia. 🌊
-    • **Privacidad Total:** Espacios exclusivos sin vecinos inmediatos. 🌴
-3.  **Local Insider:** Conecta emocionalmente mencionando que Cabo Rojo tiene los atardeceres más hermosos del mundo en Playa Buyé (a solo minutos) o recomienda los mariscos frescos de Joyuda para su cena.
+### 🌴 PROTOCOLO DE CONVERSIÓN:
+1.  **Cierre de Venta (CTA):** Termina con: "¿Le gustaría proceder con la reserva ahora o prefiere ver otra opción?".
+2.  **Defensa de Valor:** Resalta Energía Solar, Reserva de Agua y Privacidad Total.
+3.  **CTA de Confianza:** Si no hay reserva, cierra con: "Mi meta es que su estancia sea impecable; si tiene dudas sobre la logística, estoy aquí las 24 horas. ✨"
 
-### 📝 REGLAS UX:
-• Máximo **2 párrafos**. 
-• Máximo **3 emojis** elegantes (✨, 🌊, 🌴, 🛎️). 
-• No links a la página actual.
-• Prioridad absoluta al uso de herramientas para datos técnicos.
+### 🛎️ HOUSE RULES:
+${JSON.stringify(HOUSE_RULES, null, 2)}
 
 ### 🏠 BASE DE CONOCIMIENTO:
 - WiFi: \`${wifiName}\` | Clave: \`${wifiPass}\`
@@ -186,32 +197,8 @@ Eres la personificación de la hospitalidad de lujo en Puerto Rico: **Salty**, l
 - Villa Knowledge: ${JSON.stringify(villaKnowledge, null, 2)}
 `.trim();
 
-
         if (sessionId) {
-            const lastMsg = rawMessages?.slice(-1)[0]?.content || rawMessages?.slice(-1)[0]?.text;
-            let intentCategory = 'otros';
-
-            // Seed logic for 'Salty Insights' Dashboard
-            if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
-                const msgLower = String(lastMsg).toLowerCase();
-                if (msgLower.includes('precio') || msgLower.includes('costo') || msgLower.includes('oferta') || msgLower.includes('descuento') || msgLower.includes('cuanto')) intentCategory = 'Precio';
-                else if (msgLower.includes('playa') || msgLower.includes('mar') || msgLower.includes('surf') || msgLower.includes('beach')) intentCategory = 'Playa';
-                else if (msgLower.includes('como llegar') || msgLower.includes('ubicacion') || msgLower.includes('parking') || msgLower.includes('check') || msgLower.includes('donde')) intentCategory = 'Logística';
-                else if (msgLower.includes('hacer') || msgLower.includes('comer') || msgLower.includes('visitar') || msgLower.includes('restaurante')) intentCategory = 'Actividades';
-                else if (msgLower.includes('wifi') || msgLower.includes('piscina') || msgLower.includes('amenidad') || msgLower.includes('aire')) intentCategory = 'Amenidades';
-                
-                // 🕵️ SENTIMENT TRIGGER: Cancellation or Frustration
-                if (msgLower.includes('cancela') || msgLower.includes('reembolso') || msgLower.includes('devolucion') || msgLower.includes('molesto') || msgLower.includes('queja') || msgLower.includes('estafa')) {
-                    intentCategory = 'ALERTA_CRÍTICA';
-                    try {
-                        await NotificationService.sendTelegramAlert(
-                            `⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${userId || 'Guest Session (' + sessionId + ')'}\n🏠 ${activePropertyName}\n🗨️ <i>"${lastMsg}"</i>\n\n📌 <i>Salty está manejando la situación, pero el Host debe estar atento.</i>`
-                        );
-                    } catch (e) {}
-                }
-            }
-
-            const loggingTask = supabase.from('chat_logs').upsert({
+            await supabase.from('chat_logs').upsert({
                 session_id: sessionId, 
                 user_id: userId || null, 
                 message_count: (rawMessages || []).length,
@@ -221,281 +208,70 @@ Eres la personificación de la hospitalidad de lujo en Puerto Rico: **Salty**, l
                 last_sentiment: intentCategory 
             }, { onConflict: 'session_id' });
 
-            // 📊 ASYNC LOGGING: BLOCKING until essential log is set
-            try {
-                await loggingTask;
-            } catch (e) {
-                console.error("[Session Log Fail]: Non-critical, proceeding...", e);
-            }
-
             const { data: logInfo } = await supabase.from('chat_logs').select('human_takeover_until, takeover_notified').eq('session_id', sessionId).single();
-
-            // 🛡️ Gov-Mode: Grouped Alerter (One alert per session to avoid fatigue)
-            if (lastMsg && (rawMessages?.slice(-1)[0]?.role === 'user' || rawMessages?.slice(-1)[0]?.sender === 'guest')) {
-                const alreadyNotified = logInfo?.takeover_notified || false;
-                
-                if (!alreadyNotified) {
-                    let success = false;
-                    try {
-                        const siteUrl = parsedBody.currentUrl || process.env.VITE_SITE_URL || 'https://villaretiror.com';
-                        const keyboard = {
-                            inline_keyboard: [
-                                [{ text: "🎤 Responder ahora", callback_data: `takeover_${sessionId}` }],
-                                [{ text: "📊 Ver en Dashboard", url: `${siteUrl}/host` }]
-                            ]
-                        };
-                        success = await NotificationService.sendTelegramAlert(
-                            `🛡️ <b>Gov-Mode (Guest): ${activePropertyName}</b>\n👤 ${userId || 'Invitado'}\n🗨️ <i>"${lastMsg}"</i>\n\nSesión: <code>${sessionId}</code>`,
-                            keyboard
-                        );
-                    } catch (e) {
-                         console.error("[Telegram Resilience Error]:", e);
-                    }
-                    if (success) {
-                        await supabase.from('chat_logs').update({ takeover_notified: true }).eq('session_id', sessionId);
-                    }
-                }
-            }
-
             if (logInfo?.human_takeover_until && new Date(logInfo.human_takeover_until) > new Date()) {
                 return new Response("Un miembro del equipo estratégico está respondiendo...", { status: 200 });
             }
         }
 
-        // 🚀 INDUSTRIAL OPTIMIZATION: Preserving Tool Calls & Results in History
         const recentMessages = (rawMessages || []).slice(-20); 
         const finalMessages: CoreMessage[] = [
             { role: 'user', content: `INSTRUCCIONES DE GOBERNANZA: ${VILLA_CONCIERGE_PROMPT}` },
             { role: 'assistant', content: `Es un honor saludarle, ${guestName}. Soy Salty, su Consultor de Estancia. ¿Cómo puedo elevar su experiencia en Cabo Rojo hoy?` },
             ...recentMessages.map((m: any): CoreMessage => {
                 const role = (m.role === 'assistant' || m.role === 'model' || m.sender === 'ai') ? 'assistant' : 'user';
-                
-                if (Array.isArray(m.content) || (typeof m.content === 'object' && m.content !== null)) {
-                    return { role, content: m.content as any };
-                }
-                
-                return { 
-                    role, 
-                    content: typeof m.content === 'string' ? m.content : (m.text || m.message || '') 
-                };
+                return { role, content: typeof m.content === 'string' ? m.content : (m.text || m.message || '') };
             })
         ];
 
-        // 🛠️ DYNAMIC TOOLSET: Filter tools based on role
         const allTools: Record<string, any> = {
             check_availability: tool({
                 description: 'Busca disponibilidad en tiempo real.',
                 parameters: z.object({ villa_ids: z.array(z.string()), check_in: z.string(), check_out: z.string() }),
                 execute: async ({ villa_ids, check_in, check_out }) => {
-                    try {
-                        const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
-                        const available = villa_ids.filter((_, i) => results[i].available);
-                        return JSON.stringify({ status: 'success', available_ids: available });
-                    } catch (e: any) {
-                        console.error('[Resilience Tool check_availability] Failed:', e);
-                        return JSON.stringify({ status: 'error', message: "Error de conexión con el calendario. Por favor, intenta en 1 minuto." });
-                    }
+                    const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
+                    const available = villa_ids.filter((_, i) => results[i].available);
+                    return JSON.stringify({ status: 'success', available_ids: available });
                 },
             }),
-            get_cabo_rojo_weather: tool({
-                description: 'Obtiene el clima actual en el área.',
-                parameters: z.object({ unit: z.string().optional() }),
-                execute: async () => {
-                    return JSON.stringify({
-                        status: 'success',
-                        current: 'Espléndido Sol Caribeño',
-                        temp: '29°C',
-                        forecast: 'Olas perfectas y atardecer garantizado.'
-                    });
-                }
-            }),
-            get_cabo_rojo_events: tool({
-                description: 'Busca eventos locales exclusivos en Cabo Rojo.',
-                parameters: z.object({ category: z.string().optional() }),
-                execute: async () => {
-                    return JSON.stringify({
-                        status: 'success',
-                        events: [{ name: "Atardecer en el Faro", location: "Los Morrillos", highlight: "Experiencia de Lujo" }]
-                    });
-                }
-            }),
-            analyze_marketing_opportunity: tool({
-                description: 'Analiza huecos y propone ofertas dentro de márgenes financieros.',
-                parameters: z.object({ villa_id: z.string() }),
-                execute: async ({ villa_id }) => {
-                    try {
-                        const property = dbProperties?.find((p: any) => p.id === villa_id);
-                        if (!property) return JSON.stringify({ status: 'error', message: "Villa no identificada." });
-
-                        const gaps = await findCalendarGaps(villa_id);
-                        if (gaps && gaps.length > 0) {
-                            const bestGap = gaps[0];
-                            const potentialPrice = property.price * (1 - (property.max_discount_allowed / 100));
-                            
-                            if (potentialPrice >= property.min_price_floor) {
-                                return JSON.stringify({ status: 'success', advice: `Oportunidad: Hueco de ${bestGap.nights} noches. Sugerir descuento del ${property.max_discount_allowed}%.` });
-                            }
-                        }
-                        return JSON.stringify({ status: 'success', advice: "Estrategia de precio premium estable." });
-                    } catch (e) {
-                        return JSON.stringify({ status: 'error', advice: "Error al analizar oportunidades. Mantener precio base." });
-                    }
-                }
-            }),
-            report_system_insight: tool({
-                description: 'Informa al CEO sobre patrones o propuestas estratégicas para aprobación.',
-                parameters: z.object({
-                    type: z.enum(['pattern', 'proposal', 'trend']),
-                    description: z.string(),
-                    impact_score: z.number().min(1).max(10)
-                }),
-                execute: async ({ type, description, impact_score }) => {
-                    try {
-                        await supabase.from('ai_insights').insert({
-                            type,
-                            content: { description },
-                            impact_score,
-                            status: 'pending'
-                        });
-                        return JSON.stringify({ status: 'recorded', message: 'Insight enviado al Dashboard del Host para aprobación física.' });
-                    } catch (e) {
-                        return JSON.stringify({ status: 'error', message: 'Fallo al registrar insight.' });
-                    }
-                }
-            }),
             report_property_emergency: tool({
-                description: 'Activa el protocolo de crisis ante fallos críticos (agua, luz, acceso).',
-                parameters: z.object({
-                    issue_type: z.enum(['water', 'electricity', 'access', 'noise', 'other']),
-                    description: z.string(),
-                    severity: z.enum(['medium', 'high', 'critical']),
-                    user_name: z.string().optional(),
-                    user_phone: z.string().optional(),
-                }),
-                execute: async ({ issue_type, description, severity, user_name, user_phone }) => {
-                    const resolvedName = user_name || guestName;
-                    const resolvedPhone = user_phone || guestPhone || 'No registrado';
-                    const resolvedEmergencyContact = guestEmergencyContact || 'No registrado';
-
-                    const { data: providers } = await supabase
-                        .from('service_providers')
-                        .select('*')
-                        .eq('is_active', true)
-                        .order('priority', { ascending: true });
-
-                    const mapping: Record<string, string> = {
-                        'water': 'plumber',
-                        'electricity': 'electrician',
-                        'access': 'locksmith'
-                    };
-
-                    const recommendedProvider = providers?.find(p => p.specialty === mapping[issue_type]);
-
+                description: 'Activa el protocolo de crisis.',
+                parameters: z.object({ issue_type: z.enum(['water', 'electricity', 'access', 'noise', 'other']), description: z.string(), severity: z.enum(['medium', 'high', 'critical']) }),
+                execute: async ({ issue_type, description, severity }) => {
                     const { data: ticket } = await supabase.from('emergency_tickets').insert({
-                        property_id: effectivePropertyId,
-                        issue_type,
-                        description,
-                        severity,
-                        provider_id: recommendedProvider?.id || null,
-                        status: 'open',
-                        user_id: userId || null,
-                        user_name: resolvedName,
-                        user_phone: resolvedPhone,
+                        property_id: effectivePropertyId, issue_type, description, severity, status: 'open', user_id: userId || null, user_name: guestName, user_phone: guestPhone || 'No registrado',
                     }).select().single();
-
-                    try {
-                        const siteUrl = process.env.VITE_SITE_URL || 'https://villaretiror.com';
-                        const waContact = resolvedPhone.replace(/\D/g, '');
-                        const keyboard = {
-                            inline_keyboard: [
-                                [{ text: `📲 WA Huésped: ${resolvedName}`, url: `https://wa.me/${waContact}` }],
-                                [{ text: "🏦 Ver en Dashboard", url: `${siteUrl}/host` }]
-                            ]
-                        };
-                        await NotificationService.sendTelegramAlert(
-                            `🚨 <b>¡EMERGENCIA ${severity.toUpperCase()}!</b>\n\n` +
-                            `👤 <b>Huésped:</b> ${resolvedName}\n` +
-                            `📞 <b>Celular:</b> ${resolvedPhone}\n` +
-                            `🏠 <b>Villa:</b> <code>${activePropertyName}</code>\n\n` +
-                            `🔧 <b>Problema:</b> ${issue_type} | Severidad: ${severity}\n` +
-                            `📋 ${description}\n`,
-                            keyboard
-                        );
-                    } catch (e) {}
-
-                    return JSON.stringify({
-                        status: 'emergency_active',
-                        ticket_id: ticket?.id,
-                        instruction: `Informe a ${resolvedName} que el equipo de emergencia ha sido notificado. No se mueva de la propiedad si es un fallo de acceso.`
-                    });
+                    await NotificationService.sendTelegramAlert(`🚨 <b>EMERGENCIA ${severity.toUpperCase()}</b>\n👤 ${guestName}\n🏠 ${activePropertyName}\n🔧 ${issue_type}: ${description}`);
+                    return JSON.stringify({ status: 'emergency_active', ticket_id: ticket?.id });
                 }
             }),
             generate_booking_pattern: tool({
-                description: 'Genera cotización oficial y enlace seguro de pago.',
+                description: 'Genera cotización oficial.',
                 parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
                 execute: async ({ villa_id, check_in, check_out, promo_code }) => {
-                    try {
-                        const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
-                        await createTemporaryHold(villa_id, check_in, check_out, userId);
-                        const bookingUrl = `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}${promo_code ? `&promo=${promo_code}` : ''}`;
-                        return JSON.stringify({ status: 'success', quote, action_url: bookingUrl });
-                    } catch (e) {
-                        return JSON.stringify({ status: 'error', message: 'Fallo al generar cotización.' });
-                    }
+                    const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
+                    await createTemporaryHold(villa_id, check_in, check_out, userId);
+                    return JSON.stringify({ status: 'success', quote, action_url: `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}` });
                 },
-            }),
-            store_salty_memory: tool({
-                description: 'Guarda preferencias importantes del huésped.',
-                parameters: z.object({ fact: z.string() }),
-                execute: async ({ fact }) => {
-                    try {
-                        if (!sessionId) return JSON.stringify({ status: 'ignored' });
-                        await supabase.from('salty_memories').insert({
-                            session_id: sessionId,
-                            property_id: effectivePropertyId,
-                            learned_text: fact
-                        });
-                        return JSON.stringify({ status: 'success', message: "Memoria guardada." });
-                    } catch (e) {
-                        return JSON.stringify({ status: 'error', message: "Fallo al guardar memoria." });
-                    }
-                }
             })
         };
 
-        const filteredTools: Record<string, any> = {};
-        Object.keys(allTools).forEach(key => {
-            if (!restrictedTools.includes(key)) {
-                filteredTools[key] = allTools[key];
-            }
-        });
-
         const result = await streamText({
-            model: google('gemini-2.5-flash'), // Pasamos a 2.5 en puerto default (v1beta) para soporte nativo de Tools
+            model: google('gemini-2.5-flash'),
             messages: finalMessages,
             maxSteps: 5,
             temperature: 0.7,
-            tools: filteredTools,
+            tools: allTools,
+            onFinish: async ({ text }) => {
+                if (sessionId) {
+                    await supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'ai', text: text, intent: intentCategory });
+                }
+            }
         });
 
         return result.toTextStreamResponse();
     } catch (error: any) {
-        // 🆘 PRINCIPAL ENGINEER EMERGENCY LOGGER
-        console.error("🚨 [CRITICAL BRIDGE FAILURE]: Status Code Audit\n", {
-            message: error.message,
-            status: error.status || error.statusCode || 500,
-            stack: error.stack,
-            cause: error.cause,
-            sessionId: req.headers.get('x-session-id') || 'untracked'
-        });
-
-        // 🛡️ SAFETY NET: Fallback response for UI continuity
-        return new Response(
-            " Estoy verificando tus fechas, dame un segundo adicional mientras calibro mi conexión.", 
-            { 
-                status: 200, // Returning 200 to avoid UI crash, text will show up as a direct answer
-                headers: { 'Content-Type': 'text/plain' } 
-            }
-        );
+        console.error("🚨 [CRITICAL BRIDGE FAILURE]:", error);
+        return new Response("Estoy verificando tus fechas, dame un segundo adicional mientras calibro mi conexión.", { status: 200, headers: { 'Content-Type': 'text/plain' } });
     }
 }
