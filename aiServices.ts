@@ -137,21 +137,39 @@ export const logAbandonmentLead = async (data: { name: string; email?: string; p
 };
 
 // 2.1 Temporary AI-Hold (Overbooking Prevention)
-export const createTemporaryHold = async (propertyId: string, checkIn: string, checkOut: string, userId?: string) => {
+export const createTemporaryHold = async (
+    propertyId: string, 
+    checkIn: string, 
+    checkOut: string, 
+    userId?: string, 
+    customer_name?: string | null, 
+    phone_number?: string | null, 
+    special_requests?: string | null
+) => {
     // 🛡️ REINFORCED RESOLUTION
     let finalId = String(propertyId).trim();
     const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
     if (byTitle) {
         finalId = String(byTitle.id);
-    } else {
-        console.warn(`[createTemporaryHold] Fallback resolution failed for: ${propertyId}`);
-    }
+    } 
 
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
     const status = 'pending_ai_validation';
     const source = 'Salty AI';
 
-    // Generate sync hash for de-duplication and change detection
+    // 1. Create the detailed lead first for Host visibility
+    if (customer_name || phone_number || special_requests) {
+        await supabase.from('leads').insert({
+            name: customer_name || 'Huésped Anónimo (AI)',
+            phone: phone_number || null,
+            email: 'via-salty-ai@stays.com',
+            message: `[AI HOLD] ${special_requests || 'Sin peticiones especiales'}. Fechas: ${checkIn} al ${checkOut}`,
+            status: 'new',
+            tags: ['ai-hold', finalId]
+        }).catch(() => {});
+    }
+
+    // 2. Insert the Booking record (The actual calendar block)
     const content = `${finalId}|${checkIn}|${checkOut}|${status}`;
     const syncHash = Buffer.from(content).toString('base64');
 
@@ -160,6 +178,7 @@ export const createTemporaryHold = async (propertyId: string, checkIn: string, c
         check_in: checkIn,
         check_out: checkOut,
         user_id: userId || null,
+        customer_name: customer_name || null,
         status: status,
         hold_expires_at: holdExpiresAt,
         total_price: 0,
@@ -167,9 +186,7 @@ export const createTemporaryHold = async (propertyId: string, checkIn: string, c
         sync_last_hash: syncHash
     }).select().single();
 
-    if (!error && newHold) {
-        return newHold.id;
-    }
+    if (!error && newHold) return newHold.id;
     return null;
 };
 

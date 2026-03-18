@@ -314,13 +314,27 @@ ${JSON.stringify(familyKnowledge, null, 2)}
                     villa_id: z.string().describe('ID o nombre de la villa (ej: Villa Retiro, Pirata House)'), 
                     check_in: z.string(), 
                     check_out: z.string(), 
-                    promo_code: z.string().optional() 
+                    promo_code: z.string().nullable().optional(),
+                    customer_name: z.string().nullable().optional(),
+                    phone_number: z.string().nullable().optional(),
+                    special_requests: z.string().nullable().optional()
                 }),
-                execute: async ({ villa_id, check_in, check_out, promo_code }) => {
+                execute: async ({ villa_id, check_in, check_out, promo_code, customer_name, phone_number, special_requests }) => {
                     try {
                         const resolvedId = resolvePropertyId(villa_id);
-                        const quote = await applyAIQuote(resolvedId, check_in, check_out, promo_code);
-                        const holdId = await createTemporaryHold(resolvedId, check_in, check_out, userId);
+                        const cleanPromo = promo_code || undefined;
+                        const quote = await applyAIQuote(resolvedId, check_in, check_out, cleanPromo);
+                        
+                        // Pass guest info to the hold for Executive Visibility
+                        const holdId = await createTemporaryHold(
+                            resolvedId, 
+                            check_in, 
+                            check_out, 
+                            userId, 
+                            customer_name, 
+                            phone_number, 
+                            special_requests
+                        );
                         
                         // Determinar URL de acción limpia (sin duplicar /booking/ si ya está)
                         const baseUrl = currentUrl?.split('/booking/')[0]?.split('/property/')[0] || '';
