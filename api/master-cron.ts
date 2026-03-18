@@ -78,6 +78,10 @@ async function taskCleanup(supabase: SupabaseClient) {
 
     const { count: holds } = await supabase.from('bookings').delete().eq('status', 'pending_ai_validation').lt('hold_expires_at', expired).is('payment_proof_url', null);
     const { count: pending } = await supabase.from('pending_bookings').delete().eq('status', 'pending_payment').lt('expires_at', expired);
+
+    // 3. Purga de Logs de Chat IA (> 30 días)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const { count: chatLogs } = await supabase.from('ai_chat_logs').delete().lt('created_at', thirtyDaysAgo);
     
-    return { status: 'ok', cleaned: (holds || 0) + (pending || 0) };
+    return { status: 'ok', cleaned: (holds || 0) + (pending || 0) + (chatLogs || 0) };
 }

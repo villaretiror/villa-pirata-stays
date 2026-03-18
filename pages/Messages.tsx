@@ -75,11 +75,13 @@ const Messages: React.FC = () => {
       }
     }
 
+    const propertyName = properties.find(p => p.id === (locationState?.property_id || propertyIdFromUrl))?.title;
+
     const initialMessages: Message[] = [{
       id: crypto.randomUUID(),
       text: locationState?.in_stay 
-        ? `¡Hola! Veo que estás disfrutando de tu estancia en ${locationState.villa || 'nuestra villa'}. Soy Salty, tu concierge VIP. Pregúntame lo que necesites sobre la casa, reglas o lugares cerca para hoy.`
-        : '¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en Villa Retiro sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?',
+        ? `¡Hola! Veo que estás disfrutando de tu estancia en ${locationState.villa || propertyName || 'nuestra villa'}. Soy Salty, tu concierge VIP. Pregúntame lo que necesites sobre la casa, reglas o lugares cerca para hoy.`
+        : `¡Hola! Soy Salty, tu guía personal en Cabo Rojo. Estoy aquí para que tu estancia en ${propertyName || 'nuestras villas'} sea tan perfecta como un baño en el Caribe. ¿En qué te ayudo hoy?`,
       sender: 'ai',
       created_at: new Date().toISOString()
     }];
@@ -706,7 +708,7 @@ const Messages: React.FC = () => {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <form onSubmit={handleSendMessage} className="p-4 bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+      <form onSubmit={handleSendMessage} className="p-4 pb-[max(1rem,env(safe-area-inset-bottom,16px))] bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
         <input
           value={inputText}
           onChange={e => setInputText(e.target.value)}

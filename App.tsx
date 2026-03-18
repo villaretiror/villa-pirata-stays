@@ -102,7 +102,7 @@ const App: React.FC = () => {
       </AnimatePresence>
 
       {showWhatsApp && <FloatingWhatsApp propertyTitle={propertyTitle} />}
-      {showWhatsApp && <SaltyToast propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
+      {showWhatsApp && <SaltyToast propertyId={currentProperty?.id} propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
       <Footer />
       {showNavbar && <Navbar />}
     </div>

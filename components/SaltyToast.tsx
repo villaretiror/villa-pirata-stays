@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 
 interface SaltyToastProps {
+    propertyId?: string;
     propertyTitle?: string;
     amenities?: string[];
 }
 
-const SaltyToast: React.FC<SaltyToastProps> = ({ propertyTitle, amenities }) => {
+const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amenities }) => {
     const [show, setShow] = useState(false);
     const [message, setMessage] = useState('');
     const navigate = useNavigate();
@@ -55,7 +56,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyTitle, amenities }) => 
                     className="fixed bottom-28 left-6 right-6 lg:left-auto lg:right-6 lg:w-80 z-[100] pointer-events-none"
                 >
                     <div
-                        onClick={() => navigate('/messages')}
+                        onClick={() => navigate('/messages', { state: { property_id: propertyId } })}
                         className="pointer-events-auto bg-white/90 backdrop-blur-xl border border-primary/20 p-4 rounded-3xl shadow-2xl flex items-start gap-3 cursor-pointer hover:scale-[1.02] transition-transform group"
                     >
                         <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex-shrink-0 flex items-center justify-center text-white shadow-md">

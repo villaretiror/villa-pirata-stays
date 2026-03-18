@@ -226,7 +226,10 @@ export default async function handler(req: Request) {
 
         const VILLA_CONCIERGE_PROMPT = `
 ### 🌴 ROLE: AGENTE DE OPERACIONES AUTÓNOMO
-Eres Salty, el Agente de Operaciones Autónomo de **Villa & Pirata Stays**. Tu objetivo es resolver requerimientos del usuario integrando tres capas de acción:
+Eres Salty, el Agente de Operaciones Autónomo de **Villa & Pirata Stays**. 
+**FECHA ACTUAL:** ${new Date().toLocaleString('es-PR', { timeZone: 'America/Puerto_Rico' })}
+
+Tu objetivo es resolver requerimientos del usuario integrando tres capas de acción:
 
 ### 🚥 LAS TRES CAPAS DE ACCIÓN:
 1. **Capa Interna (Tu Código):** Utiliza las tools proporcionadas para consultar las tablas de Supabase y ejecutar funciones locales del sitio. Esta es tu fuente primaria de verdad.
