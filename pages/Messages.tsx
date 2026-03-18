@@ -544,7 +544,7 @@ const Messages: React.FC = () => {
                               });
                               // 🛰️ ALERT: Notificar al Host (Telegram)
                               try {
-                                fetch('/api/notify-action', {
+                                fetch('/api/master-cron?action=notify', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
@@ -590,16 +590,16 @@ const Messages: React.FC = () => {
                                   } else {
                                     // 🛰️ ALERT: Notificar al Host (Telegram)
                                     try {
-                                      fetch('/api/notify-action', {
-                                        method: 'POST',
-                                        headers: { 'Content-Type': 'application/json' },
-                                        body: JSON.stringify({
-                                          type: 'payment_proof',
-                                          guestName: leadData.name,
-                                          property: paymentData.propertyName,
-                                          proofUrl: proofUrl
-                                        })
-                                      });
+                                  fetch('/api/master-cron?action=notify', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      type: 'payment_proof',
+                                      guestName: leadData.name,
+                                      property: paymentData.propertyName,
+                                      proofUrl: proofUrl
+                                    })
+                                  });
                                     } catch (e) {
                                       console.error("Payment notification error:", e);
                                     }
