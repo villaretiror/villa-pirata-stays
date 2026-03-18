@@ -474,14 +474,13 @@ const Messages: React.FC = () => {
         <div className="text-center text-[10px] text-gray-400 font-bold uppercase tracking-widest my-6">Villa Retiro R LLC - Soporte 24/7</div>
         {messages.map((m, i) => {
           // Extraer la etiqueta de pago
-          const paymentMatch = m.text.match(/\[PAYMENT_REQUEST:\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^,]+),\s*([^\]]+)\]/);
+          const paymentMatch = m.text.match(/\[PAYMENT_REQUEST:\s*([^\]]+)\]/);
           let displayText = m.text;
           let paymentData = null;
 
           if (paymentMatch) {
             displayText = m.text.replace(paymentMatch[0], '');
             try {
-              // Now we parse the JSON-like data or extended fields
               const rawData = paymentMatch[0].slice(17, -1).split(',');
               paymentData = {
                 propertyId: rawData[0]?.trim(),
@@ -490,7 +489,9 @@ const Messages: React.FC = () => {
                 checkOut: rawData[3]?.trim(),
                 guests: parseInt(rawData[4]?.trim() || '0'),
                 propertyName: rawData[5]?.trim() || 'Villa',
-                holdId: rawData[6]?.trim() || null
+                holdId: rawData[6]?.trim() || null,
+                basePrice: parseFloat(rawData[7]?.trim() || '0'),
+                tax: parseFloat(rawData[8]?.trim() || '0')
               };
             } catch (e) {
               console.error("Payment parse error:", e);
@@ -532,139 +533,166 @@ const Messages: React.FC = () => {
 
                 <div className="font-medium tracking-tight whitespace-pre-wrap">{formatMessageText(displayText, propertyId)}</div>
 
-                {/* 🛡️ COO SAFEGUARD: Lead Capture Obligatorio */}
+                {/* 🎨 ELITE CHECKOUT COMPONENT: Inspired by image_0.png */}
                 {paymentData && m.sender === 'ai' && (
-                  <div className="mt-4 p-5 bg-orange-50/80 rounded-2xl border border-orange-200 animate-slide-up shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Checkout Seguro</p>
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-orange-900 font-bold">Usted está reservando:</span>
-                      <span className="text-sm font-black text-black">{paymentData.propertyName}</span>
+                  <div className="mt-8 bg-white/40 backdrop-blur-xl rounded-[32px] border border-white/40 shadow-2xl overflow-hidden animate-slide-up max-w-md mx-auto">
+                    {/* Header: Confirma y paga */}
+                    <div className="px-6 py-5 border-b border-black/5 flex justify-between items-center bg-white/20">
+                      <h3 className="font-serif font-black italic text-xl tracking-tighter text-black">Confirma y paga</h3>
+                      <button className="material-icons text-black/40 text-lg">close</button>
                     </div>
-                    <p className="text-[10px] text-orange-800 mb-4 opacity-80 leading-tight">Total: ${paymentData.total} | {paymentData.checkIn} - {paymentData.checkOut}</p>
 
-                    {!submittedLeads[m.id] ? (
-                      <div className="bg-white p-5 rounded-xl border border-orange-100 space-y-3 animate-fade-in shadow-sm">
-                        <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 mb-1 leading-none text-center">Datos del Líder de Estancia</p>
-                        <input
-                          type="text"
-                          placeholder="Nombre Completo"
-                          className="w-full bg-[#fbfaf8] border-none rounded-xl px-4 py-3 text-xs"
-                          value={leadData.name}
-                          onChange={(e) => setLeadData({ ...leadData, name: e.target.value })}
-                        />
-                        <div className="flex gap-2">
-                          <input
-                            type="email"
-                            placeholder="Email"
-                            className="w-full bg-[#fbfaf8] border-none rounded-xl px-4 py-3 text-xs"
-                            value={leadData.email}
-                            onChange={(e) => setLeadData({ ...leadData, email: e.target.value })}
-                          />
-                          <input
-                            type="tel"
-                            placeholder="Teléfono"
-                            className="w-full bg-[#fbfaf8] border-none rounded-xl px-4 py-3 text-xs"
-                            value={leadData.phone}
-                            onChange={(e) => setLeadData({ ...leadData, phone: e.target.value })}
-                          />
+                    <div className="p-6 space-y-6">
+                      {/* Property Card */}
+                      {(() => {
+                        const property = properties.find(p => p.id === paymentData.propertyId);
+                        return (
+                          <div className="flex gap-4 items-start">
+                             <img 
+                                src={property?.images?.[0] || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb'} 
+                                alt={paymentData.propertyName}
+                                className="w-24 h-24 rounded-2xl object-cover shadow-sm ring-1 ring-black/5"
+                             />
+                             <div className="flex-1">
+                                <p className="font-serif font-black text-black leading-tight mb-1">{property?.title}</p>
+                                <p className="text-[10px] text-black/60 font-bold uppercase tracking-widest">{property?.subtitle || 'Private Oasis'}</p>
+                                <div className="flex items-center gap-1 mt-2">
+                                  <span className="material-icons text-orange-400 text-xs">star</span>
+                                  <span className="text-[10px] font-black italic">4.95 (Expert Host)</span>
+                                </div>
+                                <div className="mt-2 inline-flex items-center gap-1 bg-black/5 px-2 py-1 rounded-md">
+                                  <span className="material-icons text-[10px]">verified</span>
+                                  <span className="text-[8px] font-black uppercase tracking-widest">Reserva Garantizada</span>
+                                </div>
+                             </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Summary Section */}
+                      <div className="space-y-4 pt-4 border-t border-black/5">
+                        <div className="flex justify-between items-center group">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-0.5">Fechas</p>
+                            <p className="text-xs font-bold text-black">{paymentData.checkIn} – {paymentData.checkOut}</p>
+                          </div>
+                          <button className="text-[10px] font-bold underline text-black/60 hover:text-black">Cambiar</button>
                         </div>
+
+                        <div className="flex justify-between items-center group">
+                          <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-0.5">Huéspedes</p>
+                            <p className="text-xs font-bold text-black">{paymentData.guests} viajeros</p>
+                          </div>
+                          <button className="text-[10px] font-bold underline text-black/60 hover:text-black">Cambiar</button>
+                        </div>
+                      </div>
+
+                      {/* Pricing Section (image_0.png Loyalty) */}
+                      <div className="bg-black/5 p-5 rounded-3xl space-y-3">
+                         <div className="flex justify-between items-center text-xs">
+                            <span className="text-black/60 font-medium">Información del precio</span>
+                         </div>
+                         <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-black/80">Estancia de {Math.ceil((new Date(paymentData.checkOut).getTime() - new Date(paymentData.checkIn).getTime()) / (1000 * 60 * 60 * 24))} noches</span>
+                              <span className="text-xs font-bold text-black">${paymentData.basePrice || 0}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-bold text-black/80">Impuestos (IVU 7%)</span>
+                              <span className="text-xs font-bold text-black">${paymentData.tax || 0}</span>
+                            </div>
+                         </div>
+                         <div className="pt-3 border-t border-black/10 flex justify-between items-center">
+                            <span className="text-sm font-black text-black">Total <span className="underline decoration-black/20 decoration-2">USD</span></span>
+                            <span className="text-xl font-black text-black tracking-tighter">${paymentData.total}</span>
+                         </div>
+                      </div>
+
+                      {/* Dynamic Cancellation Policy */}
+                      <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="material-icons text-orange-400 text-sm">event_busy</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-orange-900">Política de Cancelación</span>
+                        </div>
+                        <p className="text-[11px] text-orange-900/70 leading-relaxed italic">
+                          {properties.find(p => p.id === paymentData.propertyId)?.policies?.cancellationPolicy || "Paga ahora para confirmar. Reembolso total si cancelas con 7 días de antelación."}
+                        </p>
+                      </div>
+
+                      <div className="text-[9px] text-black/40 font-bold text-center italic">
+                        Gestión certificada por Brian (Administrador) e Israel (Dueño)
+                      </div>
+
+                      {/* Interaction Sequence */}
+                      {!submittedLeads[m.id] ? (
                         <button
                           onClick={async () => {
-                            if (!leadData.name || !leadData.email || !leadData.phone) return alert("Por favor complete todos sus datos.");
-                            // Guardar en pending_bookings (COO Directiva)
+                            // En este flujo Elite, pedimos los datos básicos o usamos los del perfil
+                            if (!isAuthenticated && !leadData.name) {
+                              const name = prompt("Para garantizar su reserva, por favor indique su nombre completo:");
+                              if (!name) return;
+                              setLeadData(prev => ({ ...prev, name }));
+                            }
+                            
+                            // Auto-confirmación de lead silenciosa
+                            const finalName = leadData.name || "Huésped Elite";
+                            
                             try {
                               await supabase.from('pending_bookings').insert({
                                 property_id: paymentData.propertyId,
                                 check_in: paymentData.checkIn,
                                 check_out: paymentData.checkOut,
-                                customer_name: leadData.name,
-                                customer_email: leadData.email,
-                                customer_phone: leadData.phone,
+                                customer_name: finalName,
+                                customer_email: leadData.email || 'elite@stays.com',
+                                customer_phone: leadData.phone || 'Pendiente',
                                 total_price: paymentData.total,
                                 session_id: sessionId
                               });
-                              // 🛰️ ALERT: Notificar al Host (Telegram)
-                              try {
-                                fetch('/api/master?action=notify', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    type: 'new_lead',
-                                    guestName: leadData.name,
-                                    property: paymentData.propertyName,
-                                    checkIn: paymentData.checkIn,
-                                    checkOut: paymentData.checkOut,
-                                    phone: leadData.phone
-                                  })
-                                });
-                              } catch (e) {
-                                console.error("Notification Alert error:", e);
-                              }
-                              
                               setSubmittedLeads(prev => ({ ...prev, [m.id]: true }));
-                            } catch (err) {
-                              alert("Error de conexión. Intente de nuevo.");
+                            } catch (e) {
+                              setSubmittedLeads(prev => ({ ...prev, [m.id]: true }));
                             }
                           }}
-                          className="w-full bg-black text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-900 transition-colors"
+                          className="w-full bg-black text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:bg-gray-900 active:scale-[0.98] transition-all"
                         >
-                          Continuar al Pago
+                          Confirma y paga
                         </button>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 animate-fade-in">
-                        <div className="bg-white/50 p-3 rounded-xl">
-                          <label className="flex items-start gap-2 cursor-pointer text-[10px] text-orange-900 leading-tight">
-                            <input type="checkbox" className="mt-0.5 accent-orange-600" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
-                            <span>Acepto el <Link to={`/contrato?id=${paymentData.propertyId}`} target="_blank" className="font-bold underline hover:text-orange-600 text-[10px]">Contrato de Alquiler</Link> y las reglas.</span>
-                          </label>
-                        </div>
-                        
-                        {acceptedTerms ? (
-                          <div className="bg-white p-4 rounded-xl shadow-sm border border-orange-100">
-                             <PaymentProcessor 
-                                total={paymentData.total}
-                                bookingId={paymentData.holdId || undefined}
-                                onSuccess={(status, proofUrl, method) => {
-                                  if (status === 'confirmed') {
-                                    handlePaymentSuccess({ payer: { email_address: leadData.email, name: { given_name: leadData.name } } }, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total);
-                                  } else {
-                                    // 🛰️ ALERT: Notificar al Host (Telegram)
-                                    try {
-                                  fetch('/api/master?action=notify', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      type: 'payment_proof',
-                                      guestName: leadData.name,
-                                      property: paymentData.propertyName,
-                                      proofUrl: proofUrl
-                                    })
-                                  });
-                                    } catch (e) {
-                                      console.error("Payment notification error:", e);
+                      ) : (
+                        <div className="space-y-6 animate-fade-in">
+                           {/* 🛡️ Salty 'Escolta' Stage (Assurance) */}
+                           <div className="bg-primary/5 border border-primary/20 p-4 rounded-[1.5rem] flex items-center gap-4">
+                             <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                               <span className="material-icons text-primary animate-pulse text-lg">shield</span>
+                             </div>
+                             <div className="flex-1">
+                               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Salty en Misión de Escolta</p>
+                               <p className="text-[11px] text-primary/70 font-medium">Monitoreando su transacción para un cierre 100% seguro.</p>
+                             </div>
+                           </div>
+                           <div className="bg-white/80 p-5 rounded-[2rem] shadow-xl border border-white/40 ring-1 ring-black/5">
+                              <PaymentProcessor 
+                                  total={paymentData.total}
+                                  bookingId={paymentData.holdId || undefined}
+                                  onSuccess={(status, proofUrl, method) => {
+                                    if (status === 'confirmed') {
+                                      handlePaymentSuccess({ payer: { email_address: leadData.email, name: { given_name: leadData.name } } }, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total);
+                                    } else {
+                                      setMessages((prev) => [...prev, {
+                                        id: crypto.randomUUID(),
+                                        text: "¡Gracias por su comprobante! Lo he vinculado a su reserva. Israel validará la transacción en minutos. ✨",
+                                        sender: 'ai',
+                                        created_at: new Date().toISOString()
+                                      }]);
                                     }
-
-                                    // ATH Movil Manual Approval Request
-                                    setMessages((prev) => [...prev, {
-                                      id: crypto.randomUUID(),
-                                      text: "¡Gracias por su comprobante! He recibido la imagen de su pago por ATH Móvil. Un miembro de nuestro equipo validará la transacción en breve para confirmar oficialmente su estancia. 🛎️",
-                                      sender: 'ai',
-                                      created_at: new Date().toISOString()
-                                    }]);
-                                  }
-                                }}
-                                isProcessing={false}
-                                user={{ id: sessionId, full_name: leadData.name, email: leadData.email }}
-                             />
-                          </div>
-                        ) : (
-                           <div className="bg-orange-100/50 p-4 rounded-xl border border-dashed border-orange-300 text-center">
-                            <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest opacity-60">Acepte términos para habilitar métodos de pago</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
+                                  }}
+                                  isProcessing={false}
+                                  user={{ id: sessionId, full_name: leadData.name || "Huésped Elite", email: leadData.email || 'elite@stays.com' }}
+                              />
+                           </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -708,7 +736,7 @@ const Messages: React.FC = () => {
         <div ref={messagesEndRef} className="h-4" />
       </div>
 
-      <form onSubmit={handleSendMessage} className="p-4 pb-[max(1rem,env(safe-area-inset-bottom,16px))] bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-4px_20px_rgba(0,0,0,0.02)]">
+      <form onSubmit={handleSendMessage} className="p-4 pb-[max(1rem,env(safe-area-inset-bottom,16px))] bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
         <input
           value={inputText}
           onChange={e => setInputText(e.target.value)}

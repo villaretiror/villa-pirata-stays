@@ -67,6 +67,7 @@ export default async function handler(req: any, res: any) {
     const clientFullName = rawClientName || 'Cliente Indefinido';
     const customerEmail = reqCustomerEmail || userData.email || 'villaretiror@gmail.com';
     const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
+    const replyToAddress = 'reservas@villaretiror.com';
     const hostEmail = 'villaretiror@gmail.com';
 
     const emailFooter = `
@@ -280,6 +281,13 @@ export default async function handler(req: any, res: any) {
           </div>
         `
       });
+
+      // 🛰️ ALERT: Notify Host on Telegram
+      try {
+        await NotificationService.notifyCohostInvitation(customerEmail, p.name);
+      } catch (tgErr) {
+        console.error("[Telegram Invitation Alert Error]:", tgErr);
+      }
     }
     else if (type === 'review_request') {
         emailOptions.push({
@@ -313,13 +321,17 @@ export default async function handler(req: any, res: any) {
 
     const results = [];
     for (const options of emailOptions) {
-      const { data, error } = await resend.emails.send(options);
+      const { data, error } = await resend.emails.send({
+        ...options,
+        reply_to: replyToAddress
+      });
       if (error) throw error;
       if (data?.id) {
           await supabase.from('email_logs').insert({
               resend_id: data.id,
               booking_id: (rest as any).bookingId || null,
               guest_name: clientFullName,
+              guest_email: options.to,
               subject: options.subject,
               status: 'sent'
           });

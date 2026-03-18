@@ -265,6 +265,33 @@ export const NotificationService = {
     },
 
     /**
+     * 🤝 CO-HOSTS: Nueva Invitación Enviada
+     */
+    async notifyCohostInvitation(email: string, property: string): Promise<boolean> {
+        const message = `
+🤝 <b>Nueva Invitación de Co-host</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Email:</b> ${email}
+<b>Propiedad:</b> ${property}
+📬 <i>Estatus: Pendiente de aceptación.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 📝 CO-HOST ACTION: Edición de Propiedad
+     */
+    async notifyCohostAction(cohostEmail: string, propertyName: string, action: string): Promise<boolean> {
+        const message = `
+🛠 <b>Acción de Co-host</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Anfitrión:</b> ${cohostEmail}
+<b>Propiedad:</b> ${propertyName}
+<b>Acción:</b> ${action}
+✅ <i>Cambio reflejado en Supabase.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
      * ⭐ REVIEWS: Nuevo Comentario
      */
     async notifyNewReview(guestName: string, property: string, rating: number, platform: string): Promise<boolean> {
@@ -347,6 +374,56 @@ ${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
 <b>Huésped:</b> ${guest}
 <b>Problema:</b> ${issue}
 📞 <i>Acción: Contacta al huésped de inmediato.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 🏠 HOME HEALTH: Reporte Matutino / Estado del Sistema
+     */
+    async notifyHomeHealth(stats: {
+        syncStatus: string,
+        syncDetails: string,
+        purgedItems: number,
+        activeLeadsCount: number,
+        secret: string
+    }): Promise<boolean> {
+        const siteUrl = process.env.VITE_SITE_URL || 'https://villa-retiro.vercel.app';
+        const message = `
+🏠 <b>ESTADO DE LA CASA - VILLA RETIRO R</b>
+━━━━━━━━━━━━━━━━━━━━
+📅 <b>Sincronización:</b> ${stats.syncStatus}
+${stats.syncDetails}
+
+🧹 <b>Limpieza:</b> ${stats.purgedItems} elementos purgados y liberados.
+
+👥 <b>Leads Activos:</b> ${stats.activeLeadsCount} personas hablando con Salty ahora.
+
+✨ <i>El metrónomo de tu negocio late al ritmo correcto.</i>`;
+
+        const keyboard = {
+            inline_keyboard: [
+                [
+                    { text: "🚀 Ver Dashboard", url: `${siteUrl}/host` },
+                    { text: "🔄 Forzar Sync", url: `${siteUrl}/api/master-cron?task=sync&secret=${stats.secret}` }
+                ]
+            ]
+        };
+
+        return this.sendTelegramAlert(message, keyboard);
+    },
+
+    /**
+     * 📧 EMAIL: Notificar Rebote (Bounce)
+     */
+    async notifyEmailBounce(guestEmail: string, subject: string, reason: string): Promise<boolean> {
+        const message = `
+⚠️ <b>BLOQUEO DE EMAIL (BOUNCE)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Destinatario:</b> <code>${guestEmail}</code>
+<b>Asunto:</b> ${subject}
+<b>Razón:</b> <i>${reason}</i>
+
+❌ <i>Acción: Contacta al huésped vía WhatsApp de inmediato.</i>`;
         return this.sendTelegramAlert(message);
     }
 };

@@ -354,6 +354,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                 const emailResult = await resend.emails.send({
                     from: fromAddress,
                     to: guestEmail,
+                    reply_to: 'reservas@villaretiror.com',
                     bcc: 'villaretiror@gmail.com',
                     subject: subject,
                     html: `
@@ -374,6 +375,7 @@ async function handleCallbackQuery(callbackQuery: any) {
                         resend_id: emailResult.data.id,
                         booking_id: bookingId,
                         guest_name: text.match(/Huésped:<\/b>\s*([^\n]+)/)?.[1] || 'Huésped',
+                        guest_email: guestEmail,
                         subject: subject,
                         status: 'sent'
                     });

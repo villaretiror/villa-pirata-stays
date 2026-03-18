@@ -18,26 +18,40 @@ export default async function handler(req: any, res: any) {
         const body = req.body;
         const { type, data } = body;
 
-        // Solo nos interesan las aperturas
-        if (type === 'email.opened') {
+        // Solo nos interesan las aperturas y los errores (bounces)
+        if (type === 'email.opened' || type === 'email.bounced') {
             const emailId = data.email_id;
 
             // 1. Buscar quién es el huésped en nuestra tabla de logs
             const { data: logEntry } = await supabase
                 .from('email_logs')
-                .select('guest_name, subject, booking_id')
+                .select('guest_name, subject, booking_id, guest_email')
                 .eq('resend_id', emailId)
                 .single();
 
             if (logEntry) {
-                // 3. Actualizar log
-                await supabase
-                    .from('email_logs')
-                    .update({ 
-                        status: 'opened', 
-                        opened_at: new Date().toISOString() 
-                    })
-                    .eq('resend_id', emailId);
+                // 3. Actualizar log y notificar si es error
+                if (type === 'email.opened') {
+                    await supabase
+                        .from('email_logs')
+                        .update({ 
+                            status: 'opened', 
+                            opened_at: new Date().toISOString() 
+                        })
+                        .eq('resend_id', emailId);
+                } else if (type === 'email.bounced') {
+                    await supabase
+                        .from('email_logs')
+                        .update({ status: 'bounced' })
+                        .eq('resend_id', emailId);
+
+                    // 🚨 Alerta Directa al Host
+                    await NotificationService.notifyEmailBounce(
+                        logEntry.guest_email || "Huésped (Email No Registrado)",
+                        logEntry.subject || "Sin Asunto",
+                        data.bounce_message || "Rebote Desconocido"
+                    );
+                }
             }
         }
 

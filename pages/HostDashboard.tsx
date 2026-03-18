@@ -77,7 +77,14 @@ import {
   RefreshCcw,
   UserX,
   ClipboardCheck,
-  ListPlus
+  ListPlus,
+  PlusCircle,
+  HelpCircle,
+  Printer,
+  Anchor,
+  ShieldCheck,
+  Waves,
+  Heart
 } from 'lucide-react';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -699,21 +706,22 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
   const [isLoading, setIsLoading] = useState(false);
   const [showEliteView, setShowEliteView] = useState(false);
 
-  // --- Checklist State ---
-  const [tasks, setTasks] = useState<TaskRow[]>([]);
+  // --- Task Management (Unified) ---
+  const [tasks, setTasks] = useState<any[]>([]);
   const [isTaskLoading, setIsTaskLoading] = useState(false);
   const [newTaskDesc, setNewTaskDesc] = useState('');
 
   const fetchCohosts = async () => {
     setIsLoading(true);
     const { data } = await supabase.from('property_cohosts').select('*').eq('property_id', propertyId);
-    if (data) setCohosts(data);
+    if (data) setCohosts(data as CohostRow[]);
     setIsLoading(false);
   };
 
   const fetchTasks = async () => {
     setIsTaskLoading(true);
-    const { data } = await supabase.from('operation_tasks').select('*').eq('property_id', propertyId).order('created_at', { ascending: true });
+    // 🔄 UNIFIED: Using 'tasks' table instead of 'operation_tasks'
+    const { data } = await supabase.from('tasks').select('*').eq('property_id', propertyId).order('created_at', { ascending: true });
     if (data) setTasks(data);
     setIsTaskLoading(false);
   };
@@ -723,31 +731,26 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     fetchTasks();
   }, [propertyId]);
 
-  const handleInviteCohost = async () => {
+  const handleInvite = async () => {
     const trimmedEmail = newCohostEmail.trim().toLowerCase();
     if (!trimmedEmail || !trimmedEmail.includes('@')) {
       onShowToast("Escribe un email válido 📧");
       return;
     }
 
-    // Check for duplicates
-    if (cohosts.some(c => c.email.toLowerCase() === trimmedEmail)) {
-      onShowToast("Ese email ya está invitado o activo para esta villa. 👥");
-      return;
-    }
-
+    setIsLoading(true);
     const token = crypto.randomUUID();
 
-    const { error } = await supabase.from('property_cohosts').insert({
-      property_id: propertyId,
-      email: trimmedEmail,
-      status: 'pending',
-      invitation_token: token
-    });
+    try {
+      const { error } = await supabase.from('property_cohosts').insert({
+        property_id: propertyId,
+        email: trimmedEmail,
+        status: 'pending',
+        invitation_token: token
+      });
 
-    if (!error) {
-      // 📩 Connect with Resend for professional invitation
-      try {
+      if (!error) {
+        // 🛰️ UNIFIED NOTIFICATION: Email + Telegram
         await fetch('/api/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -759,19 +762,23 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             token: token
           })
         });
-      } catch (e) {
-        console.error("Email sync error:", e);
-      }
 
-      onShowToast("Invitación enviada ✨");
-      setNewCohostEmail('');
-      fetchCohosts();
-    } else {
-      onShowToast("Ya existe una invitación para este email.");
+        setNewCohostEmail('');
+        fetchCohosts();
+        onShowToast("Invitación enviada y notificada ✨");
+      } else {
+        onShowToast(`Error: ${error.message}`);
+      }
+    } catch (e: any) {
+      console.error("Invite Error:", e);
+      onShowToast("Fallo al enviar invitación.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleRemoveCohost = async (id: string) => {
+    if (!confirm('¿Remover acceso?')) return;
     const { error } = await supabase.from('property_cohosts').delete().eq('id', id);
     if (!error) {
       onShowToast("Co-anfitrión eliminado 🗑️");
@@ -794,217 +801,163 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
       });
       onShowToast("Invitación reenviada ✨");
     } catch (e) {
-      console.error("Resend sync error:", e);
-      onShowToast("Error al reenviar la invitación.");
+      console.error("Resend error:", e);
+      onShowToast("Error al reenviar invitación.");
     }
   };
 
   const handleToggleTask = async (taskId: string, currentStatus: boolean | null) => {
     const isCompleted = !!currentStatus;
-    const { error } = await supabase.from('operation_tasks').update({
-      is_completed: !isCompleted,
-      completed_at: !isCompleted ? new Date().toISOString() : null
+    const { error } = await supabase.from('tasks').update({
+      done: !isCompleted
     }).eq('id', taskId);
 
     if (!error) {
-      setTasks(tasks.map(t => t.id === taskId ? { ...t, is_completed: !isCompleted } : t));
+      setTasks(tasks.map(t => t.id === taskId ? { ...t, done: !isCompleted } : t));
       if (!isCompleted) onShowToast("¡Tarea completada! ✅");
     }
   };
 
   const handleAddTask = async () => {
     if (!newTaskDesc.trim()) return;
-    const { error } = await supabase.from('operation_tasks').insert({
+    const { error, data } = await supabase.from('tasks').insert({
       property_id: propertyId,
-      description: newTaskDesc.trim()
-    });
+      text: newTaskDesc.trim(),
+      property: propertyName,
+      done: false
+    }).select().single();
 
-    if (!error) {
+    if (!error && data) {
       setNewTaskDesc('');
-      fetchTasks();
+      setTasks([...tasks, data]);
       onShowToast("Tarea añadida 📋");
     }
   };
 
   const handleResetTasks = async () => {
-    if (!confirm("¿Deseas reiniciar el protocolo de alistamiento? Todas las tareas volverán a estar pendientes.")) return;
-
-    const { error } = await supabase
-      .from('operation_tasks')
-      .update({ is_completed: false, completed_at: null })
-      .eq('property_id', propertyId);
-
+    if (!confirm("¿Deseas reiniciar todas las tareas?")) return;
+    const { error } = await supabase.from('tasks').update({ done: false }).eq('property_id', propertyId);
     if (!error) {
-      setTasks(tasks.map(t => ({ ...t, is_completed: false })));
+      setTasks(tasks.map(t => ({ ...t, done: false })));
       onShowToast("Protocolo reiniciado 🧹");
     }
   };
 
-  const completedTasksCount = tasks.filter(t => t.is_completed).length;
-  const isAllCompleted = tasks.length > 0 && completedTasksCount === tasks.length;
+  const completedCount = tasks.filter(t => t.done).length;
+  const allDone = tasks.length > 0 && completedCount === tasks.length;
 
   if (showEliteView) {
     return (
-      <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-xl text-center animate-scale-up relative overflow-hidden">
-        <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary/5 rounded-full blur-3xl"></div>
-        <div className="relative z-10">
-          <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 border border-green-100 shadow-soft-sm">
-            <CheckCircle2 strokeWidth={1} className="w-10 h-10 text-green-600" />
+      <AnimatePresence>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: -20 }}
+          className="relative overflow-hidden bg-gradient-to-br from-black via-gray-900 to-black p-10 rounded-[3rem] border border-white/10 shadow-3xl text-center"
+        >
+          {/* Animated Background Orbs */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <motion.div 
+              animate={{ 
+                x: [0, 100, 0], 
+                y: [0, -50, 0],
+                rotate: [0, 360],
+              }}
+              transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+              className="absolute -top-1/2 -left-1/2 w-full h-full bg-primary/20 blur-[120px] rounded-full"
+            />
           </div>
-          <h3 className="text-2xl font-serif font-bold text-text-main mb-4">¡Propiedad en Estado Élite! 🌟</h3>
-          <p className="text-sm font-medium text-text-light leading-relaxed mb-8">
-            Has completado satisfactoriamente el checklist de operaciones para <strong>{propertyName}</strong>.
-            El sistema ha certificado que la villa cumple con todos los estándares de calidad.
-            <br /><br />
-            El Host principal ha sido notificado y la propiedad figura ahora como <span className="text-green-600 font-bold">'Lista para Check-in'</span>.
-            ¡Buen trabajo asegurando una experiencia de 5 estrellas!
-          </p>
-          <button
-            onClick={() => setShowEliteView(false)}
-            className="w-full py-4 bg-black text-white rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            Finalizar Operación
-          </button>
-        </div>
-      </div>
+
+          <div className="relative z-10">
+            <motion.div 
+              initial={{ rotate: -45, scale: 0 }}
+              animate={{ rotate: 0, scale: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
+              className="w-24 h-24 bg-gradient-to-tr from-primary to-amber-200 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ring-4 ring-primary/20"
+            >
+              <CheckCircle2 strokeWidth={2} className="w-12 h-12 text-black" />
+            </motion.div>
+
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.4 }}
+            >
+              <h3 className="text-4xl font-serif font-black text-white italic tracking-tighter mb-4">¡Protocolo Impecable! ✨</h3>
+              <p className="text-sm font-medium text-gray-400 uppercase tracking-[0.3em] mb-10">Villa lista para recepción Élite</p>
+            </motion.div>
+
+            {/* Elite Badge Display */}
+            <motion.div 
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ delay: 0.6, type: "spring" }}
+              className="inline-flex items-center gap-3 px-6 py-2 bg-white/5 backdrop-blur-md rounded-full border border-white/10 mb-12"
+            >
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span className="text-[10px] font-black text-white uppercase tracking-widest">HOST QUALITY ASSURED</span>
+            </motion.div>
+
+            <motion.button 
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => setShowEliteView(false)} 
+              className="w-full py-5 bg-white text-black rounded-2xl font-black text-[12px] uppercase tracking-[0.4em] transition-all hover:bg-gray-100 shadow-xl"
+            >
+              Cerrar Dashboard
+            </motion.button>
+          </div>
+        </motion.div>
+      </AnimatePresence>
     );
   }
 
   return (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-6 mt-8 p-6 bg-gray-50/50 rounded-[2.5rem] border border-gray-100">
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm">
         <h3 className="font-serif font-black italic text-lg mb-1 flex items-center gap-2 tracking-tighter">
-          <Users strokeWidth={1.5} className="w-5 h-5 text-primary" />
-          Gestión de Co-anfitriones
+          <Users strokeWidth={1.5} className="w-5 h-5 text-primary" /> Gestión de Co-anfitriones
         </h3>
-        <p className="text-xs text-text-light mb-4">Invita a otros usuarios a gestionar esta villa contigo. Podrán ver el calendario y las reservas en tiempo real.</p>
-
-        <div className="space-y-3 mb-6">
+        <div className="space-y-3 mb-6 mt-4">
           {cohosts.map((ch, idx) => (
-            <div key={idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 transition-all hover:bg-white hover:shadow-soft">
+            <div key={ch.id || idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
               <div>
-                <p className="text-sm font-bold text-text-main">{ch.email}</p>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
-                    {ch.status === 'active' ? 'Activo' : 'Pendiente'}
-                  </span>
-                  {ch.status === 'pending' && (
-                    <button onClick={() => handleResendInvitation(ch)} className="text-[9px] font-bold text-gray-400 hover:text-black flex items-center gap-1.5 bg-gray-50 px-3 py-1 rounded-full border border-gray-100 transition-all active:scale-95">
-                      <RefreshCcw strokeWidth={2} className="w-3 h-3" /> REENVIAR
-                    </button>
-                  )}
-                </div>
+                <p className="text-xs font-bold text-text-main">{ch.email}</p>
+                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                  {ch.status === 'active' ? 'Activo' : 'Pendiente'}
+                </span>
+                {ch.status === 'pending' && <button onClick={() => handleResendInvitation(ch)} className="ml-2 text-[8px] text-gray-400 hover:text-black font-black uppercase">Reenviar</button>}
               </div>
-              <button onClick={() => handleRemoveCohost(ch.id)} className="w-9 h-9 rounded-full flex items-center justify-center text-gray-300 hover:bg-red-50 hover:text-red-500 transition-all border border-transparent hover:border-red-100">
-                <Trash2 strokeWidth={1.5} className="w-4 h-4" />
-              </button>
+              <button onClick={() => handleRemoveCohost(ch.id)} className="p-2 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
             </div>
           ))}
-          {cohosts.length === 0 && !isLoading && (
-            <div className="text-center py-12 border-2 border-dashed border-gray-100 rounded-[2rem] bg-gray-50/50">
-              <UserX strokeWidth={1} className="w-12 h-12 mx-auto mb-3 text-gray-200" />
-              <p className="text-[9px] text-gray-400 font-bold uppercase tracking-[0.2em]">Sin co-anfitriones registrados</p>
-            </div>
-          )}
-          {isLoading && <div className="text-center py-6 animate-pulse text-[10px] font-bold text-gray-300 uppercase italic">Sincronizando...</div>}
+          {cohosts.length === 0 && <p className="text-center py-4 text-[10px] text-gray-400 uppercase font-black opacity-30">Sin equipo</p>}
         </div>
-
-        <div className="bg-sand/40 p-5 rounded-3xl border border-white/50 space-y-4">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1 ml-1 leading-none">Añadir Email de Invitado</p>
-            <div className="flex gap-2">
-              <input
-                type="email"
-                value={newCohostEmail}
-                onChange={e => setNewCohostEmail(e.target.value)}
-                placeholder="correo@ejemplo.com"
-                className="flex-1 p-4 bg-white border border-gray-200 rounded-2xl text-sm outline-none focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-              />
-              <button
-                onClick={handleInviteCohost}
-                disabled={!newCohostEmail}
-                className="bg-black text-white px-6 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-900 active:scale-95 transition-all disabled:opacity-30 disabled:pointer-events-none"
-              >
-                Invitar
-              </button>
-            </div>
-          </div>
-          <p className="text-[9px] text-gray-400 px-1 font-medium italic">Nota: El usuario debe iniciar sesión con este email para activar su acceso.</p>
+        <div className="flex gap-2">
+          <input value={newCohostEmail} onChange={e => setNewCohostEmail(e.target.value)} placeholder="email@equipo.com" className="flex-1 p-3 bg-white border border-gray-200 rounded-xl text-xs outline-none" />
+          <button onClick={handleInvite} disabled={!newCohostEmail} className="bg-black text-white px-4 rounded-xl text-[10px] font-black uppercase">Invitar</button>
         </div>
       </div>
 
       <div className="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm relative overflow-hidden">
-        {isAllCompleted && (
-          <div className="absolute top-0 right-0 p-4 bg-green-500 text-white rounded-bl-2xl shadow-lg z-10 animate-fade-in">
-            <button onClick={() => setShowEliteView(true)} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em]">
-              <Sparkles strokeWidth={1.5} className="w-4 h-4 text-yellow-300" /> Certificar
-            </button>
-          </div>
-        )}
-
-        <h3 className="font-serif font-black italic text-lg mb-1 flex items-center gap-2 tracking-tighter">
-          <ClipboardCheck strokeWidth={1.5} className="w-5 h-5 text-secondary" />
-          Protocolo Operativo
-        </h3>
-        <div className="flex justify-between items-center mb-4">
-          <p className="text-xs text-text-light">Asegura la calidad del servicio marcando las tareas operativas completadas.</p>
-          <button
-            onClick={handleResetTasks}
-            className="text-[9px] font-black uppercase text-red-500 border border-red-100 px-2 py-1 rounded-lg hover:bg-red-50 transition-all"
-          >
-            Reiniciar Protocolo
-          </button>
-        </div>
-
-        <div className="mb-6">
-          <div className="flex justify-between items-center mb-2">
-            <span className="text-[10px] font-black uppercase tracking-widest text-text-light">Progreso Operativo</span>
-            <span className="text-[10px] font-black text-primary">{tasks.length > 0 ? Math.round((completedTasksCount / tasks.length) * 100) : 0}%</span>
-          </div>
-          <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-primary transition-all duration-700"
-              style={{ width: `${tasks.length > 0 ? (completedTasksCount / tasks.length) * 100 : 0}%` }}
-            ></div>
-          </div>
-        </div>
-
-        <div className="space-y-2 mb-6">
-          {tasks.map((task) => (
-            <div
-              key={task.id}
-              onClick={() => handleToggleTask(task.id, !!task.is_completed)}
-              className={`flex items-center gap-3 p-4 rounded-2xl border transition-all cursor-pointer ${task.is_completed ? 'bg-green-50/30 border-green-100 opacity-60' : 'bg-white border-gray-100 hover:border-primary/30'}`}
-            >
-              <div className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${task.is_completed ? 'bg-black border-black shadow-lg animate-scale-up' : 'bg-white border-gray-200'}`}>
-                {task.is_completed && <Check strokeWidth={3} className="text-white w-3 h-3" />}
-              </div>
-              <span className={`text-sm font-medium ${task.is_completed ? 'line-through text-gray-400' : 'text-text-main'}`}>{task.description}</span>
+        {allDone && <div className="absolute top-0 right-0 p-3 bg-green-500 text-white rounded-bl-xl cursor-pointer" onClick={() => setShowEliteView(true)}><Sparkles className="w-4 h-4" /></div>}
+        <h3 className="font-serif font-black italic text-lg mb-4 flex items-center gap-2 tracking-tighter"><ClipboardCheck className="w-5 h-5 text-secondary" /> Protocolo Operativo</h3>
+        <div className="space-y-2 mb-4">
+          {tasks.map(t => (
+            <div key={t.id} className="flex items-center gap-3 bg-gray-50 p-3 rounded-xl">
+              <button onClick={() => handleToggleTask(t.id, t.done)} className={`w-4 h-4 border rounded flex items-center justify-center ${t.done ? 'bg-green-500 border-green-500' : 'bg-white border-gray-300'}`}>
+                {t.done && <Check className="w-3 h-3 text-white" />}
+              </button>
+              <span className={`text-[11px] ${t.done ? 'line-through text-gray-300' : 'text-text-main font-medium'}`}>{t.text}</span>
             </div>
           ))}
-          {tasks.length === 0 && !isTaskLoading && (
-            <div className="text-center py-10 opacity-20 italic bg-gray-50 rounded-[2rem] border border-dashed border-gray-200">
-              <ListPlus strokeWidth={1} className="w-10 h-10 mx-auto mb-2 text-gray-400" />
-              <p className="text-[9px] font-bold uppercase tracking-widest">Protocolo impecable</p>
-            </div>
-          )}
+          {tasks.length === 0 && <p className="text-center py-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest opacity-20">Protocolo impecable</p>}
         </div>
-
         <div className="flex gap-2">
-          <input
-            value={newTaskDesc}
-            onChange={e => setNewTaskDesc(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && handleAddTask()}
-            placeholder="Nueva tarea (ej: Revisar Gas)"
-            className="flex-1 p-3.5 bg-gray-50 border border-gray-100 rounded-xl text-sm font-medium outline-none focus:ring-2 ring-primary/20"
-          />
-          <button
-            onClick={handleAddTask}
-            className="bg-black text-white px-4 rounded-xl flex items-center justify-center shadow-lg active:scale-95 transition-all"
-          >
-            <Plus strokeWidth={2} className="w-5 h-5" />
-          </button>
+          <input value={newTaskDesc} onChange={e => setNewTaskDesc(e.target.value)} placeholder="Nueva tarea..." className="flex-1 p-3 bg-gray-50 border border-gray-100 rounded-xl text-[11px] outline-none" />
+          <button onClick={handleAddTask} className="bg-secondary text-white p-3 rounded-xl"><PlusCircle className="w-4 h-4" /></button>
         </div>
+        <button onClick={handleResetTasks} className="w-full mt-4 text-[8px] font-black uppercase text-gray-300 hover:text-red-400">Reiniciar Todo</button>
       </div>
     </div>
   );
@@ -2470,7 +2423,7 @@ const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booki
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team' | 'help';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -2499,9 +2452,6 @@ const HostDashboard: React.FC = () => {
   const [realBookings, setRealBookings] = useState<BookingWithDetails[]>([]);
   const [cleaningStatus, setCleaningStatus] = useState<'ready' | 'progress' | 'dirty'>('ready');
   const [pendingPayments, setPendingPayments] = useState<BookingWithDetails[]>([]);
-  const [cohosts, setCohosts] = useState<CohostRow[]>([]);
-  const [newCohostEmail, setNewCohostEmail] = useState('');
-  const [isInviting, setIsInviting] = useState(false);
 
   // Role helpers — computed ONCE from the authenticated user
   const isHostOrAdmin = user?.role === 'host' || user?.role === 'admin' || user?.email === 'villaretiror@gmail.com';
@@ -2513,18 +2463,6 @@ const HostDashboard: React.FC = () => {
   const [propertyPerformance, setPropertyPerformance] = useState<{ performance: Record<string, number>, chartData: { label: string, val: number }[] }>({ performance: {}, chartData: [] });
   const [globalExpenses, setGlobalExpenses] = useState<ExpenseRow[]>([]);
   const [analyticsFilter, setAnalyticsFilter] = useState<string>('all');
-
-  // --- STABLE CALLBACKS ---
-  const fetchCohosts = useCallback(async () => {
-    if (!properties || properties.length === 0) return;
-    const propIds = properties.map((p: any) => p.id);
-    const { data } = await supabase
-      .from('property_cohosts')
-      .select('*')
-      .in('property_id', propIds)
-      .order('created_at', { ascending: false });
-    if (data) setCohosts(data as CohostRow[]);
-  }, [properties]);
 
   const fetchPayments = useCallback(async (signal?: AbortSignal) => {
 
@@ -2958,6 +2896,23 @@ const HostDashboard: React.FC = () => {
         cancellation_policy_type: updated.cancellation_policy_type,
         updated_at: new Date().toISOString()
       };
+
+      // 🛰️ NOTIFICATION: Trigger Telegram alert if a Co-host makes the change
+      if (user?.email !== 'villaretiror@gmail.com') {
+          // If we are here, role is checked or allowed. Let's inform the Master Host.
+          try {
+            fetch('/api/master-cron?action=notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'cohost_action',
+                cohost: user?.email,
+                property: updated.title,
+                action: 'Edición de detalles de Villa (Backend Unified Sync)'
+              })
+            });
+          } catch (e) { console.warn("Action Notify Error:", e); }
+      }
       
       // Eliminar variantes basura para mantener limpieza de tráfico y evitar errores de Schema Cache
       const junkFields = ['isOffline', 'isoffline', 'reviews_count', 'blockedDates'];
@@ -3138,6 +3093,17 @@ const HostDashboard: React.FC = () => {
           <div className="flex items-center gap-3 mb-6">
             <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10">Salty Morning Briefing</span>
             <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
+            <button
+              onClick={async () => {
+                const res = await fetch('/api/master-cron?action=notify&ask=cleanup');
+                const data = await res.json();
+                alert(`Master Sync: ${JSON.stringify(data)}`);
+              }}
+              className="ml-auto bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
+              title="Sincronización Maestra (Audit)"
+            >
+              <span className="material-icons text-[14px]">sync_lock</span>
+            </button>
           </div>
           <h2 className="text-2xl md:text-3xl font-serif font-black italic tracking-tighter mb-4 leading-tight">
             "{nextCheckins.length > 0 
@@ -3926,108 +3892,130 @@ const HostDashboard: React.FC = () => {
 
   const renderTeam = () => (
     <div className="space-y-8 animate-slide-up pb-12">
-      <div className="flex justify-between items-center mb-4 px-2">
-        <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Equipe de Élite</h2>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
+        <div>
+          <h2 className="text-4xl font-serif font-black italic tracking-tighter text-text-main leading-tight mb-2">Equipe de Élite</h2>
+          <p className="text-[10px] font-bold text-text-light uppercase tracking-[0.3em]">Gestión de protocolos y colaboradores</p>
+        </div>
+        <button 
+          onClick={() => setActiveTab('help')}
+          className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-2xl hover:bg-gray-800 transition-all font-black text-[10px] uppercase tracking-widest group shadow-xl"
+        >
+          <HelpCircle className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
+          Ver Manual de Protocolo
+        </button>
       </div>
 
-      <div className="bg-white rounded-[2rem] p-8 shadow-soft border border-gray-100 mb-8">
-        <h3 className="font-serif font-black italic text-xl mb-2 tracking-tighter">Añadir Aliado</h3>
-        <p className="text-sm text-gray-500 mb-6 leading-relaxed max-w-2xl">Invita a un miembro de confianza para co-gestionar el santuario. El anfitrión principal mantiene el control supremo del tablero.</p>
-        
-        {isHostOrAdmin ? (
-          <div className="flex gap-4 items-end max-w-xl">
-            <div className="flex-1">
-              <label className="text-[10px] font-black uppercase tracking-widest text-[#2D5A27] ml-1 mb-2 block">Correo del Colaborador</label>
-              <input 
-                type="email"
-                value={newCohostEmail}
-                onChange={e => setNewCohostEmail(e.target.value)}
-                placeholder="equipo@villaretiror.com"
-                className="w-full p-4 rounded-xl bg-gray-50 border border-gray-100 text-sm focus:bg-white transition-all shadow-inner"
-              />
+      <div className="space-y-12">
+        {properties.map(prop => (
+          <div key={prop.id} className="space-y-4">
+            <div className="flex items-center gap-3 px-4">
+              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
+              <h3 className="font-serif font-bold text-xl tracking-tight">{prop.title}</h3>
             </div>
-            <button 
-              onClick={async () => {
-                if (!newCohostEmail || !properties[0]) return;
-                setIsInviting(true);
-                try {
-                  const token = Math.random().toString(36).substring(2, 15);
-                  await supabase.from('property_cohosts').insert({
-                    property_id: properties[0].id,
-                    email: newCohostEmail.toLowerCase().trim(),
-                    status: 'pending',
-                    invitation_token: token
-                  });
-                  setNewCohostEmail('');
-                  showToast("Invitación enviada al correo.");
-                  fetchCohosts();
-                } catch (e) {
-                  console.error(e);
-                  showToast("Error al invitar.");
-                } finally {
-                  setIsInviting(false);
-                }
-              }}
-              disabled={isInviting || !newCohostEmail}
-              className="bg-black text-white rounded-xl px-8 py-4 font-black text-[11px] uppercase tracking-[0.2em] shadow-2xl shadow-black/20 active:scale-95 disabled:opacity-50 min-w-[140px] transition-all"
-            >
-              {isInviting ? 'Enviando...' : 'Invitar al Equipo'}
-            </button>
-          </div>
-        ) : (
-          <div className="bg-orange-50/50 p-6 rounded-xl border border-orange-100/50 flex gap-4 items-center">
-            <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center flex-shrink-0 text-orange-500 shadow-sm">
-              <span className="material-icons">security</span>
-            </div>
-            <div>
-              <p className="font-bold text-orange-900 text-sm">Privilegio de Administrador</p>
-              <p className="text-xs text-orange-700/80 mt-1">Solo los anfitriones principales pueden invitar o remover co-anfitriones.</p>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-20">
-        {cohosts.map((co: CohostRow) => (
-          <div key={co.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 flex justify-between items-center group relative overflow-hidden">
-            <div className="flex items-center gap-4 relative z-10">
-               <div className="w-12 h-12 bg-gray-50 rounded-full border border-gray-100 flex items-center justify-center text-gray-400">
-                  <UserIcon className="w-5 h-5 mx-auto opacity-50" />
-               </div>
-               <div>
-                  <h4 className="font-bold text-sm text-text-main">{co.email}</h4>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className={`px-2 py-0.5 rounded-md text-[9px] font-black uppercase tracking-widest border ${co.status === 'active' ? 'bg-green-50 text-[#2D5A27] border-green-100' : 'bg-orange-50 text-[#FF7F3F] border-orange-100 shadow-[0_0_8px_rgba(255,127,63,0.1)]'}`}>
-                      {co.status === 'active' ? 'Activo' : 'Pendiente'}
-                    </span>
-                    <span className="text-[10px] text-gray-400">&bull; Para Propiedad Asignada</span>
-                  </div>
-               </div>
-            </div>
-            
-            {isHostOrAdmin && (
-              <button 
-                onClick={async () => {
-                  if (confirm('¿Estás seguro de que quieres remover a este co-anfitrión? Perderá acceso a este panel inmediatamente.')) {
-                    await supabase.from('property_cohosts').delete().eq('id', co.id);
-                    fetchCohosts();
-                    showToast("Miembro removido exitosamente.");
-                  }
-                }}
-                className="text-red-400 hover:text-red-600 bg-red-50 hover:bg-red-100 p-3 rounded-xl transition-all relative z-10 opacity-0 group-hover:opacity-100"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            )}
+            <CohostManager 
+              propertyId={prop.id} 
+              propertyName={prop.title} 
+              onShowToast={showToast} 
+            />
           </div>
         ))}
 
-        {cohosts.length === 0 && (
-          <div className="col-span-full py-12 text-center text-gray-400 font-serif italic flex flex-col items-center">
-            <span className="material-icons text-5xl opacity-30 mb-4">group_off</span>
-            No has añadido a ningún co-anfitrión a tu equipo.
+        {properties.length === 0 && (
+          <div className="py-20 text-center text-gray-400 font-serif italic flex flex-col items-center">
+            <span className="material-icons text-5xl opacity-30 mb-4">home_work</span>
+            No hay villas registradas para gestionar el equipo.
           </div>
         )}
+      </div>
+    </div>
+  );
+  const renderHelp = () => (
+    <div className="space-y-12 animate-slide-up pb-24 max-w-4xl mx-auto pt-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-sm print:hidden">
+        <div>
+          <h2 className="text-4xl font-serif font-black italic tracking-tighter text-text-main leading-tight">Manual de Protocolo</h2>
+          <p className="text-[11px] font-bold text-text-light uppercase tracking-[0.4em] mt-2">Refugios de Paz • Estándares de Excelencia Salty</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <button 
+             onClick={() => setActiveTab('team')}
+             className="px-6 py-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-black text-[10px] uppercase tracking-widest"
+          >
+             Regresar al Equipo
+          </button>
+          <button 
+            onClick={() => window.print()}
+            className="p-4 bg-black text-white rounded-full hover:bg-gray-800 transition-all group shadow-xl"
+          >
+            <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+      </div>
+
+      <div className="space-y-12 print:block">
+        {/* Intro */}
+        <section className="bg-gradient-to-br from-[#111] to-black text-white p-14 rounded-[4rem] relative overflow-hidden shadow-2xl border border-white/5">
+          <div className="absolute top-0 right-0 p-8 opacity-5">
+            <Anchor className="w-64 h-64" />
+          </div>
+          <div className="relative z-10 max-w-2xl">
+            <div className="w-12 h-1 bg-primary mb-8" />
+            <h3 className="text-5xl font-serif font-black italic mb-8 leading-[1.1]">Nuestra Filosofía</h3>
+            <p className="text-xl font-medium leading-relaxed text-gray-400">
+              "En Villa Retiro, no solo gestionamos propiedades; somos los guardianes de la calma y el descanso. Cada gesto, cada detalle, es un compromiso con la <span className="text-white italic">excelencia absoluta</span>."
+            </p>
+          </div>
+        </section>
+
+        {/* Protocol Steps */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {[
+            { 
+              icon: <ShieldCheck className="text-primary w-10 h-10" />, 
+              title: "01. Seguridad Primero", 
+              desc: "Verificación obligatoria de cerraduras inteligentes, cámaras perimetrales y alarmas. Asegurar que el código del huésped es funcional 2 horas antes de su llegada."
+            },
+            { 
+              icon: <Sparkles className="text-blue-400 w-10 h-10" />, 
+              title: "02. Limpieza de Élite", 
+              desc: "Estandarización tipo Yacht: sábanas tensadas, toallas blancas impecables y aroma cítrico suave en cada rincón. Cero rastro de estancias anteriores."
+            },
+            { 
+              icon: <Waves className="text-cyan-400 w-10 h-10" />, 
+              title: "03. Mantenimiento Preventivo", 
+              desc: "Prueba de grifos, aire acondicionado a 23°C y verificación de gas/electricidad. Reportar cualquier mínima falla antes de que el huésped la note."
+            },
+            { 
+              icon: <Heart className="text-red-400 w-10 h-10" />, 
+              title: "04. El 'Salty Effect'", 
+              desc: "Hielo en la nevera, kit de café local visible y control de clima personalizado. La villa debe sentirse viva, fresca y acogedora desde el primer segundo."
+            }
+          ].map((item, idx) => (
+            <motion.div 
+              key={idx}
+              whileHover={{ y: -8, scale: 1.02 }}
+              className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-soft relative group transition-all"
+            >
+              <div className="mb-8 p-4 bg-gray-50 rounded-3xl w-fit group-hover:bg-primary/5 transition-colors">{item.icon}</div>
+              <h4 className="text-2xl font-serif font-black mb-4 tracking-tighter">{item.title}</h4>
+              <p className="text-[13px] text-text-light font-medium leading-relaxed opacity-80">{item.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Final Instruction */}
+        <section className="bg-sand p-14 rounded-[4rem] border border-primary/20 text-center relative overflow-hidden">
+          <div className="absolute inset-0 bg-primary/5 opacity-30 pointer-events-none" />
+          <div className="relative z-10">
+            <h4 className="text-3xl font-serif font-black italic mb-6">La Regla De Oro</h4>
+            <div className="h-0.5 w-20 bg-primary/30 mx-auto mb-8" />
+            <p className="text-xs font-black text-primary uppercase tracking-[0.5em] mb-6">"Si no es perfecto, no está listo."</p>
+            <div className="flex items-center justify-center gap-3 text-[11px] font-black uppercase text-text-light bg-white/50 w-fit mx-auto px-6 py-3 rounded-full border border-white/20">
+              <CheckCircle2 className="w-4 h-4 text-green-500" /> Todas las tareas deben marcarse en el Dashboard para activar el 'Estado Élite'.
+            </div>
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -4066,6 +4054,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'conversion' && renderConversion()}
         {activeTab === 'messages' && <HostMessageCenter />}
         {activeTab === 'insights' && <InsightViewer />}
+        {activeTab === 'help' && renderHelp()}
       </main>
 
       {/* Overlays */}

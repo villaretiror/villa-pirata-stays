@@ -314,7 +314,7 @@ export const DEFAULT_SITE_CONTENT = {
     title: "Reserva con Salty.",
     subtitle: "Sin comisiones de plataforma, solo el mejor trato directo garantizado. Si tienes dudas sobre las villas, disponibilidad para grupos grandes o eventos especiales, déjanos un mensaje.",
     phone: "+1 (787) 356-0895",
-    email: "villaretiror@gmail.com",
+    email: "reservas@villaretiror.com",
     whatsapp: "17873560895"
   },
   seo: {

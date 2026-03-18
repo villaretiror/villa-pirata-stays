@@ -138,12 +138,12 @@ export const logAbandonmentLead = async (data: { name: string; email?: string; p
 
 // 2.1 Temporary AI-Hold (Overbooking Prevention)
 export const createTemporaryHold = async (
-    propertyId: string, 
-    checkIn: string, 
-    checkOut: string, 
-    userId?: string, 
-    customer_name?: string | null, 
-    phone_number?: string | null, 
+    propertyId: string,
+    checkIn: string,
+    checkOut: string,
+    userId?: string,
+    customer_name?: string | null,
+    phone_number?: string | null,
     special_requests?: string | null
 ) => {
     // 🛡️ REINFORCED RESOLUTION
@@ -151,7 +151,7 @@ export const createTemporaryHold = async (
     const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
     if (byTitle) {
         finalId = String(byTitle.id);
-    } 
+    }
 
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
     const status = 'pending_ai_validation';
@@ -166,7 +166,7 @@ export const createTemporaryHold = async (
             message: `[AI HOLD] ${special_requests || 'Sin peticiones especiales'}. Fechas: ${checkIn} al ${checkOut}`,
             status: 'new',
             tags: ['ai-hold', finalId]
-        }).catch(() => {});
+        }).catch(() => { });
     }
 
     // 2. Insert the Booking record (The actual calendar block)
@@ -259,7 +259,7 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
         .select('*')
         .eq('id', String(propertyId).trim())
         .maybeSingle();
-    
+
     // If ID fails, or it looks like a title/name, try title search
     if (!property || isNaN(Number(propertyId)) || propertyId.length < 5) {
         const { data: byTitle } = await supabase.from('properties')
@@ -288,8 +288,8 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
         curr.setDate(curr.getDate() + 1);
     }
 
-    const fees = Object.entries(property.fees || {}).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
-    let total = basePrice + fees;
+    const tax = Number((basePrice * 0.07).toFixed(2));
+    let total = basePrice + tax;
     let discount = 0;
 
     if (promoCode) {
@@ -297,7 +297,6 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
         if (promo) {
             const v = validatePromoCode(promo, nights, hasSeasonal);
             if (v.valid) {
-                // Sentinel Guardrail: Max 15% discount limit for AI
                 const safePercent = Math.min(promo.discount_percent, 15);
                 discount = (basePrice * safePercent) / 100;
                 total -= discount;
@@ -305,7 +304,7 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
         }
     }
 
-    return { basePrice, fees, discount, total, nights, hasSeasonal };
+    return { basePrice, tax, discount, total: Number(total.toFixed(2)), nights, hasSeasonal };
 };
 
 // 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)
