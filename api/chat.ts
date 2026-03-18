@@ -26,6 +26,7 @@ const supabase = createClient(
 
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
+    baseURL: 'https://generativelanguage.googleapis.com/v1', 
 });
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
@@ -466,9 +467,9 @@ ${JSON.stringify(villaKnowledge, null, 2)}
         });
 
         const result = await streamText({
-            model: google('gemini-2.0-flash'), // Volvemos al motor estable 2.0 para garantizar soporte de Tools en v1beta
+            model: google('gemini-1.5-flash-latest'),
             messages: finalMessages,
-            maxSteps: 5, // Aumentamos pasos para que Salty pueda razonar y usar herramientas en cadena
+            maxSteps: 5,
             temperature: 0.7,
             tools: filteredTools,
         });
