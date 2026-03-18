@@ -544,7 +544,7 @@ const Messages: React.FC = () => {
                               });
                               // 🛰️ ALERT: Notificar al Host (Telegram)
                               try {
-                                fetch('/api/master-cron?action=notify', {
+                                fetch('/api/master?action=notify', {
                                   method: 'POST',
                                   headers: { 'Content-Type': 'application/json' },
                                   body: JSON.stringify({
@@ -590,7 +590,7 @@ const Messages: React.FC = () => {
                                   } else {
                                     // 🛰️ ALERT: Notificar al Host (Telegram)
                                     try {
-                                  fetch('/api/master-cron?action=notify', {
+                                  fetch('/api/master?action=notify', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({

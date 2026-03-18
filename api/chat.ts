@@ -374,7 +374,7 @@ ${JSON.stringify(familyKnowledge, null, 2)}
         };
 
         const result = await streamText({
-            model: google('gemini-1.5-pro'), // 💎 Pro Mode para Razonamiento Autónomo
+            model: google('gemini-1.5-flash'), // 💡 Stable Flash Mode for speed and reliability
             messages: finalMessages,
             maxSteps: 7, // Permitir que Salty razone y use múltiples herramientas
             temperature: 0.75, // Un poco más de 'wit' y carisma

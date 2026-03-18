@@ -1,25 +1,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
-import { Temporal } from '@js-temporal/polyfill';
 
 /**
- * 🛰️ USE AVAILABILITY HOOK (AST SHIELD)
+ * 🛰️ USE AVAILABILITY HOOK (DB-FIRST RELIABILITY)
  * 
- * This hook centralizes all availability logic, ensuring that 
- * direct bookings (Supabase) and external blocks (Airbnb/Booking via iCal) 
- * are merged in real-time.
- * 
- * It strictly uses Puerto Rico Time (AST) to avoid timezone discrepancies.
+ * This hook aligns web search logic with Salty's internal brain.
+ * It pulls from:
+ * 1. Confirmed Bookings (Supabase + iCal Synced)
+ * 2. Manual Blocks (properties.blockeddates)
+ * 3. Active Leads (pending_bookings with 15-min TTL)
  */
 export const useAvailability = (propertyId: string | undefined) => {
     const [blockedDates, setBlockedDates] = useState<Date[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-
-    // Helper: Get Current Date in AST (Puerto Rico)
-    const getASTNow = () => {
-        return Temporal.Now.zonedDateTimeISO('America/Puerto_Rico');
-    };
 
     const fetchAvailability = useCallback(async () => {
         if (!propertyId) return;
@@ -27,74 +21,66 @@ export const useAvailability = (propertyId: string | undefined) => {
         setError(null);
 
         try {
-            // 1. Fetch Property and its Sync Feeds
+            const now = new Date();
+
+            // 1. Fetch Manual Blocks & Properties Info
             const { data: prop, error: pError } = await supabase
                 .from('properties')
-                .select('blockeddates, "calendarSync"')
+                .select('blockeddates')
                 .eq('id', propertyId)
                 .single();
 
             if (pError) throw pError;
 
-            const dbBlockedDates = (prop.blockeddates || []).map((d: string) => new Date(d));
-            const syncFeeds = prop.calendarSync as any[] || [];
+            // 2. Fetch Active Bookings (Unified: Direct + iCal Synced)
+            const { data: bks } = await supabase
+                .from('bookings')
+                .select('check_in, check_out, status, hold_expires_at')
+                .eq('property_id', propertyId)
+                .neq('status', 'cancelled');
 
-            // 2. Fetch Fresh External Data via Proxy (Parallel)
-            const externalDates: Date[] = [];
-            
-            if (syncFeeds.length > 0) {
-                const proxyPromises = syncFeeds.map(async (feed) => {
-                    if (!feed.url) return;
-                    try {
-                        const res = await fetch(`/api/proxy-ical?url=${encodeURIComponent(feed.url)}`);
-                        if (!res.ok) return;
-                        
-                        const data = await res.json();
-                        if (data.contents) {
-                            // Basic parsing for dates in the raw iCal string
-                            // Using regex to find DTSTART and DTEND for speed in the hook
-                            const startMatches = data.contents.match(/DTSTART;VALUE=DATE:(\d{8})/g) || [];
-                            const endMatches = data.contents.match(/DTEND;VALUE=DATE:(\d{8})/g) || [];
-                            
-                            for (let i = 0; i < startMatches.length; i++) {
-                                const startStr = startMatches[i].split(':')[1];
-                                const endStr = endMatches[i].split(':')[1];
-                                
-                                if (startStr && endStr) {
-                                    const startYear = parseInt(startStr.substring(0, 4));
-                                    const startMonth = parseInt(startStr.substring(4, 6));
-                                    const startDay = parseInt(startStr.substring(6, 8));
-                                    
-                                    const endYear = parseInt(endStr.substring(0, 4));
-                                    const endMonth = parseInt(endStr.substring(4, 6));
-                                    const endDay = parseInt(endStr.substring(6, 8));
+            // 3. Fetch Active Leads (Awaiting Payment - 15min TTL)
+            const { data: pending } = await supabase
+                .from('pending_bookings')
+                .select('check_in, check_out, expires_at')
+                .eq('property_id', propertyId)
+                .eq('status', 'pending_payment');
 
-                                    let current = Temporal.PlainDate.from({ year: startYear, month: startMonth, day: startDay });
-                                    const end = Temporal.PlainDate.from({ year: endYear, month: endMonth, day: endDay });
-                                    
-                                    // Fill the range (excluding checkout day usually, but we keep it for now as a Date object)
-                                    while (Temporal.PlainDate.compare(current, end) < 0) {
-                                        const d = new Date(current.year, current.month - 1, current.day);
-                                        externalDates.push(d);
-                                        current = current.add({ days: 1 });
-                                    }
-                                }
-                            }
-                        }
-                    } catch (e) {
-                        console.error(`Error syncing feed ${feed.platform}:`, e);
-                    }
-                });
+            const allBlocked: Date[] = [];
 
-                await Promise.all(proxyPromises);
+            // Helper to fill date ranges
+            const addRange = (start: string, end: string) => {
+                let curr = new Date(start + 'T12:00:00');
+                const last = new Date(end + 'T12:00:00');
+                while (curr < last) {
+                    allBlocked.push(new Date(curr));
+                    curr.setDate(curr.getDate() + 1);
+                }
+            };
+
+            // Process Manual Blocks
+            if (prop.blockeddates && Array.isArray(prop.blockeddates)) {
+                prop.blockeddates.forEach((d: string) => allBlocked.push(new Date(d + 'T12:00:00')));
             }
 
-            // 3. Merge and Deduplicate
-            const allBlocked = [...dbBlockedDates, ...externalDates];
-            const uniqueDates = Array.from(new Set(allBlocked.map(d => d.toDateString())))
-                                    .map(s => new Date(s));
-            
-            setBlockedDates(uniqueDates);
+            // Process Bookings
+            (bks || []).forEach((b: { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null }) => {
+                // Ignore expired AI holds
+                if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return;
+                addRange(b.check_in, b.check_out);
+            });
+
+            // Process Pending Leads (TTL Protection)
+            (pending || []).forEach((p: { check_in: string; check_out: string; expires_at: string | null }) => {
+                if (p.expires_at && new Date(p.expires_at) < now) return;
+                addRange(p.check_in, p.check_out);
+            });
+
+            // Deduplicate
+            const uniqueStrings = Array.from(new Set(allBlocked.map(d => d.toISOString().split('T')[0])));
+            const finalDates = uniqueStrings.map(s => new Date(s + 'T12:00:00'));
+
+            setBlockedDates(finalDates);
 
         } catch (err: any) {
             console.error("useAvailability Error:", err);
@@ -113,27 +99,22 @@ export const useAvailability = (propertyId: string | undefined) => {
         isLoading,
         error,
         refresh: fetchAvailability,
-        // Helper to check if a specific range is available
         isRangeAvailable: (start: Date, end: Date) => {
-            const range: string[] = [];
-            let curr = Temporal.PlainDate.from({ 
-                year: start.getFullYear(), 
-                month: start.getMonth() + 1, 
-                day: start.getDate() 
-            });
-            const last = Temporal.PlainDate.from({ 
-                year: end.getFullYear(), 
-                month: end.getMonth() + 1, 
-                day: end.getDate() 
-            });
-
-            while (Temporal.PlainDate.compare(curr, last) <= 0) {
-                range.push(new Date(curr.year, curr.month - 1, curr.day).toDateString());
-                curr = curr.add({ days: 1 });
+            if (!start || !end) return true;
+            const sStr = start.toISOString().split('T')[0];
+            const eStr = end.toISOString().split('T')[0];
+            
+            // Generate requested range strings
+            const requestedRange: string[] = [];
+            let curr = new Date(sStr + 'T12:00:00');
+            const last = new Date(eStr + 'T12:00:00');
+            while (curr < last) {
+                requestedRange.push(curr.toISOString().split('T')[0]);
+                curr.setDate(curr.getDate() + 1);
             }
 
-            const blockedStrings = new Set(blockedDates.map(d => d.toDateString()));
-            return !range.some(dStr => blockedStrings.has(dStr));
+            const blockedStrings = new Set(blockedDates.map(d => d.toISOString().split('T')[0]));
+            return !requestedRange.some(d => blockedStrings.has(d));
         }
     };
 };

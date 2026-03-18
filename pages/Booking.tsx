@@ -92,17 +92,49 @@ const Booking: React.FC = () => {
     }
   }
 
-  // 15s Abandonment Push from Salty
+  // 15s Abandonment Push & Ghost Lead Capture
   useEffect(() => {
-    if (startDate && endDate && !isProcessing) {
-      const timer = setTimeout(() => {
+    if (startDate && endDate && !isProcessing && user) {
+      const timer = setTimeout(async () => {
+        // 🛡️ LEAD CAPTURE: Auto-save as pending if they have dates
+        try {
+          const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+          const { error: leadErr } = await supabase.from('pending_bookings').upsert({
+            user_id: user.id,
+            property_id: id,
+            check_in: format(startDate, 'yyyy-MM-dd'),
+            check_out: format(endDate, 'yyyy-MM-dd'),
+            guest_name: user.name,
+            guest_email: user.email,
+            guest_phone: phone || user.phone || 'No provisto',
+            status: 'pending_payment',
+            expires_at: expiresAt
+          }, { onConflict: 'user_id,property_id,status' });
+
+          if (!leadErr) {
+            // Notificar al Master-Cron para el "Nuevo Lead" en Telegram
+            fetch('/api/master?action=notify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                type: 'new_lead',
+                guestName: user.name,
+                property: property.title,
+                checkIn: format(startDate, 'dd MMM'),
+                checkOut: format(endDate, 'dd MMM'),
+                phone: phone || user.phone
+              })
+            }).catch(() => {});
+          }
+        } catch (e) {}
+
         window.dispatchEvent(new CustomEvent('salty-push', {
           detail: { message: "¡Buenas fechas! ¿Tienes alguna duda con el proceso de pago o la política de cancelación? Estoy aquí para aclararlo." }
         }));
-      }, 15000);
+      }, 5000); // Trigger faster (5s) for high-intent leads
       return () => clearTimeout(timer);
     }
-  }, [startDate, endDate, isProcessing]);
+  }, [startDate, endDate, phone, isProcessing, user, id, property.title]);
 
   const handleApplyPromo = async () => {
     setPromoError('');

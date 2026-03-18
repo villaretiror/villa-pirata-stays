@@ -12,7 +12,7 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
     baseURL: 'https://generativelanguage.googleapis.com/v1',
 });
-const model = google('gemini-2.5-flash');
+const model = google('gemini-1.5-flash');
 /**
  * 👑 AI SERVICES LAYER - THE EXECUTIVE BRAIN
  * Architecture: Bridge between LLM and Backend Logic
@@ -85,6 +85,22 @@ export const checkAvailabilityWithICal = async (
             : 'Fechas no disponibles — reserva directa existente.';
 
         return { available: false, reason };
+    }
+
+    // ── Step 1.5: Query pending leads (short-term locks) ──────────
+    const { data: dbPending } = await supabase
+        .from('pending_bookings')
+        .select('check_in, check_out, expires_at')
+        .eq('property_id', villaId)
+        .eq('status', 'pending_payment');
+
+    const hasPendingOverlap = (dbPending || []).some((p: { check_in: string; check_out: string; expires_at: string | null }) => {
+        if (p.expires_at && new Date(p.expires_at) < now) return false;
+        return qIn < new Date(p.check_out) && qOut > new Date(p.check_in);
+    });
+
+    if (hasPendingOverlap) {
+        return { available: false, reason: 'Fechas bloqueadas temporalmente en proceso de pago.' };
     }
 
     // ── Step 2: Fallback — check property.blockeddates (manual blocks by host) ─
