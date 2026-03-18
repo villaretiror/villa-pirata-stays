@@ -2,7 +2,9 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
+import PaymentProcessor from '../components/PaymentProcessor';
 import { useProperty } from '../contexts/PropertyContext';
+import { HOST_PHONE } from '../constants';
 
 interface Message {
   id: string;
@@ -26,6 +28,8 @@ const Messages: React.FC = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [takeoverUntil, setTakeoverUntil] = useState<string | null>(null);
+  const [leadData, setLeadData] = useState({ name: '', email: '', phone: '' });
+  const [submittedLeads, setSubmittedLeads] = useState<Record<string, boolean>>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Intentar obtener el propertyId si venimos de una página de villa
@@ -435,13 +439,21 @@ const Messages: React.FC = () => {
 
           if (paymentMatch) {
             displayText = m.text.replace(paymentMatch[0], '');
-            paymentData = {
-              propertyId: paymentMatch[1].trim(),
-              total: parseFloat(paymentMatch[2].trim()),
-              checkIn: paymentMatch[3].trim(),
-              checkOut: paymentMatch[4].trim(),
-              guests: parseInt(paymentMatch[5].trim())
-            };
+            try {
+              // Now we parse the JSON-like data or extended fields
+              const rawData = paymentMatch[0].slice(17, -1).split(',');
+              paymentData = {
+                propertyId: rawData[0]?.trim(),
+                total: parseFloat(rawData[1]?.trim() || '0'),
+                checkIn: rawData[2]?.trim(),
+                checkOut: rawData[3]?.trim(),
+                guests: parseInt(rawData[4]?.trim() || '0'),
+                propertyName: rawData[5]?.trim() || 'Villa',
+                holdId: rawData[6]?.trim() || null
+              };
+            } catch (e) {
+              console.error("Payment parse error:", e);
+            }
           }
           const propertyId = paymentData?.propertyId;
 
@@ -479,50 +491,104 @@ const Messages: React.FC = () => {
 
                 <div className="font-medium tracking-tight whitespace-pre-wrap">{formatMessageText(displayText, propertyId)}</div>
 
-                {/* Mostrar Botón de PayPal si hay Payment Request */}
+                {/* 🛡️ COO SAFEGUARD: Lead Capture Obligatorio */}
                 {paymentData && m.sender === 'ai' && (
                   <div className="mt-4 p-5 bg-orange-50/80 rounded-2xl border border-orange-200 animate-slide-up shadow-sm">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Desglose de Inversión</p>
+                    <p className="text-[10px] font-black uppercase tracking-widest text-orange-400 mb-2">Checkout Seguro</p>
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-xs text-orange-900 font-bold">Total Final:</span>
-                      <span className="text-lg font-black text-black">${paymentData.total}</span>
+                      <span className="text-xs text-orange-900 font-bold">Usted está reservando:</span>
+                      <span className="text-sm font-black text-black">{paymentData.propertyName}</span>
                     </div>
-                    <p className="text-[10px] text-orange-800 mb-4 opacity-80 leading-tight">Estancia: {paymentData.checkIn} al {paymentData.checkOut}<br />Huéspedes: {paymentData.guests}</p>
+                    <p className="text-[10px] text-orange-800 mb-4 opacity-80 leading-tight">Total: ${paymentData.total} | {paymentData.checkIn} - {paymentData.checkOut}</p>
 
-                    {isAuthenticated === false ? (
-                      <div className="bg-white p-6 rounded-2xl border border-dashed border-gray-200 text-center animate-fade-in shadow-sm">
-                        <span className="material-icons text-orange-400 mb-2">lock</span>
-                        <p className="text-[12px] font-bold text-gray-800 mb-4 uppercase tracking-tighter">Inicie sesión para completar su reserva</p>
+                    {!submittedLeads[m.id] ? (
+                      <div className="bg-white p-5 rounded-xl border border-orange-100 space-y-3 animate-fade-in shadow-sm">
+                        <p className="text-[9px] font-black uppercase tracking-widest text-orange-600 mb-1 leading-none text-center">Datos del Líder de Estancia</p>
+                        <input
+                          type="text"
+                          placeholder="Nombre Completo"
+                          className="w-full bg-[#fbfaf8] border-none rounded-xl px-4 py-3 text-xs"
+                          value={leadData.name}
+                          onChange={(e) => setLeadData({ ...leadData, name: e.target.value })}
+                        />
+                        <div className="flex gap-2">
+                          <input
+                            type="email"
+                            placeholder="Email"
+                            className="w-full bg-[#fbfaf8] border-none rounded-xl px-4 py-3 text-xs"
+                            value={leadData.email}
+                            onChange={(e) => setLeadData({ ...leadData, email: e.target.value })}
+                          />
+                          <input
+                            type="tel"
+                            placeholder="Teléfono"
+                            className="w-full bg-[#fbfaf8] border-none rounded-xl px-4 py-3 text-xs"
+                            value={leadData.phone}
+                            onChange={(e) => setLeadData({ ...leadData, phone: e.target.value })}
+                          />
+                        </div>
                         <button
-                          onClick={() => navigate('/login?redirect=messages')}
-                          className="w-full bg-[#FF6633] text-white py-3 rounded-xl font-black text-xs uppercase tracking-widest shadow-lg shadow-orange-200 transition-transform active:scale-95"
+                          onClick={async () => {
+                            if (!leadData.name || !leadData.email || !leadData.phone) return alert("Por favor complete todos sus datos.");
+                            // Guardar en pending_bookings (COO Directiva)
+                            try {
+                              await supabase.from('pending_bookings').insert({
+                                property_id: paymentData.propertyId,
+                                check_in: paymentData.checkIn,
+                                check_out: paymentData.checkOut,
+                                customer_name: leadData.name,
+                                customer_email: leadData.email,
+                                customer_phone: leadData.phone,
+                                total_price: paymentData.total,
+                                session_id: sessionId
+                              });
+                              setSubmittedLeads(prev => ({ ...prev, [m.id]: true }));
+                            } catch (err) {
+                              alert("Error de conexión. Intente de nuevo.");
+                            }
+                          }}
+                          className="w-full bg-black text-white py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gray-900 transition-colors"
                         >
-                          Acceder / Registrarse
+                          Continuar al Pago
                         </button>
                       </div>
                     ) : (
-                      <>
-                        <div className="mb-4 bg-white/50 p-3 rounded-xl">
+                      <div className="space-y-4 animate-fade-in">
+                        <div className="bg-white/50 p-3 rounded-xl">
                           <label className="flex items-start gap-2 cursor-pointer text-[10px] text-orange-900 leading-tight">
                             <input type="checkbox" className="mt-0.5 accent-orange-600" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} />
-                            <span>He leído y acepto firmar el <Link to={`/contrato?id=${paymentData.propertyId}`} target="_blank" className="font-bold underline hover:text-orange-600">Contrato de Alquiler Digital</Link> y las reglas de la casa.</span>
+                            <span>Acepto el <Link to={`/contrato?id=${paymentData.propertyId}`} target="_blank" className="font-bold underline hover:text-orange-600 text-[10px]">Contrato de Alquiler</Link> y las reglas.</span>
                           </label>
                         </div>
-
+                        
                         {acceptedTerms ? (
-                          <div className="bg-white p-2 rounded-xl shadow-sm animate-fade-in">
-                            <PayPalPayment
-                              amount={paymentData.total}
-                              onSuccess={(details) => handlePaymentSuccess(details, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total)}
-                              onError={(err) => alert("Error con PayPal: " + err)}
-                            />
+                          <div className="bg-white p-4 rounded-xl shadow-sm border border-orange-100">
+                             <PaymentProcessor 
+                                total={paymentData.total}
+                                bookingId={paymentData.holdId || undefined}
+                                onSuccess={(status, proofUrl, method) => {
+                                  if (status === 'confirmed') {
+                                    handlePaymentSuccess({ payer: { email_address: leadData.email, name: { given_name: leadData.name } } }, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total);
+                                  } else {
+                                    // ATH Movil Manual Approval Request
+                                    setMessages((prev) => [...prev, {
+                                      id: crypto.randomUUID(),
+                                      text: "¡Gracias por su comprobante! He recibido la imagen de su pago por ATH Móvil. Un miembro de nuestro equipo validará la transacción en breve para confirmar oficialmente su estancia. 🛎️",
+                                      sender: 'ai',
+                                      created_at: new Date().toISOString()
+                                    }]);
+                                  }
+                                }}
+                                isProcessing={false}
+                                user={{ id: sessionId, full_name: leadData.name, email: leadData.email }}
+                             />
                           </div>
                         ) : (
-                          <div className="bg-orange-100/50 p-3 rounded-xl border border-dashed border-orange-300 text-center">
-                            <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest">Acepte los términos para pagar</p>
+                           <div className="bg-orange-100/50 p-4 rounded-xl border border-dashed border-orange-300 text-center">
+                            <p className="text-[10px] font-bold text-orange-800 uppercase tracking-widest opacity-60">Acepte términos para habilitar métodos de pago</p>
                           </div>
                         )}
-                      </>
+                      </div>
                     )}
                   </div>
                 )}

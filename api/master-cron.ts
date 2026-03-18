@@ -80,14 +80,25 @@ export default async function handler(req: any, res: any) {
 
 async function taskCleanupMocks(supabase: any) {
     const now = new Date().toISOString();
-    // Limpiar holds temporales expirados
+    
+    // 🛡️ COO SAFEGUARD: Bloqueo temporal expira en 15 minutos
+    // 1. Limpiar holds temporales en tabla principal 'bookings' (Status: pending_ai_validation)
     const { count: holds } = await supabase.from('bookings').delete().eq('status', 'pending_ai_validation').lt('hold_expires_at', now);
-    // Limpiar logs de chat muy antiguos ( > 30 días ) para optimizar
+    
+    // 2. Limpiar Prospectos (Leads) en 'pending_bookings' que no pagaron (Status: pending_payment)
+    const { count: pending } = await supabase.from('pending_bookings').delete().eq('status', 'pending_payment').lt('expires_at', now);
+    
+    // 3. Limpiar logs de chat muy antiguos ( > 30 días ) para optimizar
     const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     const { count: logs } = await supabase.from('chat_logs').delete().lt('last_interaction', thirtyDaysAgo.toISOString());
     const { count: aiLogs } = await supabase.from('ai_chat_logs').delete().lt('created_at', thirtyDaysAgo.toISOString());
 
-    return { status: 'ok', holds_cleared: holds || 0, logs_optimized: (logs || 0) + (aiLogs || 0) };
+    return { 
+        status: 'ok', 
+        holds_cleared: holds || 0, 
+        leads_expired: pending || 0,
+        logs_optimized: (logs || 0) + (aiLogs || 0) 
+    };
 }
 
 async function taskCalendarSync(req: any, isSilent = false) {

@@ -35,6 +35,8 @@ import {
   FireExtinguisher
 } from 'lucide-react';
 
+import SectionErrorBoundary from '../components/SectionErrorBoundary';
+
 const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
 const SECTION_TITLE_STYLE = "text-2xl font-serif text-text-main mb-6";
 
@@ -229,8 +231,8 @@ export const PropertyDetails: React.FC = () => {
     setActiveSection(activeSection === section ? null : section);
   };
 
-
   return (
+    <SectionErrorBoundary sectionName="Detalles de Estancia">
     <div className="bg-[#FDFCFB] min-h-screen pb-32 relative">
       {/* Top Nav Sticky con Framer Motion */}
       <motion.div
@@ -860,6 +862,7 @@ export const PropertyDetails: React.FC = () => {
         )}
       </AnimatePresence>
     </div>
+    </SectionErrorBoundary>
   );
 };
 

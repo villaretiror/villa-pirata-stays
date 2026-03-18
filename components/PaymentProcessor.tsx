@@ -11,7 +11,7 @@ interface PaymentProcessorProps {
     user: any;
 }
 
-const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, onSuccess, isProcessing, user }) => {
+const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, onSuccess, isProcessing, user }) => {
     const [paymentMethod, setPaymentMethod] = useState<'ath_movil' | 'paypal'>('ath_movil');
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -60,6 +60,15 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, onSuccess, i
         }
 
         const { data } = supabase.storage.from('payments').getPublicUrl(filePath);
+        
+        // 🛡️ COO SAFEGUARD: Vincular recibo a la reserva
+        if (bookingId && data.publicUrl) {
+            await supabase.from('bookings').update({ 
+                payment_proof_url: data.publicUrl,
+                status: 'pending_ai_validation' // Salty o el Host podrán validarlo
+            }).eq('id', bookingId);
+        }
+
         setIsUploading(false);
         return data.publicUrl;
     };

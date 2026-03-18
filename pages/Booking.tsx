@@ -18,6 +18,7 @@ type PromoRow = Tables<'promo_codes'>;
 const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
 
 import { useAvailability } from '../hooks/useAvailability';
+import SectionErrorBoundary from '../components/SectionErrorBoundary';
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -307,6 +308,7 @@ const Booking: React.FC = () => {
   const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   return (
+    <SectionErrorBoundary sectionName="Reserva Vivir la Experiencia">
     <div className="fixed inset-0 z-50 bg-sand flex justify-center items-end sm:items-center p-0 sm:p-4 animate-fade-in">
       {/* Dynamic Background Mesh for Elite Feel */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
@@ -576,6 +578,7 @@ const Booking: React.FC = () => {
         )}
       </AnimatePresence>
     </div>
+    </SectionErrorBoundary>
   );
 };
 

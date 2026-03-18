@@ -111,10 +111,32 @@ export default async function handler(req: Request) {
         }
 
         const propertyTitles: Record<string, string> = {};
-        dbProperties?.forEach((p: any) => { propertyTitles[p.id] = p.title; });
+        const titleToId: Record<string, string> = {};
+        dbProperties?.forEach((p: any) => { 
+            propertyTitles[p.id] = p.title; 
+            titleToId[p.title.toLowerCase()] = String(p.id);
+            // Also map some common abbreviations or parts of the name
+            if (p.title.toLowerCase().includes('retiro')) titleToId['villa retiro'] = String(p.id);
+            if (p.title.toLowerCase().includes('pirata')) titleToId['pirata house'] = String(p.id);
+        });
 
         const activeProperty = dbProperties?.find((p: any) => String(p.id) === effectivePropertyId);
         const activePropertyName = activeProperty?.title || 'Villa Desconocida';
+
+        // Helper to resolve property ID from input (could be name or ID)
+        const resolvePropertyId = (input: string) => {
+            if (!input) return effectivePropertyId;
+            const cleanInput = input.trim().toLowerCase();
+            // If it's already a known ID
+            if (propertyTitles[input]) return input;
+            // If it matches a title
+            if (titleToId[cleanInput]) return titleToId[cleanInput];
+            // Look for partial matches in titles
+            const partialMatch = Object.keys(titleToId).find(title => title.includes(cleanInput) || cleanInput.includes(title));
+            if (partialMatch) return titleToId[partialMatch];
+            
+            return effectivePropertyId;
+        };
 
         let accessLevel: any = 0;
         try {
@@ -183,10 +205,13 @@ ${intentCategory === 'EMERGENCIA_ACTIVA' || intentCategory === 'ALERTA_CRÍTICA'
 • Huésped: **${guestName}**
 • Retorno: ${isReturningGuest ? "SÍ (Bienvenido de nuevo)." : "NUEVA SESIÓN."}
 
-### 🌴 PROTOCOLO DE CONVERSIÓN:
-1.  **Cierre de Venta (CTA):** Termina con: "¿Le gustaría proceder con la reserva ahora o prefiere ver otra opción?".
-2.  **Defensa de Valor:** Resalta Energía Solar, Reserva de Agua y Privacidad Total.
-3.  **CTA de Confianza:** Si no hay reserva, cierra con: "Mi meta es que su estancia sea impecable; si tiene dudas sobre la logística, estoy aquí las 24 horas. ✨"
+### 🌴 PROTOCOLO DE CONVERSIÓN Y SEGURIDAD (COO MANDATE):
+1.  **Confirmación Visual (OBLIGATORIO):** Antes de mostrar una cotización o link, di explícitamente: "Usted está reservando: **[Nombre Oficial de la Villa]**". no uses apodos.
+2.  **Transparencia de Bloqueo (TTL):** Informa que la villa se bloqueará en el calendario por **15 minutos** para que puedan completar el pago. Si no recibimos el comprobante en ese tiempo, la fecha se liberará automáticamente.
+3.  **Cierre de Venta (CTA):** Termina con: "¿Le gustaría proceder con la reserva ahora o prefiere ver otra opción?".
+4.  **Defensa de Valor:** Resalta Energía Solar, Reserva de Agua y Privacidad Total.
+5.  **CTA de Confianza:** Si no hay reserva, cierra con: "Mi meta es que su estancia sea impecable; si tiene dudas sobre la logística, estoy aquí las 24 horas. ✨"
+6.  **Trigger de Pago (PUENTE):** Cuando el huésped confirme su interés tras usar \`generate_booking_pattern\`, DEBES incluir al final de tu mensaje el tag: \`[PAYMENT_REQUEST: property_id, total, check_in, check_out, guests, property_name, hold_id]\` usando exactamente los valores devueltos por la herramienta.
 
 ### 🛎️ HOUSE RULES:
 ${JSON.stringify(HOUSE_RULES, null, 2)}
@@ -226,12 +251,27 @@ ${JSON.stringify(HOUSE_RULES, null, 2)}
 
         const allTools: Record<string, any> = {
             check_availability: tool({
-                description: 'Busca disponibilidad en tiempo real.',
-                parameters: z.object({ villa_ids: z.array(z.string()), check_in: z.string(), check_out: z.string() }),
+                description: 'Busca disponibilidad en tiempo real para una o varias villas.',
+                parameters: z.object({ 
+                    villa_ids: z.array(z.string()).describe('Lista de nombres o IDs de villas para verificar'), 
+                    check_in: z.string(), 
+                    check_out: z.string() 
+                }),
                 execute: async ({ villa_ids, check_in, check_out }) => {
-                    const results = await Promise.all(villa_ids.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
-                    const available = villa_ids.filter((_, i) => results[i].available);
-                    return JSON.stringify({ status: 'success', available_ids: available });
+                    try {
+                        const resolvedIds = villa_ids.map(id => resolvePropertyId(id));
+                        const results = await Promise.all(resolvedIds.map(id => checkAvailabilityWithICal(id, check_in, check_out)));
+                        const available = resolvedIds.filter((_, i) => results[i].available);
+                        
+                        return JSON.stringify({ 
+                            status: 'success', 
+                            available_ids: available,
+                            available_names: available.map(id => propertyTitles[id] || id)
+                        });
+                    } catch (err: any) {
+                        console.error("Tool Error [check_availability]:", err.message);
+                        return JSON.stringify({ status: 'error', message: "Error verificando disponibilidad." });
+                    }
                 },
             }),
             report_property_emergency: tool({
@@ -246,12 +286,37 @@ ${JSON.stringify(HOUSE_RULES, null, 2)}
                 }
             }),
             generate_booking_pattern: tool({
-                description: 'Genera cotización oficial.',
-                parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), promo_code: z.string().optional() }),
+                description: 'Genera cotización oficial y enlace de reserva para una villa específica.',
+                parameters: z.object({ 
+                    villa_id: z.string().describe('ID o nombre de la villa (ej: Villa Retiro, Pirata House)'), 
+                    check_in: z.string(), 
+                    check_out: z.string(), 
+                    promo_code: z.string().optional() 
+                }),
                 execute: async ({ villa_id, check_in, check_out, promo_code }) => {
-                    const quote = await applyAIQuote(villa_id, check_in, check_out, promo_code);
-                    await createTemporaryHold(villa_id, check_in, check_out, userId);
-                    return JSON.stringify({ status: 'success', quote, action_url: `${currentUrl}/booking/${villa_id}?checkIn=${check_in}&checkOut=${check_out}` });
+                    try {
+                        const resolvedId = resolvePropertyId(villa_id);
+                        const quote = await applyAIQuote(resolvedId, check_in, check_out, promo_code);
+                        const holdId = await createTemporaryHold(resolvedId, check_in, check_out, userId);
+                        
+                        // Determinar URL de acción limpia (sin duplicar /booking/ si ya está)
+                        const baseUrl = currentUrl?.split('/booking/')[0]?.split('/property/')[0] || '';
+                        const action_url = `${baseUrl}/booking/${resolvedId}?checkIn=${check_in}&checkOut=${check_out}`;
+                        
+                        return JSON.stringify({ 
+                            status: 'success', 
+                            quote, 
+                            action_url,
+                            property_name: propertyTitles[resolvedId] || villa_id,
+                            hold_id: holdId // Ahora devolvemos el ID para el bridge de pago
+                        });
+                    } catch (toolErr: any) {
+                        console.error("Tool Error [generate_booking_pattern]:", toolErr.message);
+                        return JSON.stringify({ 
+                            status: 'error', 
+                            message: "Estoy verificando la disponibilidad exacta para esas fechas. Dame un momento para calibrar el calendario maestro." 
+                        });
+                    }
                 },
             })
         };

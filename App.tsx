@@ -48,17 +48,8 @@ const App: React.FC = () => {
   const propertyTitle = currentProperty?.title;
 
   useEffect(() => {
+    console.log(`[App] Navigating to: ${location.pathname}`);
     window.scrollTo(0, 0);
-
-    // 🔐 TOKEN WATCHER: Refresca la sesión automáticamente antes de expirar
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event: string) => {
-      if (event === 'TOKEN_REFRESHED') {
-        console.log('Token refreshed successfully');
-      }
-      if (event === 'SIGNED_OUT') {
-        // Opcional: Limpiar cache local
-      }
-    });
 
     const pageTitles: Record<string, string> = {
       '/': 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR',
@@ -76,8 +67,10 @@ const App: React.FC = () => {
     else if (uiConfig.isHostProfile) document.title = 'Perfil de Anfitrión | Villa & Pirata Stays';
     else document.title = pageTitles[location.pathname] || 'Villa Retiro R & Pirata Family House | Cabo Rojo, PR';
 
-    return () => subscription.unsubscribe();
-  }, [location.pathname, uiConfig.isDetails, uiConfig.isBooking, uiConfig.isReservation, propertyTitle]);
+    return () => {
+      // Cleanup logic if needed
+    };
+  }, [location.pathname, propertyTitle]);
 
   return (
     <div className="font-sans text-text-main bg-sand min-h-screen overflow-x-hidden">

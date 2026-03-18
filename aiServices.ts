@@ -123,16 +123,23 @@ export const logAbandonmentLead = async (data: { name: string; email?: string; p
 
 // 2.1 Temporary AI-Hold (Overbooking Prevention)
 export const createTemporaryHold = async (propertyId: string, checkIn: string, checkOut: string, userId?: string) => {
+    // 🛡️ REINFORCED RESOLUTION
+    let finalId = String(propertyId).trim();
+    if (isNaN(Number(finalId)) || finalId.length < 5) {
+        const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${propertyId}%`).limit(1).maybeSingle();
+        if (byTitle) finalId = String(byTitle.id);
+    }
+
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
     const status = 'pending_ai_validation';
     const source = 'Salty AI';
 
     // Generate sync hash for de-duplication and change detection
-    const content = `${propertyId}|${checkIn}|${checkOut}|${status}`;
+    const content = `${finalId}|${checkIn}|${checkOut}|${status}`;
     const syncHash = Buffer.from(content).toString('base64');
 
     const { data: newHold, error } = await supabase.from('bookings').insert({
-        property_id: String(propertyId),
+        property_id: String(finalId),
         check_in: checkIn,
         check_out: checkOut,
         user_id: userId || null,
@@ -144,11 +151,9 @@ export const createTemporaryHold = async (propertyId: string, checkIn: string, c
     }).select().single();
 
     if (!error && newHold) {
-        // Silently notify if this is a significant hold (optional)
-        // For now we just let the system know it's blocked.
-        return true;
+        return newHold.id;
     }
-    return false;
+    return null;
 };
 
 // 3. Payment Verification Status
@@ -216,8 +221,15 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
 };
 
 export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string) => {
-    const { data: property } = await supabase.from('properties').select('*').eq('id', String(propertyId)).single();
-    if (!property) throw new Error('Propiedad no encontrada.');
+    // 🛡️ REINFORCED RESOLUTION: Try ID first, then title
+    let { data: property } = await supabase.from('properties').select('*').eq('id', String(propertyId).trim()).single();
+    
+    if (!property) {
+        const { data: byTitle } = await supabase.from('properties').select('*').ilike('title', `%${propertyId.trim()}%`).limit(1).maybeSingle();
+        property = byTitle;
+    }
+
+    if (!property) throw new Error(`Propiedad no encontrada [${propertyId}].`);
 
     let basePrice = 0;
     let hasSeasonal = false;
