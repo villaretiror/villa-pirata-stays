@@ -2963,11 +2963,12 @@ const HostDashboard: React.FC = () => {
       const junkFields = ['isOffline', 'isoffline', 'reviews_count', 'blockedDates'];
       junkFields.forEach(f => delete payload[f]);
 
-      // Unificar nombres JSONB: Mantenemos calendarSync (PascalCase citado en DB)
+      // Unificar nombres JSONB: Mantenemos calendarSync (PascalCase citado en DB) y blockeddates (lowercase en DB)
       payload.calendarSync = updated.calendarSync || [];
+      payload.blockeddates = updated.blockedDates || [];
 
       // Aseguramos que los objetos JSONB se mantengan intactos
-      const jsonFields = ['fees', 'policies', 'seasonal_prices', 'offers', 'reviews_list', 'calendarSync'];
+      const jsonFields = ['fees', 'policies', 'seasonal_prices', 'offers', 'reviews_list', 'calendarSync', 'blockeddates'];
       jsonFields.forEach(field => {
         if (!payload[field]) payload[field] = (updated as any)[field] || (['fees', 'policies'].includes(field) ? {} : []);
       });

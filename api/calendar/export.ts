@@ -24,7 +24,7 @@ export default async function handler(req: any, res: any) {
                 .from('bookings')
                 .select('*')
                 .eq('property_id', id)
-                .in('status', ['confirmed', 'completed']),
+                .in('status', ['confirmed', 'completed', 'external_block']),
             supabase
                 .from('properties')
                 .select('title, blockeddates')
@@ -45,7 +45,7 @@ export default async function handler(req: any, res: any) {
             language: 'ES'
         });
 
-        // 2. Add Confirmed Bookings
+        // 2. Add Confirmed Bookings & External Blocks
         bookings.forEach((booking: any) => {
             const start = new Date(booking.check_in);
             const end = new Date(booking.check_out);
@@ -53,24 +53,23 @@ export default async function handler(req: any, res: any) {
             calendar.createEvent({
                 start: start,
                 end: end,
-                summary: 'Ocupado (Reserva Villa Retiro)',
-                description: `ID: ${booking.id}`,
+                summary: 'Ocupado (Villa & Pirata Stays)',
+                description: `ID: ${booking.id} - ${booking.source || 'Directo'}`,
                 allDay: true
             });
         });
 
-        // 3. Add Manual Blocked Dates (Jsonb column)
+        // 3. Add Manual Blocked Dates
         const manualBlocks = (property.blockeddates as string[]) || [];
         manualBlocks.forEach((dateStr: string) => {
             const date = new Date(dateStr);
-            // End date is next day for 1-day block
             const endDate = new Date(date);
             endDate.setDate(endDate.getDate() + 1);
 
             calendar.createEvent({
                 start: date,
                 end: endDate,
-                summary: 'Bloqueado (Mantenimiento/Host)',
+                summary: 'Bloqueado (Mantenimiento)',
                 description: 'Bloqueo manual desde el Dashboard',
                 allDay: true
             });

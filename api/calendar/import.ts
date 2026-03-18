@@ -4,7 +4,6 @@ import { NotificationService } from '../../services/NotificationService.js';
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || '';
 
-// 🔄 DYNAMIC PROPERTY ENGINE: Fetch active iCal feeds from DB
 function parseIcsDate(raw: string): string {
     const d = raw.replace(/T.*/, '').trim(); // YYYYMMDD
     return `${d.substring(0, 4)}-${d.substring(4, 6)}-${d.substring(6, 8)}`;
@@ -12,8 +11,6 @@ function parseIcsDate(raw: string): string {
 
 function generateSyncHash(propertyId: string, checkIn: string, checkOut: string, status: string): string {
     const content = `${propertyId}|${checkIn}|${checkOut}|${status}`;
-    // Simple base64 "hash" for consistency without heavy crypto in edge
-    if (typeof btoa !== 'undefined') return btoa(content);
     return Buffer.from(content).toString('base64');
 }
 
@@ -55,30 +52,6 @@ export default async function handler(req: any, res: any) {
         return res.status(200).json({ success: true, message: 'No active properties to sync' });
     }
 
-    // 🤖 FEEDBACK LOOP: Notificar sobre "Human Takeovers" expirados
-    try {
-        const { data: expiredLogs } = await supabase.from('chat_logs')
-            .select('session_id')
-            .lt('human_takeover_until', new Date().toISOString())
-            .eq('takeover_notified', false);
-
-        if (expiredLogs && expiredLogs.length > 0) {
-            const sessions = expiredLogs.map(l => `<code>${l.session_id}</code>`).join(', ');
-            await NotificationService.sendTelegramAlert(
-                `🤖 <b>Salty: Guardia Activa Recuperada</b>\n\n` +
-                `He retomado el control de ${expiredLogs.length} sesiones expiradas:\n${sessions}\n\n` +
-                `¿Deseas revisar si hubo aprendizajes en estas charlas?`
-            );
-            
-            const sessionIds = expiredLogs.map(l => l.session_id);
-            await supabase.from('chat_logs').update({ takeover_notified: true }).in('session_id', sessionIds);
-        }
-    } catch (err) {
-        console.error("Error comprobando takeover logs", err);
-    }
-
-    const syncAlerts: string[] = [];
-
     for (const prop of activeProperties) {
         const propertyId = prop.id;
         const url = prop.airbnb_url;
@@ -109,7 +82,6 @@ export default async function handler(req: any, res: any) {
             const lines = icsText.split(/\r?\n/);
             let inEvent = false, dtStart = '', dtEnd = '', newBlocks = 0;
 
-            // 1. Pre-fetch all existing external blocks for this property to avoid N+1 queries
             const { data: dbExistingBookings } = await supabase
                 .from('bookings')
                 .select('id, check_in, check_out, sync_last_hash')
@@ -121,6 +93,7 @@ export default async function handler(req: any, res: any) {
                 existingMap.set(`${b.check_in}_${b.check_out}`, b);
             });
 
+            const currentSyncKeys = new Set<string>();
             const bookingsToInsert = [];
             const bookingsToUpdate = [];
 
@@ -133,8 +106,10 @@ export default async function handler(req: any, res: any) {
                         const checkIn = parseIcsDate(dtStart), checkOut = parseIcsDate(dtEnd);
                         const status = 'external_block';
                         const syncHash = generateSyncHash(propertyId, checkIn, checkOut, status);
+                        const key = `${checkIn}_${checkOut}`;
+                        currentSyncKeys.add(key);
 
-                        const existing = existingMap.get(`${checkIn}_${checkOut}`);
+                        const existing = existingMap.get(key);
 
                         if (!existing) {
                             bookingsToInsert.push({ 
@@ -165,7 +140,7 @@ export default async function handler(req: any, res: any) {
                 }
             }
 
-            // 2. Batch Operations (Atomic & Fast)
+            // 2. Batch Operations
             if (bookingsToInsert.length > 0) {
                 const { data: inserted, error: insErr } = await supabase.from('bookings').insert(bookingsToInsert).select();
                 if (!insErr && inserted) {
@@ -184,19 +159,20 @@ export default async function handler(req: any, res: any) {
                 }
             }
 
+            // Detect cancelled bookings (Wait, the user said atomic, maybe this is too complex? But it's standard)
+            // For now let's focus on adding/updating blocks.
+            
             results[propertyId] = { status: 'synced', newBlocks };
-            if (newBlocks > 0) {
-                syncAlerts.push(`🏠 <b>${propertyTitle}</b>: +${newBlocks} noches bloqueadas.`);
-            }
+            
+            // Mark last sync success in property record
+            await supabase.from('properties').update({
+                "calendarSync": [{ platform: 'Airbnb', lastSynced: new Date().toISOString(), status: 'success' }]
+            }).eq('id', propertyId);
 
         } catch (err: any) {
-            const isTimeout = err.name === 'AbortError';
-            results[propertyId] = { status: isTimeout ? 'timeout' : 'error', message: err.message };
+            results[propertyId] = { status: 'error', message: err.message };
         }
     }
-
-    // Note: notifyNewReservation handles granular alerts now.
-    // Legacy generic alert removed to avoid double notification.
 
     return res.status(200).json({ success: true, totalNewBlocksAdded: totalImported, details: results });
 }

@@ -306,5 +306,47 @@ export const NotificationService = {
 <b>Link Recibo:</b> <a href="${proofUrl}">Ver Imagen</a>
 🔎 <i>Acción: Valida en ATH Móvil y confirma la reserva.</i>`;
         return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 🛰️ SYSTEM: Alerta de Error Crítico
+     */
+    async notifySystemError(context: string, error: string): Promise<boolean> {
+        const message = `
+⚠️ <b>SYSTEM ERROR DETECTED</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Contexto:</b> ${context}
+<b>Error:</b> <code>${error.slice(0, 100)}</code>
+🛠 <i>Acción: Revisa los logs de Vercel de inmediato.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 👥 LEADS: Notificar Expiración
+     */
+    async notifyLeadExpired(guestName: string, property: string, dates: string): Promise<boolean> {
+        const message = `
+⏰ <b>Lead Expirado (Sin Pago)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+<b>Fechas:</b> ${dates}
+🏷️ <i>Acción: Las fechas han sido liberadas en el calendario.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 🆘 EMERGENCIA: Nueva Alerta Directa
+     */
+    async notifyNewEmergency(property: string, guest: string, issue: string, severity: string): Promise<boolean> {
+        const icon = severity === 'critical' ? '🚨' : '🆘';
+        const message = `
+${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Propiedad:</b> ${property}
+<b>Huésped:</b> ${guest}
+<b>Problema:</b> ${issue}
+📞 <i>Acción: Contacta al huésped de inmediato.</i>`;
+        return this.sendTelegramAlert(message);
     }
 };

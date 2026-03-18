@@ -28,7 +28,7 @@ const supabase = createClient(
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
-const model = google('gemini-2.5-flash'); // ⚡ Speed & Function Calling Accuracy
+const model = google('gemini-1.5-flash'); // ⚡ Highest stability & function calling support
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
 console.log(`🤖 [Salty 2.5 Engine]: Using Key starting with ${activeKey || 'NONE'}`);
@@ -389,7 +389,7 @@ ${JSON.stringify(familyKnowledge, null, 2)}
         };
 
         const result = await streamText({
-            model: google('gemini-2.5-flash'), // ⚡ High-Speed Salty Engine
+            model: model, // ⚡ Highest stability & function calling support
             messages: finalMessages,
             maxSteps: 7, // Permitir que Salty razone y use múltiples herramientas
             temperature: 0.75, // Un poco más de 'wit' y carisma
@@ -401,9 +401,30 @@ ${JSON.stringify(familyKnowledge, null, 2)}
             }
         });
 
-        return result.toTextStreamResponse();
+        return result.toDataStreamResponse();
+
     } catch (error: any) {
-        console.error("🚨 [CRITICAL BRIDGE FAILURE]:", error);
-        return new Response("Estoy verificando tus fechas, dame un segundo adicional mientras calibro mi conexión.", { status: 200, headers: { 'Content-Type': 'text/plain' } });
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error("⛔ [CRITICAL] Salty Brain Failed:", errorMsg);
+        
+        // 🛡️ 360 OBSERVABILITY: Log to Supabase & Notify Host
+        try {
+            await Promise.allSettled([
+                supabase.from('ai_chat_logs').insert({ 
+                    sender: 'system_error', 
+                    text: `AI_CRASH: ${errorMsg}`, 
+                    session_id: 'GLOBAL_STABILITY' 
+                }),
+                NotificationService.notifySystemError("Chat API Handler", errorMsg)
+            ]);
+        } catch (innerErr) {}
+
+        return new Response(JSON.stringify({ 
+            error: 'Salty está recalibrando sus sensores tropicales. Intente en 5 segundos.',
+            debug: process.env.NODE_ENV === 'development' ? errorMsg : undefined
+        }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+        });
     }
 }
