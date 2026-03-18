@@ -72,6 +72,7 @@ export interface Property {
   address: string;
   description: string;
   price: number;
+  tax_rate?: number;
   original_price?: number | null;   // Precio de referencia para mostrar tachado. Si es null, no se muestra.
   cleaning_fee: number;
   service_fee: number;

@@ -140,6 +140,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             address: p.address || '',
             description: p.description || '',
             price: Number(p.price) || 0,
+            tax_rate: (p as any).tax_rate != null ? Number((p as any).tax_rate) : 7,
             original_price: p.original_price != null ? Number(p.original_price) : null,
             cleaning_fee: Number(p.cleaning_fee) || 0,
             service_fee: Number(p.service_fee) || 0,

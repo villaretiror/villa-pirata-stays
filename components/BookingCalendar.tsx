@@ -60,13 +60,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker__day-name { text-transform: uppercase !important; font-size: 10px !important; font-weight: 900 !important; color: #999 !important; }
         .react-datepicker__month-container { width: 100% !important; }
         
-        /* Ocupado / Disabled */
+        /* Ocupado / Disabled (Airbnb/Booking Sync) */
         .react-datepicker__day--disabled { 
-            background-color: #f3f4f6 !important;
-            color: #ccc !important; 
-            text-decoration: line-through !important; 
+            background-color: #FAFAFA !important;
+            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.03) 4px, rgba(0,0,0,0.03) 8px) !important;
+            color: #D1D5DB !important; 
+            text-decoration: none !important; 
             cursor: not-allowed !important; 
-            opacity: 0.8 !important; 
             border-radius: 8px !important;
         }
 

@@ -169,19 +169,18 @@ const Booking: React.FC = () => {
     }
   };
 
-  // Dynamic fees summation: Flat columns + Custom JSONB fees
-  const totalFees = (Number(property.cleaning_fee) || 0) + 
-                    (Number(property.service_fee) || 0) + 
-                    Object.entries(property.fees || {})
-                      .filter(([name]) => !['Limpieza', 'Service Fee', 'Security Deposit', 'Limpieza Corta', 'Limpieza Media', 'Limpieza Larga'].includes(name))
-                      .reduce((sum, [_, value]) => sum + (Number(value) || 0), 0);
-
-  let total = basePrice + totalFees;
+  // New Lean Pricing Engine: Subtotal + IVU
+  const taxRate = Number(property.tax_rate) || 7;
+  let subtotal = basePrice;
   let discountAmount = 0;
+
   if (appliedPromo) {
-    discountAmount = (basePrice * appliedPromo.discount_percent) / 100;
-    total -= discountAmount;
+    discountAmount = (subtotal * appliedPromo.discount_percent) / 100;
+    subtotal -= discountAmount;
   }
+
+  const ivuAmount = subtotal * (taxRate / 100);
+  let total = subtotal + ivuAmount;
 
   const handlePaymentSuccess = async (status: string, proofUrl?: string, method?: string) => {
     if (!startDate || !endDate || !user) return;
@@ -201,7 +200,7 @@ const Booking: React.FC = () => {
       return;
     }
 
-    // Re-calculate Base Price
+    // Re-calculate Base Price & IVU
     let reBasePrice = 0;
     let reHasSeasonal = false;
     let curr = new Date(startDate);
@@ -212,8 +211,7 @@ const Booking: React.FC = () => {
       curr = addDays(curr, 1);
     }
 
-    const reFees = Object.entries(freshProperty.fees || {}).reduce((s, [_, v]) => s + (Number(v) || 0), 0);
-    let reTotal = reBasePrice + reFees;
+    const reTaxRate = Number(freshProperty.tax_rate) || 7;
 
     // Re-validate Promo if any
     let finalPromoId = null;
@@ -227,7 +225,7 @@ const Booking: React.FC = () => {
       const v = freshPromo ? validatePromoCode(freshPromo, nights, reHasSeasonal) : { valid: false };
       if (v.valid && freshPromo) {
         const disc = (reBasePrice * freshPromo.discount_percent) / 100;
-        reTotal -= disc;
+        reBasePrice -= disc;
         finalPromoId = freshPromo.id;
       } else {
         alert("El cupón ya no es válido o ha expirado. El total ha sido recalculado.");
@@ -236,6 +234,8 @@ const Booking: React.FC = () => {
         return;
       }
     }
+
+    let reTotal = reBasePrice + (reBasePrice * (reTaxRate / 100));
 
     // Final total validation check
     if (Math.abs(reTotal - total) > 0.01) {
@@ -478,47 +478,30 @@ const Booking: React.FC = () => {
 
             {promoError && <p className="text-[10px] text-red-500 font-black tracking-widest uppercase ml-2">{promoError}</p>}
 
-      <div className="bg-[#FFF8F4] p-8 rounded-[2.5rem] border border-orange-200/50 shadow-inner space-y-4">
+      <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/60 shadow-lg hover:shadow-2xl transition-shadow duration-500 space-y-4 relative overflow-hidden">
                <div className="flex justify-between items-center text-sm font-bold">
-                 <span className="text-text-light">Estancia ({nights || 0} noches)</span>
+                 <span className="text-text-main font-serif">Estancia ({nights || 0} noches)</span>
                  <span className="text-text-main font-serif font-black text-lg">${basePrice}</span>
                </div>
                
-               {/* Flat Fees Rendering */}
-               {Number(property.cleaning_fee) > 0 && (
-                 <div className="flex justify-between items-center text-sm font-bold">
-                   <span className="text-text-light">Limpieza</span>
-                   <span className="text-text-main font-serif font-black text-lg">${property.cleaning_fee}</span>
-                 </div>
-               )}
-               {Number(property.service_fee) > 0 && (
-                 <div className="flex justify-between items-center text-sm font-bold">
-                   <span className="text-text-light">Service Fee</span>
-                   <span className="text-text-main font-serif font-black text-lg">${property.service_fee}</span>
-                 </div>
-               )}
-
-               {/* Dynamic Fees Rendering */}
-               {Object.entries(property.fees || {})
-                 .filter(([name]) => !['Limpieza', 'Service Fee', 'Security Deposit', 'Limpieza Corta', 'Limpieza Media', 'Limpieza Larga'].includes(name))
-                 .map(([name, value]) => (
-                 <div key={name} className="flex justify-between items-center text-sm font-bold">
-                   <span className="text-text-light">{name}</span>
-                   <span className="text-text-main font-serif font-black text-lg">${value}</span>
-                 </div>
-               ))}
               {appliedPromo && (
                 <div className="flex justify-between items-center text-sm text-green-700 font-bold">
                   <span>Beneficio Directo ({appliedPromo.discount_percent}%)</span>
                   <span className="font-serif font-black text-lg">-${discountAmount.toFixed(2)}</span>
                 </div>
               )}
-              <div className="pt-6 border-t border-dashed border-orange-200 mt-2 flex justify-between items-end">
+              
+              <div className="flex justify-between items-center text-sm font-medium">
+                 <span className="text-gray-400">Impuestos (IVU {taxRate}%)</span>
+                 <span className="text-gray-400 font-serif font-bold text-base">${ivuAmount.toFixed(2)}</span>
+              </div>
+              
+              <div className="pt-6 border-t border-dashed border-gray-200 mt-2 flex justify-between items-end">
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mb-1">Inversión Final</p>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Inversión Final</p>
                   <p className="text-xs text-text-light font-medium">Todo incluido • Pago Seguro</p>
                 </div>
-                <p className="text-4xl font-serif font-black text-text-main">${total}</p>
+                <p className="text-5xl font-serif font-black text-text-main drop-shadow-sm">${total.toFixed(2)}</p>
               </div>
             </div>
           </section>

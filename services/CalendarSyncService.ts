@@ -3,9 +3,10 @@ import { NotificationService } from './NotificationService.js';
 
 export const CalendarSyncService = {
     async syncAll(supabase: SupabaseClient) {
+        // FETCH FROM NEW INTEGRATION PILLAR (calendarSync)
         const { data: properties, error } = await supabase
             .from('properties')
-            .select('id, title, airbnb_url, is_offline')
+            .select('id, title, "calendarSync", is_offline')
             .eq('is_offline', false);
 
         if (error || !properties) {
@@ -13,38 +14,52 @@ export const CalendarSyncService = {
             return { total: 0, details: 'Error al obtener propiedades.' };
         }
 
-        const activeProperties = properties.filter(p => p.airbnb_url && p.airbnb_url.trim() !== '');
         const results: string[] = [];
         let totalImported = 0;
 
-        for (const prop of activeProperties) {
-            try {
-                // 1. Fetch iCal Feed
-                const tsUrl = prop.airbnb_url + (prop.airbnb_url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
-                const response = await fetch(tsUrl, {
-                    headers: { 'User-Agent': 'VillaRetiro-Cron/1.0' }
-                });
+        for (const prop of properties) {
+            const feeds: any[] = prop.calendarSync || [];
+            if (feeds.length === 0) continue;
 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            let updatedFeeds = [...feeds];
+            let propImported = 0;
 
-                const icsText = await response.text();
-                const blocks = this.parseIcsToBlocks(icsText, prop.id);
-                
-                // 2. Sync with Bookings table
-                const imported = await this.syncBlocksWithDb(supabase, prop.id, prop.title, blocks);
-                totalImported += imported;
-                results.push(`✅ ${prop.title}: Éxito (${imported} nuevos)`);
+            for (let i = 0; i < feeds.length; i++) {
+                const feed = feeds[i];
+                if (!feed.url) continue;
 
-                // 3. Mark last sync success
-                await supabase.from('properties').update({
-                    "calendarSync": [{ platform: 'Airbnb', lastSynced: new Date().toISOString(), status: 'success' }]
-                }).eq('id', prop.id);
+                try {
+                    // 1. Fetch iCal Feed with Cache Busting
+                    const tsUrl = feed.url + (feed.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+                    const response = await fetch(tsUrl, {
+                        headers: { 'User-Agent': 'VillaRetiro-Cron-Engine/2.0' }
+                    });
 
-            } catch (err: any) {
-                console.error(`[CalendarSyncService] Error for ${prop.title}:`, err.message);
-                results.push(`❌ ${prop.title}: Error (${err.message})`);
-                await NotificationService.notifySystemError(`Sync iCal: ${prop.title}`, err.message);
+                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                    const icsText = await response.text();
+                    const blocks = this.parseIcsToBlocks(icsText, prop.id);
+                    
+                    // 2. Sync with Bookings table
+                    const imported = await this.syncBlocksWithDb(supabase, prop.id, prop.title, blocks, feed.platform);
+                    propImported += imported;
+                    totalImported += imported;
+
+                    // Mark success in local array state
+                    updatedFeeds[i] = { ...feed, syncStatus: 'success', lastSynced: new Date().toISOString() };
+                    results.push(`✅ ${prop.title} (${feed.platform}): Éxito (${imported} nuevos)`);
+
+                } catch (err: any) {
+                    console.error(`[CalendarSyncService] Error for ${prop.title} [${feed.platform}]:`, err.message);
+                    updatedFeeds[i] = { ...feed, syncStatus: 'error', lastError: err.message, lastSynced: new Date().toISOString() };
+                    results.push(`❌ ${prop.title} (${feed.platform}): Error (${err.message})`);
+                }
             }
+
+            // 3. Mark last sync directly to properties JSON
+            await supabase.from('properties').update({
+                "calendarSync": updatedFeeds
+            }).eq('id', prop.id);
         }
 
         return { total: totalImported, details: results.join('\n') };
@@ -78,7 +93,7 @@ export const CalendarSyncService = {
         return blocks;
     },
 
-    async syncBlocksWithDb(supabase: SupabaseClient, propertyId: string, propertyTitle: string, blocks: any[]) {
+    async syncBlocksWithDb(supabase: SupabaseClient, propertyId: string, propertyTitle: string, blocks: any[], platform: string) {
         let newBlocksCount = 0;
 
         // Fetch existing external blocks
@@ -99,7 +114,7 @@ export const CalendarSyncService = {
                     status: 'external_block',
                     check_in: block.start,
                     check_out: block.end,
-                    source: 'Airbnb',
+                    source: platform,
                     guests_count: 1,
                     total_price: 0
                 });
@@ -111,7 +126,7 @@ export const CalendarSyncService = {
             if (!error && data) {
                 newBlocksCount = data.length;
                 for (const b of data) {
-                    await NotificationService.notifyNewReservation(b.id, 'Bloqueo Externo', propertyTitle, b.check_in, b.check_out, '0.00', 'Airbnb');
+                    await NotificationService.notifyNewReservation(b.id, 'Bloqueo Externo', propertyTitle, b.check_in, b.check_out, '0.00', platform);
                 }
             }
         }
