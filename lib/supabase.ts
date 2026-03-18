@@ -66,6 +66,10 @@ export const supabase = isConfigured
       autoRefreshToken: true,
       persistSession: true,
       detectSessionInUrl: true,
+      storageKey: 'sb-auth-token',
+      flowType: 'pkce',
+      // @ts-ignore: lockType is recommended for 2026 cross-tab stability
+      lockType: 'custom',
     }
   })
   : createMockClient();

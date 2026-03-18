@@ -34,16 +34,24 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ propertyId, limit = 8 }
         query = query.eq('property_id', propertyId);
       }
 
-      const { data, error } = await query;
+      try {
+        const { data, error } = await query;
 
-      if (!cancelled) {
-        if (error) {
-          console.error('[ReviewCarousel] Supabase error:', error.message);
-        } else {
-          setReviews(data ?? []);
-          setCurrentIndex(0);
+        if (!cancelled) {
+          if (error) {
+            console.error('[ReviewCarousel] Supabase error:', error.message);
+          } else {
+            setReviews(data ?? []);
+            setCurrentIndex(0);
+          }
+          setIsLoading(false);
         }
-        setIsLoading(false);
+      } catch (err: any) {
+        if (err.name === 'AbortError') return; // Ignorar silenciosamente peticiones canceladas
+        if (!cancelled) {
+          console.error('[ReviewCarousel] Fetch error:', err);
+          setIsLoading(false);
+        }
       }
     };
 
