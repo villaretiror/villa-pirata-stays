@@ -6,7 +6,7 @@ interface SkeletonProps {
 }
 
 const Skeleton: React.FC<SkeletonProps> = ({ className = '', variant = 'rect' }) => {
-    const baseClass = "animate-pulse bg-gray-200 dark:bg-gray-700";
+    const baseClass = "shimmer-sweep bg-[#EFE9E1]";
     const variantClass = {
         text: "h-4 w-full rounded",
         rect: "rounded-2xl",

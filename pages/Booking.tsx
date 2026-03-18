@@ -65,32 +65,7 @@ const Booking: React.FC = () => {
   const isLoading = isPropLoading || isAvailabilityLoading;
 
 
-  if (isLoading) return <BookingSkeleton />;
-
-  if (!property) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
-        <h2 className="text-2xl font-bold mb-4">Propiedad no encontrada</h2>
-        <button onClick={() => navigate('/')} className="bg-primary text-white px-6 py-2 rounded-xl">Volver al inicio</button>
-      </div>
-    );
-  }
-
-  const nights = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
-  const isTooShort = nights > 0 && nights < 2;
-
-  // Calculate Base Price night by night for Seasonal Pricing
-  let basePrice = 0;
-  let hasSeasonalNight = false;
-  if (startDate && endDate) {
-    let current = new Date(startDate);
-    while (current < endDate) {
-      const dateStr = format(current, 'yyyy-MM-dd');
-      if (isSeasonalDate(dateStr, property.seasonal_prices)) hasSeasonalNight = true;
-      basePrice += getNightlyPrice(property.price, dateStr, property.seasonal_prices);
-      current = addDays(current, 1);
-    }
-  }
+  const [showCalendarModal, setShowCalendarModal] = useState(false);
 
   // 15s Abandonment Push & Ghost Lead Capture
   useEffect(() => {
@@ -119,7 +94,7 @@ const Booking: React.FC = () => {
               body: JSON.stringify({
                 type: 'new_lead',
                 guestName: user.name,
-                property: property.title,
+                property: property?.title || 'Villa',
                 checkIn: format(startDate, 'dd MMM'),
                 checkOut: format(endDate, 'dd MMM'),
                 phone: phone || user.phone
@@ -134,7 +109,36 @@ const Booking: React.FC = () => {
       }, 5000); // Trigger faster (5s) for high-intent leads
       return () => clearTimeout(timer);
     }
-  }, [startDate, endDate, phone, isProcessing, user, id, property.title]);
+  }, [startDate, endDate, phone, isProcessing, user, id, property?.title]);
+
+  if (isLoading) return <BookingSkeleton />;
+
+  if (!property) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen p-6 text-center">
+        <h2 className="text-2xl font-bold mb-4">Propiedad no encontrada</h2>
+        <button onClick={() => navigate('/')} className="bg-primary text-white px-6 py-2 rounded-xl">Volver al inicio</button>
+      </div>
+    );
+  }
+
+  const nights = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
+  const isTooShort = nights > 0 && nights < 2;
+
+  // Calculate Base Price night by night for Seasonal Pricing
+  let basePrice = 0;
+  let hasSeasonalNight = false;
+  if (startDate && endDate) {
+    let current = new Date(startDate);
+    while (current < endDate) {
+      const dateStr = format(current, 'yyyy-MM-dd');
+      if (isSeasonalDate(dateStr, property.seasonal_prices)) hasSeasonalNight = true;
+      basePrice += getNightlyPrice(property.price, dateStr, property.seasonal_prices);
+      current = addDays(current, 1);
+    }
+  }
+
+
 
   const handleApplyPromo = async () => {
     setPromoError('');
@@ -337,7 +341,7 @@ const Booking: React.FC = () => {
     });
   };
 
-  const [showCalendarModal, setShowCalendarModal] = useState(false);
+
 
   return (
     <SectionErrorBoundary sectionName="Reserva Vivir la Experiencia">
