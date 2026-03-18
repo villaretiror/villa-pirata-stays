@@ -257,15 +257,54 @@ const Messages: React.FC = () => {
 
       setIsTyping(false);
 
+      let fullBuffer = "";
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        aiResponseText += chunk;
-        setMessages(prev => prev.map(m =>
-          m.id === aiMsgId ? { ...m, text: aiResponseText } : m
-        ));
+        fullBuffer += chunk;
+        
+        // El AI SDK envía datos en formato de protocolo: "T:CONTENIDO\n"
+        // Procesamos el buffer buscando líneas completas
+        const lines = fullBuffer.split('\n');
+        // El último elemento podría estar incompleto, guárdalo para el siguiente chunk
+        fullBuffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (!line) continue;
+          const type = line[0];
+          const content = line.substring(2);
+
+          // 0: Mensaje de texto (streaming)
+          if (type === '0') {
+            setIsTyping(false); // Deja de mostrar el indicador de carga cuando llega el texto
+            try {
+              // A veces el contenido viene entre comillas
+              const textContent = content.startsWith('"') && content.endsWith('"') 
+                ? JSON.parse(content) 
+                : content;
+              
+              aiResponseText += textContent;
+              setMessages(prev => prev.map(m =>
+                m.id === aiMsgId ? { ...m, text: aiResponseText } : m
+              ));
+            } catch (e) {
+              // Si falla el parseo, intenta usar el contenido crudo
+              aiResponseText += content;
+              setMessages(prev => prev.map(m =>
+                m.id === aiMsgId ? { ...m, text: aiResponseText } : m
+              ));
+            }
+          }
+          // a: Tool Call o p: Tool Result (Razonamiento profundo detectado)
+          else if (type === 'a' || type === 'p' || type === '1') {
+             // Mostramos un mensaje de "Razonamiento" solo si no ha empezado el texto final
+             if (!aiResponseText) {
+                setIsTyping(true);
+             }
+          }
+        }
       }
 
     } catch (error) {
@@ -660,7 +699,7 @@ const Messages: React.FC = () => {
                   <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
                 </div>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Omitiendo delays: Verificando Calendarios...</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Salty está consultando el calendario y disponibilidad real...</p>
             </div>
           </div>
         )}
