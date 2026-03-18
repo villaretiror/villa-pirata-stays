@@ -276,15 +276,29 @@ export default async function handler(req: any, res: any) {
             return block;
         });
 
-        const finalMessage = `🛰️ <b>SALTY STRATEGY | iCal Sync</b>\n───────────────────────\n\n` + 
-                            changeBlocks.join('\n\n') + 
-                            `\n───────────────────────\n<i>Sincronización Multicanal Completada.</i>`;
+        const isSilent = req.query?.silent === 'true';
 
-        const siteUrl = process.env.VITE_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://villaretiror.com');
+        if (!isSilent) {
+            const finalMessage = `🛰️ <b>SALTY STRATEGY | iCal Sync</b>\n───────────────────────\n\n` + 
+                                changeBlocks.join('\n\n') + 
+                                `\n───────────────────────\n<i>Sincronización Multicanal Completada.</i>`;
 
-        await NotificationService.sendDirectTelegramMessage(process.env.TELEGRAM_CHAT_ID || '', finalMessage, {
-            inline_keyboard: [[{ text: '🛰️ Ver en Dashboard', url: `${siteUrl}/host` }]]
-        });
+            const siteUrl = process.env.VITE_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'https://villaretiror.com');
+
+            await NotificationService.sendDirectTelegramMessage(process.env.TELEGRAM_CHAT_ID || '', finalMessage, {
+                inline_keyboard: [[{ text: '🛰️ Ver en Dashboard', url: `${siteUrl}/host` }]]
+            });
+        } else {
+            // 🤫 SILENT MODE: Only alert for NEW bookings (Sales Alert)
+            for (const [title, data] of propertyChanges.entries()) {
+                if (data.news.length > 0) {
+                    for (const n of data.news) {
+                        const shortAlert = `🔔 <b>¡Nueva Reserva!</b>\n🏠 ${title.toUpperCase()} | 📅 ${humanizeDate(n.checkIn)} ➔ ${humanizeDate(n.checkOut)}`;
+                        await NotificationService.sendTelegramAlert(shortAlert);
+                    }
+                }
+            }
+        }
     }
 
     return res.status(200).json({

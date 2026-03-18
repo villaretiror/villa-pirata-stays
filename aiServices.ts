@@ -126,7 +126,7 @@ export const createTemporaryHold = async (propertyId: string, checkIn: string, c
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
     const status = 'pending_ai_validation';
     const source = 'Salty AI';
-    
+
     // Generate sync hash for de-duplication and change detection
     const content = `${propertyId}|${checkIn}|${checkOut}|${status}`;
     const syncHash = Buffer.from(content).toString('base64');
@@ -216,7 +216,7 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
 };
 
 export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string) => {
-        const { data: property } = await supabase.from('properties').select('*').eq('id', String(propertyId)).single();
+    const { data: property } = await supabase.from('properties').select('*').eq('id', String(propertyId)).single();
     if (!property) throw new Error('Propiedad no encontrada.');
 
     let basePrice = 0;

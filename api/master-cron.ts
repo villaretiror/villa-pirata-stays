@@ -23,11 +23,16 @@ function getPropertyName(id: string): string {
 export default async function handler(req: any, res: any) {
     const authHeader = req.headers['authorization'] || req.headers['Authorization'];
     const secret = process.env.CRON_SECRET;
+    
+    // Auth Fallback: Header Bearer OR Query Param (for legacy/external schedulers like Cron-job.org)
+    const queryKey = req.query?.key || req.query?.secret || req.query?.cron_secret;
+    const isAuthorized = (secret && authHeader === `Bearer ${secret}`) || (secret && queryKey === secret);
 
-    if (!secret || authHeader !== `Bearer ${secret}`) {
+    if (!isAuthorized) {
         return res.status(401).json({ error: 'Unauthorized' });
     }
 
+    const isSilent = req.query?.silent === 'true' || req.headers['x-silent-mode'] === 'true';
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const now = new Date();
     const utcHour = now.getUTCHours();
@@ -35,15 +40,16 @@ export default async function handler(req: any, res: any) {
 
     const results: any = {
         timestamp: now.toISOString(),
+        silent_mode: isSilent,
         tasks: {}
     };
 
     // 1. SIEMPRE (Cada ejecución): iCal Sync & Cleanup
-    results.tasks.calendar_sync = await taskCalendarSync(req);
+    results.tasks.calendar_sync = await taskCalendarSync(req, isSilent);
     results.tasks.cleanup = await taskCleanupMocks(supabase);
 
     // 🕵️ SECURITY HEARTBEAT (Manual Audit)
-    if (req.query?.heartbeat === 'true') {
+    if (req.query?.heartbeat === 'true' && !isSilent) {
         const auditMsg = `🛎 <b>System Security Audit</b>: Verified & Secure.\n\n` +
                         `🔐 <b>Auth:</b> CRON_SECRET validated.\n` +
                         `🛰️ <b>Sync:</b> ICAL Engine active.\n` +
@@ -55,16 +61,13 @@ export default async function handler(req: any, res: any) {
     // 2. REPORTE MAÑANERO (12:00 UTC = 8:00 AM AST): Operative Report & Journey
     if (utcHour === 12 && utcMinute < 15) {
         results.tasks.feedback = await taskFeedback(supabase);
-        results.tasks.morning_report = await taskMorningReport(supabase, req);
-        results.tasks.journey = await taskGuestJourney(supabase);
+        results.tasks.morning_report = await taskMorningReport(supabase, req, isSilent);
+        results.tasks.journey = await taskGuestJourney(supabase, isSilent);
     }
     
-    // ... rest of logic remains the same ...
-
-
     // 3. DIARIO (14:00 UTC): Guest Journey (Onboarding)
     if (utcHour === 14 && utcMinute < 15) {
-        results.tasks.journey = await taskGuestJourney(supabase);
+        results.tasks.journey = results.tasks.journey || await taskGuestJourney(supabase, isSilent);
     }
 
     // 4. DIARIO (18:00 UTC+): Post-Checkout Thank You (3h after 11am check-out)
@@ -87,11 +90,11 @@ async function taskCleanupMocks(supabase: any) {
     return { status: 'ok', holds_cleared: holds || 0, logs_optimized: (logs || 0) + (aiLogs || 0) };
 }
 
-async function taskCalendarSync(req: any) {
+async function taskCalendarSync(req: any, isSilent = false) {
     const protocol = req.headers['x-forwarded-proto'] || 'http';
     const host = req.headers['host'];
     const secret = getEnv('CRON_SECRET');
-    const syncUrl = `${protocol}://${host}/api/sync-ical`;
+    const syncUrl = `${protocol}://${host}/api/sync-ical${isSilent ? '?silent=true' : ''}`;
 
     try {
         const resp = await fetch(syncUrl, { 
@@ -121,7 +124,7 @@ async function taskFeedback(supabase: any) {
     return { status: 'ok', emails_sent: sent };
 }
 
-async function taskMorningReport(supabase: SupabaseClient, req: any) {
+async function taskMorningReport(supabase: SupabaseClient, req: any, isSilent = false) {
     const dateObj = new Date();
     const today = dateObj.toISOString().split('T')[0];
     const tomorrow = new Date(dateObj.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -175,7 +178,8 @@ async function taskMorningReport(supabase: SupabaseClient, req: any) {
     
     const emailSummary = opens && opens.length > 0
         ? `• 📩 Lectura: ${opens.length} aperturas detectadas.`
-        : `• 📩 Lectura: Sin aperturas recientes.`;
+        : `• 📩 Lectura: Sin aperturas recientes.`
+    ;
 
     // 7. Clima / Entorno
     let weatherAlert = "☀️ Cielo despejado.";
@@ -214,12 +218,14 @@ ${journeyAlert}
 <a href="${getEnv('VITE_SITE_URL') || 'https://villaretiror.com'}/host">🔗 Abrir Centro de Control</a>
     `.trim();
 
-    await NotificationService.sendTelegramAlert(report).catch(e => console.error('Error morning report:', e));
+    if (!isSilent) {
+        await NotificationService.sendTelegramAlert(report).catch(e => console.error('Error morning report:', e));
+    }
 
-    return { status: 'ok', report_sent: true };
+    return { status: 'ok', report_sent: !isSilent };
 }
 
-async function taskGuestJourney(supabase: any) {
+async function taskGuestJourney(supabase: any, isSilent = false) {
     const today = new Date();
     const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
     const todayStr = today.toISOString().split('T')[0];
@@ -252,7 +258,7 @@ async function taskGuestJourney(supabase: any) {
         else if (todayStr === midStr && b.check_out !== todayStr) stage = 'mid_stay';
         else if (tomorrowStr === b.check_out) stage = 'check_out';
 
-        if (stage) {
+        if (stage && !isSilent) {
             const draft = await generateOnboardingDraft(stage, name, title, b.check_out);
             const msg = `🛎 <b>Onboarding Hub: ${name}</b>\n` +
                         `🏠 <b>Villa:</b> ${title}\n` +
