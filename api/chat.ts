@@ -28,7 +28,7 @@ const supabase = createClient(
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
-const model = google('gemini-1.5-pro-latest');
+const model = google('gemini-2.5-flash'); // ⚡ Speed & Function Calling Accuracy
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
 console.log(`🤖 [Salty 2.5 Engine]: Using Key starting with ${activeKey || 'NONE'}`);
@@ -375,7 +375,7 @@ ${JSON.stringify(familyKnowledge, null, 2)}
         };
 
         const result = await streamText({
-            model: google('gemini-1.5-pro-latest'), // 💎 Stable Pro Latest
+            model: google('gemini-2.5-flash'), // ⚡ High-Speed Salty Engine
             messages: finalMessages,
             maxSteps: 7, // Permitir que Salty razone y use múltiples herramientas
             temperature: 0.75, // Un poco más de 'wit' y carisma
