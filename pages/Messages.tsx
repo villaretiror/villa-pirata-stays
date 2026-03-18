@@ -542,6 +542,24 @@ const Messages: React.FC = () => {
                                 total_price: paymentData.total,
                                 session_id: sessionId
                               });
+                              // 🛰️ ALERT: Notificar al Host (Telegram)
+                              try {
+                                fetch('/api/notify-action', {
+                                  method: 'POST',
+                                  headers: { 'Content-Type': 'application/json' },
+                                  body: JSON.stringify({
+                                    type: 'new_lead',
+                                    guestName: leadData.name,
+                                    property: paymentData.propertyName,
+                                    checkIn: paymentData.checkIn,
+                                    checkOut: paymentData.checkOut,
+                                    phone: leadData.phone
+                                  })
+                                });
+                              } catch (e) {
+                                console.error("Notification Alert error:", e);
+                              }
+                              
                               setSubmittedLeads(prev => ({ ...prev, [m.id]: true }));
                             } catch (err) {
                               alert("Error de conexión. Intente de nuevo.");
@@ -570,6 +588,22 @@ const Messages: React.FC = () => {
                                   if (status === 'confirmed') {
                                     handlePaymentSuccess({ payer: { email_address: leadData.email, name: { given_name: leadData.name } } }, paymentData.propertyId, paymentData.checkIn, paymentData.checkOut, paymentData.guests, paymentData.total);
                                   } else {
+                                    // 🛰️ ALERT: Notificar al Host (Telegram)
+                                    try {
+                                      fetch('/api/notify-action', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                          type: 'payment_proof',
+                                          guestName: leadData.name,
+                                          property: paymentData.propertyName,
+                                          proofUrl: proofUrl
+                                        })
+                                      });
+                                    } catch (e) {
+                                      console.error("Payment notification error:", e);
+                                    }
+
                                     // ATH Movil Manual Approval Request
                                     setMessages((prev) => [...prev, {
                                       id: crypto.randomUUID(),

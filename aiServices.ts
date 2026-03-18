@@ -125,9 +125,11 @@ export const logAbandonmentLead = async (data: { name: string; email?: string; p
 export const createTemporaryHold = async (propertyId: string, checkIn: string, checkOut: string, userId?: string) => {
     // 🛡️ REINFORCED RESOLUTION
     let finalId = String(propertyId).trim();
-    if (isNaN(Number(finalId)) || finalId.length < 5) {
-        const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${propertyId}%`).limit(1).maybeSingle();
-        if (byTitle) finalId = String(byTitle.id);
+    const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
+    if (byTitle) {
+        finalId = String(byTitle.id);
+    } else {
+        console.warn(`[createTemporaryHold] Fallback resolution failed for: ${propertyId}`);
     }
 
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
@@ -156,9 +158,8 @@ export const createTemporaryHold = async (propertyId: string, checkIn: string, c
     return null;
 };
 
-// 3. Payment Verification Status
 export const getPaymentVerificationStatus = async (bookingId: string): Promise<string> => {
-    const { data: booking } = await supabase.from('bookings').select('payment_proof_url, status').eq('id', bookingId).single();
+    const { data: booking } = await supabase.from('bookings').select('payment_proof_url, status').eq('id', bookingId).maybeSingle();
     if (!booking) return 'Reserva no encontrada.';
     if (booking.status === 'confirmed') return 'El pago ya ha sido verificado y confirmado.';
     if (booking.payment_proof_url) return 'He recibido tu imagen de comprobante. El Host la validará en breve para confirmar tu estancia.';
@@ -221,15 +222,26 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
 };
 
 export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string) => {
-    // 🛡️ REINFORCED RESOLUTION: Try ID first, then title
-    let { data: property } = await supabase.from('properties').select('*').eq('id', String(propertyId).trim()).single();
+    // 🛡️ REINFORCED RESOLUTION: Try direct ID lookup first
+    let { data: property, error: fetchError } = await supabase.from('properties')
+        .select('*')
+        .eq('id', String(propertyId).trim())
+        .maybeSingle();
     
-    if (!property) {
-        const { data: byTitle } = await supabase.from('properties').select('*').ilike('title', `%${propertyId.trim()}%`).limit(1).maybeSingle();
-        property = byTitle;
+    // If ID fails, or it looks like a title/name, try title search
+    if (!property || isNaN(Number(propertyId)) || propertyId.length < 5) {
+        const { data: byTitle } = await supabase.from('properties')
+            .select('*')
+            .ilike('title', `%${propertyId.trim()}%`)
+            .limit(1)
+            .maybeSingle();
+        if (byTitle) property = byTitle;
     }
 
-    if (!property) throw new Error(`Propiedad no encontrada [${propertyId}].`);
+    if (!property) {
+        console.error(`[applyAIQuote] Critical Failure: Property not found. Input: "${propertyId}"`, fetchError);
+        throw new Error(`Propiedad no encontrada [${propertyId}].`);
+    }
 
     let basePrice = 0;
     let hasSeasonal = false;
@@ -249,7 +261,7 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
     let discount = 0;
 
     if (promoCode) {
-        const { data: promo } = await supabase.from('promo_codes').select('*').eq('code', promoCode.toUpperCase()).single();
+        const { data: promo } = await supabase.from('promo_codes').select('*').eq('code', promoCode.toUpperCase()).maybeSingle();
         if (promo) {
             const v = validatePromoCode(promo, nights, hasSeasonal);
             if (v.valid) {

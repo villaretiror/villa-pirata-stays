@@ -13,7 +13,11 @@ const getEnv = (key: string): string => {
 };
 
 const SUPABASE_URL = getEnv('SUPABASE_URL');
+// 🛡️ SECURITY: Priorizar Service Role Key para bypass de RLS en tareas de mantenimiento
 const SUPABASE_SERVICE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY');
+if (!getEnv('SUPABASE_SERVICE_ROLE_KEY')) {
+    console.warn("⚠️ [Master-Cron] Running with ANON_KEY. Some deletions might fail if RLS is strict.");
+}
 
 // SCHEMA-ALIGNED: getPropertyName is a safe fallback only
 function getPropertyName(id: string): string {
@@ -82,11 +86,16 @@ async function taskCleanupMocks(supabase: any) {
     const now = new Date().toISOString();
     
     // 🛡️ COO SAFEGUARD: Bloqueo temporal expira en 15 minutos
-    // 1. Limpiar holds temporales en tabla principal 'bookings' (Status: pending_ai_validation)
-    const { count: holds } = await supabase.from('bookings').delete().eq('status', 'pending_ai_validation').lt('hold_expires_at', now);
+    // 1. Limpiar holds temporales en tabla principal 'bookings' (Solo si NO tienen comprobante)
+    const { count: holds } = await supabase.from('bookings').delete()
+        .eq('status', 'pending_ai_validation')
+        .lt('hold_expires_at', now)
+        .is('payment_proof_url', null);
     
     // 2. Limpiar Prospectos (Leads) en 'pending_bookings' que no pagaron (Status: pending_payment)
-    const { count: pending } = await supabase.from('pending_bookings').delete().eq('status', 'pending_payment').lt('expires_at', now);
+    const { count: pending } = await supabase.from('pending_bookings').delete()
+        .eq('status', 'pending_payment')
+        .lt('expires_at', now);
     
     // 3. Limpiar logs de chat muy antiguos ( > 30 días ) para optimizar
     const thirtyDaysAgo = new Date(); thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);

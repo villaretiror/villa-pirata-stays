@@ -277,5 +277,34 @@ export const NotificationService = {
 <b>Calificación:</b> ${stars}
 💬 <i>Acción: Responde rápido para mantener el SEO alto.</i>`;
         return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 👥 LEADS: Nuevo Interés en Propiedad (Pending Booking)
+     */
+    async notifyNewLead(guestName: string, property: string, checkIn: string, checkOut: string, phone: string): Promise<boolean> {
+        const message = `
+👤 <b>Nuevo Lead Interesado</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+<b>Fechas:</b> ${checkIn} al ${checkOut}
+<b>Teléfono:</b> ${phone}
+🛎️ <i>Acción: Pendiente de pago.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+
+    /**
+     * 💰 ATH MÓVIL: Comprobante Recibido
+     */
+    async notifyPaymentProof(guestName: string, property: string, proofUrl: string): Promise<boolean> {
+        const message = `
+📸 <b>Comprobante ATH Móvil Recibido</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+<b>Link Recibo:</b> <a href="${proofUrl}">Ver Imagen</a>
+🔎 <i>Acción: Valida en ATH Móvil y confirma la reserva.</i>`;
+        return this.sendTelegramAlert(message);
     }
 };
