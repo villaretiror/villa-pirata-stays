@@ -28,7 +28,7 @@ const supabase = createClient(
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
-const model = google('gemini-3.1-pro', { // 🏆 The New Executive Brain: Gemini 3.1 Pro
+const model = google('gemini-3.0-flash', { // ⚡ The New Speed Specialist: Gemini 3.0 Flash
     // ⚡ GROUNDING CAPABILITY: Habilita la búsqueda en Google para info en tiempo real
     structuredOutputs: true,
 });
