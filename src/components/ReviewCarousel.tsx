@@ -98,7 +98,7 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ propertyId, limit = 8 }
             <span
               key={i}
               className={`material-icons text-xl ${
-                i < Math.round(current.rating) ? 'text-primary' : 'text-gray-200'
+                i < Math.round(current.rating || 0) ? 'text-primary' : 'text-gray-200'
               }`}
             >
               star

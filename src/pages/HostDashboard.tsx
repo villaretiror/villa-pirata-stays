@@ -2609,12 +2609,12 @@ const HostDashboard: React.FC = () => {
           ...p,
           id: String(p.id),
           title: p.title || 'Villa',
-          price: p.price || 0,
-          cleaning_fee: p.cleaning_fee || 0,
-          service_fee: p.service_fee || 0,
-          security_deposit: p.security_deposit || 0,
-          rating: p.rating || 5,
-          reviews_count: p.reviews || 0,
+          price: Number(p.price) || 0,
+          cleaning_fee: Number(p.cleaning_fee) || 0,
+          service_fee: Number(p.service_fee) || 0,
+          security_deposit: Number(p.security_deposit) || 0,
+          rating: Number(p.rating) || 5,
+          reviews_count: p.reviews_count || 0,
           images: p.images || [],
           amenities: p.amenities || [],
           guests: p.guests || 2,
@@ -2623,16 +2623,20 @@ const HostDashboard: React.FC = () => {
           baths: p.baths || 1,
           fees: (p.fees as any) || {},
           policies: (p.policies as any) || {},
-          blockedDates: p.blockedDates || [],
+          blockedDates: p.blockeddates || [],
           calendarSync: (p.calendarSync as any[]) || [],
           seasonal_prices: (p.seasonal_prices as any[]) || [],
+          min_price_floor: Number(p.min_price_floor) || 0,
+          max_discount_allowed: Number(p.max_discount_allowed) || 15,
+          offers: (p.offers as any) || [],
+          reviews_list: (p.reviews_list as any) || [],
           host: (p.host as any) || {
             name: user.name || 'Anfitrión',
             image: user.avatar || '',
             yearsHosting: 1,
             badges: user.role === 'host' ? ['Pro Host'] : []
           }
-        })) as Property[];
+        })) as unknown as Property[];
         onUpdateProperties(mappedProps);
       }
 
