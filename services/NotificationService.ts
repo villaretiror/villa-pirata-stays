@@ -387,7 +387,7 @@ ${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
         activeLeadsCount: number,
         secret: string
     }): Promise<boolean> {
-        const siteUrl = process.env.VITE_SITE_URL || 'https://villa-retiro.vercel.app';
+        const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
         const message = `
 🏠 <b>ESTADO DE LA CASA - VILLA RETIRO R</b>
 ━━━━━━━━━━━━━━━━━━━━

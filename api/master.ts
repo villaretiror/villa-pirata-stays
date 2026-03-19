@@ -60,6 +60,32 @@ export default async function handler(req: any, res: any) {
         // 3. Stats for Report
         const activeChatsCount = await countActiveChats(supabase);
         
+        // NEW: Weekly Rule Report
+        if (task === 'weekly_report') {
+            const { data: activeRules } = await supabase
+                .from('availability_rules')
+                .select('*')
+                .gte('end_date', new Date().toISOString().split('T')[0])
+                .order('start_date', { ascending: true });
+            
+            let rulesStr = "No hay reglas especiales activas. Aplicando Mínimos Globales (2 Noches / 2 Días antelación).";
+            if (activeRules && activeRules.length > 0) {
+                rulesStr = activeRules.map((r: any) => `• Del ${r.start_date} al ${r.end_date}: ${r.min_nights ? `Min ${r.min_nights}N` : 'Sin Min.'} | Antel: ${r.advance_notice_days === 0 ? 'Mismo Día' : `${r.advance_notice_days}D`} | [${r.reason || 'Sin título'}]`).join('\n');
+            }
+            
+            await NotificationService.sendTelegramAlert(`
+📊 <b>REPORTE SEMANAL DE REGLAS (LUNES)</b>
+━━━━━━━━━━━━━━━━━━━━
+Configuración actual del motor de reservas dinámico:
+
+${rulesStr}
+
+Si necesitas modificar algo esta semana, accede al 
+<a href="https://www.villaretiror.com/host">Host Dashboard</a>.`);
+            
+            return res.status(200).json({ status: 'Weekly report sent' });
+        }
+        
         // 4. STRATEGY: Management by Exception
         // Send "Home Health" Report ONLY at 8:00 AM AST (Morning Brief)
         const prTime = new Intl.DateTimeFormat('en-US', {

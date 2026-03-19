@@ -56,8 +56,12 @@
     ],
     "crons": [
         {
-            "path": "/api/master",
+            "path": "/api/master?task=sync",
             "schedule": "0 12 * * *"
+        },
+        {
+            "path": "/api/master?task=weekly_report",
+            "schedule": "0 13 * * 1"
         }
     ]
 }
