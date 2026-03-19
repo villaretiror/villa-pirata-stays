@@ -211,7 +211,14 @@ export default async function handler(req: Request) {
             else if (msgLower.includes('cancela') || msgLower.includes('reembolso') || msgLower.includes('devolucion') || msgLower.includes('molesto') || msgLower.includes('queja')) {
                 intentCategory = 'ALERTA_CRÍTICA';
                 try {
-                    await NotificationService.sendTelegramAlert(`⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${guestName}\n🗨️ <i>"${lastMsg}"</i>`);
+                    // ⚠️ SENTIMENT ENGINE: Notify Host on potential customer frustration
+                    await NotificationService.sendTelegramAlert(`🔴 ⚠️ <b>¡ALERTA DE FRUSTRACIÓN!</b>\n👤 ${guestName}\n🗨️ <i>"${lastMsg}"</i>\n\n📌 Sesión: <code>${sessionId}</code>`, {
+                        inline_keyboard: [
+                            [{ text: "✅ Enterado", callback_data: `ack_frust_${sessionId}` }],
+                            [{ text: "🎤 Tomar Control", callback_data: `takeover_${sessionId}` }]
+                        ]
+                    }, false);
+                    console.log(`[Alert] Frustration alert sent for session ${sessionId}`);
                 } catch (e) {}
             }
 
@@ -334,7 +341,12 @@ ${JSON.stringify(familyKnowledge, null, 2)}
                     const { data: ticket } = await supabase.from('emergency_tickets').insert({
                         property_id: effectivePropertyId, issue_type, description, severity, status: 'open', user_id: userId || null, user_name: guestName, user_phone: guestPhone || 'No registrado',
                     }).select().single();
-                    await NotificationService.sendTelegramAlert(`🚨 <b>EMERGENCIA ${severity.toUpperCase()}</b>\n👤 ${guestName}\n🏠 ${activePropertyName}\n🔧 ${issue_type}: ${description}`);
+                    await NotificationService.sendTelegramAlert(`🔴 🚨 <b>EMERGENCIA ${severity.toUpperCase()}</b>\n👤 ${guestName}\n🏠 ${activePropertyName}\n🔧 ${issue_type}: ${description}\n\n📌 Sesión: <code>${sessionId}</code>`, {
+                        inline_keyboard: [
+                            [{ text: "✅ Enterado", callback_data: `ack_eme_${ticket?.id}` }],
+                            [{ text: "🎤 Responder al Chat", callback_data: `takeover_${sessionId}` }]
+                        ]
+                    });
                     return JSON.stringify({ status: 'emergency_active', ticket_id: ticket?.id });
                 }
             }),
@@ -343,8 +355,10 @@ ${JSON.stringify(familyKnowledge, null, 2)}
                 parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), reason: z.string(), guest_name: z.string() }),
                 execute: async ({ villa_id, check_in, check_out, reason, guest_name }) => {
                     const resolvedId = resolvePropertyId(villa_id);
-                    const text = `🚨 <b>APROBACIÓN MANUAL SOLICITADA BY SALTY</b>\n\n👤 Viajero: ${guest_name}\n📅 Fechas: ${check_in} al ${check_out}\n🏠 Villa: ${propertyTitles[resolvedId] || ""}\n💡 Razón/Excepción: ${reason}\n\n✅ Por favor entra al Dashboard para desbloquear la fecha si apruebas.`;
-                    await NotificationService.sendTelegramAlert(text);
+                    const text = `🔴 🚨 <b>APROBACIÓN MANUAL SOLICITADA BY SALTY</b>\n\n👤 Viajero: ${guest_name}\n📅 Fechas: ${check_in} al ${check_out}\n🏠 Villa: ${propertyTitles[resolvedId] || ""}\n💡 Razón/Excepción: ${reason}\n\n📌 Sesión: <code>${sessionId}</code>\n\n✅ Por favor entra al Dashboard para desbloquear la fecha si apruebas.`;
+                    await NotificationService.sendTelegramAlert(text, {
+                        inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_appr_${sessionId}` }]]
+                    });
                     return JSON.stringify({ status: 'sent', alert: 'Aprobación Manual enviada por Telegram a Brian.' });
                 }
             }),

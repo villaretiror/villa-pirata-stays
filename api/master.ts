@@ -85,8 +85,123 @@ Si necesitas modificar algo esta semana, accede al
             
             return res.status(200).json({ status: 'Weekly report sent' });
         }
+
+        // 4. AUTOMATION: 24h Before Check-in (Instructions)
+        if (task === 'automation' || !task) {
+            const tomorrow = format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+            const { data: checkinSoon } = await supabase
+                .from('bookings')
+                .select('*, profiles(*), properties(*)')
+                .eq('check_in', tomorrow)
+                .is('instructions_sent_at', null)
+                .eq('status', 'confirmed');
+
+            if (checkinSoon && checkinSoon.length > 0) {
+                for (const b of checkinSoon) {
+                    try {
+                        await fetch(`${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/api/send`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'reservation_confirmed',
+                                customerName: b.profiles?.full_name || b.customer_name || 'Huésped',
+                                customerEmail: b.profiles?.email || b.customer_email || 'reservas@villaretiror.com',
+                                propertyName: b.properties?.title || 'Villa Retiro',
+                                checkIn: b.check_in,
+                                checkOut: b.check_out,
+                                accessCode: b.properties?.policies?.accessCode || b.properties?.access_code,
+                                wifiName: b.properties?.policies?.wifiName || b.properties?.wifi_name,
+                                wifiPass: b.properties?.policies?.wifiPass || b.properties?.wifi_pass,
+                                propertyId: b.property_id,
+                                bookingId: b.id
+                            })
+                        });
+                        await supabase.from('bookings').update({ instructions_sent_at: new Date().toISOString() } as any).eq('id', b.id);
+                        
+                        // Mirror Notification for Israel (Silent/Operation)
+                        try {
+                            const name = b.profiles?.full_name || b.customer_name || 'Huésped';
+                            const date = humanizeDate(b.check_in);
+                            await NotificationService.sendTelegramAlert(`🟡 <b>Códigos de acceso enviados</b>\n👤 Huésped: ${name}\n🏠 Villa: ${b.properties?.title}\n📅 Entrada mañana: ${date}`, undefined, true);
+                        } catch (err) {}
+                        
+                        console.log(`[Automation] Instructions sent for booking ${b.id}`);
+                    } catch (e) {
+                        console.error(`[Automation Error] Check-in instructions for ${b.id}:`, e);
+                    }
+                }
+            }
+
+            // 5. AUTOMATION: 24h After Check-out (Reviews)
+            const yesterday = format(new Date(Date.now() - 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
+            const { data: checkoutRecently } = await supabase
+                .from('bookings')
+                .select('*, profiles(*), properties(*)')
+                .eq('check_out', yesterday)
+                .or('email_sent_feedback.is.null,email_sent_feedback.eq.false')
+                .eq('status', 'confirmed');
+
+            if (checkoutRecently && checkoutRecently.length > 0) {
+                for (const b of checkoutRecently) {
+                    try {
+                        await fetch(`${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/api/send`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'review_request',
+                                customerName: b.profiles?.full_name || b.customer_name || 'Huésped',
+                                customerEmail: b.profiles?.email || b.customer_email || 'reservas@villaretiror.com',
+                                propertyName: b.properties?.title || 'Villa Retiro',
+                                propertyId: b.property_id,
+                                bookingId: b.id
+                            })
+                        });
+                        await supabase.from('bookings').update({ email_sent_feedback: true } as any).eq('id', b.id);
+                        console.log(`[Automation] Review request sent for booking ${b.id}`);
+                    } catch (e) {
+                        console.error(`[Automation Error] Review request for ${b.id}:`, e);
+                    }
+                }
+            }
+
+            // 6. AUTOMATION: Salty Recovery (2h Whispering)
+            const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+            const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+            
+            const { data: abandonedLeads } = await supabase
+                .from('leads')
+                .select('*')
+                .eq('status', 'new')
+                .filter('tags', 'cs', '{"abandonment"}') 
+                .lt('created_at', twoHoursAgo)
+                .gt('created_at', threeHoursAgo);
+
+            if (abandonedLeads && abandonedLeads.length > 0) {
+                for (const lead of abandonedLeads) {
+                    try {
+                        const propertyIdTag = lead.tags?.find((t: string) => t === '42839458' || t === '1081171030449673920');
+                        const targetPropertyId = propertyIdTag || '1081171030449673920';
+
+                        await fetch(`${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/api/send`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                type: 'lead_recovery',
+                                customerName: lead.name || 'Viajero',
+                                customerEmail: lead.email,
+                                propertyId: targetPropertyId
+                            })
+                        });
+                        await supabase.from('leads').update({ status: 'recovered' } as any).eq('id', lead.id);
+                        console.log(`[Automation] Lead recovery email sent to ${lead.email}`);
+                    } catch (err) {
+                        console.error(`[Automation Error] Lead recovery for ${lead.id}:`, err);
+                    }
+                }
+            }
+        }
         
-        // 4. STRATEGY: Management by Exception
+        // 6. STRATEGY: Management by Exception
         // Send "Home Health" Report ONLY at 8:00 AM AST (Morning Brief)
         const prTime = new Intl.DateTimeFormat('en-US', {
             timeZone: 'America/Puerto_Rico',

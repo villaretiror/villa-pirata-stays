@@ -24,7 +24,7 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { type, customer, contactData, propertyId, customerName, customerEmail: reqCustomerEmail, userId, ...rest } = req.body || {};
+    const { type, email, customer, contactData, propertyId, customerName, customerEmail: reqCustomerEmail, userId, ...rest } = req.body || {};
     const userData = customer || contactData || {};
 
     // 🔗 SINGLE SOURCE OF TRUTH: Fetch property from DB
@@ -65,7 +65,7 @@ export default async function handler(req: any, res: any) {
     const rawClientName = userData.name || customerName || '';
     const firstName = formatFirstName(rawClientName);
     const clientFullName = rawClientName || 'Cliente Indefinido';
-    const customerEmail = reqCustomerEmail || userData.email || 'villaretiror@gmail.com';
+    const customerEmail = reqCustomerEmail || email || userData.email || 'villaretiror@gmail.com';
     const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
     const replyToAddress = 'reservas@villaretiror.com';
     const hostEmail = 'villaretiror@gmail.com';
@@ -314,6 +314,33 @@ export default async function handler(req: any, res: any) {
             <h1 style="color: #2C2B29; font-family: serif;">¡Buen viaje a casa, ${firstName}!</h1>
             <p>Ha sido un honor tenerte en **${p.name}**.</p>
             <a href="${reviewUrl}" style="background-color: #2C2B29; color: #ffffff; padding: 20px 40px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; margin-top: 30px;">⭐⭐⭐⭐⭐ Dejar reseña</a>
+          </div>
+        `
+      });
+    }
+    else if (type === 'lead_recovery') {
+      const recoveryUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/property/${v_propertyId}`;
+      emailOptions.push({
+        from: fromAddress,
+        to: customerEmail,
+        subject: `🏝️ ¿Aún pensando en el paraíso, ${firstName}?`,
+        html: `
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #f0f0f0; border-radius: 40px; overflow: hidden; background-color: #ffffff; box-shadow: 0 10px 30px rgba(0,0,0,0.03);">
+            <div style="background-color: #FDFCFB; padding: 50px 40px; text-align: center; border-bottom: 1px dashed #f0f0f0;">
+              <img src="${p.logo}" width="120" style="margin-bottom: 20px;" />
+              <h2 style="color: #2C2B29; font-family: serif; margin: 0;">¿Olvidaste algo en la orilla?</h2>
+            </div>
+            <div style="padding: 40px; color: #4A4A4A; line-height: 1.8;">
+              <p style="font-size: 16px;">Hola, ${firstName}. Soy Salty, el concierge digital de ${p.name}.</p>
+              <p style="font-size: 15px;">Noté que la brisa de Cabo Rojo te llamó, pero la reserva no se completó. Solo quería avisarte que he guardado tu disponibilidad por un momento más para que no pierdas tu refugio ideal.</p>
+              
+              <div style="text-align: center; margin: 40px 0;">
+                <a href="${recoveryUrl}" style="background-color: #2C2B29; color: #ffffff; padding: 18px 35px; border-radius: 15px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block;">Regresar al Paraíso</a>
+              </div>
+              
+              <p style="font-size: 13px; color: #888; text-align: center; font-style: italic;">"En la Villa, el tiempo se mide en olas y sonrisas. No dejes que las tuyas se escapen." — Salty</p>
+            </div>
+            ${emailFooter}
           </div>
         `
       });

@@ -756,8 +756,9 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'cohost_invitation',
-            email: trimmedEmail,
+            type: 'cohost_invitation', 
+            customerEmail: trimmedEmail, // Sync with backend key
+            email: trimmedEmail, // Backward compatibility
             propertyName: propertyName,
             propertyId: propertyId,
             token: token
@@ -784,23 +785,27 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
     if (!error) {
       onShowToast("Co-anfitrión eliminado 🗑️");
       fetchCohosts();
+    } else {
+      console.error("Delete Cohost Error:", error);
+      onShowToast(`No se pudo eliminar: ${error.message}`);
     }
   };
 
   const handleResendInvitation = async (ch: CohostRow) => {
     try {
-      await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'cohost_invitation',
-          email: ch.email,
-          propertyName: propertyName,
-          propertyId: propertyId,
-          token: ch.invitation_token
-        })
-      });
-      onShowToast("Invitación reenviada ✨");
+        await fetch('/api/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'cohost_invitation',
+            customerEmail: ch.email,
+            email: ch.email,
+            propertyName: propertyName,
+            propertyId: propertyId,
+            token: ch.invitation_token
+          })
+        });
+        onShowToast(`Invitación reenviada a ${ch.email} ✨`);
     } catch (e) {
       console.error("Resend error:", e);
       onShowToast("Error al reenviar invitación.");

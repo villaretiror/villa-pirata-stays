@@ -8,10 +8,8 @@ import { supabase } from '../lib/supabase.js';
 export const NotificationService = {
     /**
      * Envía una alerta a Telegram al chat del Host.
-     * @param message Mensaje formateado para Telegram (HTML)
-     * @param keyboard Opcional. Inline Keyboard Markup
      */
-    async sendTelegramAlert(message: string, keyboard?: any): Promise<boolean> {
+    async sendTelegramAlert(message: string, keyboard?: any, silent: boolean = false): Promise<boolean> {
         const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
         const CHAT_ID        = process.env.TELEGRAM_CHAT_ID;
 
@@ -24,7 +22,8 @@ export const NotificationService = {
             const bodyPayload: any = {
                 chat_id: CHAT_ID,
                 text: message,
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                disable_notification: silent
             };
 
             if (keyboard) {
@@ -54,7 +53,7 @@ export const NotificationService = {
     /**
      * Enviar mensaje directo a un Chat ID específico
      */
-    async sendDirectTelegramMessage(chatId: string, message: string, keyboard?: any): Promise<boolean> {
+    async sendDirectTelegramMessage(chatId: string, message: string, keyboard?: any, silent: boolean = false): Promise<boolean> {
         const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
         if (!TELEGRAM_TOKEN) {
@@ -66,7 +65,8 @@ export const NotificationService = {
             const bodyPayload: any = {
                 chat_id: chatId,
                 text: message,
-                parse_mode: 'HTML'
+                parse_mode: 'HTML',
+                disable_notification: silent
             };
 
             if (keyboard) {
@@ -94,9 +94,6 @@ export const NotificationService = {
 
     /**
      * 🏨 RESERVAS: Nueva Reservación Confirmada
-     * @param bookingId ID de la reserva para tracking de notificación
-     * @param syncHash Hash único del contenido iCal para evitar duplicados
-     * @param source Origen de la reserva (Airbnb, Booking.com, Directo)
      */
     async notifyNewReservation(
         bookingId: string, 
@@ -108,7 +105,6 @@ export const NotificationService = {
         source: string = 'Directo', 
         syncHash?: string
     ): Promise<boolean> {
-        // 🛡️ RESILIENCE PROTOCOL: Check for sync_last_hash to avoid redundant alerts
         if (syncHash && bookingId) {
             const { data: existing } = await supabase
                 .from('bookings')
@@ -122,7 +118,6 @@ export const NotificationService = {
             }
         }
 
-        // 🛡️ SOURCE BRANDING: Visual identity based on origin
         const branding: Record<string, string> = {
             'Airbnb': '🔴 <b>Airbnb</b>',
             'Booking.com': '🔵 <b>Booking.com</b>',
@@ -132,7 +127,7 @@ export const NotificationService = {
         const sourceLabel = branding[source] || branding['Directo'];
 
         const message = `
-🏨 <b>¡Nueva Reserva!</b>
+🟢 <b>¡Nueva Reserva!</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Origen:</b> ${sourceLabel}
 <b>Huésped:</b> ${guestName}
@@ -141,9 +136,11 @@ export const NotificationService = {
 <b>Total:</b> $${price} USD
 🚀 <i>Acción: Prepara todo para su llegada.</i>`;
         
-        const sent = await this.sendTelegramAlert(message);
+        // 💰 Reservas son High Urgency -> Loud
+        const sent = await this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_booking_${bookingId}` }]]
+        }, false);
         
-        // Finalize resilience after sending
         if (sent && bookingId) {
             await supabase.from('bookings').update({
                 notified_external_at: new Date().toISOString(),
@@ -159,13 +156,15 @@ export const NotificationService = {
      */
     async notifyCheckInReminder(guestName: string, property: string, time: string): Promise<boolean> {
         const message = `
-🔑 <b>¡Check-In Hoy!</b>
+🟡 <b>¡Check-In Hoy!</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Huésped:</b> ${guestName}
 <b>Propiedad:</b> ${property}
 <b>Hora:</b> ${time}
 ✨ <i>Acción: Asegúrate de que los códigos funcionen.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_ci` }]]
+        }, false);
     },
 
     /**
@@ -173,17 +172,18 @@ export const NotificationService = {
      */
     async notifyCheckOutAlert(guestName: string, property: string): Promise<boolean> {
         const message = `
-🧹 <b>¡Huésped Saliendo! (Check-Out)</b>
+🟡 <b>¡Huésped Saliendo! (Check-Out)</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Huésped:</b> ${guestName}
 <b>Propiedad:</b> ${property}
 🧼 <i>Acción: Coordinar limpieza de inmediato para la próxima reserva.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_co` }]]
+        }, false);
     },
 
     /**
-     * 🆘 TEAM ALERT: Delega emergencias a todos los Co-Hosts activos de la propiedad
-     * Flujo: property_cohosts (active) → profiles (via email) → Telegram DM
+     * 🆘 TEAM ALERT: Delega emergencias
      */
     async notifyEmergencyToCohosts(
         propertyId: string,
@@ -195,7 +195,6 @@ export const NotificationService = {
         resolvedPhone: string
     ): Promise<void> {
         try {
-            // 1. Fetch active co-hosts for this property
             const { data: cohosts } = await supabase
                 .from('property_cohosts')
                 .select('email, status')
@@ -208,18 +207,12 @@ export const NotificationService = {
             }
 
             const cohostEmails = cohosts.map((c: any) => c.email);
-
-            // 2. Look up their Telegram chat IDs via a custom field or email identifier
-            // NOTE: We use the profile's email to find user_id, then check if they have
-            // a known Telegram ID stored in a salty_family_knowledge entry as fallback.
-            // For now we use the ALLOWED_TELEGRAM_CHAT_IDS env mapping as secondary channel.
-            // Primary: add all co-host emails to a dispatch log.
             const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
             const hostChatId     = process.env.TELEGRAM_CHAT_ID;
             const allChatIds     = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId || "").split(',').map((id: string) => id.trim()).filter(Boolean);
 
             const emergencyMsg =
-                `🔔 <b>[CO-HOST ALERT] ${propertyName.toUpperCase()}</b>\n\n` +
+                `🔴 <b>[CO-HOST ALERT] ${propertyName.toUpperCase()}</b>\n\n` +
                 `🚨 <b>Severidad:</b> ${severity.toUpperCase()}\n` +
                 `🔧 <b>Tipo:</b> ${issueType}\n\n` +
                 `👤 <b>Huésped:</b> ${resolvedGuestName}\n` +
@@ -227,7 +220,6 @@ export const NotificationService = {
                 `📋 <b>Descripción:</b> ${description}\n\n` +
                 `<i>Alerta delegada por Salty. El Host principal ya fue notificado.</i>`;
 
-            // Send to all authorized chat IDs (except the primary host who already received)
             const secondaryIds = allChatIds.filter((id: string) => id !== hostChatId);
 
             await Promise.allSettled(
@@ -238,13 +230,13 @@ export const NotificationService = {
                         body: JSON.stringify({
                             chat_id: chatId,
                             text: emergencyMsg,
-                            parse_mode: 'HTML'
+                            parse_mode: 'HTML',
+                            disable_notification: false // Emergencias son LOUD
                         })
                     }).catch(e => console.error(`[Co-Host Alert] Failed for chatId ${chatId}:`, e))
                 )
             );
 
-            // 3. Log dispatch in Supabase for audit trail
             await supabase.from('ai_insights').insert({
                 type: 'pattern',
                 content: {
@@ -256,9 +248,8 @@ export const NotificationService = {
                 },
                 impact_score: severity === 'critical' ? 10 : severity === 'high' ? 7 : 4,
                 status: 'resolved'
-            }).catch(() => {/* non-critical log, don't throw */});
+            }).catch(() => {});
 
-            console.log(`[NotificationService] Co-host emergency alert sent to ${secondaryIds.length} team member(s).`);
         } catch (err: any) {
             console.error('[NotificationService] notifyEmergencyToCohosts error:', err.message);
         }
@@ -269,7 +260,7 @@ export const NotificationService = {
      */
     async notifyCohostInvitation(email: string, property: string): Promise<boolean> {
         const message = `
-🤝 <b>Nueva Invitación de Co-host</b>
+🟡 <b>Nueva Invitación de Co-host</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Email:</b> ${email}
 <b>Propiedad:</b> ${property}
@@ -282,13 +273,13 @@ export const NotificationService = {
      */
     async notifyCohostAction(cohostEmail: string, propertyName: string, action: string): Promise<boolean> {
         const message = `
-🛠 <b>Acción de Co-host</b>
+⚪ <b>Acción de Co-host</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Anfitrión:</b> ${cohostEmail}
 <b>Propiedad:</b> ${propertyName}
 <b>Acción:</b> ${action}
 ✅ <i>Cambio reflejado en Supabase.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, undefined, true); // Acciones rutinarias son SILENT
     },
 
     /**
@@ -297,28 +288,32 @@ export const NotificationService = {
     async notifyNewReview(guestName: string, property: string, rating: number, platform: string): Promise<boolean> {
         const stars = "⭐".repeat(rating);
         const message = `
-⭐ <b>¡Nueva Reseña en ${platform}!</b>
+🟢 <b>¡Nueva Reseña en ${platform}!</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Propiedad:</b> ${property}
 <b>Huésped:</b> ${guestName}
 <b>Calificación:</b> ${stars}
 💬 <i>Acción: Responde rápido para mantener el SEO alto.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_review" }]]
+        }, false);
     },
 
     /**
-     * 👥 LEADS: Nuevo Interés en Propiedad (Pending Booking)
+     * 👥 LEADS: Nuevo Interés en Propiedad
      */
     async notifyNewLead(guestName: string, property: string, checkIn: string, checkOut: string, phone: string): Promise<boolean> {
         const message = `
-👤 <b>Nuevo Lead Interesado</b>
+🟢 <b>Nuevo Lead Interesado</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Huésped:</b> ${guestName}
 <b>Propiedad:</b> ${property}
 <b>Fechas:</b> ${checkIn} al ${checkOut}
 <b>Teléfono:</b> ${phone}
 🛎️ <i>Acción: Pendiente de pago.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_lead" }]]
+        }, false);
     },
 
     /**
@@ -326,13 +321,15 @@ export const NotificationService = {
      */
     async notifyPaymentProof(guestName: string, property: string, proofUrl: string): Promise<boolean> {
         const message = `
-📸 <b>Comprobante ATH Móvil Recibido</b>
+🟢 <b>Comprobante ATH Móvil Recibido</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Huésped:</b> ${guestName}
 <b>Propiedad:</b> ${property}
 <b>Link Recibo:</b> <a href="${proofUrl}">Ver Imagen</a>
 🔎 <i>Acción: Valida en ATH Móvil y confirma la reserva.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_payment" }]]
+        }, false);
     },
 
     /**
@@ -340,12 +337,12 @@ export const NotificationService = {
      */
     async notifySystemError(context: string, error: string): Promise<boolean> {
         const message = `
-⚠️ <b>SYSTEM ERROR DETECTED</b>
+🔴 <b>SYSTEM ERROR DETECTED</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Contexto:</b> ${context}
 <b>Error:</b> <code>${error.slice(0, 100)}</code>
 🛠 <i>Acción: Revisa los logs de Vercel de inmediato.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, undefined, false); // Errores técnicos son LOUD
     },
 
     /**
@@ -353,13 +350,13 @@ export const NotificationService = {
      */
     async notifyLeadExpired(guestName: string, property: string, dates: string): Promise<boolean> {
         const message = `
-⏰ <b>Lead Expirado (Sin Pago)</b>
+⚪ <b>Lead Expirado (Sin Pago)</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Huésped:</b> ${guestName}
 <b>Propiedad:</b> ${property}
 <b>Fechas:</b> ${dates}
 🏷️ <i>Acción: Las fechas han sido liberadas en el calendario.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, undefined, true); // Expiraciones son SILENT
     },
 
     /**
@@ -368,17 +365,19 @@ export const NotificationService = {
     async notifyNewEmergency(property: string, guest: string, issue: string, severity: string): Promise<boolean> {
         const icon = severity === 'critical' ? '🚨' : '🆘';
         const message = `
-${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
+🔴 ${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Propiedad:</b> ${property}
 <b>Huésped:</b> ${guest}
 <b>Problema:</b> ${issue}
 📞 <i>Acción: Contacta al huésped de inmediato.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_emergency" }]]
+        }, false);
     },
 
     /**
-     * 🏠 HOME HEALTH: Reporte Matutino / Estado del Sistema
+     * 🏠 HOME HEALTH: Reporte Matutino
      */
     async notifyHomeHealth(stats: {
         syncStatus: string,
@@ -389,7 +388,7 @@ ${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
     }): Promise<boolean> {
         const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
         const message = `
-🏠 <b>ESTADO DE LA CASA - VILLA RETIRO R</b>
+⚪ 🏠 <b>ESTADO DE LA CASA - VILLA RETIRO R</b>
 ━━━━━━━━━━━━━━━━━━━━
 📅 <b>Sincronización:</b> ${stats.syncStatus}
 ${stats.syncDetails}
@@ -405,11 +404,12 @@ ${stats.syncDetails}
                 [
                     { text: "🚀 Ver Dashboard", url: `${siteUrl}/host` },
                     { text: "🔄 Forzar Sync", url: `${siteUrl}/api/master-cron?task=sync&secret=${stats.secret}` }
-                ]
+                ],
+                [{ text: "✅ Recibido", callback_data: "ack_health" }]
             ]
         };
 
-        return this.sendTelegramAlert(message, keyboard);
+        return this.sendTelegramAlert(message, keyboard, true); // Reportes diarios son SILENT
     },
 
     /**
@@ -417,13 +417,15 @@ ${stats.syncDetails}
      */
     async notifyEmailBounce(guestEmail: string, subject: string, reason: string): Promise<boolean> {
         const message = `
-⚠️ <b>BLOQUEO DE EMAIL (BOUNCE)</b>
+🔴 ⚠️ <b>BLOQUEO DE EMAIL (BOUNCE)</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Destinatario:</b> <code>${guestEmail}</code>
 <b>Asunto:</b> ${subject}
 <b>Razón:</b> <i>${reason}</i>
 
 ❌ <i>Acción: Contacta al huésped vía WhatsApp de inmediato.</i>`;
-        return this.sendTelegramAlert(message);
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_bounce" }]]
+        }, false); // Bounces son LOUD
     }
 };

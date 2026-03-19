@@ -419,6 +419,52 @@ async function handleCallbackQuery(callbackQuery: any) {
             });
         }
     }
+    else if (data.startsWith('ack_')) {
+        const userId = callbackQuery.from.id.toString();
+        const userName = userId === "9395794184" ? "Israel" : userId === "2085187904" ? "Brian" : (callbackQuery.from.first_name || "Admin");
+        const now = new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+        // 1. Log to Supabase for audit
+        try {
+            await supabaseServiceRole.from('ai_insights').insert({
+                type: 'telegram_ack',
+                content: {
+                    message_id: messageId,
+                    action: 'enterado',
+                    actor_id: userId,
+                    actor_name: userName,
+                    original_text: text.slice(0, 100)
+                },
+                status: 'resolved'
+            });
+        } catch (err: any) {
+            console.error("Logging ack error:", err);
+        }
+
+        // 2. Edit message to show who acknowledged
+        const updatedText = text + `\n\n✅ <b>Visto por ${userName}</b> a las ${now}`;
+        
+        await fetch(`https://api.telegram.org/bot${telegramToken}/editMessageText`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                message_id: messageId,
+                text: updatedText,
+                parse_mode: 'HTML',
+                reply_markup: { inline_keyboard: [] } // Quitar el botón ya usado
+            })
+        });
+
+        await fetch(`https://api.telegram.org/bot${telegramToken}/answerCallbackQuery`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                callback_query_id: callbackQuery.id,
+                text: `✅ Recibido por ${userName}`
+            })
+        });
+    }
     else if (data.startsWith('takeover_')) {
         const sessionId = data.split('takeover_')[1];
         const takeoverDate = new Date(Date.now() + 30 * 60 * 1000).toISOString();
