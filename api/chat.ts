@@ -29,10 +29,10 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 1.5 Flash Latest (Resilient Tool Calls)
-const model = google('gemini-1.5-flash-latest', { 
-    structuredOutputs: true,
-});
+// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 2.0 Flash
+// gemini-2.0-flash: Stable, fast, best tool calling + streaming combo.
+// NOTE: structuredOutputs REMOVED — it conflicts with streamText + tools.
+const model = google('gemini-2.0-flash');
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
 console.log(`🤖 [Salty 2.5 Engine]: Using Key starting with ${activeKey || 'NONE'}`);

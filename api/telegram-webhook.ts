@@ -199,7 +199,8 @@ Cuando hablas con los Dueños (Brian o Israel), dejas de ser un concierge de hot
             : "";
 
         const { text: responseText, toolCalls } = await generateText({
-            model: google('gemini-1.5-flash-latest'),
+            model: google('gemini-2.0-flash'),
+
             system: `${VILLA_CONCIERGE_PROMPT}${memoryContext}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
             prompt: `Mensaje de ${senderName}: ${text}`,
             temperature: 0.7,
