@@ -70,11 +70,12 @@ export default async function handler(req: Request) {
             else if (propertyId.toLowerCase().includes('pirata')) effectivePropertyId = PIRATA_HOUSE_ID;
         }
 
-        const [{ data: dbProperties }, { data: knowledgeSetting }, { data: saltySetting }, { data: familyKnowledge }] = await Promise.all([
+        const [{ data: dbProperties }, { data: knowledgeSetting }, { data: saltySetting }, { data: familyKnowledge }, { data: availabilityRules }] = await Promise.all([
             supabase.from('properties').select('*'),
             supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
             supabase.from('system_settings').select('value').eq('key', 'salty_config').single(),
-            supabase.from('salty_family_knowledge').select('key, value')
+            supabase.from('salty_family_knowledge').select('key, value'),
+            supabase.from('availability_rules').select('*')
         ]);
         
         let guestName = 'Viajero';
@@ -263,6 +264,10 @@ Eres Salty, la inteligencia estratégica de **Villa Retiro & Pirata Stays**. Ope
 ### 🏝️ CONTEXTO DE PROPIEDADES:
 ${dbProperties && dbProperties.length > 0 ? dbProperties.map(p => `• ${p.title} (ID: ${p.id}): ${p.subtitle}`).join('\n') : "Villa Retiro R & Pirata Family House"}
 
+### 📅 REGLAS DE DISPONIBILIDAD ESTRICTAS (OVER-RIDES EN TIEMPO REAL):
+${JSON.stringify(availabilityRules || [], null, 2)}
+(ATENCIÓN: Si una fecha requerida choca con una regla que tiene 'requires_manual_approval: true', infórmale al cliente que normalmente requiere anticipación pero puedes solicitar 'APROBACIÓN MANUAL' directamente a Brian, el CEO. Si el cliente acepta, utiliza tu herramienta 'request_manual_approval'.)
+
 ### 📖 BASE DE CONOCIMIENTO (VILLA_KNOWLEDGE):
 ${JSON.stringify(villaKnowledge, null, 2)}
 
@@ -331,6 +336,16 @@ ${JSON.stringify(familyKnowledge, null, 2)}
                     }).select().single();
                     await NotificationService.sendTelegramAlert(`🚨 <b>EMERGENCIA ${severity.toUpperCase()}</b>\n👤 ${guestName}\n🏠 ${activePropertyName}\n🔧 ${issue_type}: ${description}`);
                     return JSON.stringify({ status: 'emergency_active', ticket_id: ticket?.id });
+                }
+            }),
+            request_manual_approval: tool({
+                description: 'Envía una petición de aprobación manual a Brian (El Ceo) por Telegram para fechas de último minuto o que no cumplen los mínimos.',
+                parameters: z.object({ villa_id: z.string(), check_in: z.string(), check_out: z.string(), reason: z.string(), guest_name: z.string() }),
+                execute: async ({ villa_id, check_in, check_out, reason, guest_name }) => {
+                    const resolvedId = resolvePropertyId(villa_id);
+                    const text = `🚨 <b>APROBACIÓN MANUAL SOLICITADA BY SALTY</b>\n\n👤 Viajero: ${guest_name}\n📅 Fechas: ${check_in} al ${check_out}\n🏠 Villa: ${propertyTitles[resolvedId] || ""}\n💡 Razón/Excepción: ${reason}\n\n✅ Por favor entra al Dashboard para desbloquear la fecha si apruebas.`;
+                    await NotificationService.sendTelegramAlert(text);
+                    return JSON.stringify({ status: 'sent', alert: 'Aprobación Manual enviada por Telegram a Brian.' });
                 }
             }),
             generate_booking_pattern: tool({

@@ -16,6 +16,7 @@ import { HOST_PHONE } from '../constants';
 import ExperienceManager from '../components/host/ExperienceManager';
 import SiteSettingsManager from '../components/host/SiteSettingsManager';
 import InsightViewer from '../components/host/InsightViewer';
+import HostAvailabilityManager from '../components/host/HostAvailabilityManager';
 
 type BookingRow = Tables<'bookings'>;
 type ExpenseRow = Tables<'property_expenses'>;
@@ -2423,7 +2424,7 @@ const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booki
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team' | 'help';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team' | 'help' | 'availability';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -4054,6 +4055,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'conversion' && renderConversion()}
         {activeTab === 'messages' && <HostMessageCenter />}
         {activeTab === 'insights' && <InsightViewer />}
+        {activeTab === 'availability' && <HostAvailabilityManager properties={properties} />}
         {activeTab === 'help' && renderHelp()}
       </main>
 
@@ -4118,6 +4120,17 @@ const HostDashboard: React.FC = () => {
             )}
             <Sparkles strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'insights' ? 'scale-110' : ''} text-primary`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Insights</span>
+          </button>
+          
+          <button 
+            onClick={() => setActiveTab('availability')} 
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'availability' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            {activeTab === 'availability' && (
+              <motion.div layoutId="hostNavPill" className="absolute inset-0 bg-white/10 rounded-xl" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+            )}
+            <Calendar strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'availability' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Reglas</span>
           </button>
 
           <button

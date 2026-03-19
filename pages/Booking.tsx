@@ -30,7 +30,7 @@ const Booking: React.FC = () => {
 
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
   const [startDate, endDate] = dateRange;
-  const { blockedDates, isLoading: isAvailabilityLoading, isRangeAvailable } = useAvailability(id);
+  const { blockedDates, availabilityRules, isLoading: isAvailabilityLoading, isRangeAvailable } = useAvailability(id);
   const [isProcessing, setIsProcessing] = useState(false);
   const [phone, setPhone] = useState(user?.phone || '');
   const [guestMessage, setGuestMessage] = useState('');
@@ -123,7 +123,21 @@ const Booking: React.FC = () => {
   }
 
   const nights = startDate && endDate ? differenceInDays(endDate, startDate) : 0;
-  const isTooShort = nights > 0 && nights < 2;
+  let min_nights_req = 2;
+  let blockReason = 'Estancia de nivel SuperHost';
+  let isManualApproval = false;
+
+  if (startDate) {
+    const sStr = format(startDate, 'yyyy-MM-dd');
+    const applicableRule = availabilityRules?.find(r => sStr >= r.start_date && sStr <= r.end_date);
+    if (applicableRule) {
+        if (applicableRule.min_nights) min_nights_req = applicableRule.min_nights;
+        if (applicableRule.reason) blockReason = applicableRule.reason;
+        if (applicableRule.requires_manual_approval) isManualApproval = true;
+    }
+  }
+
+  const isTooShort = nights > 0 && nights < min_nights_req;
 
   // Calculate Base Price night by night for Seasonal Pricing
   let basePrice = 0;
@@ -511,7 +525,7 @@ const Booking: React.FC = () => {
             <div className="flex gap-4 p-5 bg-red-50 rounded-3xl border border-red-100 animate-shake">
               <span className="material-icons text-red-500">warning</span>
               <p className="text-xs font-bold text-red-700 leading-relaxed">
-                Nivel de Selección: Requiere estancia de 2 noches mínimo. Por favor ajusta tu salida.
+                Para asegurar tu experiencia este fin de semana, se requiere un mínimo de {min_nights_req} noches ({blockReason}). Por favor ajusta tu estadía.
               </p>
             </div>
           )}

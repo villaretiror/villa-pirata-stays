@@ -12,6 +12,7 @@ import { supabase } from '../lib/supabase';
  */
 export const useAvailability = (propertyId: string | undefined) => {
     const [blockedDates, setBlockedDates] = useState<Date[]>([]);
+    const [availabilityRules, setAvailabilityRules] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -46,6 +47,14 @@ export const useAvailability = (propertyId: string | undefined) => {
                 .eq('property_id', propertyId)
                 .eq('status', 'pending_payment');
 
+            // 4. Fetch Availability Rules
+            const { data: rules } = await supabase
+                .from('availability_rules')
+                .select('*')
+                .eq('property_id', propertyId);
+            
+            if (rules) setAvailabilityRules(rules);
+
             const allBlocked: Date[] = [];
 
             // Helper to fill date ranges
@@ -57,6 +66,23 @@ export const useAvailability = (propertyId: string | undefined) => {
                     curr.setDate(curr.getDate() + 1);
                 }
             };
+            
+            // Advance Notice Engine
+            let globalAdvanceNotice = 2; // default
+            if (rules && rules.length > 0) {
+                const todayStr = now.toISOString().split('T')[0];
+                const activeRule = rules.find((r: any) => todayStr >= r.start_date && todayStr <= r.end_date);
+                if (activeRule && activeRule.advance_notice_days !== undefined) {
+                    globalAdvanceNotice = activeRule.advance_notice_days;
+                }
+            }
+            if (globalAdvanceNotice > 0) {
+                for (let i = 0; i < globalAdvanceNotice; i++) {
+                    const d = new Date(now);
+                    d.setDate(d.getDate() + i);
+                    allBlocked.push(new Date(d.toISOString().split('T')[0] + 'T12:00:00'));
+                }
+            }
 
             // Process Manual Blocks
             if (prop.blockeddates && Array.isArray(prop.blockeddates)) {
@@ -96,6 +122,7 @@ export const useAvailability = (propertyId: string | undefined) => {
 
     return {
         blockedDates,
+        availabilityRules,
         isLoading,
         error,
         refresh: fetchAvailability,
