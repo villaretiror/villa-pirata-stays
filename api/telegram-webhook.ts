@@ -224,9 +224,9 @@ ${authorityContext}
 
             const toolResults = [];
             for (const call of calls) {
-                if (!call) continue;
+                if (!call || !call.name) continue;
                 const executor = toolExecutors[call.name];
-                const res = executor ? await executor(call.args) : { error: 'Tool not found' };
+                const res = executor ? await executor(call.args || {}) : { error: 'Tool not found' };
                 toolResults.push({ functionResponse: { name: call.name, response: { result: res }, id: call.id } });
             }
             parts.push(content);
