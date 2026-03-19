@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { NotificationService } from '../src/services/NotificationService.js';
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') {
@@ -50,7 +51,6 @@ export default async function handler(req: any, res: any) {
 
         // 3. Notificar al host principal (Telegram) que el co-host aceptó
         try {
-            const { NotificationService } = await import('../services/NotificationService.js');
             const { data: prop } = await supabase.from('properties').select('title').eq('id', cohost.property_id).single();
             await NotificationService.sendDirectTelegramMessage(
                 process.env.TELEGRAM_CHAT_ID || '', 

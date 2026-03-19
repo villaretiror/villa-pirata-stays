@@ -1,4 +1,4 @@
-import { Property } from '../../types';
+import { Property } from '../types';
 
 /**
  * ARCHIVO DE RECUPERACIÓN (LUXURY BASELINE)
