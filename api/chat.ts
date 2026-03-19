@@ -46,8 +46,9 @@ export default async function handler(req: Request) {
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
 
+    // Vercel AI SDK Data Stream Protocol Helper
     const writeStream = (type: string, data: any) => {
-        const payload = typeof data === 'string' ? data : JSON.stringify(data);
+        const payload = (type === '0' && typeof data === 'string') ? JSON.stringify(data) : JSON.stringify(data);
         writer.write(encoder.encode(`${type}:${payload}\n`));
     };
 
@@ -57,6 +58,7 @@ export default async function handler(req: Request) {
             const parsedBody = chatRequestSchema.parse(body);
             const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl, inStay } = parsedBody;
 
+            // --- 🛡️ SECURITY & CONTEXT ---
             const authHeader = req.headers.get('Authorization');
             let verifiedUserId: string | null = null;
             if (authHeader?.startsWith('Bearer ')) {
@@ -89,44 +91,69 @@ export default async function handler(req: Request) {
             (dbProperties || []).forEach((p: any) => { propertyTitles[p.id] = p.title; });
             const activePropertyName = propertyTitles[effectivePropertyId] || "nuestras Villas";
             const villaKnowledge = knowledgeSetting?.value || {};
+            
+            const lastUserMsg = [...(rawMessages || [])].reverse().find(m => m.role === 'user')?.content || "";
+            const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
-            const lastUserMsg = [...(rawMessages || [])].reverse().find(m => m.role === 'user')?.text || "";
-            const intentCategory = lastUserMsg.toLowerCase().includes('reserva') ? 'booking' : 'general';
-
+            // --- 🔱 RESTORED DEEP PROMPT ---
             const VILLA_CONCIERGE_PROMPT = `
-Eres "Salty", el alma y Consultor Ejecutivo de Villa & Pirata Stays. 🏖️ Sophisticated, Caribbean, and focused on Guest Excellence.
-Current Property: ${activePropertyName} (${effectivePropertyId}).
-Goal: Convert inquiries into bookings.
-Rules: ${JSON.stringify(availabilityRules || [])}.
-Knowledge: ${JSON.stringify(villaKnowledge)}.
+Eres "Salty", el alma y Consultor Ejecutivo de Villa & Pirata Stays en Cabo Rojo, PR. 🏝️
+No eres un bot; eres el anfitrión caribeño que todos desean: sofisticado, protector y con un conocimiento absoluto de la zona.
+
+### TU IDENTIDAD EJECUTIVA:
+- **Tono**: Cálido pero profesional. Exclusividad y relajación. Ocasionalmente emojis tropicales (🏝️, 🌊, 🥥).
+- **Misión**: Convertir consultas en Reservas Confirmadas. Eres proactivo.
+- **Autoridad**: Conoces cada rincón de Villa Retiro y Pirata Family. No inventes datos.
+
+### 🏠 CONTEXTO DE LA UNIDAD ACTUAL (${activePropertyName}):
+- ID: ${effectivePropertyId}
+- Link: https://www.villaretiror.com/property/${effectivePropertyId}
+
+### 📅 REGLAS DE DISPONIBILIDAD ESTRICTAS:
+${JSON.stringify(availabilityRules || [], null, 2)}
+
+### 📖 CONOCIMIENTO TÉCNICO (VILLA_KNOWLEDGE):
+${JSON.stringify(villaKnowledge, null, 2)}
+
+### 🧠 MEMORIAS FAMILIARES / PRIVADAS:
+${JSON.stringify(familyKnowledge || [], null, 2)}
 `.trim();
 
-            const contents: any[] = rawMessages.map(m => ({
-                role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user',
-                parts: [{ text: m.text || m.message || m.content || "" }]
-            }));
+            const contents: any[] = rawMessages.map(m => {
+                let text = "";
+                if (typeof m.content === 'string') text = m.content;
+                else if (Array.isArray(m.content)) {
+                    text = m.content.map((p: any) => p.text || "").join("");
+                } else {
+                    text = m.text || "";
+                }
+                return {
+                    role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user',
+                    parts: [{ text }]
+                };
+            });
 
             const functionDeclarations: any[] = [
                 {
                     name: 'check_availability',
-                    description: 'Busca disponibilidad real para villas.',
+                    description: 'Busca disponibilidad real para una o varias villas filtrando por calendario iCal.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
-                            villa_ids: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'IDs o nombres de villas' },
-                            check_in: { type: Type.STRING, description: 'YYYY-MM-DD' },
-                            check_out: { type: Type.STRING, description: 'YYYY-MM-DD' }
+                            villa_ids: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'IDs o nombres de villas (ej: Villa Retiro, Pirata House)' },
+                            check_in: { type: Type.STRING, description: 'Fecha ISO YYYY-MM-DD' },
+                            check_out: { type: Type.STRING, description: 'Fecha ISO YYYY-MM-DD' }
                         },
                         required: ['villa_ids', 'check_in', 'check_out']
                     }
                 },
                 {
                     name: 'generate_booking_pattern',
-                    description: 'Genera cotización oficial y enlace de reserva para una villa.',
+                    description: 'Genera cotización oficial y enlace de reserva directo para una villa.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
-                            villa_id: { type: Type.STRING, description: 'ID de la villa' },
+                            villa_id: { type: Type.STRING, description: 'ID o nombre de la villa' },
                             check_in: { type: Type.STRING },
                             check_out: { type: Type.STRING }
                         },
@@ -135,7 +162,7 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                 },
                 {
                     name: 'report_property_emergency',
-                    description: 'Activa protocolo de crisis por daños o fallos en la propiedad.',
+                    description: 'Protocolo de crisis por daños (agua, luz, acceso).',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
@@ -151,18 +178,23 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
             const toolExecutors: Record<string, Function> = {
                 check_availability: async ({ villa_ids, check_in, check_out }: any) => {
                     const resolvedIds = villa_ids.map((id: string) => {
-                        const val = id.toLowerCase();
-                        if (val.includes("retiro")) return "1081171030449673920";
-                        if (val.includes("pirata")) return "42839458";
+                        const val = String(id).toLowerCase();
+                        if (val.includes("retiro")) return VILLA_RETIRO_ID;
+                        if (val.includes("pirata")) return PIRATA_HOUSE_ID;
                         return id;
                     });
                     const results = await Promise.all(resolvedIds.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
                     const available = resolvedIds.filter((_id: string, i: number) => results[i].available);
-                    return { status: 'success', available_ids: available, available_names: available.map((id: string) => propertyTitles[id] || id) };
+                    return { 
+                        status: 'success', 
+                        available_ids: available, 
+                        available_names: available.map((id: string) => propertyTitles[id] || id),
+                        details: results 
+                    };
                 },
                 generate_booking_pattern: async ({ villa_id, check_in, check_out }: any) => {
-                    const id = villa_id.toLowerCase().includes('retiro') ? "1081171030449673920" : 
-                               villa_id.toLowerCase().includes('pirata') ? "42839458" : villa_id;
+                    const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
+                               String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
                     const quote = await applyAIQuote(id, check_in, check_out);
                     const baseUrl = currentUrl?.split('/booking/')[0]?.split('/property/')[0] || '';
                     return { status: 'success', quote, action_url: `${baseUrl}/booking/${id}?checkIn=${check_in}&checkOut=${check_out}` };
@@ -177,7 +209,7 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
             };
 
             let iterations = 0;
-            let fullText = "";
+            let finalFullText = "";
 
             while (iterations < 5) {
                 const streamResponse = await ai.models.generateContentStream({
@@ -190,47 +222,55 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                     }
                 });
 
-                let lastContent: any = null;
+                let accumulatedParts: any[] = [];
                 for await (const chunk of streamResponse) {
                     const candidate = chunk.candidates?.[0];
                     if (!candidate) continue;
 
-                    if (candidate.content?.parts?.some((p: any) => p.thought)) {
-                        writeStream('1', "");
-                    }
-
-                    for (const part of candidate.content?.parts || []) {
-                        if (part.text) {
-                            fullText += part.text;
-                            writeStream('0', part.text);
+                    if (candidate.content?.parts) {
+                        for (const part of candidate.content.parts) {
+                            accumulatedParts.push(part);
+                            if (part.text) {
+                                finalFullText += part.text;
+                                writeStream('0', part.text); // Standard text stream
+                            }
+                            if (part.thought) {
+                                writeStream('1', ""); // Reasoning indicator
+                            }
                         }
                     }
-                    lastContent = candidate.content;
                 }
 
-                const calls = lastContent?.parts?.filter((p: any) => p.functionCall).map((p: any) => p.functionCall) || [];
+                // Turn the accumulated parts into a single valid 'model' turn
+                const assistantContent = { role: 'model', parts: accumulatedParts };
+                const calls = accumulatedParts.filter(p => p.functionCall).map(p => p.functionCall);
+
                 if (calls.length === 0) break;
 
-                contents.push(lastContent);
-                const toolResults = [];
+                // Move assistant turn to history
+                contents.push(assistantContent);
+
+                // Execute and push tool results
+                const toolResultParts = [];
                 for (const call of calls) {
-                    writeStream('a', call);
+                    writeStream('a', call); // Notify frontend of tool use
                     const executor = toolExecutors[call.name];
                     const result = executor ? await executor(call.args) : { error: "Tool not found" };
                     writeStream('p', { name: call.name, response: { result }, id: call.id });
-                    toolResults.push({ functionResponse: { name: call.name, response: { result }, id: call.id } });
+                    toolResultParts.push({ functionResponse: { name: call.name, response: { result }, id: call.id } });
                 }
-                contents.push({ role: 'user', parts: toolResults });
+                
+                contents.push({ role: 'user', parts: toolResultParts });
                 iterations++;
             }
 
-            if (sessionId && fullText) {
-                await supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'ai', text: fullText, intent: intentCategory });
+            if (sessionId && finalFullText) {
+                await supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'ai', text: finalFullText, intent: intentCategory });
             }
             writer.close();
         } catch (err: any) {
-            console.error("Chat API Error:", err);
-            writeStream('0', "Salty está recalibrando sus sensores... Intente de nuevo.");
+            console.error("⛔ [CRITICAL] Salty Brain Failed:", err);
+            writeStream('0', "Salty está recalibrando sus sensores tropicales... Disculpe la demora.");
             writer.close();
         }
     })();
@@ -239,7 +279,9 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
         headers: {
             'Content-Type': 'text/plain; charset=utf-8',
             'Transfer-Encoding': 'chunked',
-            'X-Content-Type-Options': 'nosniff'
+            'X-Content-Type-Options': 'nosniff',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive'
         }
     });
 }
