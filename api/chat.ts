@@ -46,9 +46,8 @@ export default async function handler(req: Request) {
     const stream = new TransformStream();
     const writer = stream.writable.getWriter();
 
-    // Vercel AI SDK Data Stream Protocol Helper
     const writeStream = (type: string, data: any) => {
-        const payload = (type === '0' && typeof data === 'string') ? JSON.stringify(data) : JSON.stringify(data);
+        const payload = JSON.stringify(data);
         writer.write(encoder.encode(`${type}:${payload}\n`));
     };
 
@@ -58,7 +57,6 @@ export default async function handler(req: Request) {
             const parsedBody = chatRequestSchema.parse(body);
             const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl, inStay } = parsedBody;
 
-            // --- 🛡️ SECURITY & CONTEXT ---
             const authHeader = req.headers.get('Authorization');
             let verifiedUserId: string | null = null;
             if (authHeader?.startsWith('Bearer ')) {
@@ -95,39 +93,31 @@ export default async function handler(req: Request) {
             const lastUserMsg = [...(rawMessages || [])].reverse().find(m => m.role === 'user')?.content || "";
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
-            // --- 🔱 RESTORED DEEP PROMPT ---
             const VILLA_CONCIERGE_PROMPT = `
 ### 📅 TIEMPO REAL:
 - Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Puerto_Rico' })}
 - Hora Local: ${new Date().toLocaleTimeString('es-ES', { timeZone: 'America/Puerto_Rico' })} (Cabo Rojo, PR)
 
 ### TU IDENTIDAD EJECUTIVA:
-- **Tono**: Cálido pero profesional. Exclusividad y relajación. Ocasionalmente emojis tropicales (🏝️, 🌊, 🥥).
-- **Misión**: Convertir consultas en Reservas Confirmadas. Eres proactivo.
-- **Autoridad**: Conoces cada rincón de Villa Retiro y Pirata Family. No inventes datos.
+Eres "Salty", el alma y Consultor Ejecutivo de Villa & Pirata Stays en Cabo Rojo, PR. 🏝️
+No eres un bot; eres el anfitrión caribeño que todos desean: sofisticado, protector y con un conocimiento absoluto de la zona.
 
-### 🏠 CONTEXTO DE LA UNIDAD ACTUAL (${activePropertyName}):
-- ID: ${effectivePropertyId}
-- Link: https://www.villaretiror.com/property/${effectivePropertyId}
+### TUS DIRECTRICES DE CIERRE (MÁXIMA PRIORIDAD 💰):
+1. **Cero Fricción**: Si el cliente muestra interés, ofrece de inmediato "Hacer el precálculo" o "Bloquear las fechas por 1 hora".
+2. **Métodos de Pago**: Confirma que aceptamos Tarjetas de Crédito vía Stripe y nuestro método estrella: **ATH Móvil Business al 787-356-0895** (Villa Retiro R LLC).
+3. **Cierre Transaccional**: No esperes a que el cliente pregunte por el link. Al dar el precio, ofrece el paso a seguir: "¿Deseas pagar con tarjeta ahora o prefieres que te envíe el código QR de ATH Móvil?".
 
-### 📅 REGLAS DE DISPONIBILIDAD ESTRICTAS:
-${JSON.stringify(availabilityRules || [], null, 2)}
-
-### 📖 CONOCIMIENTO TÉCNICO (VILLA_KNOWLEDGE):
-${JSON.stringify(villaKnowledge, null, 2)}
-
-### 🧠 MEMORIAS FAMILIARES / PRIVADAS:
-${JSON.stringify(familyKnowledge || [], null, 2)}
+🏠 CONTEXTO ACTUAL: ${activePropertyName} (${effectivePropertyId}).
+REGLAS: ${JSON.stringify(availabilityRules || [])}.
+KNOWLEDGE: ${JSON.stringify(villaKnowledge)}.
+MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
 `.trim();
 
             const contents: any[] = rawMessages.map(m => {
                 let text = "";
                 if (typeof m.content === 'string') text = m.content;
-                else if (Array.isArray(m.content)) {
-                    text = m.content.map((p: any) => p.text || "").join("");
-                } else {
-                    text = m.text || "";
-                }
+                else if (Array.isArray(m.content)) text = m.content.map((p: any) => p.text || "").join("");
+                else text = m.text || "";
                 return {
                     role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user',
                     parts: [{ text }]
@@ -137,41 +127,28 @@ ${JSON.stringify(familyKnowledge || [], null, 2)}
             const functionDeclarations: any[] = [
                 {
                     name: 'check_availability',
-                    description: 'Busca disponibilidad real para una o varias villas filtrando por calendario iCal.',
+                    description: 'Busca disponibilidad real.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
-                            villa_ids: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'IDs o nombres de villas (ej: Villa Retiro, Pirata House)' },
-                            check_in: { type: Type.STRING, description: 'Fecha ISO YYYY-MM-DD' },
-                            check_out: { type: Type.STRING, description: 'Fecha ISO YYYY-MM-DD' }
+                            villa_ids: { type: Type.ARRAY, items: { type: Type.STRING } },
+                            check_in: { type: Type.STRING },
+                            check_out: { type: Type.STRING }
                         },
                         required: ['villa_ids', 'check_in', 'check_out']
                     }
                 },
                 {
                     name: 'generate_booking_pattern',
-                    description: 'Genera cotización oficial y enlace de reserva directo para una villa.',
+                    description: 'Genera cotización oficial y enlace de reserva.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
-                            villa_id: { type: Type.STRING, description: 'ID o nombre de la villa' },
+                            villa_id: { type: Type.STRING },
                             check_in: { type: Type.STRING },
                             check_out: { type: Type.STRING }
                         },
                         required: ['villa_id', 'check_in', 'check_out']
-                    }
-                },
-                {
-                    name: 'report_property_emergency',
-                    description: 'Protocolo de crisis por daños (agua, luz, acceso).',
-                    parameters: {
-                        type: Type.OBJECT,
-                        properties: {
-                            issue_type: { type: Type.STRING, enum: ['water', 'electricity', 'access', 'noise', 'other'] },
-                            description: { type: Type.STRING },
-                            severity: { type: Type.STRING, enum: ['medium', 'high', 'critical'] }
-                        },
-                        required: ['issue_type', 'description', 'severity']
                     }
                 }
             ];
@@ -186,26 +163,24 @@ ${JSON.stringify(familyKnowledge || [], null, 2)}
                     });
                     const results = await Promise.all(resolvedIds.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
                     const available = resolvedIds.filter((_id: string, i: number) => results[i].available);
-                    return { 
-                        status: 'success', 
-                        available_ids: available, 
-                        available_names: available.map((id: string) => propertyTitles[id] || id),
-                        details: results 
-                    };
+                    return { status: 'success', available_ids: available, available_names: available.map((id: string) => propertyTitles[id] || id) };
                 },
                 generate_booking_pattern: async ({ villa_id, check_in, check_out }: any) => {
                     const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
                                String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
                     const quote = await applyAIQuote(id, check_in, check_out);
-                    const baseUrl = currentUrl?.split('/booking/')[0]?.split('/property/')[0] || '';
-                    return { status: 'success', quote, action_url: `${baseUrl}/booking/${id}?checkIn=${check_in}&checkOut=${check_out}` };
-                },
-                report_property_emergency: async ({ issue_type, description, severity }: any) => {
-                    const { data: ticket } = await supabase.from('emergency_tickets').insert({
-                        property_id: effectivePropertyId, issue_type, description, severity, status: 'open', user_id: userId || null
-                    }).select().single();
-                    await NotificationService.sendTelegramAlert(`🚨 EMERGENCY ${severity}: ${issue_type}\n${description}\nProp: ${activePropertyName}`);
-                    return { status: 'emergency_active', ticket_id: ticket?.id };
+                    
+                    // 🛡️ FIX: Ensure baseUrl never has trailing slashes or subpaths like /messages
+                    const origin = req.headers.get('origin') || "";
+                    const baseUrl = origin ? origin.replace(/\/+$/, '') : "https://www.villaretiror.com";
+                    
+                    return { 
+                        status: 'success', 
+                        quote, 
+                        action_url: `${baseUrl}/booking/${id}?checkIn=${check_in}&checkOut=${check_out}`,
+                        payment_allowed: ['Stripe', 'ATH Móvil'],
+                        ath_movil_phone: HOST_PHONE 
+                    };
                 }
             };
 
@@ -227,40 +202,35 @@ ${JSON.stringify(familyKnowledge || [], null, 2)}
                 for await (const chunk of streamResponse) {
                     const candidate = chunk.candidates?.[0];
                     if (!candidate) continue;
-
                     if (candidate.content?.parts) {
                         for (const part of candidate.content.parts) {
                             accumulatedParts.push(part);
                             if (part.text) {
                                 finalFullText += part.text;
-                                writeStream('0', part.text); // Standard text stream
+                                writeStream('0', part.text);
                             }
                             if (part.thought) {
-                                writeStream('1', ""); // Reasoning indicator
+                                writeStream('1', "");
                             }
                         }
                     }
                 }
 
-                // Turn the accumulated parts into a single valid 'model' turn
                 const assistantContent = { role: 'model', parts: accumulatedParts };
                 const calls = accumulatedParts.filter(p => p.functionCall).map(p => p.functionCall);
 
                 if (calls.length === 0) break;
 
-                // Move assistant turn to history
                 contents.push(assistantContent);
-
-                // Execute and push tool results
                 const toolResultParts = [];
                 for (const call of calls) {
-                    writeStream('a', call); // Notify frontend of tool use
+                    if (!call || !call.name) continue;
+                    writeStream('a', call);
                     const executor = toolExecutors[call.name];
-                    const result = executor ? await executor(call.args) : { error: "Tool not found" };
+                    const result = executor ? await executor(call.args || {}) : { error: "Tool not found" };
                     writeStream('p', { name: call.name, response: { result }, id: call.id });
                     toolResultParts.push({ functionResponse: { name: call.name, response: { result }, id: call.id } });
                 }
-                
                 contents.push({ role: 'user', parts: toolResultParts });
                 iterations++;
             }
@@ -270,8 +240,8 @@ ${JSON.stringify(familyKnowledge || [], null, 2)}
             }
             writer.close();
         } catch (err: any) {
-            console.error("⛔ [CRITICAL] Salty Brain Failed:", err);
-            writeStream('0', "Salty está recalibrando sus sensores tropicales... Disculpe la demora.");
+            console.error("Chat API Error:", err);
+            writeStream('0', "Salty está recalibrando sus sensores... Intente de nuevo.");
             writer.close();
         }
     })();
@@ -280,9 +250,7 @@ ${JSON.stringify(familyKnowledge || [], null, 2)}
         headers: {
             'Content-Type': 'text/plain; charset=utf-8',
             'Transfer-Encoding': 'chunked',
-            'X-Content-Type-Options': 'nosniff',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
+            'X-Content-Type-Options': 'nosniff'
         }
     });
 }
