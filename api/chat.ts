@@ -94,23 +94,26 @@ export default async function handler(req: Request) {
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
             const VILLA_CONCIERGE_PROMPT = `
-### 📅 TIEMPO REAL:
-- Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Puerto_Rico' })}
-- Hora Local: ${new Date().toLocaleTimeString('es-ES', { timeZone: 'America/Puerto_Rico' })} (Cabo Rojo, PR)
+### 🔱 LENGUAJE DE CONCIERGE DE ÉLITE (REGLA DE BRIAN):
+- Habla como un anfitrión de lujo en el Caribe. Cálido, elegante, impecable.
+- **PROHIBIDO**: No uses sintaxis técnica como asteriscos de negrita (**), bloques de código o sintaxis Markdown para links [texto](enlace).
+- **LIMPIEZA VISUAL**: Si necesitas dar un enlace, escríbelo como una URL limpia (https://...) o deja que el sistema inyecte el botón de pago.
 
-### TU IDENTIDAD EJECUTIVA:
-Eres "Salty", el alma y Consultor Ejecutivo de Villa & Pirata Stays en Cabo Rojo, PR. 🏝️
-No eres un bot; eres el anfitrión caribeño que todos desean: sofisticado, protector y con un conocimiento absoluto de la zona.
+### 💰 CERTEZA EN PAGOS:
+Confirmamos explícitamente que aceptamos:
+1. **Tarjeta de Crédito/Débito** (vía nuestro portal seguro).
+2. **PayPal** (integrado en el checkout).
+3. **ATH Móvil Business** al 787-356-0895 (Villa Retiro R LLC).
+Nada de "verificar si está habilitado". Di: "Tenemos PayPal y ATH Móvil listos para tu comodidad".
 
-### TUS DIRECTRICES DE CIERRE (MÁXIMA PRIORIDAD 💰):
-1. **Cero Fricción**: Si el cliente muestra interés, ofrece de inmediato "Hacer el precálculo" o "Bloquear las fechas por 1 hora".
-2. **Métodos de Pago**: Confirma que aceptamos Tarjetas de Crédito vía Stripe y nuestro método estrella: **ATH Móvil Business al 787-356-0895** (Villa Retiro R LLC).
-3. **Cierre Transaccional**: No esperes a que el cliente pregunte por el link. Al dar el precio, ofrece el paso a seguir: "¿Deseas pagar con tarjeta ahora o prefieres que te envíe el código QR de ATH Móvil?".
+### 🛎️ FLUJO DE RESERVA:
+Cuando el cliente quiera reservar:
+1. Usa el tool 'generate_booking_pattern'.
+2. Al responder, incluye la etiqueta secreta al final de tu mensaje: [PAYMENT_REQUEST: villa_id, total, check_in, check_out, guests, villa_name, null, base, tax] 
+3. El sistema convertirá esa etiqueta en un Botón de Pago interactivo. No crees botones manuales con Markdown.
 
-🏠 CONTEXTO ACTUAL: ${activePropertyName} (${effectivePropertyId}).
-REGLAS: ${JSON.stringify(availabilityRules || [])}.
-KNOWLEDGE: ${JSON.stringify(villaKnowledge)}.
-MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
+📅 Tiempo Real: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
+PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
 `.trim();
 
             const contents: any[] = rawMessages.map(m => {
@@ -146,7 +149,8 @@ MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
                         properties: {
                             villa_id: { type: Type.STRING },
                             check_in: { type: Type.STRING },
-                            check_out: { type: Type.STRING }
+                            check_out: { type: Type.STRING },
+                            guests: { type: Type.NUMBER, description: 'Número de huéspedes (opcional, default 2)' }
                         },
                         required: ['villa_id', 'check_in', 'check_out']
                     }
@@ -165,12 +169,11 @@ MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
                     const available = resolvedIds.filter((_id: string, i: number) => results[i].available);
                     return { status: 'success', available_ids: available, available_names: available.map((id: string) => propertyTitles[id] || id) };
                 },
-                generate_booking_pattern: async ({ villa_id, check_in, check_out }: any) => {
+                generate_booking_pattern: async ({ villa_id, check_in, check_out, guests = 2 }: any) => {
                     const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
                                String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
                     const quote = await applyAIQuote(id, check_in, check_out);
                     
-                    // 🛡️ FIX: Ensure baseUrl never has trailing slashes or subpaths like /messages
                     const origin = req.headers.get('origin') || "";
                     const baseUrl = origin ? origin.replace(/\/+$/, '') : "https://www.villaretiror.com";
                     
@@ -178,8 +181,10 @@ MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
                         status: 'success', 
                         quote, 
                         action_url: `${baseUrl}/booking/${id}?checkIn=${check_in}&checkOut=${check_out}`,
-                        payment_allowed: ['Stripe', 'ATH Móvil'],
-                        ath_movil_phone: HOST_PHONE 
+                        payment_allowed: ['Stripe', 'PayPal', 'ATH Móvil'],
+                        ath_movil_phone: HOST_PHONE,
+                        villa_name: propertyTitles[id] || "Villa",
+                        guests: guests
                     };
                 }
             };
@@ -194,7 +199,7 @@ MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
                     config: { 
                         systemInstruction: VILLA_CONCIERGE_PROMPT,
                         tools: [{ functionDeclarations }], 
-                        temperature: 0.7 
+                        temperature: 0.5 
                     }
                 });
 
@@ -208,9 +213,6 @@ MEMORIAS: ${JSON.stringify(familyKnowledge || [])}.
                             if (part.text) {
                                 finalFullText += part.text;
                                 writeStream('0', part.text);
-                            }
-                            if (part.thought) {
-                                writeStream('1', "");
                             }
                         }
                     }
