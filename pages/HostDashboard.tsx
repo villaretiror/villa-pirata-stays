@@ -969,10 +969,10 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
   );
 };
 
-const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void, isSaving: boolean }) => {
+const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: { property: Property, bookings: any[], onSave: (p: Property) => void, onCancel: () => void, isSaving: boolean, onRefresh: () => void }) => {
   const [form, setForm] = useState(property);
   const [isUploading, setIsUploading] = useState(false);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'seasonal' | 'fees' | 'offers' | 'policies' | 'conversion' | 'emergency' | 'cohosts' | 'expenses'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'seasonal' | 'fees' | 'offers' | 'policies' | 'conversion' | 'emergency' | 'cohosts' | 'expenses'>('calendar');
   const [newFeeName, setNewFeeName] = useState('');
   const [newFeeValue, setNewFeeValue] = useState(0);
 
@@ -1030,6 +1030,28 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
   const [panicStart, setPanicStart] = useState("");
   const [panicEnd, setPanicEnd] = useState("");
   const [conflictSummary, setConflictSummary] = useState<any[]>([]);
+
+  // 🛡️ REGLA DE ORO: Detección de Ocupación Real
+  const isDateOccupied = (dateStr: string) => {
+    // 1. Bloqueo Manual del Host
+    if (form.blockedDates.includes(dateStr)) return { blocked: true, type: 'manual' };
+    
+    // 2. Bloqueo por Reserva Real (Huésped o iCal)
+    const booking = (bookings || []).find(b => {
+      if (b.property_id !== form.id) return false;
+      if (b.status === 'rejected' || b.status === 'expired') return false;
+      
+      // La fecha de checkout es libre para un nuevo check-in, por eso < check_out
+      return dateStr >= b.check_in && dateStr < b.check_out;
+    });
+
+    if (booking) {
+      const type = booking.status === 'external_block' ? 'external' : 'guest';
+      return { blocked: true, type, source: booking.source || 'Directo' };
+    }
+
+    return { blocked: false };
+  };
 
   const checkPanicConflicts = () => {
     if (!panicStart || !panicEnd) return;
@@ -1144,36 +1166,15 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
   const syncExternalCalendars = async (syncItems: CalendarSync[]) => {
     if (syncItems.length === 0) return;
     setIsSyncing(true);
-    let gatheredEvents: string[] = [];
 
     try {
-      // 1. Force Backend to Sync to DB instantly (bypasses node limits)
-      try { await fetch('/api/calendar/import', { method: 'POST' }); } catch (err) { console.warn('Silently failed backend sync') }
+      // 1. Trigger Backend Sync (V2 logic handles all platforms)
+      await fetch('/api/calendar/import', { method: 'POST' });
 
-      // 2. Refresh UI directly via client for instant feedback
-      for (const sync of syncItems) {
-        console.log(`Syncing ${sync.platform} from: ${sync.url}`);
-        const icalData = await fetchICalData(sync.url);
-        const events = parseICalData(icalData);
-        gatheredEvents = [...gatheredEvents, ...events];
-      }
+      // 2. Refresh main Dashboard data to pick up new bookings
+      await onRefresh();
 
-      // Combinar fechas bloqueadas existentes con las nuevas de iCal
-      const allUniqueDates = Array.from(new Set([...form.blockedDates, ...gatheredEvents]));
-
-      const updatedForm: Property = {
-        ...form,
-        blockedDates: allUniqueDates,
-        calendarSync: form.calendarSync.map(c => ({
-          ...c,
-          lastSynced: new Date().toISOString(),
-          syncStatus: 'success' as const
-        }))
-      };
-
-      setForm(updatedForm);
-      onSave(updatedForm);
-      showToast(`Éxito: ${gatheredEvents.length} fechas sincronizadas.`);
+      showToast("Calendarios sincronizados correctamente ✨");
     } catch (e: any) {
       console.error("Calendar Sync Critical Error:", e);
       showToast(`Error de Sincronización: ${e.message}`);
@@ -1206,8 +1207,8 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
     setForm({ ...form, calendarSync: (form.calendarSync || []).filter((c: CalendarSync) => c.id !== id) });
   };
 
-  const handleSyncRefresh = () => {
-    syncExternalCalendars(form.calendarSync);
+  const handleSyncRefresh = async () => {
+    await syncExternalCalendars(form.calendarSync);
   };
 
   const renderCalendarEditor = () => {
@@ -1222,19 +1223,33 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving }: { property: 
     for (let i = 1; i <= daysInMonth; i++) {
       const d = new Date(year, month, i);
       const dateStr = d.toISOString().split('T')[0];
-      const isBlocked = form.blockedDates.includes(dateStr);
-      // Simulación de detección de origen para el color
-      const isExternal = isBlocked && i % 3 === 0;
+      
+      const occupancy = isDateOccupied(dateStr);
+      const isBlocked = occupancy.blocked;
+      const isExternal = occupancy.type === 'external';
+      const isGuest = occupancy.type === 'guest';
 
       days.push(
         <button
           key={i}
-          onClick={() => toggleDateBlock(dateStr)}
-          className={`h-11 w-full rounded-xl text-xs font-bold transition-all relative ${isBlocked ? (isExternal ? 'bg-blue-600 text-white shadow-inner' : 'bg-gray-900 text-white shadow-md') : 'bg-gray-50 text-text-main hover:bg-gray-200 border border-gray-100'}`}
+          onClick={() => {
+            if (isExternal || isGuest) {
+              showToast(`Esta fecha está ocupada por una reserva de ${occupancy.source}`);
+              return;
+            }
+            toggleDateBlock(dateStr);
+          }}
+          className={`h-11 w-full rounded-xl text-xs font-bold transition-all relative 
+            ${isExternal ? 'bg-blue-600 text-white shadow-inner cursor-default' : 
+              isGuest ? 'bg-primary text-white shadow-inner cursor-default' : 
+              isBlocked ? 'bg-gray-900 text-white shadow-md' : 
+              'bg-gray-50 text-text-main hover:bg-gray-200 border border-gray-100'}`}
         >
           {i}
           {isBlocked && (
-            <span className="absolute bottom-1 right-1 text-[8px] opacity-80 uppercase">B</span>
+            <span className="absolute bottom-1 right-1 text-[8px] opacity-80 uppercase">
+              {isExternal ? 'ext' : isGuest ? 'res' : 'B'}
+            </span>
           )}
         </button>
       );
@@ -4075,7 +4090,7 @@ const HostDashboard: React.FC = () => {
           onClose={() => setShowSmartValidation(null)}
         />
       )}
-      {editingProperty && <Editor property={editingProperty} bookings={realBookings} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} />}
+      {editingProperty && <Editor property={editingProperty} bookings={realBookings} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
 
 

@@ -27,7 +27,7 @@ export default async function handler(req: any, res: any) {
                 .in('status', ['confirmed', 'completed', 'external_block']),
             supabase
                 .from('properties')
-                .select('title')
+                .select('title, blockeddates')
                 .eq('id', id)
                 .single(),
             supabase
@@ -65,13 +65,28 @@ export default async function handler(req: any, res: any) {
             });
         });
 
-        // 3. Add Manual Blocked Dates (Availability Rules)
+        // 3. Add Manual Blocked Dates (Property Record)
+        const manualBlocked = property.blockeddates || [];
+        manualBlocked.forEach((dateStr: string) => {
+            const date = new Date(dateStr + 'T12:00:00');
+            const end = new Date(date);
+            end.setDate(date.getDate() + 1);
+            calendar.createEvent({
+                start: date,
+                end: end,
+                summary: 'Bloqueado (Host)',
+                description: `Bloqueo manual desde el Dashboard`,
+                allDay: true
+            });
+        });
+
+        // 4. Add Availability Rules (Hard Blocks)
         rules.forEach((rule: any) => {
             calendar.createEvent({
                 start: new Date(rule.start_date + 'T12:00:00'),
                 end: new Date(rule.end_date + 'T12:00:00'),
-                summary: 'Bloqueado (Mantenimiento)',
-                description: `Bloqueo manual: ${rule.reason || 'Restringido'}`,
+                summary: 'Bloqueado (Estratégico)',
+                description: `Veda: ${rule.reason || 'Restringido'}`,
                 allDay: true
             });
         });

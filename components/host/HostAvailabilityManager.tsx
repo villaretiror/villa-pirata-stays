@@ -3,10 +3,10 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { es } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
-import { Calendar, Save, Trash2, ShieldCheck, X, Plus } from 'lucide-react';
+import { Calendar, Save, Trash2, ShieldCheck, X, Plus, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-export default function HostAvailabilityManager({ properties }: { properties: any[] }) {
+export default function HostAvailabilityManager({ properties, onRefresh }: { properties: any[], onRefresh?: () => void }) {
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id || '');
   const [rules, setRules] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,6 +50,19 @@ export default function HostAvailabilityManager({ properties }: { properties: an
       await supabase.from('properties').update({ price: globalBasePrice }).eq('id', selectedPropertyId);
       setIsSavingBasePrice(false);
       alert('Tarifa Master Actualizada');
+  };
+
+  const handleSyncRefresh = async () => {
+      setIsSyncing(true);
+      try {
+          await fetch('/api/calendar/import', { method: 'POST' });
+          if (onRefresh) onRefresh();
+          alert('Sincronización Completada ✨');
+      } catch (e) {
+          alert('Error al sincronizar');
+      } finally {
+          setIsSyncing(false);
+      }
   };
 
   const handleAddSync = async () => {
@@ -231,7 +244,17 @@ export default function HostAvailabilityManager({ properties }: { properties: an
           </div>
 
           <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
-              <h3 className="font-bold flex items-center gap-2 mb-4">Importar Calendarios (Airbnb / Booking)</h3>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold flex items-center gap-2">Importar Calendarios (Airbnb / Booking)</h3>
+                <button
+                    onClick={handleSyncRefresh}
+                    disabled={isSyncing}
+                    className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-all text-text-light disabled:opacity-50"
+                    title="Sincronizar Ahora"
+                >
+                    <RefreshCcw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
               <div className="space-y-3 mb-4">
                   {calendarSync.map((sync: any) => (
                       <div key={sync.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
