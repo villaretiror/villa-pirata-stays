@@ -2501,6 +2501,13 @@ const HostDashboard: React.FC = () => {
   const isHostOrAdmin = user?.role === 'host' || user?.role === 'admin' || user?.email === 'villaretiror@gmail.com';
   const isCoHost = !isHostOrAdmin; // If not owner = co-host (limited access)
 
+  // 🔌 ROUTING SYNC: Handle manual navigation to /dashboard/properties
+  useEffect(() => {
+    if (window.location.hash.includes('properties') || window.location.search.includes('tab=listings')) {
+      setActiveTab('listings');
+    }
+  }, []);
+
   // Analytics State
   const [totalRevenue, setTotalRevenue] = useState(0);
   const [monthlyRevenue, setMonthlyRevenue] = useState(0);
@@ -4079,6 +4086,7 @@ const HostDashboard: React.FC = () => {
 
       <main className="px-6 mt-4">
         {activeTab === 'today' && renderToday()}
+        {activeTab === 'listings' && renderListings()}
         {activeTab === 'guidebook' && renderGuidebook()}
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'reviews' && renderReviews()}
@@ -4133,6 +4141,21 @@ const HostDashboard: React.FC = () => {
             )}
             <Zap strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'today' ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Hoy</span>
+          </button>
+          
+          <button
+            onClick={() => setActiveTab('listings')}
+            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'listings' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
+          >
+            {activeTab === 'listings' && (
+              <motion.div
+                layoutId="hostNavPill"
+                className="absolute inset-0 bg-white/10 rounded-xl"
+                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+              />
+            )}
+            <Home strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'listings' ? 'scale-110' : ''}`} />
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Villas</span>
           </button>
 
           <button
