@@ -7,6 +7,7 @@ import ReviewCarousel from '../components/ReviewCarousel';
 import { useProperty } from '../contexts/PropertyContext';
 import { supabase } from '../lib/supabase';
 import { PropertyCardSkeleton } from '../components/Skeleton';
+import BookingCalendar from '../components/BookingCalendar';
 import { 
   X, 
   Search, 
@@ -43,6 +44,8 @@ const Home: React.FC = () => {
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const [pets, setPets] = useState(0);
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
   const [activeCategory, setActiveCategory] = useState<Category>('todo');
 
   const [activeGuideTab, setActiveGuideTab] = useState<string | null>(null);
@@ -176,18 +179,69 @@ const Home: React.FC = () => {
               </button>
             </div>
 
-            <div className="mb-8 space-y-1">
-              <CounterRow label="Adultos" sub="Edad 13+" val={adults} setVal={setAdults} min={1} />
-              <CounterRow label="Niños" sub="Edad 2 - 12" val={children} setVal={setChildren} min={0} />
-              <CounterRow label="Mascotas" sub="Pet Friendly" val={pets} setVal={setPets} min={0} />
+            <div className="mb-8 overflow-y-auto max-h-[60vh] pr-2 no-scrollbar">
+              {/* --- DATES SECTION --- */}
+              <div className="mb-8">
+                <BookingCalendar 
+                  startDate={startDate} 
+                  endDate={endDate} 
+                  onChange={(update) => {
+                    const [start, end] = update;
+                    setStartDate(start);
+                    setEndDate(end);
+                  }} 
+                  blockedDates={[]} // General search doesn't block dates globally
+                />
+              </div>
+
+              {/* --- GUESTS SECTION --- */}
+              <div className="space-y-1 mb-4">
+                <h3 className="font-bold text-sm uppercase tracking-wider text-text-light mb-4">¿Quiénes se unen a la aventura?</h3>
+                <CounterRow label="Exploradores Adultos" sub="Edad 13+" val={adults} setVal={setAdults} min={1} />
+                <CounterRow label="Pequeños Capitanes" sub="Edad 2 - 12" val={children} setVal={setChildren} min={0} />
+                <CounterRow label="Mascotas Capitanas" sub="Patas bienvenidas 🐾" val={pets} setVal={setPets} min={0} />
+              </div>
+            </div>
+
+            {/* 🧠 SMART TIP AREA: Dynamic Salty Insight */}
+            <div className="mb-6 min-h-[65px] flex items-center justify-center text-center px-6 bg-sand/50 rounded-3xl border border-orange-100/30">
+              <AnimatePresence mode="wait">
+                <motion.p
+                   key={`${adults}-${children}-${pets}-${startDate?.getTime()}`}
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   exit={{ opacity: 0, y: -10 }}
+                   className="text-[11px] font-bold text-secondary italic leading-relaxed"
+                >
+                  {(() => {
+                    const day = startDate?.getDay();
+                    const isWeekend = day === 5 || day === 6 || day === 0;
+                    const month = startDate?.getMonth();
+                    const dateVal = startDate?.getDate();
+                    
+                    // Holiday Logic
+                    let holidayMsg = "";
+                    if (month === 11 && dateVal === 25) holidayMsg = "¡Vaya regalo de Navidad! 🎄";
+                    else if (month === 0 && dateVal === 6) holidayMsg = "Día de Reyes en el trópico. 👑";
+                    else if (isWeekend) holidayMsg = "¡Ah, un fin de semana épico! 🥂";
+                    
+                    if (pets > 0) return `🔱 Salty: "Villa Retiro R tiene el espacio seguro que sus patitas necesitan. 🐾 ${holidayMsg}"`;
+                    if (children > 0) return `🔱 Salty: "Perfecto para una escapada familiar histórica. ✨ ${holidayMsg}"`;
+                    if (adults === 2) return `🔱 Salty: "Estas fechas son muy buscadas para escapadas románticas. 🛡️ ${holidayMsg}"`;
+                    if (adults > 4) return `🔱 Salty: "¡Capitán! Grupos grandes aman estas fechas. 🛡️ ${holidayMsg}"`;
+                    
+                    return holidayMsg || "🔱 Salty: \"Cabo Rojo le espera con su mejor gala. ¿Zarpamos?\"";
+                  })()}
+                </motion.p>
+              </AnimatePresence>
             </div>
 
             <button
               onClick={handleSearch}
-              className="w-full bg-primary text-white font-bold py-5 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all hover:bg-primary-dark"
+              className="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all hover:bg-primary-dark uppercase tracking-[0.2em] text-xs"
             >
-              <Search size={20} />
-              Explorar {filteredProperties.length} propiedades
+              <Search size={16} />
+              Explorar propiedades
             </button>
           </div>
         </div>
@@ -230,7 +284,9 @@ const Home: React.FC = () => {
           <Search size={20} />
         </div>
         <div className="flex-1 px-4">
-          <p className="font-bold text-text-main text-sm">Cabo Rojo, PR</p>
+          <p className="font-bold text-text-main text-sm">
+            {startDate ? `${startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${endDate ? endDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '...'}` : 'Cabo Rojo, PR'}
+          </p>
           <p className="text-xs text-text-light">{getGuestSummary()}</p>
         </div>
         <div className="bg-gray-100 p-2 rounded-xl text-gray-400 group-hover:text-primary transition-colors">

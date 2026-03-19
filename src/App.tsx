@@ -27,6 +27,7 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
 import { supabase } from './lib/supabase';
+import CustomCursor from './components/CustomCursor';
 
 // ⏳ Shell Loading Component for Suspense
 const PageLoader = () => (
@@ -118,6 +119,7 @@ const App: React.FC = () => {
       {showWhatsApp && <SaltyToast propertyId={currentProperty?.id} propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
       <Footer />
       {showNavbar && <Navbar />}
+      <CustomCursor />
     </div>
   );
 };

@@ -60,6 +60,15 @@ export const PropertyDetails: React.FC = () => {
   const symbols = { USD: '$', EUR: '€', GBP: '£' };
   const convertedPrice = Math.round(property ? property.price * rates[currency] : 0);
 
+  // 🏛️ DYNAMIC THEMING: Adapt accent colors to property identity
+  const brandColor = property?.title.includes('Pirata') ? '#004E64' : '#FF6B35';
+  useEffect(() => {
+    if (brandColor) {
+      document.documentElement.style.setProperty('--primary', brandColor);
+    }
+    return () => { document.documentElement.style.removeProperty('--primary'); };
+  }, [brandColor]);
+
   // 1. Fetch Fresh on Mount
   useEffect(() => {
     refreshProperties();

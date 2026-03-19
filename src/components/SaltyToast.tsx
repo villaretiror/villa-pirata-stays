@@ -82,8 +82,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                             </button>
 
                             <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1.5 flex items-center gap-1.5">
-                                <span className="material-icons text-[10px]">auto_awesome</span>
-                                Salty Concierge
+                                🔱 Salty Concierge ✨
                             </p>
                             <p className="text-[13px] text-text-main font-semibold leading-relaxed tracking-tight cursor-pointer">
                                 {message}
@@ -118,7 +117,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 )}
                 
                 <div className={`w-14 h-14 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-2xl border-4 border-white transition-all duration-500 ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100'}`}>
-                    <span className="material-icons text-2xl group-hover:rotate-12 transition-transform">auto_awesome</span>
+                    <span className="text-2xl group-hover:rotate-12 transition-transform">🔱</span>
                 </div>
 
                 {/* Status Indicator */}
