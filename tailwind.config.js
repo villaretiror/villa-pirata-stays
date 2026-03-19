@@ -2,13 +2,7 @@
 module.exports = {
     content: [
         "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx,css}",
-        "./pages/**/*.{js,ts,jsx,tsx}",
-        "./components/**/*.{js,ts,jsx,tsx}",
-        "./App.tsx",
-        "./index.tsx",
-        "./utils.ts",
-        "./constants.ts"
+        "./src/**/*.{js,ts,jsx,tsx,css,json}"
     ],
     darkMode: "class",
     theme: {
