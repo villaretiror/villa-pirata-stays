@@ -122,7 +122,7 @@ export const importPropertyFromUrl = async (url: string): Promise<Partial<Proper
       price: 250, // Default price
       rating: 4.9,
       reviews_count: 15,
-      amenities: ['Wifi Starlink', 'Check-in Autónomo', 'Cocina Completa']
+      amenities: ['WiFi de Alta Velocidad', 'Check-in Autónomo', 'Cocina Completa']
     };
   } catch (error: any) {
     console.error("Import Error:", error);

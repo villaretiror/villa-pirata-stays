@@ -13,7 +13,7 @@ export const scratchPadVillas: Property[] = [
     subtitle: 'Exclusive Boutique Stay · Modern Tropical Retreat · Cabo Rojo',
     location: 'Cabo Rojo, Puerto Rico',
     address: 'Carr 307 Km 6.2, Interior, Cabo Rojo, 00623',
-    description: 'Experimenta un Modern Tropical Retreat diseñado para el descanso sofisticado. Nuestra villa boutique ofrece un entorno íntimo y estratégico, a solo minutos de las joyas de Cabo Rojo: Playa Buyé, Boquerón y La Playuela. Disfruta de una piscina privada de agua salada en un ambiente de total paz, respaldado por energía garantizada 24/7 y cisterna industrial. El refugio perfecto para quienes valoran el diseño contemporáneo y la serenidad en el corazón del suroeste de Puerto Rico.',
+    description: 'Experimenta un Modern Tropical Retreat diseñado para el descanso sofisticado. Nuestra villa boutique ofrece un entorno íntimo y estratégico, a solo minutos de las joyas de Cabo Rojo: Playa Buyé, Boquerón y La Playuela. Disfruta de una piscina privada dentro de un ambiente de total paz, respaldado por energía garantizada 24/7 y cisterna industrial. El refugio perfecto para quienes valoran el diseño contemporáneo y la serenidad en el corazón del suroeste de Puerto Rico.',
     price: 285,
     original_price: 325,
     cleaning_fee: 85,

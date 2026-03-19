@@ -109,7 +109,7 @@ const HostChat: React.FC<HostChatProps> = ({ isOpen, onClose }) => {
       if (textToSend.toLowerCase().includes('wifi')) {
         setTimeout(async () => {
           await supabase.from('messages').insert([{
-            text: "Recordatorio: La red es 'VillaRetiro_Starlink'.",
+            text: "Recordatorio: La red es 'WiFi_VillaRetiro_Highspeed'.",
             sender: 'ai'
           }]);
         }, 2000);

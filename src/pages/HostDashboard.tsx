@@ -2091,7 +2091,7 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
                       value={form.policies.wifiName}
                       onChange={e => setForm({ ...form, policies: { ...form.policies, wifiName: e.target.value } })}
                       className="w-full p-3 border rounded-xl text-sm font-bold bg-gray-50"
-                      placeholder="Ej: Starlink_Premium"
+                      placeholder="Ej: WiFi_Villa_Highspeed"
                     />
                   </div>
                   <div>
