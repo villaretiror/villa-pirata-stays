@@ -31,12 +31,13 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-type ModalType = 'none' | 'task' | 'cohost' | 'payouts' | 'alerts' | 'account';
+type ModalType = 'none' | 'task' | 'payouts' | 'alerts' | 'account';
 
 interface HostMenuProps {
   properties: Property[];
   onNavigate?: (view: any) => void;
   onGoToProtocol?: () => void;
+  onGoToTeam?: () => void;
 }
 
 interface Task {
@@ -120,7 +121,7 @@ const ModalWrapper = ({ children, onClose, isOpen }: { children: React.ReactNode
   );
 };
 
-const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProtocol }) => {
+const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProtocol, onGoToTeam }) => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<ModalType>('none');
@@ -131,9 +132,6 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
 
   const [earnings, setEarnings] = useState<Earning[]>([]);
   const [loadingEarnings, setLoadingEarnings] = useState(false);
-
-  const [coHosts, setCoHosts] = useState<CoHost[]>([]);
-  const [loadingCoHosts, setLoadingCoHosts] = useState(false);
   const [dbError, setDbError] = useState<string | null>(null);
 
   // Profile Form State
@@ -147,8 +145,6 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
   // Task/CoHost Input States
   const [newTaskText, setNewTaskText] = useState("");
   const [newTaskProperty, setNewTaskProperty] = useState("Todas");
-  const [newCoHostEmail, setNewCoHostEmail] = useState("");
-  const [selectedPropertyForCoHost, setSelectedPropertyForCoHost] = useState(properties[0]?.id || "");
 
   // 3. Payouts State
   const [connectedServices, setConnectedServices] = useState({ stripe: false, paypal: false });
@@ -169,7 +165,6 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
   useEffect(() => {
     fetchTasks();
     fetchConfirmedBookings();
-    fetchCoHosts();
   }, []);
 
   const fetchTasks = async () => {
@@ -187,16 +182,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
     setLoadingTasks(false);
   };
 
-  const fetchCoHosts = async () => {
-    setLoadingCoHosts(true);
-    const { data, error } = await supabase
-      .from('property_cohosts')
-      .select('*')
-      .order('created_at', { ascending: false });
 
-    if (!error) setCoHosts(data || []);
-    setLoadingCoHosts(false);
-  };
 
   const fetchConfirmedBookings = async () => {
     if (!properties || properties.length === 0) return;
@@ -263,92 +249,14 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
     }
   };
 
-  const inviteCoHost = async () => {
-    const trimmedEmail = newCoHostEmail.trim().toLowerCase();
 
-    // Validaciones preventivas
-    if (!trimmedEmail || !trimmedEmail.includes('@')) return alert("Por favor ingresa un email válido.");
-    if (!selectedPropertyForCoHost) return alert("Error: Debes seleccionar una propiedad.");
-
-    // Check for duplicates
-    const isDuplicate = coHosts.some(ch =>
-      ch.email.toLowerCase() === trimmedEmail &&
-      ch.property_id === selectedPropertyForCoHost
-    );
-
-    if (isDuplicate) {
-      return alert("Este email ya ha sido invitado a esta propiedad.");
-    }
-
-    const token = crypto.randomUUID();
-
-    const { data, error } = await supabase
-      .from('property_cohosts')
-      .insert({
-        email: trimmedEmail,
-        property_id: selectedPropertyForCoHost,
-        status: 'pending',
-        invitation_token: token
-      })
-      .select();
-
-    if (!error && data) {
-      setCoHosts([data[0], ...coHosts]);
-      setNewCoHostEmail("");
-
-      // TRIGGER RE-SEND EMAIL (Corrected Payload)
-      try {
-        const prop = properties.find(p => p.id === selectedPropertyForCoHost);
-        await fetch('/api/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'cohost_invitation',
-            email: trimmedEmail,
-            propertyName: prop?.title || 'Villa Retiro',
-            propertyId: selectedPropertyForCoHost,
-            token: token
-          })
-        });
-      } catch (e) {
-        console.error("Resend Trigger Error:", e);
-      }
-
-      alert("Invitación enviada exitosamente ✨");
-    } else {
-      console.error('--- SUPABASE ERROR [inviteCoHost] ---', error);
-      const detail = error?.details || '';
-      alert(`Error invitando anfitrión: ${error?.message}\n\nDetalle: ${detail}`);
-    }
-  };
-
-  const resendInvitation = async (host: any) => {
-    try {
-      const prop = properties.find(p => p.id === host.property_id);
-      await fetch('/api/send', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          type: 'cohost_invitation',
-          email: host.email,
-          propertyName: prop?.title || 'Villa Retiro',
-          propertyId: host.property_id,
-          token: host.invitation_token
-        })
-      });
-      alert("Invitación reenviada a " + host.email + " ✨");
-    } catch (e) {
-      console.error("Resend Trigger Error:", e);
-      alert("Error al reenviar la invitación.");
-    }
-  };
 
   const removeCohost = async (id: string, email: string) => {
     if (!confirm(`¿Estás seguro de que deseas revocar el acceso a ${email}?`)) return;
     const { error } = await supabase.from('property_cohosts').delete().eq('id', id);
     if (!error) {
-      setCoHosts(coHosts.filter(c => c.id !== id));
       alert("Acceso revocado 🗑️");
+      // No coHosts state here to update locally
     } else {
       alert("Error al revocar acceso: " + error.message);
     }
@@ -485,86 +393,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
     </ModalWrapper>
   );
 
-  const renderCoHostModal = () => (
-    <ModalWrapper isOpen={activeModal === 'cohost'} onClose={() => setActiveModal('none')}>
-      <h2 className="font-serif font-black italic text-2xl mb-2 text-text-main tracking-tighter text-left">Co-Anfitriones</h2>
-      <p className="text-[11px] font-medium text-text-light mb-6 leading-relaxed italic text-left">Otorga el control de tus villas a tu equipo de confianza.</p>
 
-      <div className="space-y-3 mb-8 max-h-56 overflow-y-auto pr-1 no-scrollbar">
-        {loadingCoHosts ? (
-          <div className="py-8 text-center animate-pulse">
-            <div className="w-8 h-8 bg-gray-50 rounded-full mx-auto mb-2 border border-gray-100 flex items-center justify-center">
-              <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
-            </div>
-            <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Sincronizando equipo</p>
-          </div>
-        ) : (
-          coHosts.map((host, i) => (
-            <div key={host.id || i} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100/50 group/item hover:bg-white hover:shadow-soft-sm transition-all duration-300">
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-full bg-primary/5 text-primary flex items-center justify-center text-xs font-black border border-primary/10 shadow-sm uppercase shrink-0">
-                  {host.email[0]}
-                </div>
-                <div className="min-w-0 text-left">
-                  <p className="text-[11px] font-bold text-text-main leading-tight truncate">{host.email.split('@')[0]}</p>
-                  <p className="text-[9px] text-text-light font-medium truncate opacity-60 mb-1">{host.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className={`text-[8px] font-bold px-3 py-1 rounded-full border tracking-widest ${host.status === 'active' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-orange-50 text-orange-700 border-orange-100'}`}>
-                  {host.status === 'active' ? 'ACTIVO' : 'PENDIENTE'}
-                </span>
-                {host.status === 'pending' && (
-                  <button onClick={() => resendInvitation(host)} className="p-2 text-gray-400 hover:text-primary transition-colors bg-white rounded-full shadow-sm border border-gray-100 active:scale-95">
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                )}
-                <button 
-                  onClick={() => removeCohost(host.id, host.email)}
-                  className="p-2 text-red-300 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all bg-white rounded-full shadow-sm border border-gray-100 active:scale-95"
-                  title="Revocar acceso"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          ))
-        )}
-        {!loadingCoHosts && coHosts.length === 0 && (
-          <div className="text-center py-10 opacity-30 bg-gray-50 rounded-3xl border border-dashed border-gray-200">
-            <Users className="w-8 h-8 mx-auto mb-2" />
-            <p className="text-[9px] font-bold uppercase tracking-widest">Sin equipo asignado</p>
-          </div>
-        )}
-      </div>
-
-      <div className="pt-6 border-t border-gray-100">
-        <label className="text-[9px] font-bold uppercase text-gray-400 mb-3 block tracking-[0.2em] ml-1 text-left">Invitar Nuevo Miembro</label>
-        <div className="space-y-3">
-          <div className="relative group">
-            <input
-              value={newCoHostEmail}
-              onChange={(e) => setNewCoHostEmail(e.target.value)}
-              placeholder="email@ejemplo.com"
-              className="w-full p-4 pl-4 border border-gray-100 rounded-2xl text-[11px] bg-gray-50 outline-none focus:bg-white focus:ring-2 focus:ring-primary/20 transition-all font-medium"
-            />
-          </div>
-          <select
-            value={selectedPropertyForCoHost}
-            onChange={e => setSelectedPropertyForCoHost(e.target.value)}
-            className="w-full p-4 border border-gray-100 rounded-2xl text-[11px] bg-gray-50 outline-none font-bold text-text-main focus:bg-white focus:ring-2 focus:ring-primary/20 appearance-none transition-all"
-          >
-            {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-          </select>
-          <button onClick={inviteCoHost} disabled={!newCoHostEmail} className="w-full bg-black text-white py-5 rounded-2xl text-[10px] font-bold uppercase tracking-[0.3em] shadow-xl active:scale-95 transition-all disabled:opacity-30 flex items-center justify-center gap-3">
-            <PlusCircle className="w-4 h-4" /> Invitar Staff
-          </button>
-        </div>
-      </div>
-
-      <button onClick={() => setActiveModal('none')} className="w-full mt-6 py-2 text-[9px] font-bold uppercase text-gray-400 tracking-widest hover:text-text-main transition-colors">Cerrar</button>
-    </ModalWrapper>
-  );
 
   const renderPayoutsModal = () => (
     <ModalWrapper isOpen={activeModal === 'payouts'} onClose={() => setActiveModal('none')}>
@@ -769,6 +598,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
             onClick={() => {
               if (btn.id === 'exit') return onNavigate && onNavigate('home');
               if (btn.id === 'protocol') return onGoToProtocol && onGoToProtocol();
+              if (btn.id === 'cohost') return onGoToTeam && onGoToTeam();
               setActiveModal(btn.id as ModalType);
             }}
             className={`bg-white p-8 rounded-[2.5rem] shadow-soft border border-gray-50 flex flex-col items-center gap-5 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden`}
@@ -783,7 +613,6 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
 
       {/* Modals injection */}
       {activeModal === 'task' && renderTaskModal()}
-      {activeModal === 'cohost' && renderCoHostModal()}
       {activeModal === 'payouts' && renderPayoutsModal()}
       {activeModal === 'alerts' && renderAlertsModal()}
       {activeModal === 'account' && renderAccountModal()}

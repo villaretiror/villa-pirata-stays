@@ -202,7 +202,7 @@ export default async function handler(req: any, res: any) {
                 </div>
 
                 <div style="text-align: center; margin: 40px 0;">
-                  <a href="${process.env.VITE_SITE_URL}/stay/${v_propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-family: serif; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
+                  <a href="${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/stay/${v_propertyId}" style="background: linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%); color: #ffffff; padding: 20px 40px; border-radius: 18px; text-decoration: none; font-family: serif; font-weight: bold; font-size: 16px; display: inline-block; box-shadow: 0 15px 30px rgba(255,127,63,0.3);">🔑 Gestionar Mi Estancia</a>
                 </div>
 
                 <p class="p-text" style="font-size: 14px; color: #666; font-style: italic; text-align: center; margin-top: 40px;">
@@ -260,7 +260,7 @@ export default async function handler(req: any, res: any) {
       }
     }
     else if (type === 'cohost_invitation') {
-      const inviteUrl = `${process.env.VITE_SITE_URL}/login?invite=true${rest.token ? `&token=${rest.token}` : ''}`;
+      const inviteUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/login?invite=true${rest.token ? `&token=${rest.token}` : ''}`;
       emailOptions.push({
         from: fromAddress,
         to: customerEmail,
