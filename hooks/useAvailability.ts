@@ -24,14 +24,8 @@ export const useAvailability = (propertyId: string | undefined) => {
         try {
             const now = new Date();
 
-            // 1. Fetch Manual Blocks & Properties Info
-            const { data: prop, error: pError } = await supabase
-                .from('properties')
-                .select('blockeddates')
-                .eq('id', propertyId)
-                .single();
-
-            if (pError) throw pError;
+            // 1. Fetch Manual Blocks & Properties Info via rules soon...
+            // No longer fetching from properties table for blockeddates
 
             // 2. Fetch Active Bookings (Unified: Direct + iCal Synced)
             const { data: bks } = await supabase
@@ -84,9 +78,13 @@ export const useAvailability = (propertyId: string | undefined) => {
                 }
             }
 
-            // Process Manual Blocks
-            if (prop.blockeddates && Array.isArray(prop.blockeddates)) {
-                prop.blockeddates.forEach((d: string) => allBlocked.push(new Date(d + 'T12:00:00')));
+            // Process Manual Blocks (Hard Blocks from Rules)
+            if (rules && rules.length > 0) {
+                rules.forEach((r: any) => {
+                    if (r.is_blocked) {
+                        addRange(r.start_date, r.end_date);
+                    }
+                });
             }
 
             // Process Bookings

@@ -8,6 +8,8 @@ CREATE TABLE IF NOT EXISTS availability_rules (
     end_date DATE NOT NULL,
     
     -- Overrides
+    is_blocked BOOLEAN DEFAULT false, -- Reemplaza blockeddates. Bloqueo manual total (Mantenimiento, uso personal)
+    price_override NUMERIC, -- Reemplaza seasonal_prices. Override del precio base por noche
     min_nights INTEGER, -- Overrides global minimum nights (e.g., 4 nights for Holidays)
     advance_notice_days INTEGER, -- Lead time override (e.g., 0 for same-day, 2 for standard)
     buffer_nights_before INTEGER DEFAULT 0, -- Block N nights before

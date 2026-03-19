@@ -102,19 +102,20 @@ export const checkAvailabilityWithICal = async (
         return { available: false, reason: 'Fechas bloqueadas temporalmente en proceso de pago.' };
     }
 
-    // ── Step 2: Fallback — check property.blockeddates (manual blocks by host) ─
-    const { data: property } = await supabase
-        .from('properties')
-        .select('blockeddates')
-        .eq('id', String(villaId))
-        .single();
+    // ── Step 2: Check availability_rules for Hard Blocks ─
+    const { data: rules } = await supabase
+        .from('availability_rules')
+        .select('*')
+        .eq('property_id', String(villaId))
+        .eq('is_blocked', true);
 
-    if (property?.blockeddates && Array.isArray(property.blockeddates)) {
+    if (rules && rules.length > 0) {
         let curr = new Date(qIn);
         while (curr < qOut) {
             const ds = curr.toISOString().split('T')[0];
-            if ((property.blockeddates as string[]).includes(ds)) {
-                return { available: false, reason: 'Fechas bloqueadas manualmente por el anfitrión.' };
+            const isBlocked = rules.some((r: any) => ds >= r.start_date && ds <= r.end_date);
+            if (isBlocked) {
+                return { available: false, reason: 'Fechas bloqueadas manualmente por el anfitrión (Hard Block).' };
             }
             curr.setDate(curr.getDate() + 1);
         }

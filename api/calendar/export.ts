@@ -19,7 +19,7 @@ export default async function handler(req: any, res: any) {
 
     try {
         // 1. Fetch Bookings and Property Config (Blocked Dates)
-        const [bookingsRes, propertyRes] = await Promise.all([
+        const [bookingsRes, propertyRes, rulesRes] = await Promise.all([
             supabase
                 .from('bookings')
                 .select('*')
@@ -27,9 +27,14 @@ export default async function handler(req: any, res: any) {
                 .in('status', ['confirmed', 'completed', 'external_block']),
             supabase
                 .from('properties')
-                .select('title, blockeddates')
+                .select('title')
                 .eq('id', id)
-                .single()
+                .single(),
+            supabase
+                .from('availability_rules')
+                .select('*')
+                .eq('property_id', id)
+                .eq('is_blocked', true)
         ]);
 
         if (bookingsRes.error) throw bookingsRes.error;
@@ -37,6 +42,7 @@ export default async function handler(req: any, res: any) {
 
         const bookings = bookingsRes.data || [];
         const property = propertyRes.data;
+        const rules = rulesRes.data || [];
 
         const calendar = ical({ name: property.title || `Villa ${id}` });
         calendar.prodId({
@@ -59,18 +65,13 @@ export default async function handler(req: any, res: any) {
             });
         });
 
-        // 3. Add Manual Blocked Dates
-        const manualBlocks = (property.blockeddates as string[]) || [];
-        manualBlocks.forEach((dateStr: string) => {
-            const date = new Date(dateStr);
-            const endDate = new Date(date);
-            endDate.setDate(endDate.getDate() + 1);
-
+        // 3. Add Manual Blocked Dates (Availability Rules)
+        rules.forEach((rule: any) => {
             calendar.createEvent({
-                start: date,
-                end: endDate,
+                start: new Date(rule.start_date + 'T12:00:00'),
+                end: new Date(rule.end_date + 'T12:00:00'),
                 summary: 'Bloqueado (Mantenimiento)',
-                description: 'Bloqueo manual desde el Dashboard',
+                description: `Bloqueo manual: ${rule.reason || 'Restringido'}`,
                 allDay: true
             });
         });

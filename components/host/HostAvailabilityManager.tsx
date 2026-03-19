@@ -24,6 +24,48 @@ export default function HostAvailabilityManager({ properties }: { properties: an
   const [bufferAfter, setBufferAfter] = useState(0);
   const [reason, setReason] = useState('');
   const [restrictedCheckin, setRestrictedCheckin] = useState<number[]>([]);
+  const [isBlocked, setIsBlocked] = useState(false);
+  const [priceOverride, setPriceOverride] = useState<number | ''>('');
+
+  // Base Price State
+  const activeProperty = properties.find(p => p.id === selectedPropertyId);
+  const [globalBasePrice, setGlobalBasePrice] = useState(activeProperty?.price || 0);
+  const [isSavingBasePrice, setIsSavingBasePrice] = useState(false);
+
+  useEffect(() => {
+    if (activeProperty) {
+        setGlobalBasePrice(activeProperty.price);
+        setCalendarSync(activeProperty.calendarSync || []);
+    }
+  }, [activeProperty]);
+
+  // Calendar Sync State
+  const [calendarSync, setCalendarSync] = useState<any[]>([]);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [newSyncUrl, setNewSyncUrl] = useState('');
+  const [newSyncPlatform, setNewSyncPlatform] = useState('Airbnb');
+
+  const saveBasePrice = async () => {
+      setIsSavingBasePrice(true);
+      await supabase.from('properties').update({ price: globalBasePrice }).eq('id', selectedPropertyId);
+      setIsSavingBasePrice(false);
+      alert('Tarifa Master Actualizada');
+  };
+
+  const handleAddSync = async () => {
+      if (!newSyncUrl.trim()) return;
+      const newSync = { id: Date.now().toString(), platform: newSyncPlatform, url: newSyncUrl, lastSynced: new Date().toISOString(), syncStatus: 'success' };
+      const updated = [...calendarSync, newSync];
+      setCalendarSync(updated);
+      setNewSyncUrl('');
+      await supabase.from('properties').update({ calendarSync: updated }).eq('id', selectedPropertyId);
+  };
+
+  const handleRemoveSync = async (id: string) => {
+      const updated = calendarSync.filter((c: any) => c.id !== id);
+      setCalendarSync(updated);
+      await supabase.from('properties').update({ calendarSync: updated }).eq('id', selectedPropertyId);
+  };
 
   useEffect(() => {
     if (selectedPropertyId) fetchRules();
@@ -54,6 +96,8 @@ export default function HostAvailabilityManager({ properties }: { properties: an
       setBufferAfter(0);
       setReason('');
       setRestrictedCheckin([]);
+      setIsBlocked(false);
+      setPriceOverride('');
   };
 
   const editRule = (r: any) => {
@@ -66,6 +110,8 @@ export default function HostAvailabilityManager({ properties }: { properties: an
       setBufferAfter(r.buffer_nights_after || 0);
       setReason(r.reason || '');
       setRestrictedCheckin(r.restricted_checkin_days || []);
+      setIsBlocked(r.is_blocked || false);
+      setPriceOverride(r.price_override || '');
       setPanelOpen(true);
   };
 
@@ -95,7 +141,9 @@ export default function HostAvailabilityManager({ properties }: { properties: an
           buffer_nights_before: bufferBefore,
           buffer_nights_after: bufferAfter,
           restricted_checkin_days: restrictedCheckin,
-          reason: reason
+          reason: reason,
+          is_blocked: isBlocked,
+          price_override: priceOverride === '' ? null : Number(priceOverride)
       };
 
       if (editingRuleId) {
@@ -157,6 +205,60 @@ export default function HostAvailabilityManager({ properties }: { properties: an
             `}</style>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
+                  <h3 className="font-bold flex items-center gap-2 mb-4">Tarifa Base Global</h3>
+                  <p className="text-xs text-gray-500 mb-4">Precio que aplica a todos los días sin regla especial.</p>
+                  <div className="flex items-center gap-3">
+                      <span className="text-xl font-black text-gray-400">$</span>
+                      <input type="number" value={globalBasePrice} onChange={(e) => setGlobalBasePrice(Number(e.target.value))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-black text-xl outline-primary" />
+                  </div>
+                  <button disabled={isSavingBasePrice} onClick={saveBasePrice} className="mt-4 w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 disabled:opacity-50 transition-all">
+                      {isSavingBasePrice ? 'Guardando...' : 'Fijar Tarifa'}
+                  </button>
+              </div>
+
+              <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
+                  <h3 className="font-bold flex items-center gap-2 mb-4">Conexión iCal (Exportar)</h3>
+                  <p className="text-xs text-gray-500 mb-4">Copia este link para Airbnb, Booking, VRBO:</p>
+                  <div className="bg-gray-50 p-3 rounded-xl flex items-center gap-2">
+                      <code className="text-[9px] text-gray-600 truncate flex-1 font-mono">https://www.villaretiror.com/api/calendar/export?id={selectedPropertyId}</code>
+                      <button onClick={() => { navigator.clipboard.writeText(`https://www.villaretiror.com/api/calendar/export?id=${selectedPropertyId}`); alert('Copiado!'); }} className="text-primary font-bold text-[10px] uppercase">
+                          Copiar
+                      </button>
+                  </div>
+              </div>
+          </div>
+
+          <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
+              <h3 className="font-bold flex items-center gap-2 mb-4">Importar Calendarios (Airbnb / Booking)</h3>
+              <div className="space-y-3 mb-4">
+                  {calendarSync.map((sync: any) => (
+                      <div key={sync.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
+                          <div className="min-w-0 flex-1">
+                              <p className="font-bold text-sm truncate">{sync.platform}</p>
+                              <p className="text-[10px] text-gray-400 truncate">{sync.url}</p>
+                          </div>
+                          <button onClick={() => handleRemoveSync(sync.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-full">
+                              <Trash2 className="w-4 h-4" />
+                          </button>
+                      </div>
+                  ))}
+                  {calendarSync.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No hay canales conectados.</p>}
+              </div>
+              <div className="flex gap-2">
+                  <select value={newSyncPlatform} onChange={(e) => setNewSyncPlatform(e.target.value)} className="p-2 rounded-lg border border-gray-200 text-xs bg-white focus:border-primary outline-none">
+                      <option value="Airbnb">Airbnb</option>
+                      <option value="Booking">Booking.com</option>
+                      <option value="VRBO">VRBO</option>
+                  </select>
+                  <input type="text" placeholder="URL iCal..." value={newSyncUrl} onChange={(e) => setNewSyncUrl(e.target.value)} className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:border-primary outline-none" />
+              </div>
+              <button onClick={handleAddSync} disabled={!newSyncUrl} className="mt-3 w-full bg-gray-900 text-white font-bold py-2 rounded-xl text-xs hover:bg-black disabled:opacity-50 transition-all">
+                  Conectar Canal
+              </button>
+          </div>
+
           <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
              <h3 className="font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-primary" /> Reglas Activas (Overrides)</h3>
              {rules.length === 0 ? (
@@ -177,8 +279,10 @@ export default function HostAvailabilityManager({ properties }: { properties: an
                                  </button>
                              </div>
                              <div className="mt-3 flex gap-2 flex-wrap">
-                                 {r.min_nights && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-lg">Min: {r.min_nights}N</span>}
-                                 {r.advance_notice_days === 0 && <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded-lg">Mismo Día</span>}
+                                 {r.min_nights && !r.is_blocked && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-lg">Min: {r.min_nights}N</span>}
+                                 {r.advance_notice_days === 0 && !r.is_blocked && <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded-lg">Mismo Día</span>}
+                                 {r.price_override && !r.is_blocked && <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-lg">${r.price_override}/N</span>}
+                                 {r.is_blocked && <span className="bg-red-100 text-red-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest">BLOQUEADO</span>}
                              </div>
                          </div>
                      ))}
@@ -206,6 +310,20 @@ export default function HostAvailabilityManager({ properties }: { properties: an
                                 <input type="text" value={reason} onChange={e => setReason(e.target.value)} placeholder="Ej: Semana Santa, Limpieza Profunda" className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-medium outline-primary" />
                             </div>
 
+                            <div className="bg-gray-50 border border-gray-100 p-4 rounded-xl space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className="text-sm font-black text-gray-900">Bloqueo Temporal (Hard Block)</p>
+                                        <p className="text-xs font-medium text-gray-500 mt-0.5">Cierra la disponibilidad por mantenimiento o uso personal.</p>
+                                    </div>
+                                    <button onClick={() => setIsBlocked(!isBlocked)} className={`w-12 h-6 rounded-full transition-all relative ${isBlocked ? 'bg-red-500' : 'bg-gray-300'}`}>
+                                        <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all ${isBlocked ? 'right-0.5' : 'left-0.5'}`}></div>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {!isBlocked && (
+                            <>
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Min Noches</label>
@@ -225,7 +343,14 @@ export default function HostAvailabilityManager({ properties }: { properties: an
                                 </div>
                             </div>
 
-                            {advanceNotice === 0 && (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Tarifa Especial (Price Override)</label>
+                                <input type="number" value={priceOverride} onChange={e => setPriceOverride(e.target.value ? Number(e.target.value) : '')} placeholder="Ej: 350" className="w-full bg-green-50/30 border border-green-200 text-green-900 placeholder:text-green-300 rounded-xl px-4 py-3 font-black outline-green-500 text-lg" />
+                                <p className="text-[10px] text-gray-400 font-medium mt-1">Si se deja vacío, aplica la Tarifa Base Global</p>
+                            </div>
+                            </>)}
+
+                            {!isBlocked && advanceNotice === 0 && (
                                 <div className="bg-yellow-50 border border-yellow-200 p-4 rounded-xl flex gap-3 items-start">
                                     <input type="checkbox" id="approval" checked={requiresApproval} onChange={e => setRequiresApproval(e.target.checked)} className="mt-1 w-5 h-5 accent-yellow-600 cursor-pointer" />
                                     <div>
@@ -235,32 +360,36 @@ export default function HostAvailabilityManager({ properties }: { properties: an
                                 </div>
                             )}
 
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Días Prohibidos de Llegada</label>
-                                <div className="flex justify-between">
-                                    {daysLabel.map((d, i) => (
-                                        <button key={i} onClick={() => toggleDay(i)} className={`w-10 h-10 rounded-full font-black text-sm flex items-center justify-center transition-all ${restrictedCheckin.includes(i) ? 'bg-red-100 text-red-500 border border-red-200' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
-                                            {d}
-                                        </button>
-                                    ))}
+                            {!isBlocked && (
+                                <>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Días Prohibidos de Llegada</label>
+                                    <div className="flex justify-between">
+                                        {daysLabel.map((d, i) => (
+                                            <button key={i} onClick={() => toggleDay(i)} className={`w-10 h-10 rounded-full font-black text-sm flex items-center justify-center transition-all ${restrictedCheckin.includes(i) ? 'bg-red-100 text-red-500 border border-red-200' : 'bg-gray-50 text-gray-400 hover:bg-gray-100'}`}>
+                                                {d}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <p className="text-[10px] text-gray-400 font-medium mt-2">Días marcados en rojo NUNCA aceptarán Check-in.</p>
                                 </div>
-                                <p className="text-[10px] text-gray-400 font-medium mt-2">Días marcados en rojo NUNCA aceptarán Check-in.</p>
-                            </div>
 
-                            <div className="grid grid-cols-2 gap-4 pt-2">
-                                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                                    <label className="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center justify-between">Buffer Antes <span className="material-icons text-[14px]">shield</span></label>
-                                    <select value={bufferBefore} onChange={e => setBufferBefore(Number(e.target.value))} className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 font-bold text-blue-900 outline-none">
-                                        <option value={0}>0 Noches</option><option value={1}>1 Noche</option><option value={2}>2 Noches</option>
-                                    </select>
+                                <div className="grid grid-cols-2 gap-4 pt-2">
+                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
+                                        <label className="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center justify-between">Buffer Antes <span className="material-icons text-[14px]">shield</span></label>
+                                        <select value={bufferBefore} onChange={e => setBufferBefore(Number(e.target.value))} className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 font-bold text-blue-900 outline-none">
+                                            <option value={0}>0 Noches</option><option value={1}>1 Noche</option><option value={2}>2 Noches</option>
+                                        </select>
+                                    </div>
+                                    <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
+                                        <label className="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center justify-between">Buffer Después <span className="material-icons text-[14px]">shield</span></label>
+                                        <select value={bufferAfter} onChange={e => setBufferAfter(Number(e.target.value))} className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 font-bold text-blue-900 outline-none">
+                                            <option value={0}>0 Noches</option><option value={1}>1 Noche</option><option value={2}>2 Noches</option>
+                                        </select>
+                                    </div>
                                 </div>
-                                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-                                    <label className="block text-xs font-bold text-blue-800 uppercase tracking-widest mb-2 flex items-center justify-between">Buffer Después <span className="material-icons text-[14px]">shield</span></label>
-                                    <select value={bufferAfter} onChange={e => setBufferAfter(Number(e.target.value))} className="w-full bg-white border border-blue-200 rounded-lg px-3 py-2 font-bold text-blue-900 outline-none">
-                                        <option value={0}>0 Noches</option><option value={1}>1 Noche</option><option value={2}>2 Noches</option>
-                                    </select>
-                                </div>
-                            </div>
+                                </>
+                            )}
                         </div>
                         
                         <div className="p-6 bg-gray-50 border-t border-gray-100 shrink-0">

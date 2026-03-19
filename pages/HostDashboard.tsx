@@ -4037,7 +4037,6 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'today' && renderToday()}
         {activeTab === 'guidebook' && renderGuidebook()}
         {activeTab === 'settings' && renderSettings()}
-        {activeTab === 'listings' && renderListings()}
         {activeTab === 'reviews' && renderReviews()}
         {activeTab === 'leads' && renderLeads()}
         {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} />}
@@ -4155,20 +4154,6 @@ const HostDashboard: React.FC = () => {
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Pagos</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('listings')}
-            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'listings' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
-          >
-            {activeTab === 'listings' && (
-              <motion.div
-                layoutId="hostNavPill"
-                className="absolute inset-0 bg-white/10 rounded-xl"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-            <Home strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'listings' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Villas</span>
-          </button>
 
           <button
             onClick={() => setActiveTab('settings')}
