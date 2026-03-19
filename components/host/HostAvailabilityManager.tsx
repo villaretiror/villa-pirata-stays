@@ -5,6 +5,7 @@ import { es } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
 import { Calendar, Save, Trash2, ShieldCheck, X, Plus, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAvailability } from '../../hooks/useAvailability';
 
 export default function HostAvailabilityManager({ properties, onRefresh }: { properties: any[], onRefresh?: () => void }) {
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id || '');
@@ -45,6 +46,14 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
   const [newSyncUrl, setNewSyncUrl] = useState('');
   const [newSyncPlatform, setNewSyncPlatform] = useState('Airbnb');
 
+  // 📡 FUENTE DE VERDAD: Booking/Visitor Engine
+  const { 
+    blockedDates: guestBlockedDates, 
+    allBookings, 
+    pendingLeads, 
+    refresh: refreshAvailability 
+  } = useAvailability(selectedPropertyId);
+
   const saveBasePrice = async () => {
       setIsSavingBasePrice(true);
       await supabase.from('properties').update({ price: globalBasePrice }).eq('id', selectedPropertyId);
@@ -53,16 +62,17 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
   };
 
   const handleSyncRefresh = async () => {
-      setIsSyncing(true);
-      try {
-          await fetch('/api/calendar/import', { method: 'POST' });
-          if (onRefresh) onRefresh();
-          alert('Sincronización Completada ✨');
-      } catch (e) {
-          alert('Error al sincronizar');
-      } finally {
-          setIsSyncing(false);
-      }
+    setIsSyncing(true);
+    try {
+        await fetch('/api/calendar/import', { method: 'POST' });
+        if (onRefresh) await onRefresh();
+        await refreshAvailability();
+        alert('Sincronización Completada ✨');
+    } catch (e) {
+        alert('Error al sincronizar');
+    } finally {
+        setIsSyncing(false);
+    }
   };
 
   const handleAddSync = async () => {
@@ -198,22 +208,57 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <h3 className="font-bold uppercase tracking-wider text-sm mb-4 text-gray-400">Selector de Rango</h3>
                     <div className="w-full interactive-availability-calendar">
                     <DatePicker
-                        selectsRange={true} startDate={startDate} endDate={endDate} onChange={handleDateChange}
+                        selectsRange={true} 
+                        startDate={startDate} 
+                        endDate={endDate} 
+                        onChange={handleDateChange}
                         monthsShown={typeof window !== 'undefined' && window.innerWidth > 768 ? 2 : 1}
-                        inline locale={es} disabledKeyboardNavigation
+                        inline 
+                        locale={es} 
+                        disabledKeyboardNavigation
+                        highlightDates={[
+                            {
+                                "booked-external": allBookings
+                                    .filter(b => b.status === 'external_block')
+                                    .map(b => new Date(b.check_in + 'T12:00:00'))
+                            },
+                            {
+                                "booked-guest": allBookings
+                                    .filter(b => b.status === 'confirmed' || b.status === 'completed')
+                                    .map(b => new Date(b.check_in + 'T12:00:00'))
+                            },
+                            {
+                                "hold-lead": pendingLeads.map(p => new Date(p.check_in + 'T12:00:00'))
+                            },
+                            {
+                                "manual-block": activeProperty?.blockedDates?.map((d: string) => new Date(d + 'T12:00:00')) || []
+                            }
+                        ]}
                     />
                     </div>
                 </div>
             </div>
             
             <style>{`
-                .interactive-availability-calendar .react-datepicker { border: none !important; width: 100%; background: transparent; }
+                .interactive-availability-calendar .react-datepicker { border: none !important; width: 100%; background: transparent; font-family: inherit; }
                 .interactive-availability-calendar .react-datepicker__header { background: transparent !important; border: none; }
+                .interactive-availability-calendar .react-datepicker__day-name { font-weight: 800; color: #94a3b8; text-transform: uppercase; font-size: 0.7rem; }
+                .interactive-availability-calendar .react-datepicker__day { font-weight: 600; border-radius: 0.75rem !important; transition: all 0.2s; }
+                
                 .interactive-availability-calendar .react-datepicker__day--selected,
                 .interactive-availability-calendar .react-datepicker__day--in-selecting-range,
-                .interactive-availability-calendar .react-datepicker__day--in-range,
-                .interactive-availability-calendar .react-datepicker__day--keyboard-selected {
-                  background-color: #1a1a1a !important; color: white !important; border-radius: 10px;
+                .interactive-availability-calendar .react-datepicker__day--in-range {
+                  background-color: #1a1a1a !important; color: white !important;
+                }
+
+                .booked-external { background-color: #2563eb !important; color: white !important; border-radius: 0.75rem !important; }
+                .booked-guest { background-color: #CBB28A !important; color: white !important; border-radius: 0.75rem !important; }
+                .hold-lead { background-color: #fb8c00 !important; color: white !important; border-radius: 0.75rem !important; opacity: 0.8; }
+                .manual-block { background-color: #1a1a1a !important; color: white !important; border-radius: 0.75rem !important; }
+
+                .interactive-availability-calendar .react-datepicker__day--highlighted {
+                    filter: brightness(1.1);
+                    box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
                 }
             `}</style>
           </div>
