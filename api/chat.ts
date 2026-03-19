@@ -27,7 +27,7 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-const SALTY_MODEL = 'gemini-3-flash-preview'; // ⚡ MAR 2026
+const SALTY_MODEL = 'gemini-3-flash-preview';
 
 const chatRequestSchema = z.object({
     messages: z.array(z.any()),
@@ -51,14 +51,12 @@ export default async function handler(req: Request) {
         writer.write(encoder.encode(`${type}:${payload}\n`));
     };
 
-    // Use a background promise to process the AI logic while returning the stream
     (async () => {
         try {
             const body = await req.json();
             const parsedBody = chatRequestSchema.parse(body);
             const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl, inStay } = parsedBody;
 
-            // Security & Context
             const authHeader = req.headers.get('Authorization');
             let verifiedUserId: string | null = null;
             if (authHeader?.startsWith('Bearer ')) {
@@ -103,13 +101,10 @@ Rules: ${JSON.stringify(availabilityRules || [])}.
 Knowledge: ${JSON.stringify(villaKnowledge)}.
 `.trim();
 
-            const contents: any[] = [
-                { role: 'user', parts: [{ text: `SYSTEM_INSTRUCTION: ${VILLA_CONCIERGE_PROMPT}` }] },
-                ...rawMessages.map(m => ({
-                    role: (m.role === 'assistant' || m.sender === 'ai') ? 'assistant' : 'user',
-                    parts: [{ text: m.text || m.content || "" }]
-                }))
-            ];
+            const contents: any[] = rawMessages.map(m => ({
+                role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user',
+                parts: [{ text: m.text || m.message || m.content || "" }]
+            }));
 
             const functionDeclarations: any[] = [
                 {
@@ -118,20 +113,20 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
-                            villa_ids: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'IDs o nombres' },
-                            check_in: { type: Type.STRING },
-                            check_out: { type: Type.STRING }
+                            villa_ids: { type: Type.ARRAY, items: { type: Type.STRING }, description: 'IDs o nombres de villas' },
+                            check_in: { type: Type.STRING, description: 'YYYY-MM-DD' },
+                            check_out: { type: Type.STRING, description: 'YYYY-MM-DD' }
                         },
                         required: ['villa_ids', 'check_in', 'check_out']
                     }
                 },
                 {
                     name: 'generate_booking_pattern',
-                    description: 'Genera cotización oficial y enlace de reserva.',
+                    description: 'Genera cotización oficial y enlace de reserva para una villa.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
-                            villa_id: { type: Type.STRING },
+                            villa_id: { type: Type.STRING, description: 'ID de la villa' },
                             check_in: { type: Type.STRING },
                             check_out: { type: Type.STRING }
                         },
@@ -140,7 +135,7 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                 },
                 {
                     name: 'report_property_emergency',
-                    description: 'Activa protocolo de crisis.',
+                    description: 'Activa protocolo de crisis por daños o fallos en la propiedad.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
@@ -162,7 +157,7 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                         return id;
                     });
                     const results = await Promise.all(resolvedIds.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
-                    const available = resolvedIds.filter((_: any, i: number) => results[i].available);
+                    const available = resolvedIds.filter((_id: string, i: number) => results[i].available);
                     return { status: 'success', available_ids: available, available_names: available.map((id: string) => propertyTitles[id] || id) };
                 },
                 generate_booking_pattern: async ({ villa_id, check_in, check_out }: any) => {
@@ -188,7 +183,11 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                 const streamResponse = await ai.models.generateContentStream({
                     model: SALTY_MODEL,
                     contents,
-                    config: { tools: [{ functionDeclarations }], temperature: 0.7 }
+                    config: { 
+                        systemInstruction: VILLA_CONCIERGE_PROMPT,
+                        tools: [{ functionDeclarations }], 
+                        temperature: 0.7 
+                    }
                 });
 
                 let lastContent: any = null;
@@ -196,19 +195,16 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
                     const candidate = chunk.candidates?.[0];
                     if (!candidate) continue;
 
-                    // Support for thinking/reasoning parts
                     if (candidate.content?.parts?.some((p: any) => p.thought)) {
-                        writeStream('1', ""); // Reasoning indicator
+                        writeStream('1', "");
                     }
 
-                    // Extract text segments safely
                     for (const part of candidate.content?.parts || []) {
                         if (part.text) {
                             fullText += part.text;
                             writeStream('0', part.text);
                         }
                     }
-
                     lastContent = candidate.content;
                 }
 
