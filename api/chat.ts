@@ -58,7 +58,24 @@ export default async function handler(req: Request) {
     try {
         const body = await req.json();
         const parsedBody = chatRequestSchema.parse(body);
-        const { messages: rawMessages, sessionId, userId, propertyId, currentUrl, inStay } = parsedBody;
+        const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl, inStay } = parsedBody;
+
+        // 🛡️ SECURITY AUDITOR: Verificación de Identidad (JWT vs Body Claims)
+        const authHeader = req.headers.get('Authorization');
+        let verifiedUserId: string | null = null;
+        
+        if (authHeader?.startsWith('Bearer ')) {
+            const token = authHeader.split(' ')[1];
+            try {
+                const { data: { user: sbUser } } = await supabase.auth.getUser(token);
+                if (sbUser) verifiedUserId = sbUser.id;
+            } catch (err) {
+                console.warn("[SecurityAuditor] Auth Token context failed.");
+            }
+        }
+
+        // Anti-Spoofing: Si el userId del body no coincide con el token, lo degradamos a undefined.
+        const userId = (bodyUserId && verifiedUserId === bodyUserId) ? bodyUserId : (verifiedUserId || undefined);
 
         // 🛡️ REINFORCED FALLBACK: Asegurar que siempre sea un ID válido del catálogo (Airbnb ID)
         const VILLA_RETIRO_ID = "1081171030449673920";
@@ -168,9 +185,10 @@ export default async function handler(req: Request) {
 
         let accessLevel: any = 0;
         try {
+            // El nivel de acceso ahora depende de una identidad verificada o un sessionId vinculado
             accessLevel = await SecurityGovernanceService.getAccessLevel(userId || sessionId || "anon", effectivePropertyId);
         } catch (e) {
-            accessLevel = 1;
+            accessLevel = 0; // Fallback ultra-seguro
         }
 
         const wifiName = accessLevel >= 2 ? (activeProperty?.wifi_name || activeProperty?.policies?.wifiName || "VillaRetiro_HighSpeed_WiFi") : "Reservado";
