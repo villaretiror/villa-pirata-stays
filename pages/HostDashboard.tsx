@@ -1251,16 +1251,19 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
       const isStrategy = occupancy.type === 'strategy';
 
       days.push(
-        <button
+        <motion.button
           key={i}
+          whileHover={{ scale: 1.05, zIndex: 10 }}
+          whileTap={{ scale: 0.95 }}
           onClick={() => {
             if (isExternal || isGuest || isLead || isStrategy) {
-              showToast(`Esta fecha está ocupada por: ${occupancy.source}`);
+              showToast(`Bloqueado por: ${occupancy.source.toUpperCase()}`);
               return;
             }
             toggleDateBlock(dateStr);
           }}
-          className={`h-11 w-full rounded-xl text-xs font-bold transition-all relative 
+          title={occupancy.source ? `Origen: ${occupancy.source}` : "Día Disponible"}
+          className={`h-11 w-full rounded-xl text-xs font-black transition-all relative group
             ${isExternal ? 'bg-blue-600 text-white shadow-inner cursor-default' : 
               isGuest ? 'bg-primary text-white shadow-inner cursor-default' : 
               isLead ? 'bg-orange-400 text-white shadow-inner cursor-default animate-pulse' :
@@ -1268,13 +1271,15 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
               isBlocked ? 'bg-gray-900 text-white shadow-md' : 
               'bg-gray-50 text-text-main hover:bg-gray-200 border border-gray-100'}`}
         >
-          {i}
+          <span className="relative z-10">{i}</span>
           {isBlocked && (
-            <span className="absolute bottom-1 right-1 text-[8px] opacity-80 uppercase">
-              {isExternal ? 'ext' : isGuest ? 'res' : isLead ? 'hold' : isStrategy ? 'reg' : 'B'}
+            <span className="absolute bottom-1 right-1 text-[7px] font-black opacity-60 uppercase z-10">
+              {isExternal ? 'EXT' : isGuest ? 'RES' : isLead ? 'HLD' : isStrategy ? 'REG' : 'B'}
             </span>
           )}
-        </button>
+          {/* Subtle Glow on Hover */}
+          <div className="absolute inset-0 bg-white opacity-0 group-hover:opacity-10 transition-opacity rounded-xl" />
+        </motion.button>
       );
     }
 
@@ -1298,7 +1303,29 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
             {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d: string) => <div key={d}>{d}</div>)}
           </div>
           <div className="grid grid-cols-7 gap-2">{days}</div>
-          <p className="text-xs text-center mt-4 text-gray-400">Toca para bloquear/desbloquear.</p>
+
+          {/* 🏳️ VISUAL LEGEND (Índice de Colores Premium) */}
+          <div className="mt-8 pt-6 border-t border-gray-50 grid grid-cols-2 md:grid-cols-5 gap-4">
+            {[
+              { color: 'bg-blue-600', label: 'Externo', desc: 'Airbnb / Booking' },
+              { color: 'bg-primary', label: 'Directo', desc: 'Reserva Web' },
+              { color: 'bg-orange-400', label: 'Hold', desc: 'Lead en Pago' },
+              { color: 'bg-green-100', label: 'Regla', desc: 'Antelación/Veda', text: 'text-green-800' },
+              { color: 'bg-gray-900', label: 'Manual', desc: 'Bloqueo Host' },
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-center gap-3">
+                <div className={`w-3 h-3 rounded-full ${item.color} shadow-sm shrink-0`} />
+                <div className="min-w-0">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-text-main leading-none">{item.label}</p>
+                  <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter mt-1">{item.desc}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <p className="text-[10px] text-center mt-6 text-gray-400 font-medium italic">
+            * Pasa el mouse sobre una fecha para ver el origen o desbloquea haciendo clic.
+          </p>
         </div>
 
         {/* Calendar Sync Section */}
@@ -1630,18 +1657,15 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
         </div>
 
         <div className="flex gap-2 overflow-x-auto pb-2 mb-4 no-scrollbar">
-          {['info', 'photos', 'calendar', 'seasonal', 'fees', 'offers', 'policies', 'conversion', 'emergency', 'cohosts', 'expenses'].map((section: any) => (
+          {['info', 'photos', 'fees', 'offers', 'policies'].map((section: any) => (
             <button
               key={section}
               onClick={() => setActiveSection(section as any)}
               className={`px-4 py-2 rounded-full text-xs font-bold capitalize whitespace-nowrap ${activeSection === section ? 'bg-black text-white' : 'bg-gray-100 text-gray-600'}`}
             >
-              {section === 'emergency' ? '🚨 Panic Mode' : 
-               section === 'seasonal' ? '🗓️ Precios' : 
-               section === 'policies' ? '📋 Políticas' : 
-               section === 'conversion' ? '🚀 Ventas' :
-               section === 'cohosts' ? '👥 Co-hosts' : 
-               section === 'expenses' ? '💸 Gastos' : section}
+              {section === 'policies' ? '📋 Políticas' : 
+               section === 'offers' ? '🎁 Ofertas' : 
+               section === 'fees' ? '💸 Cargos' : section}
             </button>
           ))}
         </div>
@@ -1742,17 +1766,7 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
             </div>
           )}
 
-          {activeSection === 'emergency' && renderEmergencySection()}
-
-          {activeSection === 'calendar' && renderCalendarEditor()}
-
-          {activeSection === 'seasonal' && renderSeasonalEditor()}
-
-          {activeSection === 'cohosts' && (
-            <SectionErrorBoundary sectionName="Gestión de Co-anfitriones">
-              <CohostManager propertyId={form.id} propertyName={form.title} onShowToast={showToast} />
-            </SectionErrorBoundary>
-          )}
+          {/* Redundant Tactical Tabs moved to Availability Manager for Unification */}
 
           {activeSection === 'photos' && (
             <div className="space-y-6 animate-slide-up">
@@ -3704,10 +3718,10 @@ const HostDashboard: React.FC = () => {
         <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Villas de Autor</h2>
         <div className="flex gap-4">
             <button
-            onClick={() => setShowImportModal(true)}
+            onClick={() => setActiveTab('availability')}
             className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95 group"
           >
-            <Download strokeWidth={2} className="w-3.5 h-3.5 text-[#FF7F3F] group-hover:scale-110 transition-transform" /> Sincronizar Anuncio
+            <Download strokeWidth={2} className="w-3.5 h-3.5 text-[#FF7F3F] group-hover:scale-110 transition-transform" /> Sincronizar Calendarios
           </button>
           <button className="bg-black text-white rounded-full p-3 w-12 h-12 flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-primary">
             <Plus strokeWidth={2} className="w-6 h-6" />

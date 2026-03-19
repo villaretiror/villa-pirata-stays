@@ -3,7 +3,7 @@ import DatePicker from 'react-datepicker';
 import "react-datepicker/dist/react-datepicker.css";
 import { es } from 'date-fns/locale';
 import { supabase } from '../../lib/supabase';
-import { Calendar, Save, Trash2, ShieldCheck, X, Plus, RefreshCcw } from 'lucide-react';
+import { Calendar, Save, Trash2, ShieldCheck, X, Plus, RefreshCcw, DollarSign } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAvailability } from '../../hooks/useAvailability';
 
@@ -239,11 +239,11 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                 </div>
             </div>
             
-            <style>{`
+                    <style>{`
                 .interactive-availability-calendar .react-datepicker { border: none !important; width: 100%; background: transparent; font-family: inherit; }
                 .interactive-availability-calendar .react-datepicker__header { background: transparent !important; border: none; }
                 .interactive-availability-calendar .react-datepicker__day-name { font-weight: 800; color: #94a3b8; text-transform: uppercase; font-size: 0.7rem; }
-                .interactive-availability-calendar .react-datepicker__day { font-weight: 600; border-radius: 0.75rem !important; transition: all 0.2s; }
+                .interactive-availability-calendar .react-datepicker__day { font-weight: 600; border-radius: 0.75rem !important; transition: all 0.2s; position: relative; }
                 
                 .interactive-availability-calendar .react-datepicker__day--selected,
                 .interactive-availability-calendar .react-datepicker__day--in-selecting-range,
@@ -256,75 +256,121 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                 .hold-lead { background-color: #fb8c00 !important; color: white !important; border-radius: 0.75rem !important; opacity: 0.8; }
                 .manual-block { background-color: #1a1a1a !important; color: white !important; border-radius: 0.75rem !important; }
 
+                .interactive-availability-calendar .react-datepicker__day:hover {
+                    transform: scale(1.14);
+                    z-index: 10;
+                    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+                    cursor: pointer;
+                }
+
                 .interactive-availability-calendar .react-datepicker__day--highlighted {
                     filter: brightness(1.1);
                     box-shadow: inset 0 0 0 1px rgba(255,255,255,0.2);
                 }
             `}</style>
+
+            {/* 🏳️ VISUAL LEGEND (Índice de Colores) */}
+            <div className="mt-8 pt-6 border-t border-gray-100 grid grid-cols-2 md:grid-cols-4 gap-6">
+              {[
+                { color: 'bg-[#2563eb]', label: 'Externo', desc: 'Airbnb / Booking' },
+                { color: 'bg-[#CBB28A]', label: 'Directo', desc: 'Reserva Web' },
+                { color: 'bg-[#fb8c00]', label: 'Hold', desc: 'Lead en Pago' },
+                { color: 'bg-[#1a1a1a]', label: 'Manual', desc: 'Bloqueo Host' },
+              ].map((item, idx) => (
+                <div key={idx} className="flex items-center gap-3 group cursor-help">
+                  <div className={`w-3 h-3 rounded-full ${item.color} shadow-sm shrink-0 group-hover:scale-125 transition-transform`} />
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-text-main leading-none">{item.label}</p>
+                    <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter mt-1">{item.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
-                  <h3 className="font-bold flex items-center gap-2 mb-4">Tarifa Base Global</h3>
-                  <p className="text-xs text-gray-500 mb-4">Precio que aplica a todos los días sin regla especial.</p>
-                  <div className="flex items-center gap-3">
-                      <span className="text-xl font-black text-gray-400">$</span>
-                      <input type="number" value={globalBasePrice} onChange={(e) => setGlobalBasePrice(Number(e.target.value))} className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 font-black text-xl outline-primary" />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {/* Card 1: Master Price */}
+              <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm group hover:border-primary/20 transition-all">
+                  <div className="flex justify-between items-start mb-4">
+                      <h3 className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                        <DollarSign className="w-4 h-4 text-primary" /> Tarifa Base Global
+                      </h3>
                   </div>
-                  <button disabled={isSavingBasePrice} onClick={saveBasePrice} className="mt-4 w-full bg-black text-white font-bold py-3 rounded-xl hover:bg-gray-800 disabled:opacity-50 transition-all">
-                      {isSavingBasePrice ? 'Guardando...' : 'Fijar Tarifa'}
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-4">Precio Master para días sin reglas</p>
+                  <div className="flex items-center gap-3 mb-4">
+                      <span className="text-xl font-black text-gray-300">$</span>
+                      <input type="number" value={globalBasePrice} onChange={(e) => setGlobalBasePrice(Number(e.target.value))} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 font-black text-xl outline-primary focus:bg-white transition-all" />
+                  </div>
+                  <button disabled={isSavingBasePrice} onClick={saveBasePrice} className="w-full bg-black text-white text-[10px] font-black uppercase tracking-[0.2em] py-4 rounded-xl hover:bg-primary transition-all disabled:opacity-50 shadow-soft active:scale-95">
+                      {isSavingBasePrice ? 'Sincronizando...' : 'Fijar Tarifa'}
                   </button>
               </div>
 
-              <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
-                  <h3 className="font-bold flex items-center gap-2 mb-4">Conexión iCal (Exportar)</h3>
-                  <p className="text-xs text-gray-500 mb-4">Copia este link para Airbnb, Booking, VRBO:</p>
-                  <div className="bg-gray-50 p-3 rounded-xl flex items-center gap-2">
-                      <code className="text-[9px] text-gray-600 truncate flex-1 font-mono">https://www.villaretiror.com/api/calendar/export?id={selectedPropertyId}</code>
-                      <button onClick={() => { navigator.clipboard.writeText(`https://www.villaretiror.com/api/calendar/export?id=${selectedPropertyId}`); alert('Copiado!'); }} className="text-primary font-bold text-[10px] uppercase">
-                          Copiar
+              {/* Card 2: Strategic Block (Panic Mode) */}
+              <div className={`p-6 rounded-[2rem] shadow-sm border transition-all relative overflow-hidden group ${activeProperty?.is_offline ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
+                  <div className="flex justify-between items-start mb-4">
+                      <h3 className={`font-bold text-sm flex items-center gap-2 ${activeProperty?.is_offline ? 'text-red-900' : 'text-gray-900'}`}>
+                        <ShieldCheck className={`w-4 h-4 ${activeProperty?.is_offline ? 'text-red-600' : 'text-gray-400'}`} /> Modo Emergencia
+                      </h3>
+                      <button 
+                        onClick={async () => {
+                            const newStatus = !activeProperty.is_offline;
+                            await supabase.from('properties').update({ is_offline: newStatus }).eq('id', selectedPropertyId);
+                            if (onRefresh) onRefresh();
+                        }}
+                        className={`w-12 h-6 rounded-full transition-all relative shadow-inner ${activeProperty?.is_offline ? 'bg-red-500' : 'bg-gray-200'}`}
+                      >
+                          <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow-md transition-all ${activeProperty?.is_offline ? 'right-0.5' : 'left-0.5'}`}></div>
+                      </button>
+                  </div>
+                  <p className={`text-[10px] font-bold uppercase tracking-widest mb-4 ${activeProperty?.is_offline ? 'text-red-700' : 'text-gray-400'}`}>
+                    {activeProperty?.is_offline ? '🚨 Villa Invisible' : '✨ Villa en Línea'}
+                  </p>
+                  <div className={`p-4 rounded-2xl border transition-all ${activeProperty?.is_offline ? 'bg-white/80 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+                      <p className={`text-[10px] font-medium leading-relaxed ${activeProperty?.is_offline ? 'text-red-900' : 'text-gray-500'}`}>
+                        {activeProperty?.is_offline 
+                          ? "La villa ha sido retirada de los resultados de búsqueda. El calendario visitor está deshabilitado." 
+                          : "La villa es visible y permite reservas directas según tus reglas activas."}
+                      </p>
+                  </div>
+              </div>
+
+              {/* Card 3: iCal Channels */}
+              <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm flex flex-col group hover:border-blue-100 transition-all">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-sm text-gray-900 flex items-center gap-2">
+                      <RefreshCcw className="w-4 h-4 text-blue-500" /> Canales Externos
+                    </h3>
+                    <button
+                        onClick={handleSyncRefresh}
+                        disabled={isSyncing}
+                        className="p-2 bg-gray-50 hover:bg-blue-50 rounded-full transition-all text-gray-400 hover:text-blue-600 disabled:opacity-50"
+                        title="Sincronizar Ahora"
+                    >
+                        <RefreshCcw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+                    </button>
+                  </div>
+                  <div className="flex-1 max-h-24 overflow-y-auto no-scrollbar space-y-2 mb-4">
+                      {calendarSync.map((sync: any) => (
+                          <div key={sync.id} className="flex justify-between items-center p-2 bg-gray-50 rounded-xl border border-gray-100">
+                              <span className="text-[9px] font-bold text-gray-500 uppercase tracking-tighter truncate w-24">{sync.platform}</span>
+                              <button onClick={() => handleRemoveSync(sync.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                                  <Trash2 className="w-3 h-3" />
+                              </button>
+                          </div>
+                      ))}
+                      {calendarSync.length === 0 && <p className="text-[9px] text-gray-300 text-center py-2 italic">Sin iCal conectado</p>}
+                  </div>
+                  <div className="flex gap-1.5 backdrop-blur-sm bg-gray-50/50 p-1 rounded-xl">
+                      <select value={newSyncPlatform} onChange={(e) => setNewSyncPlatform(e.target.value)} className="bg-white border border-gray-100 rounded-lg text-[9px] font-bold px-2 outline-none">
+                          <option value="Airbnb">Air</option><option value="Booking">Bkg</option>
+                      </select>
+                      <input type="text" placeholder="URL iCal..." value={newSyncUrl} onChange={(e) => setNewSyncUrl(e.target.value)} className="flex-1 bg-white border border-gray-100 rounded-lg px-3 py-2 text-[10px] outline-none focus:border-blue-300" />
+                      <button onClick={handleAddSync} disabled={!newSyncUrl} className="bg-black text-white p-2 rounded-lg hover:bg-blue-600 disabled:opacity-30 transition-all">
+                          <Plus className="w-4 h-4" />
                       </button>
                   </div>
               </div>
-          </div>
-
-          <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="font-bold flex items-center gap-2">Importar Calendarios (Airbnb / Booking)</h3>
-                <button
-                    onClick={handleSyncRefresh}
-                    disabled={isSyncing}
-                    className="p-2 bg-gray-50 hover:bg-gray-100 rounded-full transition-all text-text-light disabled:opacity-50"
-                    title="Sincronizar Ahora"
-                >
-                    <RefreshCcw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
-              <div className="space-y-3 mb-4">
-                  {calendarSync.map((sync: any) => (
-                      <div key={sync.id} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-200">
-                          <div className="min-w-0 flex-1">
-                              <p className="font-bold text-sm truncate">{sync.platform}</p>
-                              <p className="text-[10px] text-gray-400 truncate">{sync.url}</p>
-                          </div>
-                          <button onClick={() => handleRemoveSync(sync.id)} className="text-red-500 hover:bg-red-50 p-2 rounded-full">
-                              <Trash2 className="w-4 h-4" />
-                          </button>
-                      </div>
-                  ))}
-                  {calendarSync.length === 0 && <p className="text-xs text-gray-400 text-center py-2">No hay canales conectados.</p>}
-              </div>
-              <div className="flex gap-2">
-                  <select value={newSyncPlatform} onChange={(e) => setNewSyncPlatform(e.target.value)} className="p-2 rounded-lg border border-gray-200 text-xs bg-white focus:border-primary outline-none">
-                      <option value="Airbnb">Airbnb</option>
-                      <option value="Booking">Booking.com</option>
-                      <option value="VRBO">VRBO</option>
-                  </select>
-                  <input type="text" placeholder="URL iCal..." value={newSyncUrl} onChange={(e) => setNewSyncUrl(e.target.value)} className="flex-1 p-2 rounded-lg border border-gray-200 text-xs focus:border-primary outline-none" />
-              </div>
-              <button onClick={handleAddSync} disabled={!newSyncUrl} className="mt-3 w-full bg-gray-900 text-white font-bold py-2 rounded-xl text-xs hover:bg-black disabled:opacity-50 transition-all">
-                  Conectar Canal
-              </button>
           </div>
 
           <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
