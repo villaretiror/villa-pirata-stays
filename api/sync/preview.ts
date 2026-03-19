@@ -76,7 +76,11 @@ export default async function handler(req: any, res: any) {
             }`
             }
         });
-        const aiJson = aiResponse.text || '';
+        
+        // Safe extraction of text from parts
+        const aiJson = aiResponse.candidates?.[0]?.content?.parts
+            ?.map((p: any) => p.text || '')
+            .join('') || '';
 
         let external;
         try {

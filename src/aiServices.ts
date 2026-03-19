@@ -360,7 +360,10 @@ export const generateOnboardingDraft = async (
             contents: prompt,
             config: { temperature: 0.4 }
         });
-        return (response.text || '').trim();
+        const text = response.candidates?.[0]?.content?.parts
+            ?.map((p: any) => p.text || '')
+            .join('') || '';
+        return text.trim();
     } catch (e) {
         console.error("Error generating draft:", e);
         return stage === 'mid_stay'

@@ -193,14 +193,23 @@ Knowledge: ${JSON.stringify(villaKnowledge)}.
 
                 let lastContent: any = null;
                 for await (const chunk of streamResponse) {
-                    if (chunk.candidates?.[0]?.content?.parts?.some((p: any) => p.thought)) {
+                    const candidate = chunk.candidates?.[0];
+                    if (!candidate) continue;
+
+                    // Support for thinking/reasoning parts
+                    if (candidate.content?.parts?.some((p: any) => p.thought)) {
                         writeStream('1', ""); // Reasoning indicator
                     }
-                    if (chunk.text) {
-                        fullText += chunk.text;
-                        writeStream('0', chunk.text);
+
+                    // Extract text segments safely
+                    for (const part of candidate.content?.parts || []) {
+                        if (part.text) {
+                            fullText += part.text;
+                            writeStream('0', part.text);
+                        }
                     }
-                    lastContent = chunk.candidates?.[0]?.content;
+
+                    lastContent = candidate.content;
                 }
 
                 const calls = lastContent?.parts?.filter((p: any) => p.functionCall).map((p: any) => p.functionCall) || [];
