@@ -17,6 +17,7 @@ import ExperienceManager from '../components/host/ExperienceManager';
 import SiteSettingsManager from '../components/host/SiteSettingsManager';
 import InsightViewer from '../components/host/InsightViewer';
 import HostAvailabilityManager from '../components/host/HostAvailabilityManager';
+import { useAvailability } from '../hooks/useAvailability';
 
 type BookingRow = Tables<'bookings'>;
 type ExpenseRow = Tables<'property_expenses'>;
@@ -1021,6 +1022,15 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
   // Calendar helpers
   const [calMonth, setCalMonth] = useState(new Date());
 
+  // 📡 FUENTE DE VERDAD: Booking/Visitor Engine
+  const { 
+    blockedDates: guestBlockedDates, 
+    allBookings, 
+    pendingLeads, 
+    availabilityRules, 
+    refresh: refreshAvailability 
+  } = useAvailability(form.id);
+
   // Sync State
   const [isSyncing, setIsSyncing] = useState(false);
   const [newSyncUrl, setNewSyncUrl] = useState('');
@@ -1031,24 +1041,30 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
   const [panicEnd, setPanicEnd] = useState("");
   const [conflictSummary, setConflictSummary] = useState<any[]>([]);
 
-  // 🛡️ REGLA DE ORO: Detección de Ocupación Real
+  // 🛡️ REGLA DE ORO: Detección de Ocupación Real (Unificada con Visitor Mode)
   const isDateOccupied = (dateStr: string) => {
-    // 1. Bloqueo Manual del Host
-    if (form.blockedDates.includes(dateStr)) return { blocked: true, type: 'manual' };
+    // A. Bloqueo Manual Local (Estado del Formulario antes de guardar)
+    if (form.blockedDates.includes(dateStr)) return { blocked: true, type: 'manual', source: 'Manual' };
     
-    // 2. Bloqueo por Reserva Real (Huésped o iCal)
-    const booking = (bookings || []).find(b => {
-      if (b.property_id !== form.id) return false;
+    const d = new Date(dateStr + 'T12:00:00');
+
+    // B. Bloqueo por Reserva Confirmada o iCal (Desde el Hook Unificado)
+    const booking = allBookings.find(b => {
       if (b.status === 'rejected' || b.status === 'expired') return false;
-      
-      // La fecha de checkout es libre para un nuevo check-in, por eso < check_out
       return dateStr >= b.check_in && dateStr < b.check_out;
     });
-
     if (booking) {
       const type = booking.status === 'external_block' ? 'external' : 'guest';
-      return { blocked: true, type, source: booking.source || 'Directo' };
+      return { blocked: true, type, source: booking.source || 'Directo Web' };
     }
+
+    // C. Bloqueo por Lead Pendiente (TTL 15min)
+    const lead = pendingLeads.find(p => dateStr >= p.check_in && dateStr < p.check_out);
+    if (lead) return { blocked: true, type: 'lead', source: 'Lead en Proceso' };
+
+    // D. Bloqueo Estratégico (Advance Notice)
+    const isGuestBlocked = guestBlockedDates.some(gbd => gbd.toISOString().split('T')[0] === dateStr);
+    if (isGuestBlocked) return { blocked: true, type: 'strategy', source: 'Regla/Antelación' };
 
     return { blocked: false };
   };
@@ -1173,6 +1189,9 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
 
       // 2. Refresh main Dashboard data to pick up new bookings
       await onRefresh();
+      
+      // 3. Refresh Hook to sync Guest Mode expectations
+      await refreshAvailability();
 
       showToast("Calendarios sincronizados correctamente ✨");
     } catch (e: any) {
@@ -1228,13 +1247,15 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
       const isBlocked = occupancy.blocked;
       const isExternal = occupancy.type === 'external';
       const isGuest = occupancy.type === 'guest';
+      const isLead = occupancy.type === 'lead';
+      const isStrategy = occupancy.type === 'strategy';
 
       days.push(
         <button
           key={i}
           onClick={() => {
-            if (isExternal || isGuest) {
-              showToast(`Esta fecha está ocupada por una reserva de ${occupancy.source}`);
+            if (isExternal || isGuest || isLead || isStrategy) {
+              showToast(`Esta fecha está ocupada por: ${occupancy.source}`);
               return;
             }
             toggleDateBlock(dateStr);
@@ -1242,13 +1263,15 @@ const Editor = ({ property, bookings, onSave, onCancel, isSaving, onRefresh }: {
           className={`h-11 w-full rounded-xl text-xs font-bold transition-all relative 
             ${isExternal ? 'bg-blue-600 text-white shadow-inner cursor-default' : 
               isGuest ? 'bg-primary text-white shadow-inner cursor-default' : 
+              isLead ? 'bg-orange-400 text-white shadow-inner cursor-default animate-pulse' :
+              isStrategy ? 'bg-green-100 text-green-800 border-green-200 cursor-default' :
               isBlocked ? 'bg-gray-900 text-white shadow-md' : 
               'bg-gray-50 text-text-main hover:bg-gray-200 border border-gray-100'}`}
         >
           {i}
           {isBlocked && (
             <span className="absolute bottom-1 right-1 text-[8px] opacity-80 uppercase">
-              {isExternal ? 'ext' : isGuest ? 'res' : 'B'}
+              {isExternal ? 'ext' : isGuest ? 'res' : isLead ? 'hold' : isStrategy ? 'reg' : 'B'}
             </span>
           )}
         </button>

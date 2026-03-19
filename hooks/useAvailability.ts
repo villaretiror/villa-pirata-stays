@@ -13,6 +13,8 @@ import { supabase } from '../lib/supabase';
 export const useAvailability = (propertyId: string | undefined) => {
     const [blockedDates, setBlockedDates] = useState<Date[]>([]);
     const [availabilityRules, setAvailabilityRules] = useState<any[]>([]);
+    const [allBookings, setAllBookings] = useState<any[]>([]);
+    const [pendingLeads, setPendingLeads] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -24,13 +26,17 @@ export const useAvailability = (propertyId: string | undefined) => {
         try {
             const now = new Date();
 
-            // 1. Fetch Manual Blocks & Properties Info via rules soon...
-            // No longer fetching from properties table for blockeddates
+            // 1. Fetch Manual Blocks from Property record (Primary source for Editor)
+            const { data: propData } = await supabase
+                .from('properties')
+                .select('blockeddates')
+                .eq('id', propertyId)
+                .single();
 
             // 2. Fetch Active Bookings (Unified: Direct + iCal Synced)
             const { data: bks } = await supabase
                 .from('bookings')
-                .select('check_in, check_out, status, hold_expires_at')
+                .select('check_in, check_out, status, hold_expires_at, source')
                 .eq('property_id', propertyId)
                 .neq('status', 'cancelled');
 
@@ -41,13 +47,14 @@ export const useAvailability = (propertyId: string | undefined) => {
                 .eq('property_id', propertyId)
                 .eq('status', 'pending_payment');
 
-            // 4. Fetch Availability Rules
             const { data: rules } = await supabase
                 .from('availability_rules')
                 .select('*')
                 .eq('property_id', propertyId);
             
             if (rules) setAvailabilityRules(rules);
+            if (bks) setAllBookings(bks);
+            if (pending) setPendingLeads(pending);
 
             const allBlocked: Date[] = [];
 
@@ -60,6 +67,13 @@ export const useAvailability = (propertyId: string | undefined) => {
                     curr.setDate(curr.getDate() + 1);
                 }
             };
+
+            // Process Manual Blocks from Properties (Host Dashboard Primary Source)
+            if (propData?.blockeddates && Array.isArray(propData.blockeddates)) {
+                propData.blockeddates.forEach((dateStr: string) => {
+                    allBlocked.push(new Date(dateStr + 'T12:00:00'));
+                });
+            }
             
             // Advance Notice Engine
             let globalAdvanceNotice = 2; // default
@@ -121,6 +135,8 @@ export const useAvailability = (propertyId: string | undefined) => {
     return {
         blockedDates,
         availabilityRules,
+        allBookings,
+        pendingLeads,
         isLoading,
         error,
         refresh: fetchAvailability,
