@@ -14,13 +14,37 @@ const StayDashboard: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
+    const [timeLeft, setTimeLeft] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!booking || (booking.status !== 'pending' && booking.status !== 'pending_payment')) return;
+        if (!booking.auto_cancel_at) return;
+
+        const timer = setInterval(() => {
+            const expireTime = new Date(booking.auto_cancel_at).getTime();
+            const nowTime = new Date().getTime();
+            const diff = expireTime - nowTime;
+
+            if (diff <= 0) {
+                setTimeLeft("EXPIRADO");
+                clearInterval(timer);
+                return;
+            }
+
+            const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const secs = Math.floor((diff % (1000 * 60)) / 1000);
+            setTimeLeft(`${mins}:${secs < 10 ? '0' : ''}${secs}`);
+        }, 1000);
+
+        return () => clearInterval(timer);
+    }, [booking?.auto_cancel_at, booking?.status]);
 
     useEffect(() => {
         const loadBooking = async () => {
             // Mockup o fetch de base de datos
             const { data, error } = await supabase
                 .from('bookings')
-                .select('*, property:properties(title, location, address, location_coords, wifi_name, wifi_pass, access_code, lockbox_image_url, is_cleaning_in_progress)')
+                .select('*, property:properties(title, location, address, location_coords, wifi_name, wifi_pass, access_code, lockbox_image_url)')
                 .eq('id', id)
                 .single();
 
@@ -56,19 +80,25 @@ const StayDashboard: React.FC = () => {
     const hoursPostCheckOut = (now.getTime() - checkOutDate.getTime()) / (1000 * 3600);
     
     const isPaid = booking.status === 'Paid' || booking.status === 'confirmed';
+    const isSigned = booking.contract_signed === true;
+    const isCheckinDay = format(now, 'yyyy-MM-dd') === booking.check_in;
+    const isReadyForEntry = isPaid && isSigned && isCheckinDay;
     
-    let accessLevel = 1; // Level 1: Immediate/Confirmed
-    if (diffDays <= 7) accessLevel = 2; // Level 2: Guide
-    if (diffHours <= 24 && isPaid) accessLevel = 3; // Level 3: Total Access
+    // 🔒 TRIPLE LOCK GOVERNANCE: Tiered Access Chronology
+    let accessLevel = 1; 
+    if (diffDays <= 7) accessLevel = 2; // Level 2: Guide & General Info
+    if (isReadyForEntry) accessLevel = 3; // Level 3: Total Access (Only on Check-in Day + Paid + Signed)
     if (hoursPostCheckOut > 12) accessLevel = 1; // Security Lock
     
-    const lockCode = accessLevel >= 3 ? (prop?.access_code || "0000") : "REVELADO_24H_ANTES";
+    const coords = accessLevel >= 3 ? (prop?.location_coords || '18.07065,-67.16544') : '18.0772,-67.1477'; 
+    const lockCode = accessLevel >= 3 ? (prop?.access_code || "0000") : "REVELADO_EL_DIA_DE_CHECKIN";
     const lockImage = accessLevel >= 3 ? (prop?.lockbox_image_url || "/assets/lockboxes/retiro.jpg") : null;
-    const wifiNetwork = accessLevel >= 2 ? (prop?.wifi_name || "VillaRetiro_Guest") : "RESERVADO";
-    const wifiPass = accessLevel >= 3 ? (prop?.wifi_pass || "Guest2024!") : "REVELADO_24H_ANTES";
-    const coords = accessLevel >= 3 ? (prop?.location_coords || '18.07065,-67.16544') : '18.0772,-67.1477'; // General area if not level 3
+    const wifiNetwork = accessLevel >= 2 ? (prop?.wifi_name || "VillaVacacional") : "RESERVADO";
+    const wifiPass = accessLevel >= 3 ? (prop?.wifi_pass || "Wifivacacional") : "REVELADO_EL_DIA_DE_CHECKIN";
+
 
     const copyToClipboard = (text: string) => {
+        if (text.includes("REVELADO")) return;
         navigator.clipboard.writeText(text);
         alert(`¡Copiado: ${text}!`);
     };
@@ -82,18 +112,44 @@ const StayDashboard: React.FC = () => {
             </header>
 
             <div className="space-y-6">
-                {/* Status Badge */}
-                <div className="bg-primary/10 border border-primary/20 p-4 rounded-2xl flex items-center justify-between shadow-sm">
+                {/* Status Badge & Auto-Cancel Timer */}
+                <div className={`${timeLeft === 'EXPIRADO' ? 'bg-red-50 border-red-200' : 'bg-primary/10 border-primary/20'} border p-4 rounded-2xl flex items-center justify-between shadow-sm transition-all`}>
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center">
-                            <span className="material-icons">check_circle</span>
+                        <div className={`w-10 h-10 ${timeLeft === 'EXPIRADO' ? 'bg-red-500' : 'bg-primary'} text-white rounded-full flex items-center justify-center`}>
+                            <span className="material-icons">{timeLeft === 'EXPIRADO' ? 'timer_off' : (booking.status === 'pending' || booking.status === 'pending_payment') ? 'hourglass_empty' : 'check_circle'}</span>
                         </div>
                         <div>
-                            <p className="font-bold text-sm text-primary uppercase tracking-wider">Pago Confirmado</p>
+                            <p className={`font-bold text-sm ${timeLeft === 'EXPIRADO' ? 'text-red-600' : 'text-primary'} uppercase tracking-wider`}>
+                                {timeLeft === 'EXPIRADO' ? 'Reserva Expirada' : (booking.status === 'pending' || booking.status === 'pending_payment') ? 'Acción Requerida' : 'Pago Confirmado'}
+                            </p>
                             <p className="text-xs text-text-light">Del {booking?.check_in} al {booking?.check_out}</p>
                         </div>
                     </div>
+                    {timeLeft && timeLeft !== 'EXPIRADO' && (
+                        <div className="text-right">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">Expira en</p>
+                            <p className="text-lg font-mono font-black text-primary">{timeLeft}</p>
+                        </div>
+                    )}
                 </div>
+
+                {/* 🚨 PENDING ACTION MODULE */}
+                {(booking.status === 'pending' || booking.status === 'pending_payment') && timeLeft !== 'EXPIRADO' && (
+                    <section className="bg-orange-50 p-6 rounded-[2rem] border border-orange-200 shadow-lg animate-pulse-subtle">
+                        <h2 className="font-serif font-black italic text-lg text-orange-900 mb-2 flex items-center gap-2">
+                             <span className="material-icons text-orange-500">warning</span> Firma y Pago Pendiente
+                        </h2>
+                        <p className="text-xs text-orange-800 mb-6 leading-relaxed">
+                            Para asegurar sus fechas, debe firmar el contrato digital y completar el pago antes de que el cronómetro llegue a cero.
+                        </p>
+                        <button 
+                            onClick={() => navigate(`/booking/${booking.property_id}`, { state: { booking_id: booking.id, recover: true } })}
+                            className="w-full bg-orange-600 text-white py-4 rounded-2xl font-black uppercase tracking-[0.2em] text-[10px] flex items-center justify-center gap-2 shadow-xl shadow-orange-200 active:scale-95 transition-all"
+                        >
+                            Ver Contrato y Pagar <span className="material-icons text-sm">arrow_forward</span>
+                        </button>
+                    </section>
+                )}
 
                 {/* Arrival & Entry */}
                 <section className="bg-white p-6 rounded-[2rem] shadow-card border border-gray-100">
@@ -101,27 +157,46 @@ const StayDashboard: React.FC = () => {
                         <span className="material-icons text-primary">vpn_key</span> Acceso Seguro (Lockbox)
                     </h2>
                     <div className="bg-sand/30 p-4 rounded-xl border border-gray-100 space-y-4">
-                        <div className="flex gap-4 items-center">
-                            {lockImage && (
-                                <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0 shadow-sm">
-                                    <img src={lockImage} alt="Lockbox Reference" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1558235338-23212852179b?w=200&h=200&fit=crop' }} />
+                        <div className="grid gap-4">
+                            <div className="flex gap-4 items-center">
+                                {lockImage && (
+                                    <div className="w-16 h-16 bg-gray-200 rounded-lg overflow-hidden shrink-0 shadow-sm">
+                                        <img src={lockImage} alt="Lockbox Reference" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.src = 'https://images.unsplash.com/photo-1558235338-23212852179b?w=200&h=200&fit=crop' }} />
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Código Caja de Llaves</p>
+                                    <p className={`font-black tracking-[0.2em] font-mono select-all ${accessLevel < 3 ? 'text-[10px] opacity-70 italic text-primary/60' : 'text-2xl text-slate-800'}`}>
+                                        {lockCode}
+                                    </p>
                                 </div>
-                            )}
-                            <div>
-                                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Código Caja de Llaves</p>
-                                <p className={`font-black text-slate-800 tracking-[0.2em] font-mono select-all ${accessLevel < 3 ? 'text-sm opacity-50 italic' : 'text-2xl'}`}>
-                                    {lockCode}
-                                </p>
+                            </div>
+
+                            {/* Triple Lock Checkbox Visualizer */}
+                            <div className="space-y-2 pt-2 border-t border-black/5">
+                                <div className="flex items-center gap-2">
+                                    <span className={`material-icons text-sm ${isPaid ? 'text-green-500' : 'text-gray-300'}`}>{isPaid ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                    <p className="text-[9px] font-bold uppercase tracking-tighter text-gray-500">Saldo $0.00 (Pagado)</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`material-icons text-sm ${isSigned ? 'text-green-500' : 'text-gray-300'}`}>{isSigned ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                    <p className="text-[9px] font-bold uppercase tracking-tighter text-gray-500">Contrato Digital Firmado</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <span className={`material-icons text-sm ${isCheckinDay ? 'text-green-500' : 'text-gray-300'}`}>{isCheckinDay ? 'check_circle' : 'radio_button_unchecked'}</span>
+                                    <p className="text-[9px] font-bold uppercase tracking-tighter text-gray-500">Es día de Check-in ({booking.check_in})</p>
+                                </div>
                             </div>
                         </div>
-                        {accessLevel < 3 && !isPaid && (
+                        
+                        {accessLevel < 3 && (
                             <div className="bg-orange-50 p-3 rounded-xl border border-orange-100 flex items-center gap-2">
                                 <span className="material-icons text-orange-400 text-sm">lock</span>
-                                <p className="text-[9px] font-bold text-orange-800 uppercase tracking-tighter">Pendiente de Pago Completo para revelar códigos.</p>
+                                <p className="text-[9px] font-bold text-orange-800 uppercase tracking-tighter">Acceso bloqueado por seguridad hasta cumplir los 3 requisitos.</p>
                             </div>
                         )}
                         <p className="text-[10px] text-red-400 italic font-bold">
-                            {accessLevel < 3 ? `*Disponible 24h antes del check-in (${booking.check_in})` : `*Válido hasta 12h después del check-out`}
+                            {accessLevel < 3 ? `*Disponible el día del check-in (${booking.check_in})` : `*Válido hasta 12h después del check-out`}
                         </p>
                     </div>
                 </section>
@@ -210,19 +285,23 @@ const StayDashboard: React.FC = () => {
                     </h2>
                     <p className="text-xs text-text-light mb-4 text-justify">Sus documentos y gestiones de salida están centralizados aquí.</p>
                     <div className="space-y-3">
-                        {/* Check-out Express (Priority Visibility) */}
-                        {new Date().toISOString().split('T')[0] === booking.check_out && (
+                        {/* Check-out Express (Always Visible on Check-out Day) */}
+                        {format(now, 'yyyy-MM-dd') === booking.check_out && (
                             <button 
                                 onClick={async () => {
                                     if (confirm("¿Está listo para dejar la propiedad? Esto notificará a nuestro equipo de limpieza.")) {
                                         const { NotificationService } = await import('../services/NotificationService');
                                         await NotificationService.sendTelegramAlert(
-                                            `🔔 <b>Check-out Express Realizado</b>\n\n` +
+                                            `🧼 <b>Check-out Express Realizado</b>\n\n` +
                                             `🏠 <b>Villa:</b> ${booking.property?.title}\n` +
                                             `👤 <b>Huésped:</b> ${booking.customer_name || 'Huésped del Portal'}\n\n` +
-                                            `🧼 <i>La propiedad está lista para limpieza. El huésped acaba de salir.</i>`
+                                            `<i>La propiedad está lista para limpieza. El huésped acaba de salir.</i>`
                                         );
+                                        
+                                        await supabase.from('bookings').update({ status: 'completed' }).eq('id', id);
+                                        
                                         alert("¡Buen viaje! Hemos notificado a nuestro equipo de su salida.");
+                                        navigate('/');
                                     }
                                 }}
                                 className="w-full flex items-center justify-center gap-2 p-4 bg-secondary text-white rounded-xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-secondary/20 active:scale-95 transition-transform"

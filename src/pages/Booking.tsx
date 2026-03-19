@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useProperty } from '../contexts/PropertyContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import SmartImage from '../components/SmartImage';
-import { addDays, format, differenceInDays } from 'date-fns';
+import { addDays, format, differenceInDays, parseISO } from 'date-fns';
 import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { BookingSkeleton } from '../components/Skeleton';
 import type { Tables, TablesInsert } from '../supabase_types';
 
@@ -35,15 +35,31 @@ const Booking: React.FC = () => {
   const [phone, setPhone] = useState(user?.phone || '');
   const [guestMessage, setGuestMessage] = useState('');
   const [priceMismatch, setPriceMismatch] = useState(false);
+  const [contractAccepted, setContractAccepted] = useState(false);
+  const [showContractModal, setShowContractModal] = useState(false);
+
+  const location = useLocation();
+  const recoverData = location.state as { booking_id?: string, recover?: boolean } | null;
 
   const [promoCode, setPromoCode] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<PromoRow | null>(null);
   const [promoError, setPromoError] = useState('');
 
-  // 1. Fetch Fresh on Mount
+  // 1. Fetch Fresh on Mount & Handle Recovery
   useEffect(() => {
     refreshProperties();
-  }, [id]);
+    
+    // 🧠 RECOVERY LOGIC: If returning from portal, load existing dates
+    const loadRecovery = async () => {
+        if (recoverData?.booking_id && recoverData?.recover) {
+            const { data } = await supabase.from('bookings').select('check_in, check_out').eq('id', recoverData.booking_id).single();
+            if (data) {
+                setDateRange([parseISO(data.check_in + 'T12:00:00'), parseISO(data.check_out + 'T12:00:00')]);
+            }
+        }
+    };
+    loadRecovery();
+  }, [id, recoverData?.booking_id, recoverData?.recover]);
 
   const handleDateChange = (update: [Date | null, Date | null]) => {
     const [start, end] = update;
@@ -265,6 +281,8 @@ const Booking: React.FC = () => {
       await supabase.rpc('increment_promo_usage', { promo_id: finalPromoId });
     }
 
+    const autoCancelAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+
     // 4. Secure Insert and Select (Atomic flow) — Strict Schema Types
     const bookingPayload: BookingInsert = {
       user_id: user.id,
@@ -280,6 +298,8 @@ const Booking: React.FC = () => {
       payment_method: method,
       payment_proof_url: proofUrl || null,
       email_sent: false,
+      contract_signed: true,
+      auto_cancel_at: autoCancelAt,
       applied_policy: {
         type: freshProperty.cancellation_policy_type || (freshProperty.policies as any)?.cancellationPolicy || 'moderate',
         snapshot: `Regla legal de Airbnb (${freshProperty.cancellation_policy_type || 'moderate'}) activa en fecha de reserva. Reembolso calculado sobre Total Bruto.`
@@ -288,11 +308,16 @@ const Booking: React.FC = () => {
       service_fee_at_booking: Number(freshProperty.service_fee || property.service_fee || 0)
     };
 
-    const { data: bookingData, error: bookingError } = await supabase
-      .from('bookings')
-      .insert(bookingPayload)
-      .select()
-      .single();
+    // 4. Secure Insert OR Update (Recovery Flow)
+    const isRecovery = recoverData?.booking_id && recoverData?.recover;
+
+    const { data: bookingData, error: bookingError } = isRecovery 
+      ? await supabase.from('bookings').update({ 
+          ...bookingPayload, 
+          status: status, // Final status (Confirmed or Paid)
+          contract_signed: true 
+        }).eq('id', recoverData.booking_id).select().single()
+      : await supabase.from('bookings').insert(bookingPayload).select().single();
 
     if (bookingError || !bookingData) {
       alert("Error en la reserva: " + (bookingError?.message || "Internal error"));
@@ -530,10 +555,29 @@ const Booking: React.FC = () => {
             </div>
           )}
 
+          {/* Contract Acceptance */}
+          {startDate && endDate && !isTooShort && (
+            <section className="space-y-4 pt-6 border-t border-black/5">
+              <h3 className={TAG_STYLE + " text-gray-400"}>3. Estatus Legal</h3>
+              <div className="flex items-start gap-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 transition-all hover:bg-white hover:shadow-sm">
+                <input
+                  type="checkbox"
+                  id="contract-check"
+                  checked={contractAccepted}
+                  onChange={(e) => setContractAccepted(e.target.checked)}
+                  className="mt-1 w-6 h-6 rounded-lg border-gray-300 text-primary focus:ring-primary/20"
+                />
+                <label htmlFor="contract-check" className="text-xs font-bold text-text-main leading-relaxed cursor-pointer select-none">
+                  He leído y acepto el <button onClick={() => setShowContractModal(true)} className="text-primary underline">Contrato de Alquiler Vacacional</button> para {property.title}. Declaro que soy mayor de edad y me comprometo a seguir las reglas de la casa.
+                </label>
+              </div>
+            </section>
+          )}
+
           {/* Payment Gateway */}
-          {startDate && endDate && !isTooShort && !priceMismatch && (
-            <section className="space-y-4 pb-20">
-              <h3 className={TAG_STYLE + " text-gray-400"}>3. Pasarela de Pago Segura</h3>
+          {startDate && endDate && !isTooShort && !priceMismatch && contractAccepted && (
+            <section className="space-y-4 pb-20 animate-slide-up">
+              <h3 className={TAG_STYLE + " text-gray-400"}>4. Pasarela de Pago Segura</h3>
               <PaymentProcessor
                 total={total}
                 user={user}
@@ -544,6 +588,39 @@ const Booking: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* --- CONTRACT MODAL --- */}
+      <AnimatePresence>
+        {showContractModal && (
+          <div className="fixed inset-0 z-[300] bg-black/40 backdrop-blur-md flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white w-full max-w-2xl h-[80vh] rounded-[3rem] overflow-hidden flex flex-col shadow-2xl"
+            >
+              <header className="p-8 border-b border-black/5 flex justify-between items-center bg-white sticky top-0">
+                 <h4 className="text-xl font-serif font-black">Términos Legales</h4>
+                 <button onClick={() => setShowContractModal(false)} className="w-10 h-10 rounded-full bg-black/5 flex items-center justify-center">
+                   <span className="material-icons">close</span>
+                 </button>
+              </header>
+              <div className="flex-1 overflow-y-auto p-8 no-scrollbar bg-[#FCFBF7]">
+                <iframe src={`/contrato?id=${id}`} className="w-full h-full border-0 rounded-2xl" title="Contrato" />
+              </div>
+              <footer className="p-8 border-t border-black/5 flex justify-end gap-4 bg-white">
+                <button onClick={() => setShowContractModal(false)} className="px-8 py-4 bg-gray-100 rounded-2xl text-[10px] font-black uppercase tracking-widest">Cerrar</button>
+                <button 
+                  onClick={() => { setContractAccepted(true); setShowContractModal(false); }} 
+                  className="px-8 py-4 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+                >
+                  Entendido y Aceptar
+                </button>
+              </footer>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* --- ELITE FULLSCREEN CALENDAR MODAL --- */}
       <AnimatePresence>

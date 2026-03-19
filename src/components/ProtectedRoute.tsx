@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 
@@ -9,63 +9,51 @@ interface ProtectedRouteProps {
 }
 
 /**
- * 🔐 PROTECTED ROUTE — MULTINIVEL v2
- *
- * Access to /host is granted if:
- *   1. User is the owner (villaretiror@gmail.com) ← always bypasses
- *   2. User has role='host' or role='admin' in profiles table
- *   3. User's email appears in property_cohosts with status='active' ← NEW
- *
- * The cohost check is done with a Supabase query on every /host navigation.
- * It uses a secondary loading state so the spinner doesn't block other routes.
+ * 🔐 PROTECTED ROUTE — ESTRUCTURA ROBUSTA v3
+ * 
+ * Se ha optimizado para evitar bucles de renderizado infinitos y 
+ * manejar de forma elegante los tiempos de espera de Supabase.
  */
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
   const { user, loading, logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
-  const [timedOut, setTimedOut] = React.useState(false);
-
-  // ── Cohost check state ─────────────────────────────────────────────────────
+  const [timedOut, setTimedOut] = useState(false);
   const [cohostChecked, setCohostChecked] = useState(false);
   const [isCohostActive, setIsCohostActive] = useState(false);
 
-  React.useEffect(() => {
+  // 1. Manejo de Timeouts en Auth
+  useEffect(() => {
     let timer: NodeJS.Timeout;
     if (loading) {
-      timer = setTimeout(() => { setTimedOut(true); }, 5000);
+      timer = setTimeout(() => setTimedOut(true), 5000);
     }
     return () => clearTimeout(timer);
   }, [loading]);
 
-  // Only run the cohost check when:
-  //   - Auth is done loading
-  //   - A role is required ('host')
-  //   - User exists but is NOT already an owner/host by role
-  const isAdminEmail = user?.email?.toLowerCase() === 'villaretiror@gmail.com';
-  const isOwnerOrHost = user?.role === 'host' || user?.role === 'admin' || isAdminEmail;
-
+  // 2. Verificación de Roles Dinámica (Co-hosts)
   useEffect(() => {
-    if (loading) return;
-    if (!user || !role) { setCohostChecked(true); return; }
-    if (isOwnerOrHost) { setCohostChecked(true); return; }
+    if (loading || !user) return;
 
-    // Check property_cohosts table for this user's email
+    const isAdminEmail = user?.email?.toLowerCase() === 'villaretiror@gmail.com';
+    const isOwnerOrHost = user?.role === 'host' || user?.role === 'admin' || isAdminEmail;
+
+    if (!role || isOwnerOrHost) {
+      setCohostChecked(true);
+      return;
+    }
+
     const checkCohostAccess = async () => {
       try {
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('property_cohosts')
-          .select('id, status')
+          .select('id')
           .eq('email', user.email?.toLowerCase() ?? '')
           .eq('status', 'active')
           .limit(1);
 
-        if (error) {
-          console.error('[ProtectedRoute] Cohost check error:', error.message);
-          setIsCohostActive(false);
-        } else {
-          setIsCohostActive((data?.length ?? 0) > 0);
-        }
+        setIsCohostActive((data?.length ?? 0) > 0);
       } catch (e) {
-        console.error('[ProtectedRoute] Cohost check exception:', e);
         setIsCohostActive(false);
       } finally {
         setCohostChecked(true);
@@ -73,20 +61,41 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
     };
 
     checkCohostAccess();
-  }, [loading, user, role, isOwnerOrHost]);
+  }, [loading, user, role]);
 
-  // ── Loading spinner (auth + cohost check) ─────────────────────────────────
+  // 3. Navegación Segura (Fuera del render body)
+  useEffect(() => {
+    if (loading) return;
+
+    if (!user) {
+      // Si no hay usuario y ya terminó de cargar, vamos al login
+      navigate('/login', { state: { from: location }, replace: true });
+      return;
+    }
+
+    if (role && cohostChecked) {
+      const isAdminEmail = user?.email?.toLowerCase() === 'villaretiror@gmail.com';
+      const isOwnerOrHost = user?.role === 'host' || user?.role === 'admin' || isAdminEmail;
+      const hasAccess = isOwnerOrHost || isCohostActive;
+
+      if (!hasAccess) {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [loading, user, role, cohostChecked, isCohostActive, navigate, location]);
+
+  // ── Renderizado de Estados de Carga ──────────────────────────────────
   if (loading || (role === 'host' && !cohostChecked)) {
     return (
-      <div className="fixed inset-0 bg-[#FDFCFB] z-50 flex flex-col items-center justify-center gap-6 animate-fade-in">
+      <div className="fixed inset-0 bg-[#FDFCFB] z-[9999] flex flex-col items-center justify-center gap-6">
         <div className="relative">
           <div className="w-16 h-16 border-4 border-[#FF7F3F]/10 border-t-[#FF7F3F] rounded-full animate-spin"></div>
           <div className="absolute inset-0 flex items-center justify-center">
             <span className="material-icons text-[#FF7F3F] animate-pulse">lock</span>
           </div>
         </div>
-        <div className="flex flex-col items-center gap-1">
-          <p className="font-serif font-black text-xl tracking-tighter text-text-main animate-pulse">
+        <div className="text-center space-y-2">
+          <p className="font-serif font-black text-xl text-text-main animate-pulse">
             {timedOut ? 'Autenticación Lenta' : 'Autenticando Acceso'}
           </p>
           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF7F3F]">
@@ -94,17 +103,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
           </p>
         </div>
         {timedOut && (
-          <div className="flex flex-col gap-2 mt-4">
-            <button
-              onClick={() => window.location.reload()}
-              className="px-6 py-2 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all"
-            >
-              Reintentar Carga
+          <div className="flex flex-col gap-3 mt-4">
+            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+              Reintentar
             </button>
-            <button
-              onClick={() => logout()}
-              className="px-6 py-2 border border-black/10 rounded-full text-[10px] font-black uppercase tracking-widest active:scale-95 transition-all"
-            >
+            <button onClick={() => logout()} className="px-8 py-2 text-[10px] font-black uppercase tracking-widest border border-black/10 rounded-full active:scale-95 transition-all">
               Cerrar Sesión
             </button>
           </div>
@@ -113,19 +116,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
     );
   }
 
-  if (!user) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+  // Si hay usuario y (o no se requiere rol o el rol ya se verificó), pintamos el contenido
+  if (user && (!role || cohostChecked)) {
+    return <>{children}</>;
   }
 
-  // ── Role check: Owner / Host / Admin / Active Co-host ─────────────────────
-  if (role) {
-    const hasAccess = isOwnerOrHost || isCohostActive;
-    if (!hasAccess) {
-      return <Navigate to="/" replace />;
-    }
-  }
-
-  return children as React.ReactElement;
+  // Fallback visual mientras ocurre la redirección del useEffect
+  return null;
 };
 
 export default ProtectedRoute;

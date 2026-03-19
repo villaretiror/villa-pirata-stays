@@ -34,11 +34,21 @@ export const useAvailability = (propertyId: string | undefined) => {
                 .single();
 
             // 2. Fetch Active Bookings (Unified: Direct + iCal Synced)
-            const { data: bks } = await supabase
+            // 🔓 AUTO-CANCEL LOGIC: Ignore bookings where auto_cancel_at is in the past
+            const { data: bks, error: bksError } = await supabase
                 .from('bookings')
-                .select('check_in, check_out, status, hold_expires_at, source')
+                .select('check_in, check_out, status, hold_expires_at, source, auto_cancel_at')
                 .eq('property_id', propertyId)
                 .neq('status', 'cancelled');
+
+            // 🧠 CLIENT-SIDE LIBERATION FILTER: If the payment window expired, we treat it as available
+            const activeBookings = (bks || []).filter((b: any) => {
+                if (b.auto_cancel_at && new Date(b.auto_cancel_at) < now) {
+                    console.warn(`[Auto-Cancel] Libreación de fechas para reserva expirada: ${b.check_in}`);
+                    return false;
+                }
+                return true;
+            });
 
             // 3. Fetch Active Leads (Awaiting Payment - 15min TTL)
             const { data: pending } = await supabase
@@ -53,7 +63,7 @@ export const useAvailability = (propertyId: string | undefined) => {
                 .eq('property_id', propertyId);
             
             if (rules) setAvailabilityRules(rules);
-            if (bks) setAllBookings(bks);
+            if (activeBookings) setAllBookings(activeBookings);
             if (pending) setPendingLeads(pending);
 
             const allBlocked: Date[] = [];
@@ -102,7 +112,7 @@ export const useAvailability = (propertyId: string | undefined) => {
             }
 
             // Process Bookings
-            (bks || []).forEach((b: { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null }) => {
+            (activeBookings || []).forEach((b: { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null }) => {
                 // Ignore expired AI holds
                 if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return;
                 addRange(b.check_in, b.check_out);

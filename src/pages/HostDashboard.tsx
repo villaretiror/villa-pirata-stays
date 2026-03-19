@@ -3275,9 +3275,14 @@ const HostDashboard: React.FC = () => {
                 <div className="flex items-center gap-4">
                   <div className="text-right flex flex-col items-end gap-1">
                     <p className="text-sm font-serif font-black italic text-green-600 mb-0.5 tracking-tight">${booking.total_price}</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                       {getSourceBadge(booking.source)}
-                      <span className="text-[8px] font-bold uppercase tracking-widest px-2 py-0.5 rounded-full bg-green-50 text-green-600 border border-green-100">Confirmado</span>
+                      <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.status === 'Paid' || booking.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                        {booking.status === 'Paid' || booking.status === 'confirmed' ? 'PAGADO' : 'PENDIENTE'}
+                      </span>
+                      <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.contract_signed ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                        {booking.contract_signed ? 'FIRMANTE ✓' : 'SIN FIRMA'}
+                      </span>
                     </div>
                   </div>
                   {/* Send instructions button if within 24h or manual */}

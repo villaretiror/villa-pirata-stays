@@ -6,7 +6,6 @@ export const HOST_PHONE = "17873560895";
 // Google Maps origin param: 18.0636,-67.1569
 const MAPS_ORIGIN = '18.0636,-67.1569';
 const mapRoute = (dest: string) => `https://www.google.com/maps/dir/${MAPS_ORIGIN}/${encodeURIComponent(dest)}`;
-
 export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
   {
     id: 'beaches',
@@ -14,32 +13,20 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
     icon: 'beach_access',
     items: [
       {
-        name: 'Balneario de Boquerón & El Poblado',
-        distance: '5-7 min',
-        desc: '¡M spot favorito para el "chinchorreo" nocturno! No puedes irte sin probar los ostiones frescos en la calle mientras escuchas música en vivo. El ambiente en el Poblado es pura energía boricua. Después de tanta fiesta, el silencio de Pirata Family House te abrazará como un capitán en su puerto.',
+        name: 'Reserva Natural Punta Guaniquilla',
+        distance: '15 min',
+        desc: 'Un laberinto místico donde la naturaleza y la historia convergen. Sendero entre formaciones de piedra caliza y ruinas antiguas que desemboca en una costa virgen y solitaria.',
+        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
+        mapUrl: mapRoute('Punta Guaniquilla, Cabo Rojo, Puerto Rico'),
+        saltyTip: 'Lleva calzado cómodo para el sendero. Es el secreto mejor guardado para la paz total.'
+      },
+      {
+        name: 'Isla de Ratones (Charter Privado)',
+        distance: '10 min + Bote',
+        desc: 'El escape definitivo a una isla privada rodeada de manglares. Aguas turquesas cristalinas perfectas para el snorkeling.',
         image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200',
-        mapUrl: mapRoute('Balneario de Boquerón, Cabo Rojo, Puerto Rico')
-      },
-      {
-        name: 'Playa Buyé',
-        distance: '12-15 min',
-        desc: 'Si buscas ese azul turquesa de postal, Buyé es tu lugar. Yo suelo ir temprano con mi kayak para ver el fondo clarito. Es el sitio perfecto para desconectar del resto del mundo. Al regresar, date un chapuzón en la piscina de Villa Retiro para cerrar el día con broche de oro.',
-        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaBuye.jpeg',
-        mapUrl: mapRoute('Playa Buyé, Cabo Rojo, Puerto Rico')
-      },
-      {
-        name: 'Playa Sucia (La Playuela) & El Faro',
-        distance: '20-25 min',
-        desc: '¡La joya de mi corona! Camina hasta el Faro Los Morrillos para unas fotos de película en los acantilados, y luego baja a La Playuela a refrescarte. Es una reserva virgen que te robará el aliento. Luego de esta aventura salvaje, la paz de Villa Retiro te sabrá a gloria.',
-        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaSucia.jpeg',
-        mapUrl: mapRoute('Playa Sucia La Playuela, Cabo Rojo, Puerto Rico')
-      },
-      {
-        name: 'Playa Combate',
-        distance: '15-18 min',
-        desc: 'Para mí, no hay atardecer más épico que el de Combate. Me encanta sentarme frente al mar con una bebida fría y ver cómo el sol se esconde. Es el cierre perfecto para cualquier día. Disfruta ese último rayo de luz sabiendo que Pirata Family House te espera a solo minutos.',
-        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/CombateBeach.jpeg',
-        mapUrl: mapRoute('Playa Combate, Cabo Rojo, Puerto Rico')
+        mapUrl: mapRoute('Boquerón, Cabo Rojo, Puerto Rico'),
+        saltyTip: 'Coordinamos tu traslado privado desde los muelles de Boquerón. Pregúntame cómo.'
       }
     ]
   },
@@ -49,25 +36,20 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
     icon: 'restaurant',
     items: [
       {
-        name: 'Buena Vibra (Boquerón)',
-        distance: '6 min',
-        desc: 'Cócteles artesanales, ambiente vibrante y la mejor energía nocturna de Boquerón. El punto de encuentro favorito de locales y viajeros. Pide el mojito de parcha y déjate llevar por la buena vibra.',
-        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/BuenaVibra.jpeg',
-        mapUrl: mapRoute('Buena Vibra Boquerón, Cabo Rojo, Puerto Rico')
-      },
-      {
-        name: 'Milla de Oro (Joyuda)',
-        distance: '15 min',
-        desc: 'La capital del marisco en Puerto Rico. Más de 30 restaurantes frente al mar con los pescados y mariscos más frescos del Caribe. Pide el chillo entero frito — no te arrepentirás.',
-        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
-        mapUrl: mapRoute('Milla de Oro Joyuda, Cabo Rojo, Puerto Rico')
-      },
-      {
-        name: 'Costa Brava',
+        name: 'Valmar Cocina Creativa',
         distance: '8 min',
-        desc: 'Mariscos premium con vista al mar. Langosta, pulpo a la parrilla y vinos selectos en un entorno elegante pero accesible. Ideal para celebraciones y cenas románticas al atardecer.',
+        desc: 'La cima de la gastronomía moderna en el oeste. Propuesta de vanguardia con ingredientes locales y mixología de autor chic.',
         image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=1200',
-        mapUrl: mapRoute('Costa Brava Restaurant, Cabo Rojo, Puerto Rico')
+        mapUrl: mapRoute('Valmar Cocina Creativa, Cabo Rojo, Puerto Rico'),
+        saltyTip: 'No te vayas sin probar su coctelería de autor. Es la más sofisticada de la región.'
+      },
+      {
+        name: 'ROBERTO GASTROTECA',
+        distance: '10 min',
+        desc: 'Santuario culinario para paladares exigentes. Elegancia artesanal con enfoque en la frescura absoluta y un servicio impecable.',
+        image: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
+        mapUrl: mapRoute('Roberto Gastroteca, Cabo Rojo, Puerto Rico'),
+        saltyTip: 'Perfecto para una cena íntima y refinada tras un largo día de playa.'
       }
     ]
   },
@@ -77,24 +59,12 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
     icon: 'place',
     items: [
       {
-        name: 'Carr. 100 — Acceso Rápido',
-        distance: '2 min',
-        desc: 'La arteria principal del suroeste. Desde aquí llegas a Mayagüez, San Germán, Lajas y todas las playas. Gasolineras, farmacias y supermercados a tu alcance en minutos.',
-        image: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?auto=format&fit=crop&q=80&w=1200',
-        mapUrl: mapRoute('Carr 100, Cabo Rojo, Puerto Rico')
-      },
-      {
-        name: 'Zona Tranquila & Segura',
-        distance: 'Tu hogar',
-        desc: 'Sector Samán es una comunidad residencial pacífica rodeada de naturaleza. Sin ruido, sin estrés. Duerme profundamente y despierta con el canto de los pájaros antes de tu día de playa.',
-        image: 'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&q=80&w=1200'
-      },
-      {
-        name: 'Supermercados & Esenciales',
-        distance: '5 min',
-        desc: 'Ralph\'s Food Warehouse y Econo a minutos. Todo lo que necesitas para tu BBQ, snacks de playa y provisiones sin alejarte. Licorerías y panaderías locales también cerca.',
-        image: 'https://images.unsplash.com/photo-1604719312566-8912e9227c6a?auto=format&fit=crop&q=80&w=1200',
-        mapUrl: mapRoute("Ralph's Food Warehouse, Cabo Rojo, Puerto Rico")
+        name: 'Puente de Piedra (Los Morrillos)',
+        distance: '22 min',
+        desc: 'Arco de piedra natural esculpido por el mar con la vista más dramática de la isla. Punto donde el Caribe y el Atlántico se abrazan.',
+        image: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/PlayaSucia.jpeg',
+        mapUrl: mapRoute('Playa Sucia La Playuela, Cabo Rojo, Puerto Rico'),
+        saltyTip: 'Nuestro spot favorito para un brindis privado al atardecer. Magia pura.'
       }
     ]
   }
@@ -121,9 +91,9 @@ export const PROPERTIES: Property[] = [
       checkInTime: "3:00 PM",
       checkOutTime: "11:00 AM",
       guests: 8,
-      wifiName: "VillaRetiro_HighSpeed_WiFi",
-      wifiPass: "Tropical2024!",
-      accessCode: "4829 #",
+      wifiName: "Wifivacacional",
+      wifiPass: "Wifivacacional",
+      accessCode: "0895",
       cancellationPolicy: 'firm',
       houseRules: [
         'Apagar luces y A/C al salir',
@@ -191,7 +161,7 @@ export const PROPERTIES: Property[] = [
     host: {
       name: 'Brian',
       image: 'https://a0.muscache.com/im/pictures/user/User/original/0d2bef47-283d-4f96-a3be-4c8bbf46862b.jpeg?aki_policy=profile_x_medium',
-      badges: ['4 años como Anfitrión', 'Respuesta en < 1hr'],
+      badges: ['Guest Favorite', 'Respuesta en < 1hr'],
       yearsHosting: 4
     },
     min_price_floor: 180,
@@ -217,9 +187,9 @@ export const PROPERTIES: Property[] = [
       checkInTime: "3:00 PM",
       checkOutTime: "11:00 AM",
       guests: 6,
-      wifiName: "PirataHouse_WiFi",
-      wifiPass: "Pirata2024!",
-      accessCode: "1776 #",
+      wifiName: "Wifivacacional",
+      wifiPass: "Wifivacacional",
+      accessCode: "2197",
       cancellationPolicy: 'firm',
       houseRules: [
         'Para encender la estufa se requiere fósforo o encendedor',
@@ -284,7 +254,7 @@ export const PROPERTIES: Property[] = [
     host: {
       name: 'Brian',
       image: 'https://a0.muscache.com/im/pictures/user/User/original/0d2bef47-283d-4f96-a3be-4c8bbf46862b.jpeg?aki_policy=profile_x_medium',
-      badges: ['4 años como Anfitrión', 'Superhost'],
+      badges: ['Guest Favorite', 'Superhost'],
       yearsHosting: 4
     },
     min_price_floor: 120,

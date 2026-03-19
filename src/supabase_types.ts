@@ -6,18 +6,14 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export type Database = {
-  // Allows to automatically instantiate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "14.1"
-  }
+export interface Database {
   public: {
     Tables: {
       ai_chat_logs: {
         Row: {
           created_at: string
           id: number
+          intent: string | null
           sender: string
           session_id: string
           text: string
@@ -25,6 +21,7 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: number
+          intent?: string | null
           sender: string
           session_id: string
           text: string
@@ -32,101 +29,198 @@ export type Database = {
         Update: {
           created_at?: string
           id?: number
+          intent?: string | null
           sender?: string
           session_id?: string
           text?: string
         }
         Relationships: []
       }
+      ai_insights: {
+        Row: {
+          content: Json
+          created_at: string | null
+          id: string
+          impact_score: number | null
+          status: string | null
+          type: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string | null
+          id?: string
+          impact_score?: number | null
+          status?: string | null
+          type: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string | null
+          id?: string
+          impact_score?: number | null
+          status?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
+      availability_rules: {
+        Row: {
+          advance_notice_days: number | null
+          buffer_nights_after: number | null
+          buffer_nights_before: number | null
+          created_at: string | null
+          end_date: string
+          id: string
+          is_blocked: boolean | null
+          min_nights: number | null
+          price_override: number | null
+          property_id: string | null
+          reason: string | null
+          restricted_checkin_days: Json | null
+          restricted_checkout_days: Json | null
+          requires_manual_approval: boolean | null
+          start_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          advance_notice_days?: number | null
+          buffer_nights_after?: number | null
+          buffer_nights_before?: number | null
+          created_at?: string | null
+          end_date: string
+          id?: string
+          is_blocked?: boolean | null
+          min_nights?: number | null
+          price_override?: number | null
+          property_id?: string | null
+          reason?: string | null
+          restricted_checkin_days?: Json | null
+          restricted_checkout_days?: Json | null
+          requires_manual_approval?: boolean | null
+          start_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          advance_notice_days?: number | null
+          buffer_nights_after?: number | null
+          buffer_nights_before?: number | null
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          is_blocked?: boolean | null
+          min_nights?: number | null
+          price_override?: number | null
+          property_id?: string | null
+          reason?: string | null
+          restricted_checkin_days?: Json | null
+          restricted_checkout_days?: Json | null
+          requires_manual_approval?: boolean | null
+          start_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "availability_rules_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       bookings: {
         Row: {
+          applied_policy: Json | null
+          auto_cancel_at: string | null
+          cancellation_reason: string | null
+          cancelled_at: string | null
           check_in: string
           check_out: string
+          cleaning_fee_at_booking: number | null
+          contract_signed: boolean | null
           created_at: string | null
           customer_name: string | null
           email_sent: boolean | null
           email_sent_feedback: boolean | null
           email_sent_thanks: boolean | null
           guests_count: number | null
-          hold_expires_at: string | null
           id: string
           instructions_sent_at: string | null
+          is_manual_block: boolean | null
           last_notification_sent: string | null
+          notified_external_at: string | null
           payment_method: string | null
           payment_proof_url: string | null
           property_id: string | null
+          service_fee_at_booking: number | null
           source: string | null
           status: string | null
-          total_price: number
+          sync_last_hash: string | null
           total_paid_at_booking: number | null
+          total_price: number
           user_id: string | null
-          applied_policy: Json | null
-          cleaning_fee_at_booking: number | null
-          service_fee_at_booking: number | null
-          refund_amount_calculated: number | null
-          retained_amount_calculated: number | null
-          cancellation_snapshot: Json | null
-          cancellation_reason: string | null
-          cancelled_at: string | null
         }
         Insert: {
+          applied_policy?: Json | null
+          auto_cancel_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           check_in: string
           check_out: string
+          cleaning_fee_at_booking?: number | null
+          contract_signed?: boolean | null
           created_at?: string | null
           customer_name?: string | null
           email_sent?: boolean | null
           email_sent_feedback?: boolean | null
           email_sent_thanks?: boolean | null
           guests_count?: number | null
-          hold_expires_at?: string | null
           id?: string
           instructions_sent_at?: string | null
+          is_manual_block?: boolean | null
           last_notification_sent?: string | null
+          notified_external_at?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
           property_id?: string | null
+          service_fee_at_booking?: number | null
           source?: string | null
           status?: string | null
-          total_price: number
+          sync_last_hash?: string | null
           total_paid_at_booking?: number | null
+          total_price: number
           user_id?: string | null
-          applied_policy?: Json | null
-          cleaning_fee_at_booking?: number | null
-          service_fee_at_booking?: number | null
-          refund_amount_calculated?: number | null
-          retained_amount_calculated?: number | null
-          cancellation_snapshot?: Json | null
-          cancellation_reason?: string | null
-          cancelled_at?: string | null
         }
         Update: {
+          applied_policy?: Json | null
+          auto_cancel_at?: string | null
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
           check_in?: string
           check_out?: string
+          cleaning_fee_at_booking?: number | null
+          contract_signed?: boolean | null
           created_at?: string | null
           customer_name?: string | null
           email_sent?: boolean | null
           email_sent_feedback?: boolean | null
           email_sent_thanks?: boolean | null
           guests_count?: number | null
-          hold_expires_at?: string | null
           id?: string
           instructions_sent_at?: string | null
+          is_manual_block?: boolean | null
           last_notification_sent?: string | null
+          notified_external_at?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
           property_id?: string | null
+          service_fee_at_booking?: number | null
           source?: string | null
           status?: string | null
+          sync_last_hash?: string | null
+          total_paid_at_booking?: number | null
           total_price?: number
           user_id?: string | null
-          applied_policy?: Json | null
-          cleaning_fee_at_booking?: number | null
-          service_fee_at_booking?: number | null
-          refund_amount_calculated?: number | null
-          retained_amount_calculated?: number | null
-          cancellation_snapshot?: Json | null
-          cancellation_reason?: string | null
-          cancelled_at?: string | null
         }
         Relationships: [
           {
@@ -142,8 +236,41 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
-          },
+          }
         ]
+      }
+      business_activity_logs: {
+        Row: {
+          created_at: string | null
+          date: string | null
+          emergencies_coordinated: number | null
+          id: string
+          inquiries_resolved: number | null
+          maintenance_tasks: number | null
+          revenue_generated: number | null
+          salty_efficiency_score: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          date?: string | null
+          emergencies_coordinated?: number | null
+          id?: string
+          inquiries_resolved?: number | null
+          maintenance_tasks?: number | null
+          revenue_generated?: number | null
+          salty_efficiency_score?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          date?: string | null
+          emergencies_coordinated?: number | null
+          id?: string
+          inquiries_resolved?: number | null
+          maintenance_tasks?: number | null
+          revenue_generated?: number | null
+          salty_efficiency_score?: number | null
+        }
+        Relationships: []
       }
       chat_logs: {
         Row: {
@@ -190,51 +317,6 @@ export type Database = {
         }
         Relationships: []
       }
-      destination_guides: {
-        Row: {
-          id: string
-          category: string
-          title: string
-          distance: string | null
-          description: string | null
-          image_url: string | null
-          map_url: string | null
-          salty_tip: string | null
-          sort_order: number | null
-          is_active: boolean | null
-          created_at: string | null
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          category: string
-          title: string
-          distance?: string | null
-          description?: string | null
-          image_url?: string | null
-          map_url?: string | null
-          salty_tip?: string | null
-          sort_order?: number | null
-          is_active?: boolean | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          category?: string
-          title?: string
-          distance?: string | null
-          description?: string | null
-          image_url?: string | null
-          map_url?: string | null
-          salty_tip?: string | null
-          sort_order?: number | null
-          is_active?: boolean | null
-          created_at?: string | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
       contact_leads: {
         Row: {
           created_at: string | null
@@ -265,6 +347,81 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_heartbeats: {
+        Row: {
+          details: Json | null
+          duration_ms: number | null
+          error_message: string | null
+          id: number
+          status: string | null
+          task_name: string | null
+          timestamp: string | null
+        }
+        Insert: {
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: number
+          status?: string | null
+          task_name?: string | null
+          timestamp?: string | null
+        }
+        Update: {
+          details?: Json | null
+          duration_ms?: number | null
+          error_message?: string | null
+          id?: number
+          status?: string | null
+          task_name?: string | null
+          timestamp?: string | null
+        }
+        Relationships: []
+      }
+      destination_guides: {
+        Row: {
+          category: string
+          created_at: string | null
+          description: string | null
+          distance: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          map_url: string | null
+          salty_tip: string | null
+          sort_order: number | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category: string
+          created_at?: string | null
+          description?: string | null
+          distance?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          map_url?: string | null
+          salty_tip?: string | null
+          sort_order?: number | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          created_at?: string | null
+          description?: string | null
+          distance?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          map_url?: string | null
+          salty_tip?: string | null
+          sort_order?: number | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       earnings: {
         Row: {
           amount: number
@@ -289,12 +446,118 @@ export type Database = {
         }
         Relationships: []
       }
+      email_logs: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          guest_email: string | null
+          guest_name: string | null
+          id: string
+          opened_at: string | null
+          resend_id: string
+          status: string | null
+          subject: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          id?: string
+          opened_at?: string | null
+          resend_id: string
+          status?: string | null
+          subject?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          guest_email?: string | null
+          guest_name?: string | null
+          id?: string
+          opened_at?: string | null
+          resend_id?: string
+          status?: string | null
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      emergency_tickets: {
+        Row: {
+          booking_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          issue_type: string
+          property_id: string | null
+          provider_id: string | null
+          resolved_at: string | null
+          severity: string | null
+          status: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          issue_type: string
+          property_id?: string | null
+          provider_id?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          issue_type?: string
+          property_id?: string | null
+          provider_id?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_tickets_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_tickets_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_tickets_provider_id_fkey"
+            columns: ["provider_id"]
+            isOneToOne: false
+            referencedRelation: "service_providers"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
       leads: {
         Row: {
           created_at: string | null
           date_of_interest: string | null
           email: string
           id: string
+          interest: string | null
           message: string
           name: string
           phone: string | null
@@ -306,6 +569,7 @@ export type Database = {
           date_of_interest?: string | null
           email: string
           id?: string
+          interest?: string | null
           message: string
           name: string
           phone?: string | null
@@ -317,6 +581,7 @@ export type Database = {
           date_of_interest?: string | null
           email?: string
           id?: string
+          interest?: string | null
           message?: string
           name?: string
           phone?: string | null
@@ -381,8 +646,50 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
-          },
+          }
         ]
+      }
+      pending_bookings: {
+        Row: {
+          check_in: string
+          check_out: string
+          created_at: string | null
+          expires_at: string
+          guest_email: string | null
+          guest_name: string | null
+          guest_phone: string | null
+          id: string
+          property_id: string
+          status: string | null
+          user_id: string | null
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          created_at?: string | null
+          expires_at: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          property_id: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          created_at?: string | null
+          expires_at?: string
+          guest_email?: string | null
+          guest_name?: string | null
+          guest_phone?: string | null
+          id?: string
+          property_id?: string
+          status?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
@@ -476,6 +783,7 @@ export type Database = {
       }
       properties: {
         Row: {
+          access_code: string | null
           address: string | null
           airbnb_id: string | null
           airbnb_url: string | null
@@ -484,17 +792,16 @@ export type Database = {
           bedrooms: number | null
           beds: number | null
           blockeddates: Json | null
-          blockedDates: string[] | null
-          calendarsync: Json | null
           calendarSync: Json | null
+          cancellation_policy_type: string | null
           category: string | null
           cleaning_fee: number | null
           created_at: string | null
           description: string | null
           email: string | null
-          featuredamenity: string | null
           featuredAmenity: string | null
           fees: Json | null
+          google_maps_url: string | null
           guests: number | null
           host: Json | null
           host_id: string | null
@@ -502,29 +809,31 @@ export type Database = {
           id: string
           images: string[] | null
           is_offline: boolean | null
-          isoffline: boolean | null
-          isOffline: boolean | null
           location: string | null
-          policies: Json | null
-          price: number
+          location_coords: string | null
+          lockbox_image_url: string | null
+          offers: Json | null
           original_price: number | null
-          min_price_floor: number | null
-          max_discount_allowed: number | null
-          cancellation_policy_type: string | null
-          property_features: Json | null
+          price: number
           rating: number | null
           reviews: number | null
           reviews_count: number | null
+          reviews_list: Json | null
           seasonal_prices: Json | null
           security_deposit: number | null
           service_fee: number | null
           subtitle: string | null
           sync_settings: Json | null
+          tax_rate: number | null
           title: string
           type: string | null
           updated_at: string | null
+          waze_url: string | null
+          wifi_name: string | null
+          wifi_pass: string | null
         }
         Insert: {
+          access_code?: string | null
           address?: string | null
           airbnb_id?: string | null
           airbnb_url?: string | null
@@ -533,17 +842,16 @@ export type Database = {
           bedrooms?: number | null
           beds?: number | null
           blockeddates?: Json | null
-          blockedDates?: string[] | null
-          calendarsync?: Json | null
           calendarSync?: Json | null
+          cancellation_policy_type?: string | null
           category?: string | null
           cleaning_fee?: number | null
           created_at?: string | null
           description?: string | null
           email?: string | null
-          featuredamenity?: string | null
           featuredAmenity?: string | null
           fees?: Json | null
+          google_maps_url?: string | null
           guests?: number | null
           host?: Json | null
           host_id?: string | null
@@ -551,27 +859,31 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_offline?: boolean | null
-          isoffline?: boolean | null
-          isOffline?: boolean | null
           location?: string | null
-          policies?: Json | null
-          price: number
+          location_coords?: string | null
+          lockbox_image_url?: string | null
+          offers?: Json | null
           original_price?: number | null
-          min_price_floor?: number | null
-          max_discount_allowed?: number | null
-          property_features?: Json | null
+          price: number
           rating?: number | null
           reviews?: number | null
+          reviews_count?: number | null
+          reviews_list?: Json | null
           seasonal_prices?: Json | null
           security_deposit?: number | null
           service_fee?: number | null
           subtitle?: string | null
           sync_settings?: Json | null
+          tax_rate?: number | null
           title: string
           type?: string | null
           updated_at?: string | null
+          waze_url?: string | null
+          wifi_name?: string | null
+          wifi_pass?: string | null
         }
         Update: {
+          access_code?: string | null
           address?: string | null
           airbnb_id?: string | null
           airbnb_url?: string | null
@@ -580,17 +892,16 @@ export type Database = {
           bedrooms?: number | null
           beds?: number | null
           blockeddates?: Json | null
-          blockedDates?: string[] | null
-          calendarsync?: Json | null
           calendarSync?: Json | null
+          cancellation_policy_type?: string | null
           category?: string | null
           cleaning_fee?: number | null
           created_at?: string | null
           description?: string | null
           email?: string | null
-          featuredamenity?: string | null
           featuredAmenity?: string | null
           fees?: Json | null
+          google_maps_url?: string | null
           guests?: number | null
           host?: Json | null
           host_id?: string | null
@@ -598,72 +909,30 @@ export type Database = {
           id?: string
           images?: string[] | null
           is_offline?: boolean | null
-          isoffline?: boolean | null
-          isOffline?: boolean | null
           location?: string | null
-          policies?: Json | null
-          price?: number
+          location_coords?: string | null
+          lockbox_image_url?: string | null
+          offers?: Json | null
           original_price?: number | null
-          min_price_floor?: number | null
-          max_discount_allowed?: number | null
-          property_features?: Json | null
+          price?: number
           rating?: number | null
           reviews?: number | null
+          reviews_count?: number | null
+          reviews_list?: Json | null
           seasonal_prices?: Json | null
           security_deposit?: number | null
           service_fee?: number | null
           subtitle?: string | null
           sync_settings?: Json | null
+          tax_rate?: number | null
           title?: string
           type?: string | null
           updated_at?: string | null
+          waze_url?: string | null
+          wifi_name?: string | null
+          wifi_pass?: string | null
         }
         Relationships: []
-      }
-      reviews: {
-        Row: {
-          id: string
-          booking_id: string | null
-          property_id: string
-          user_id: string | null
-          author: string
-          text: string
-          rating: number
-          source: string
-          avatar_url: string | null
-          is_visible: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          booking_id?: string | null
-          property_id: string
-          user_id?: string | null
-          author: string
-          text: string
-          rating: number
-          source?: string
-          avatar_url?: string | null
-          is_visible?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          booking_id?: string | null
-          property_id?: string
-          user_id?: string | null
-          author?: string
-          text?: string
-          rating?: number
-          source?: string
-          avatar_url?: string | null
-          is_visible?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          { foreignKeyName: "reviews_booking_id_fkey"; columns: ["booking_id"]; referencedRelation: "bookings"; referencedColumns: ["id"] },
-          { foreignKeyName: "reviews_property_id_fkey"; columns: ["property_id"]; referencedRelation: "properties"; referencedColumns: ["id"] }
-        ]
       }
       property_cohosts: {
         Row: {
@@ -727,8 +996,79 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
-          },
+          }
         ]
+      }
+      reviews: {
+        Row: {
+          author: string
+          avatar_url: string | null
+          booking_id: string | null
+          created_at: string | null
+          id: string
+          is_visible: boolean | null
+          property_id: string
+          rating: number | null
+          source: string | null
+          text: string
+          user_id: string | null
+        }
+        Insert: {
+          author: string
+          avatar_url?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          property_id: string
+          rating?: number | null
+          source?: string | null
+          text: string
+          user_id?: string | null
+        }
+        Update: {
+          author?: string
+          avatar_url?: string | null
+          booking_id?: string | null
+          created_at?: string | null
+          id?: string
+          is_visible?: boolean | null
+          property_id?: string
+          rating?: number | null
+          source?: string | null
+          text?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      salty_family_knowledge: {
+        Row: {
+          created_at: string | null
+          id: string
+          key: string
+          value: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          key: string
+          value: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          key?: string
+          value?: string
+        }
+        Relationships: []
       }
       salty_memories: {
         Row: {
@@ -759,11 +1099,87 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
-          },
+          }
         ]
+      }
+      security_audit_logs: {
+        Row: {
+          action: string
+          category: string
+          created_at: string
+          email: string | null
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          category?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          category?: string
+          created_at?: string
+          email?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      service_providers: {
+        Row: {
+          base_fee: number | null
+          created_at: string | null
+          email: string | null
+          hourly_rate: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          phone: string | null
+          priority: number | null
+          specialty: string
+          updated_at: string | null
+          whatsapp: string | null
+        }
+        Insert: {
+          base_fee?: number | null
+          created_at?: string | null
+          email?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          phone?: string | null
+          priority?: number | null
+          specialty: string
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          base_fee?: number | null
+          created_at?: string | null
+          email?: string | null
+          hourly_rate?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          phone?: string | null
+          priority?: number | null
+          specialty?: string
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Relationships: []
       }
       system_health: {
         Row: {
+          consecutive_failures: number | null
           error_details: string | null
           id: string
           last_check: string | null
@@ -774,6 +1190,7 @@ export type Database = {
           status: string
         }
         Insert: {
+          consecutive_failures?: number | null
           error_details?: string | null
           id?: string
           last_check?: string | null
@@ -784,6 +1201,7 @@ export type Database = {
           status: string
         }
         Update: {
+          consecutive_failures?: number | null
           error_details?: string | null
           id?: string
           last_check?: string | null
@@ -815,26 +1233,35 @@ export type Database = {
       }
       tasks: {
         Row: {
+          assigned_to: string | null
           created_at: string | null
           done: boolean | null
           id: number
+          priority: string | null
           property: string
+          property_id: string | null
           status: string | null
           text: string
         }
         Insert: {
+          assigned_to?: string | null
           created_at?: string | null
           done?: boolean | null
           id?: number
+          priority?: string | null
           property: string
+          property_id?: string | null
           status?: string | null
           text: string
         }
         Update: {
+          assigned_to?: string | null
           created_at?: string | null
           done?: boolean | null
           id?: number
+          priority?: string | null
           property?: string
+          property_id?: string | null
           status?: string | null
           text?: string
         }
@@ -878,16 +1305,15 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      cleanup_expired_holds: { Args: never; Returns: undefined }
-      increment_promo_usage: { Args: { promo_id: string }; Returns: undefined }
+      increment_promo_usage: {
+        Args: {
+          promo_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
-      cancellation_policy_enum:
-        | "flexible"
-        | "moderate"
-        | "firm"
-        | "strict"
-        | "non-refundable"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -895,133 +1321,82 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
 export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  PublicTableNameOrOptions extends
+    | keyof (Database["public"]["Tables"] & Database["public"]["Views"])
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+        Database[PublicTableNameOrOptions["schema"]]["Views"])
+    : never = never
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
+      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
+  : PublicTableNameOrOptions extends keyof (Database["public"]["Tables"] &
+      Database["public"]["Views"])
+  ? (Database["public"]["Tables"] &
+      Database["public"]["Views"])[PublicTableNameOrOptions] extends {
+      Row: infer R
+    }
+    ? R
     : never
+  : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+  ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+      Insert: infer I
+    }
+    ? I
     : never
+  : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  PublicTableNameOrOptions extends
+    | keyof Database["public"]["Tables"]
+    | { schema: keyof Database },
+  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+    : never = never
+> = PublicTableNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+  : PublicTableNameOrOptions extends keyof Database["public"]["Tables"]
+  ? Database["public"]["Tables"][PublicTableNameOrOptions] extends {
+      Update: infer U
+    }
+    ? U
     : never
+  : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      cancellation_policy_enum: [
-        "flexible",
-        "moderate",
-        "firm",
-        "strict",
-        "non-refundable",
-      ],
-    },
-  },
-} as const
+  PublicEnumNameOrOptions extends
+    | keyof Database["public"]["Enums"]
+    | { schema: keyof Database },
+  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
+    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+    : never = never
+> = PublicEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : PublicEnumNameOrOptions extends keyof Database["public"]["Enums"]
+  ? Database["public"]["Enums"][PublicEnumNameOrOptions]
+  : never
