@@ -1,4 +1,4 @@
-import { NotificationService } from '../services/NotificationService.js';
+import { NotificationService } from '../src/services/NotificationService.js';
 
 export const config = {
     runtime: 'edge', // Edge runtime constraint

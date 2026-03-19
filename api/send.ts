@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { supabase } from '../lib/supabase.js';
-import { NotificationService } from '../services/NotificationService.js';
+import { supabase } from '../src/lib/supabase.js';
+import { NotificationService } from '../src/services/NotificationService.js';
 import { z } from 'zod';
 
 const resend = new Resend(process.env.RESEND_API_KEY);

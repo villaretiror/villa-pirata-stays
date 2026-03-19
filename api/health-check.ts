@@ -1,4 +1,4 @@
-import { HealthMonitorService } from '../lib/HealthMonitorService.js';
+import { HealthMonitorService } from '../src/lib/HealthMonitorService.js';
 
 /**
  * 🍏 SYSTEM HEALTH ENDPOINT

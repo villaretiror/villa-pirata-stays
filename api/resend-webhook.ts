@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { NotificationService } from '../services/NotificationService.js';
+import { NotificationService } from '../src/services/NotificationService.js';
 
 /**
  * 📧 RESEND WEBHOOK HANDLER
