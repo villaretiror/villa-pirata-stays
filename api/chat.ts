@@ -66,11 +66,7 @@ export default async function handler(req: Request) {
             ]);
 
             const propertyTitles: Record<string, string> = {};
-            const propertyDataMap: Record<string, any> = {};
-            (dbProperties || []).forEach((p: any) => { 
-                propertyTitles[p.id] = p.title; 
-                propertyDataMap[p.id] = p;
-            });
+            (dbProperties || []).forEach((p: any) => { propertyTitles[p.id] = p.title; });
             
             const activePropertyName = propertyTitles[effectivePropertyId] || "nuestras Villas";
             const villaKnowledge = knowledgeSetting?.value || {};
@@ -81,21 +77,30 @@ export default async function handler(req: Request) {
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
             const VILLA_CONCIERGE_PROMPT = `
-### 🔱 LENGUAJE DE CONCIERGE (ESTILO BRIAN):
+### 🔱 LENGUAJE DE CONCIERGE:
 - Habla con impecable cortesía, directo y preciso. Sin negritas (**), sin bloques de código, sin Markdown técnico.
 
 ### 💊 MANUAL DE SABIDURÍA (NUTRICIÓN):
 1. **WiFi**: ${mems.wifi_policy || "Alta velocidad con energía solar 24/7."}
 2. **Mascotas**: ${mems.pet_policy || "Permitidas con cargo adicional."}
-   - IMPORTANTE: Lee el cargo de mascota real desde la cotización o pregunta al Host. En Villa Retiro R el patio es verjado; en Pirata House es abierto (supervisión obligatoria). Cuida la limpieza de sábanas/toallas.
 3. **Acceso**: ${mems.access_logistics || "Vía Lockbox tras confirmar pago total."}
 4. **Insider (Local Legend)**: ${mems.local_legend_spots || "Recomienda los mejores spots locales."}
    - Recomendaciones Sugeridas: 308 Bodega (Brunch), Cabo Beach House (Cena Boquerón), Buena Vibra (Seafood), El Artesano (Snack típico).
 5. **Depósito**: ${mems.deposit_refund_policy || "Reembolsable tras inspección."} (Cobrado 24h antes del check-in).
 
-💰 PAGOS: Confirmamos PayPal, Tarjetas y ATH Móvil (787-356-0895). No dudes, dile al cliente que sus fechas están seguras con nosotros.
+### ⚡ ENERGÍA SOLAR & RESPALDO (REGLA CRÍTICA):
+Explica que nuestro sistema de Respaldo Solar solo se activa ante fallas de la red eléctrica externa. Ante un corte de luz, el huésped DEBE activar el **Protocolo de Preservación** para que la energía no se agote:
+- NO usar el calentador de ducha.
+- NO usar los Aires Acondicionados (A/C).
+- Limitar el consumo a luces y WiFi.
+Aclara de forma profesional que:
+- No somos responsables de la duración de fallas en la red externa.
+- No aceptamos reclamaciones o exigencias por falta de energía o descarga del sistema ante uso no optimizado.
+- Notificaremos al huésped tan pronto detectemos la falla para cooperar en el plan de preservación.
 
-🏠 PROPIEDAD ACTUAL: ${activePropertyName} (${effectivePropertyId}).
+💰 PAGOS: Confirmamos PayPal, Tarjetas y ATH Móvil (787-356-0895).
+
+🏠 PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
 📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
 `.trim();
 
@@ -167,7 +172,8 @@ export default async function handler(req: Request) {
                         payment_allowed: ['Stripe', 'PayPal', 'ATH Móvil'],
                         ath_movil_phone: HOST_PHONE,
                         villa_name: propertyTitles[id] || "Villa",
-                        guests: guests
+                        guests: guests,
+                        security_deposit: quote.security_deposit || 0
                     };
                 }
             };
