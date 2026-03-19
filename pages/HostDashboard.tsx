@@ -3891,46 +3891,6 @@ const HostDashboard: React.FC = () => {
     </div>
   );
 
-  const renderTeam = () => (
-    <div className="space-y-8 animate-slide-up pb-12">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12">
-        <div>
-          <h2 className="text-4xl font-serif font-black italic tracking-tighter text-text-main leading-tight mb-2">Equipe de Élite</h2>
-          <p className="text-[10px] font-bold text-text-light uppercase tracking-[0.3em]">Gestión de protocolos y colaboradores</p>
-        </div>
-        <button 
-          onClick={() => setActiveTab('help')}
-          className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-2xl hover:bg-gray-800 transition-all font-black text-[10px] uppercase tracking-widest group shadow-xl"
-        >
-          <HelpCircle className="w-4 h-4 text-primary group-hover:rotate-12 transition-transform" />
-          Ver Manual de Protocolo
-        </button>
-      </div>
-
-      <div className="space-y-12">
-        {properties.map(prop => (
-          <div key={prop.id} className="space-y-4">
-            <div className="flex items-center gap-3 px-4">
-              <div className="w-1.5 h-1.5 bg-primary rounded-full" />
-              <h3 className="font-serif font-bold text-xl tracking-tight">{prop.title}</h3>
-            </div>
-            <CohostManager 
-              propertyId={prop.id} 
-              propertyName={prop.title} 
-              onShowToast={showToast} 
-            />
-          </div>
-        ))}
-
-        {properties.length === 0 && (
-          <div className="py-20 text-center text-gray-400 font-serif italic flex flex-col items-center">
-            <span className="material-icons text-5xl opacity-30 mb-4">home_work</span>
-            No hay villas registradas para gestionar el equipo.
-          </div>
-        )}
-      </div>
-    </div>
-  );
   const renderHelp = () => (
     <div className="space-y-12 animate-slide-up pb-24 max-w-4xl mx-auto pt-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-sm print:hidden">
@@ -3940,10 +3900,10 @@ const HostDashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-4">
           <button 
-             onClick={() => setActiveTab('team')}
+             onClick={() => setActiveTab('menu')}
              className="px-6 py-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-black text-[10px] uppercase tracking-widest"
           >
-             Regresar al Equipo
+             Regresar al Panel
           </button>
           <button 
             onClick={() => window.print()}
@@ -4039,8 +3999,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'reviews' && renderReviews()}
         {activeTab === 'leads' && renderLeads()}
-        {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} />}
-        {activeTab === 'team' && renderTeam()}
+        {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} onGoToProtocol={() => setActiveTab('help')} />}
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'analytics' && (
           <AnalysisDashboard
@@ -4248,20 +4207,6 @@ const HostDashboard: React.FC = () => {
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Optimizar</span>
           </button>
 
-          <button
-            onClick={() => setActiveTab('team')}
-            className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'team' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
-          >
-            {activeTab === 'team' && (
-              <motion.div
-                layoutId="hostNavPill"
-                className="absolute inset-0 bg-white/10 rounded-xl"
-                transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-              />
-            )}
-            <Users strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'team' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Equipo</span>
-          </button>
 
           <button
             onClick={() => setActiveTab('menu')}

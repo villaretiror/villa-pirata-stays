@@ -26,7 +26,8 @@ import {
   AlertTriangle,
   Receipt,
   Search,
-  Check
+  Check,
+  BookOpen
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -35,6 +36,7 @@ type ModalType = 'none' | 'task' | 'cohost' | 'payouts' | 'alerts' | 'account';
 interface HostMenuProps {
   properties: Property[];
   onNavigate?: (view: any) => void;
+  onGoToProtocol?: () => void;
 }
 
 interface Task {
@@ -118,7 +120,7 @@ const ModalWrapper = ({ children, onClose, isOpen }: { children: React.ReactNode
   );
 };
 
-const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
+const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProtocol }) => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<ModalType>('none');
@@ -341,6 +343,17 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
     }
   };
 
+  const removeCohost = async (id: string, email: string) => {
+    if (!confirm(`¿Estás seguro de que deseas revocar el acceso a ${email}?`)) return;
+    const { error } = await supabase.from('property_cohosts').delete().eq('id', id);
+    if (!error) {
+      setCoHosts(coHosts.filter(c => c.id !== id));
+      alert("Acceso revocado 🗑️");
+    } else {
+      alert("Error al revocar acceso: " + error.message);
+    }
+  };
+
   const toggleTask = async (id: number, currentStatus: boolean) => {
     setTasks(tasks.map(t => t.id === id ? { ...t, done: !currentStatus } : t));
     await supabase.from('tasks').update({ done: !currentStatus }).eq('id', id);
@@ -506,6 +519,13 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
                     <Send className="w-3.5 h-3.5" />
                   </button>
                 )}
+                <button 
+                  onClick={() => removeCohost(host.id, host.email)}
+                  className="p-2 text-red-300 hover:text-red-500 opacity-0 group-hover/item:opacity-100 transition-all bg-white rounded-full shadow-sm border border-gray-100 active:scale-95"
+                  title="Revocar acceso"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
           ))
@@ -736,16 +756,21 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate }) => {
       </div>
 
       {/* Quick Settings Grid */}
-      <div className="grid grid-cols-2 gap-6">
+      <div className="grid items-start grid-cols-2 md:grid-cols-3 gap-6">
         {[
-          { id: 'cohost', icon: Users, label: 'Co-Anfitriones', color: 'purple' },
+          { id: 'cohost', icon: Users, label: 'Equipo', color: 'purple' },
           { id: 'payouts', icon: DollarSign, label: 'Pagos', color: 'blue' },
           { id: 'alerts', icon: Bell, label: 'Alertas', color: 'orange' },
+          { id: 'protocol', icon: BookOpen, label: 'Protocolo', color: 'green' },
           { id: 'exit', icon: Power, label: 'Salir', color: 'red' }
         ].map(btn => (
           <button
             key={btn.id}
-            onClick={() => btn.id === 'exit' ? (onNavigate && onNavigate('home')) : setActiveModal(btn.id as ModalType)}
+            onClick={() => {
+              if (btn.id === 'exit') return onNavigate && onNavigate('home');
+              if (btn.id === 'protocol') return onGoToProtocol && onGoToProtocol();
+              setActiveModal(btn.id as ModalType);
+            }}
             className={`bg-white p-8 rounded-[2.5rem] shadow-soft border border-gray-50 flex flex-col items-center gap-5 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden`}
           >
             <div className={`w-16 h-16 bg-${btn.color}-50 text-${btn.color}-600 rounded-full flex items-center justify-center group-hover:bg-${btn.color}-100 transition-colors`}>
