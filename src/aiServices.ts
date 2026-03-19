@@ -5,13 +5,12 @@ import type { Tables } from './supabase_types.js';
 
 type ProfileRow = Tables<'profiles'>;
 type GivenConcession = { date: string; type: string; discount: number };
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { generateText } from 'ai';
+import { GoogleGenAI } from '@google/genai';
 
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
+const ai = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || '',
 });
-const model = google('gemini-2.5-flash'); // ⚡ Gemini 2.5 Flash Stable (Mar 2026)
+const SALTY_MODEL = 'gemini-3-flash-preview'; // ⚡ Gemini 3 Flash (Mar 2026 - Oficial)
 
 /**
  * 👑 AI SERVICES LAYER - THE EXECUTIVE BRAIN
@@ -356,12 +355,12 @@ export const generateOnboardingDraft = async (
     Escribe solo el cuerpo del mensaje, sin asuntos ni firmas.
     `.trim();
     try {
-        const { text } = await generateText({
-            model,
-            prompt,
-            temperature: 0.4
+        const response = await ai.models.generateContent({
+            model: SALTY_MODEL,
+            contents: prompt,
+            config: { temperature: 0.4 }
         });
-        return text.trim();
+        return (response.text || '').trim();
     } catch (e) {
         console.error("Error generating draft:", e);
         return stage === 'mid_stay'

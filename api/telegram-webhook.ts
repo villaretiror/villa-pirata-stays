@@ -3,8 +3,7 @@ import { NotificationService } from '../src/services/NotificationService.js';
 import { supabase } from '../src/lib/supabase.js';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { generateText, CoreMessage } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { GoogleGenAI, Type } from '@google/genai';
 import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge.js';
 import { PROPERTIES } from '../src/constants.js';
 import { SECRETS_DATA } from '../src/constants/secrets_data.js';
@@ -20,9 +19,10 @@ export const config = {
     maxDuration: 30,
 };
 
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
+const ai = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
+const SALTY_MODEL = 'gemini-3-flash-preview';
 
 const memorySchema = z.object({
     learned_text: z.string().min(3),
@@ -198,107 +198,129 @@ Cuando hablas con los Dueños (Brian o Israel), dejas de ser un concierge de hot
             ? `\n\n[MEMORIAS CORPORATIVAS/FAMILIA]:\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
             : "";
 
-        const { text: responseText, toolCalls } = await generateText({
-            model: google('gemini-2.0-flash'),
-
-            system: `${VILLA_CONCIERGE_PROMPT}${memoryContext}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
-            prompt: `Mensaje de ${senderName}: ${text}`,
-            temperature: 0.7,
-            tools: {
-                remember_info: {
-                    description: 'Guarda información estratégica o familiar en la memoria de largo plazo.',
-                    parameters: z.object({
-                        key: z.string().describe('Identificador único (ej: family_dog_name)'),
-                        value: z.string().describe('Información a recordar'),
-                        category: z.enum(['identity', 'preferences', 'operations']).optional()
-                    }),
-                    execute: async ({ key, value, category }: { key: string; value: string; category?: 'identity' | 'preferences' | 'operations' }) => {
-                        const { error } = await supabaseServiceRole
-                            .from('salty_family_knowledge')
-                            .upsert({ key, value, category: category || 'general' });
-                        return error ? { error: error.message } : { success: true, learned: key };
+        const functionDeclarations: any[] = [
+            {
+                name: 'remember_info',
+                description: 'Guarda información estratégica o familiar en la memoria de largo plazo.',
+                parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                        key: { type: Type.STRING, description: 'Identificador único (ej: family_dog_name)' },
+                        value: { type: Type.STRING, description: 'Información a recordar' },
+                        category: { type: Type.STRING, enum: ['identity', 'preferences', 'operations'], description: 'Categoría opcional' }
+                    },
+                    required: ['key', 'value']
+                }
+            },
+            {
+                name: 'fetch_reservations',
+                description: 'Busca las reservas próximas o actuales.',
+                parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                        daysAhead: { type: Type.NUMBER, description: 'Días a futuro (default 7).' }
                     }
-                },
-                fetch_reservations: {
-                    description: 'Busca las reservas próximas o actuales.',
-                    parameters: z.object({
-                        daysAhead: z.number().optional().describe('Días a futuro (default 7).')
-                    }),
-                    execute: async ({ daysAhead = 7 }: { daysAhead?: number }) => {
-                        const today = new Date().toISOString().split('T')[0];
-                        const future = new Date();
-                        future.setDate(future.getDate() + daysAhead);
-                        const futureStr = future.toISOString().split('T')[0];
-
-                        const { data: bookings } = await supabaseServiceRole
-                            .from('bookings')
-                            .select('customer_name, check_in, check_out, source, property_id, total_price')
-                            .eq('status', 'confirmed')
-                            .gte('check_in', today)
-                            .lte('check_in', futureStr);
-
-                        return { 
-                            count: bookings?.length || 0,
-                            bookings: (bookings || []).map((b: any) => ({
-                                ...b,
-                                villa: b.property_id === '1081171030449673920' ? 'Villa Retiro R' : 'Pirata Family'
-                            }))
-                        };
-                    }
-                },
-                get_financial_stats: {
-                    description: 'Obtiene estadísticas de ingresos y ocupación del mes actual solo para los dueños.',
-                    parameters: z.object({
-                        month: z.number().optional().describe('Mes (1-12)'),
-                        year: z.number().optional().describe('Año')
-                    }),
-                    execute: async ({ month, year }: { month?: number, year?: number }) => {
-                        const now = new Date();
-                        const m = month || now.getMonth() + 1;
-                        const y = year || now.getFullYear();
-                        const start = new Date(y, m - 1, 1).toISOString().split('T')[0];
-                        const end = new Date(y, m, 0).toISOString().split('T')[0];
-
-                        const { data: bks } = await supabaseServiceRole
-                            .from('bookings')
-                            .select('total_price, property_id')
-                            .eq('status', 'confirmed')
-                            .gte('check_in', start)
-                            .lte('check_in', end);
-
-                        const total = bks?.reduce((acc, b) => acc + (Number(b.total_price) || 0), 0) || 0;
-                        return { month: m, year: y, totalRevenue: total, count: bks?.length || 0 };
-                    }
-                },
-                manage_availability: {
-                    description: 'Manejo táctico: cambiar precio por noche o bloquear fechas específicas.',
-                    parameters: z.object({
-                        villa: z.enum(['retiro', 'pirata']),
-                        type: z.enum(['set_price', 'block_dates']),
-                        value: z.any().describe('Precio (número) o Array de fechas YYYY-MM-DD')
-                    }),
-                    execute: async ({ villa, type, value }: { villa: 'retiro' | 'pirata', type: 'set_price' | 'block_dates', value: any }) => {
-                        const propertyId = villa === 'retiro' ? '1081171030449673920' : '42839458';
-                        if (type === 'set_price') {
-                            const { error } = await supabaseServiceRole.from('properties').update({ price: Number(value) }).eq('id', propertyId);
-                            return error ? { error: error.message } : { success: true };
-                        } else {
-                            const { data: p } = await supabaseServiceRole.from('properties').select('blockedDates').eq('id', propertyId).single();
-                            const updated = [...new Set([...(p?.blockedDates || []), ...value])];
-                            const { error } = await supabaseServiceRole.from('properties').update({ blockedDates: updated }).eq('id', propertyId);
-                            return error ? { error: error.message } : { success: true };
-                        }
+                }
+            },
+            {
+                name: 'get_financial_stats',
+                description: 'Obtiene estadísticas de ingresos y ocupación del mes actual solo para los dueños.',
+                parameters: {
+                    type: Type.OBJECT,
+                    properties: {
+                        monthOffset: { type: Type.NUMBER, description: 'Offset de mes (0 para actual, -1 para anterior).' }
                     }
                 }
             }
-        });
+        ];
 
-        await NotificationService.sendDirectTelegramMessage(chatId, responseText);
+        const toolExecutors: Record<string, Function> = {
+            remember_info: async ({ key, value, category }: any) => {
+                const { error } = await supabaseServiceRole
+                    .from('salty_family_knowledge')
+                    .upsert({ key, value, category: category || 'general' });
+                return { success: !error, error: error?.message };
+            },
+            fetch_reservations: async ({ daysAhead = 7 }: any) => {
+                const today = new Date().toISOString().split('T')[0];
+                const future = new Date();
+                future.setDate(future.getDate() + daysAhead);
+                const { data: b } = await supabaseServiceRole.from('bookings')
+                    .select('customer_name, check_in, check_out, source, property_id, total_price')
+                    .eq('status', 'confirmed').gte('check_in', today).lte('check_in', future.toISOString().split('T')[0]);
+                return { 
+                    count: b?.length || 0, 
+                    bookings: (b || []).map((bk: any) => ({
+                        ...bk,
+                        villa: bk.property_id === '1081171030449673920' ? 'Villa Retiro R' : 'Pirata Family'
+                    }))
+                };
+            },
+            get_financial_stats: async ({ monthOffset = 0 }: any) => {
+                if (!isOwner) return { error: "Acceso denegado. Solo dueños pueden ver finanzas." };
+                const now = new Date();
+                now.setMonth(now.getMonth() + monthOffset);
+                const start = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                const end = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().split('T')[0];
+                const { data: b } = await supabaseServiceRole.from('bookings').select('total_price').eq('status', 'confirmed').gte('check_in', start).lte('check_in', end);
+                const total = (b || []).reduce((acc: number, curr: any) => acc + (Number(curr.total_price) || 0), 0);
+                return { month: now.toLocaleString('es-ES', { month: 'long' }), total_income: total, count: b?.length || 0 };
+            }
+        };
+
+        const contents: any[] = [
+            { 
+                role: 'user', 
+                parts: [{ text: `INSTRUCCIÓN DE SISTEMA: ${VILLA_CONCIERGE_PROMPT}${memoryContext}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}\n\nMENSAJE DE ${senderName}: ${text}` }] 
+            }
+        ];
+
+        let finalResponseText = "";
+        let iterations = 0;
+
+        while (iterations < 5) {
+            const response = await ai.models.generateContent({
+                model: SALTY_MODEL,
+                contents,
+                config: { tools: [{ functionDeclarations }], temperature: 0.7 }
+            });
+
+            const candidate = response.candidates?.[0];
+            if (!candidate) break;
+
+            const contentPart = candidate.content;
+            contents.push(contentPart);
+
+            const calls = response.functionCalls || [];
+            if (calls.length === 0) {
+                finalResponseText = response.text || "";
+                break;
+            }
+
+            for (const call of calls) {
+                if (call.name) {
+                    const executor = toolExecutors[call.name];
+                    if (executor) {
+                        const result = await executor(call.args);
+                        contents.push({
+                            role: 'user',
+                            parts: [{ functionResponse: { name: call.name, response: { result }, id: call.id } }]
+                        });
+                    }
+                }
+            }
+            iterations++;
+        }
+
+        if (finalResponseText) {
+            await NotificationService.sendDirectTelegramMessage(chatId, finalResponseText);
+        }
     } catch (error: any) {
         console.error("[Telegram NLP] Error:", error.message);
         await NotificationService.sendDirectTelegramMessage(chatId, `⚠️ <b>Error de IA:</b> ${error.message}\n<i>Reintenta en un momento, jefe.</i>`);
     }
 }
+
 
 async function handleStatusCommand(chatId: string) {
     const today = new Date().toISOString().split('T')[0];

@@ -13,11 +13,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@ai-sdk/google": "^1.1.9",
+    "@google/genai": "^1.46.0",
     "@js-temporal/polyfill": "^0.5.1",
     "@paypal/react-paypal-js": "^9.0.1",
     "@supabase/supabase-js": "^2.39.3",
-    "ai": "^4.1.20",
     "canvas-confetti": "^1.9.4",
     "date-fns": "^3.6.0",
     "framer-motion": "^12.35.0",

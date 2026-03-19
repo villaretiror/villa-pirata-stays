@@ -1,10 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import { generateText } from 'ai';
-import { createGoogleGenerativeAI } from '@ai-sdk/google';
+import { GoogleGenAI } from '@google/genai';
 
-const google = createGoogleGenerativeAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY,
+const ai = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || '',
 });
+const SALTY_MODEL = 'gemini-3-flash-preview';
 
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
@@ -61,9 +61,11 @@ export default async function handler(req: any, res: any) {
         const html = await response.text();
 
         // 3. Use Gemini to Parse the HTML (Real Scrapping)
-        const { text: aiJson } = await generateText({
-            model: google('gemini-1.5-flash'),
-            system: `Eres un experto en extracción de datos estructurados de HTML de sitios de alquiler vacacional. 
+        const aiResponse = await ai.models.generateContent({
+            model: SALTY_MODEL,
+            contents: `Extrae la información relevante de este HTML de Airbnb:\n\n${html.slice(0, 50000)}`,
+            config: {
+                systemInstruction: `Eres un experto en extracción de datos estructurados de HTML de sitios de alquiler vacacional. 
             Tu misión es extraer la descripción y amenidades de la página de Airbnb proporcionada.
             Devuelve SIEMPRE un JSON puro con este formato:
             {
@@ -71,9 +73,10 @@ export default async function handler(req: any, res: any) {
                 "description": "string",
                 "amenities": ["string", "string"],
                 "house_rules": "string"
-            }`,
-            prompt: `Extrae la información relevante de este HTML de Airbnb:\n\n${html.slice(0, 50000)}` 
+            }`
+            }
         });
+        const aiJson = aiResponse.text || '';
 
         let external;
         try {
