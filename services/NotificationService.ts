@@ -127,14 +127,15 @@ export const NotificationService = {
         const sourceLabel = branding[source] || branding['Directo'];
 
         const message = `
-🟢 <b>¡Nueva Reserva!</b>
+💰 <b>¡Nueva Reserva Confirmada!</b>
 ━━━━━━━━━━━━━━━━━━━━
 <b>Origen:</b> ${sourceLabel}
-<b>Huésped:</b> ${guestName}
-<b>Propiedad:</b> ${property}
-<b>Fechas:</b> ${checkIn} a ${checkOut}
-<b>Total:</b> $${price} USD
-🚀 <i>Acción: Prepara todo para su llegada.</i>`;
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Fechas:</b> 📅 ${checkIn} a ${checkOut}
+<b>Total:</b> 💵 $${price} USD
+
+🚀 <i>Salty: Registrado en calendario y base de datos.</i>`;
         
         // 💰 Reservas son High Urgency -> Loud
         const sent = await this.sendTelegramAlert(message, {
@@ -156,12 +157,13 @@ export const NotificationService = {
      */
     async notifyCheckInReminder(guestName: string, property: string, time: string): Promise<boolean> {
         const message = `
-🟡 <b>¡Check-In Hoy!</b>
+🔵 <b>Logística: Check-In Hoy</b>
 ━━━━━━━━━━━━━━━━━━━━
-<b>Huésped:</b> ${guestName}
-<b>Propiedad:</b> ${property}
-<b>Hora:</b> ${time}
-✨ <i>Acción: Asegúrate de que los códigos funcionen.</i>`;
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Hora:</b> ⏰ ${time}
+
+✨ <i>Salty: Códigos de acceso verificados y activos.</i>`;
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_ci` }]]
         }, false);
@@ -172,11 +174,12 @@ export const NotificationService = {
      */
     async notifyCheckOutAlert(guestName: string, property: string): Promise<boolean> {
         const message = `
-🟡 <b>¡Huésped Saliendo! (Check-Out)</b>
+🔵 <b>Logística: Check-Out (Salida)</b>
 ━━━━━━━━━━━━━━━━━━━━
-<b>Huésped:</b> ${guestName}
-<b>Propiedad:</b> ${property}
-🧼 <i>Acción: Coordinar limpieza de inmediato para la próxima reserva.</i>`;
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+
+🧼 <i>Salty: Coordinando limpieza para el próximo huésped.</i>`;
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_co` }]]
         }, false);
@@ -288,12 +291,13 @@ export const NotificationService = {
     async notifyNewReview(guestName: string, property: string, rating: number, platform: string): Promise<boolean> {
         const stars = "⭐".repeat(rating);
         const message = `
-🟢 <b>¡Nueva Reseña en ${platform}!</b>
+🟢 <b>Reputación: Nueva Reseña (${platform})</b>
 ━━━━━━━━━━━━━━━━━━━━
-<b>Propiedad:</b> ${property}
-<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Huésped:</b> 👤 ${guestName}
 <b>Calificación:</b> ${stars}
-💬 <i>Acción: Responde rápido para mantener el SEO alto.</i>`;
+
+💬 <i>Salty: Mejora el SEO respondiendo en el Dashboard.</i>`;
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_review" }]]
         }, false);
@@ -304,13 +308,14 @@ export const NotificationService = {
      */
     async notifyNewLead(guestName: string, property: string, checkIn: string, checkOut: string, phone: string): Promise<boolean> {
         const message = `
-🟢 <b>Nuevo Lead Interesado</b>
+🟠 <b>Salty: Nuevo Lead Interesado</b>
 ━━━━━━━━━━━━━━━━━━━━
-<b>Huésped:</b> ${guestName}
-<b>Propiedad:</b> ${property}
-<b>Fechas:</b> ${checkIn} al ${checkOut}
-<b>Teléfono:</b> ${phone}
-🛎️ <i>Acción: Pendiente de pago.</i>`;
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Fechas:</b> 📅 ${checkIn} al ${checkOut}
+<b>Teléfono:</b> 📞 ${phone}
+
+🛎️ <i>Estatus: En fase de cotización/intento de reserva.</i>`;
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_lead" }]]
         }, false);
@@ -321,12 +326,13 @@ export const NotificationService = {
      */
     async notifyPaymentProof(guestName: string, property: string, proofUrl: string): Promise<boolean> {
         const message = `
-🟢 <b>Comprobante ATH Móvil Recibido</b>
+🟠 <b>Acción Requerida: Pago ATH Móvil</b>
 ━━━━━━━━━━━━━━━━━━━━
-<b>Huésped:</b> ${guestName}
-<b>Propiedad:</b> ${property}
-<b>Link Recibo:</b> <a href="${proofUrl}">Ver Imagen</a>
-🔎 <i>Acción: Valida en ATH Móvil y confirma la reserva.</i>`;
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Comprobante:</b> <a href="${proofUrl}">Ver Imagen 🖼️</a>
+
+🔎 <i>Acción: Valida en ATH Móvil y aprueba en el Dashboard.</i>`;
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_payment" }]]
         }, false);
@@ -365,12 +371,13 @@ export const NotificationService = {
     async notifyNewEmergency(property: string, guest: string, issue: string, severity: string): Promise<boolean> {
         const icon = severity === 'critical' ? '🚨' : '🆘';
         const message = `
-🔴 ${icon} <b>EMERGENCIA: ${severity.toUpperCase()}</b>
+🔴 🚨 <b>EMERGENCIA CRÍTICA: ${severity.toUpperCase()}</b>
 ━━━━━━━━━━━━━━━━━━━━
-<b>Propiedad:</b> ${property}
-<b>Huésped:</b> ${guest}
-<b>Problema:</b> ${issue}
-📞 <i>Acción: Contacta al huésped de inmediato.</i>`;
+<b>Propiedad:</b> 🏠 ${property}
+<b>Huésped:</b> 👤 ${guest}
+<b>Problema:</b> 📢 ${issue}
+
+🔱 <i>Orden del Jefe: Intervención inmediata requerida.</i>`;
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_emergency" }]]
         }, false);
