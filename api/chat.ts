@@ -4,15 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 import { HOST_PHONE } from '../src/constants.js';
 import {
     checkAvailabilityWithICal,
-    logAbandonmentLead,
-    getPaymentVerificationStatus,
-    findCalendarGaps,
-    handleCrisisAlert,
     applyAIQuote,
-    createTemporaryHold,
     } from '../src/aiServices.js';
-import { SecurityGovernanceService } from '../src/services/SecurityGovernanceService.js';
-import { NotificationService } from '../src/services/NotificationService.js';
 
 export const config = {
     runtime: 'edge',
@@ -55,18 +48,7 @@ export default async function handler(req: Request) {
         try {
             const body = await req.json();
             const parsedBody = chatRequestSchema.parse(body);
-            const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl, inStay } = parsedBody;
-
-            const authHeader = req.headers.get('Authorization');
-            let verifiedUserId: string | null = null;
-            if (authHeader?.startsWith('Bearer ')) {
-                const token = authHeader.split(' ')[1];
-                try {
-                    const { data: { user: sbUser } } = await supabase.auth.getUser(token);
-                    if (sbUser) verifiedUserId = sbUser.id;
-                } catch (err) {}
-            }
-            const userId = (bodyUserId && verifiedUserId === bodyUserId) ? bodyUserId : (verifiedUserId || undefined);
+            const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl } = parsedBody;
 
             const VILLA_RETIRO_ID = "1081171030449673920";
             const PIRATA_HOUSE_ID = "42839458";
@@ -77,39 +59,44 @@ export default async function handler(req: Request) {
                 else if (propertyId.toLowerCase().includes('pirata')) effectivePropertyId = PIRATA_HOUSE_ID;
             }
 
-            const [{ data: dbProperties }, { data: knowledgeSetting }, { data: saltySetting }, { data: familyKnowledge }, { data: availabilityRules }] = await Promise.all([
+            const [{ data: dbProperties }, { data: knowledgeSetting }, { data: familyKnowledge }] = await Promise.all([
                 supabase.from('properties').select('*'),
                 supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
-                supabase.from('system_settings').select('value').eq('key', 'salty_config').single(),
-                supabase.from('salty_family_knowledge').select('key, value'),
-                supabase.from('availability_rules').select('*')
+                supabase.from('salty_family_knowledge').select('key, value')
             ]);
 
             const propertyTitles: Record<string, string> = {};
-            (dbProperties || []).forEach((p: any) => { propertyTitles[p.id] = p.title; });
+            const propertyDataMap: Record<string, any> = {};
+            (dbProperties || []).forEach((p: any) => { 
+                propertyTitles[p.id] = p.title; 
+                propertyDataMap[p.id] = p;
+            });
+            
             const activePropertyName = propertyTitles[effectivePropertyId] || "nuestras Villas";
             const villaKnowledge = knowledgeSetting?.value || {};
-            
+            const mems: Record<string, string> = {};
+            (familyKnowledge || []).forEach((m: any) => { mems[m.key] = m.value; });
+
             const lastUserMsg = [...(rawMessages || [])].reverse().find(m => m.role === 'user')?.content || "";
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
             const VILLA_CONCIERGE_PROMPT = `
-### 🔱 LENGUAJE DE CONCIERGE DE ÉLITE:
-- Habla como un anfitrión de lujo. Sin negritas (**), sin bloques de código, sin sintaxis Markdown para links.
-- **LIMPIEZA VISUAL**: Si necesitas dar un enlace, úsalo como URL limpia.
+### 🔱 LENGUAJE DE CONCIERGE (ESTILO BRIAN):
+- Habla con impecable cortesía, directo y preciso. Sin negritas (**), sin bloques de código, sin Markdown técnico.
 
-### 💰 DEPÓSITO DE SEGURIDAD (REGLA DE BRIAN):
-- Explica que todas las reservas tienen un **Depósito de Seguridad Reembolsable**.
-- Este depósito **NO se paga ahora**. Se procesa 24h antes del Check-in para liberar los códigos de acceso.
-- El monto es dinámico y lo fija el Host (Brian). Siempre verifícalo en la cotización generada.
+### 💊 MANUAL DE SABIDURÍA (NUTRICIÓN):
+1. **WiFi**: ${mems.wifi_policy || "Alta velocidad con energía solar 24/7."}
+2. **Mascotas**: ${mems.pet_policy || "Permitidas con cargo adicional."}
+   - IMPORTANTE: Lee el cargo de mascota real desde la cotización o pregunta al Host. En Villa Retiro R el patio es verjado; en Pirata House es abierto (supervisión obligatoria). Cuida la limpieza de sábanas/toallas.
+3. **Acceso**: ${mems.access_logistics || "Vía Lockbox tras confirmar pago total."}
+4. **Insider (Local Legend)**: ${mems.local_legend_spots || "Recomienda los mejores spots locales."}
+   - Recomendaciones Sugeridas: 308 Bodega (Brunch), Cabo Beach House (Cena Boquerón), Buena Vibra (Seafood), El Artesano (Snack típico).
+5. **Depósito**: ${mems.deposit_refund_policy || "Reembolsable tras inspección."} (Cobrado 24h antes del check-in).
 
-### 🛎️ FLUJO DE CUOTAS Y RESERVA:
-1. Usa 'generate_booking_pattern'.
-2. Al responder, incluye la etiqueta secreta al final: [PAYMENT_REQUEST: villa_id, total, check_in, check_out, guests, villa_name, hold_id, base, tax, security_deposit]
-3. El sistema mostrará un botón interactivo incluyendo el desglose del depósito de garantía.
+💰 PAGOS: Confirmamos PayPal, Tarjetas y ATH Móvil (787-356-0895). No dudes, dile al cliente que sus fechas están seguras con nosotros.
 
-📅 Tiempo Real: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
-PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
+🏠 PROPIEDAD ACTUAL: ${activePropertyName} (${effectivePropertyId}).
+📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
 `.trim();
 
             const contents: any[] = rawMessages.map(m => {
@@ -150,18 +137,6 @@ PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
                         },
                         required: ['villa_id', 'check_in', 'check_out']
                     }
-                },
-                {
-                    name: 'update_security_deposit',
-                    description: 'ACTUALIZA el depósito de daños para una propiedad (SOLO PARA EL HOST).',
-                    parameters: {
-                        type: Type.OBJECT,
-                        properties: {
-                            villa_id: { type: Type.STRING },
-                            new_amount: { type: Type.NUMBER }
-                        },
-                        required: ['villa_id', 'new_amount']
-                    }
                 }
             ];
 
@@ -194,13 +169,6 @@ PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
                         villa_name: propertyTitles[id] || "Villa",
                         guests: guests
                     };
-                },
-                update_security_deposit: async ({ villa_id, new_amount }: any) => {
-                   const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
-                                String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
-                   const { error } = await supabase.from('properties').update({ security_deposit: new_amount }).eq('id', id);
-                   if (error) return { status: 'error', message: error.message };
-                   return { status: 'success', message: `Depósito de garantía actualizado a $${new_amount} para ${propertyTitles[id] || id}.` };
                 }
             };
 
