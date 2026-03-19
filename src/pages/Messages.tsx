@@ -428,7 +428,7 @@ const Messages: React.FC = () => {
         >
           <div className="relative">
             <div className="w-16 h-16 rounded-full overflow-hidden shadow-lg group-hover:scale-110 transition-transform duration-500 relative bg-white">
-              <img src="/images/salty-avatar.png" alt="Salty" className="w-full h-full object-cover" />
+              <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
             </div>
             <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
           </div>
@@ -451,7 +451,7 @@ const Messages: React.FC = () => {
           <button onClick={() => setActiveChatId(null)} className="material-icons text-text-main hover:bg-gray-100 p-2.5 rounded-full -ml-3 transition-colors">arrow_back_ios_new</button>
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-full overflow-hidden shadow-float relative border-2 border-white bg-white">
-              <img src="/images/salty-avatar.png" alt="Salty" className="w-full h-full object-cover" />
+              <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
               <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
             <div>
