@@ -41,13 +41,16 @@ export const CalendarSyncService = {
                     const blocks = this.parseIcsToBlocks(icsText, prop.id);
                     
                     // 2. Sync with Bookings table
-                    const imported = await this.syncBlocksWithDb(supabase, prop.id, prop.title, blocks, feed.platform);
-                    propImported += imported;
-                    totalImported += imported;
+                    const { inserted, deleted } = await this.syncBlocksWithDb(supabase, prop.id, prop.title, blocks, feed.platform);
+                    totalImported += inserted;
 
                     // Mark success in local array state
                     updatedFeeds[i] = { ...feed, syncStatus: 'success', lastSynced: new Date().toISOString() };
-                    results.push(`✅ ${prop.title} (${feed.platform}): Éxito (${imported} nuevos)`);
+                    
+                    let resultMsg = `✅ ${prop.title} (${feed.platform}): Sincronizado.`;
+                    if (inserted > 0) resultMsg += ` (+${inserted} nuevos)`;
+                    if (deleted > 0) resultMsg += ` (-${deleted} liberados)`;
+                    results.push(resultMsg);
 
                 } catch (err: any) {
                     console.error(`[CalendarSyncService] Error for ${prop.title} [${feed.platform}]:`, err.message);
@@ -94,21 +97,38 @@ export const CalendarSyncService = {
     },
 
     async syncBlocksWithDb(supabase: SupabaseClient, propertyId: string, propertyTitle: string, blocks: any[], platform: string) {
-        let newBlocksCount = 0;
+        let insertedCount = 0;
+        let deletedCount = 0;
 
-        // Fetch existing external blocks
+        // 1. Fetch current 'external_block' records for this property and platform
         const { data: existing } = await supabase
             .from('bookings')
-            .select('check_in, check_out')
+            .select('id, check_in, check_out')
             .eq('property_id', propertyId)
-            .eq('status', 'external_block');
+            .eq('status', 'external_block')
+            .eq('source', platform);
 
-        const existingSet = new Set((existing || []).map((b: any) => `${b.check_in}_${b.check_out}`));
+        const existingMap = new Map((existing || []).map((b: any) => [`${b.check_in}_${b.check_out}`, b.id]));
+        const incomingKeys = new Set(blocks.map(b => `${b.start}_${b.end}`));
 
+        // 2. Identify MISSING blocks (Cancellations in Airbnb/Booking)
+        const idsToDelete = (existing || [])
+            .filter((b: any) => !incomingKeys.has(`${b.check_in}_${b.check_out}`))
+            .map((b: any) => b.id);
+
+        if (idsToDelete.length > 0) {
+            const { error: delErr } = await supabase.from('bookings').delete().in('id', idsToDelete);
+            if (!delErr) {
+                deletedCount = idsToDelete.length;
+                console.log(`[CalendarSyncService] Freed ${deletedCount} cancelled dates for ${propertyTitle} [${platform}].`);
+            }
+        }
+
+        // 3. Identify NEW blocks (New reservations in Airbnb/Booking)
         const toInsert = [];
         for (const block of blocks) {
             const key = `${block.start}_${block.end}`;
-            if (!existingSet.has(key)) {
+            if (!existingMap.has(key)) {
                 toInsert.push({
                     property_id: propertyId,
                     status: 'external_block',
@@ -124,13 +144,13 @@ export const CalendarSyncService = {
         if (toInsert.length > 0) {
             const { data, error } = await supabase.from('bookings').insert(toInsert).select();
             if (!error && data) {
-                newBlocksCount = data.length;
+                insertedCount = data.length;
                 for (const b of data) {
                     await NotificationService.notifyNewReservation(b.id, 'Bloqueo Externo', propertyTitle, b.check_in, b.check_out, '0.00', platform);
                 }
             }
         }
 
-        return newBlocksCount;
+        return { inserted: insertedCount, deleted: deletedCount };
     }
 };

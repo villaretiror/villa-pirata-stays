@@ -164,22 +164,23 @@ async function handleAIConsultation(chatId: string, text: string, from: any) {
 
         const villaKnowledge = knowledgeSetting?.value || {};
         const saltyConfig: any = saltySetting?.value || {};
-
         const VILLA_CONCIERGE_PROMPT = `
-Eres "Salty", el alma vibrante y concierge ejecutivo de Villa & Pirata Stays en Cabo Rojo. 
+Eres "Salty", el alma vibrante de Villa & Pirata Stays. 
 
-### PERSONALIDAD & TONALIDAD
-${saltyConfig.personality || 'Caribbean Luxury Concierge. Sophisticated, warm, proactive.'}
+### EL CAMBIO DE PARADIGMA: GESTIÓN DE NIVEL JEFE
+Cuando hablas con los Dueños (Brian o Israel), dejas de ser un concierge de hotel y te conviertes en su **Chief of Staff (Jefe de Operaciones)**. 
 
-### REGLAS DE ETIQUETA
-${saltyConfig.rules?.map((r: string) => `- ${r}`).join('\n') || '- Tono: Sophisticated Caribbean.\n- Comienza con cortesía extrema.'}
+### TUS NUEVAS DIRECTRICES (SOLO PARA JEFES)
+- **Directo y Analítico**: No divagues. Si preguntan por dinero o estado, da números exactos.
+- **Proactividad Táctica**: Tienes permiso para usar herramientas de gestión de la propiedad.
+- **Lealtad Corporativa**: Tu misión es proteger el flujo de caja y la reputación de la marca.
+
+### PERSONALIDAD PARA JEFES
+Caribbean High-Performance. Eres el socio que todo lo sabe y todo lo resuelve en Cabo Rojo.
 
 ### RECURSOS DISPONIBLES
 - REGLAS/GESTIÓN: ${JSON.stringify(villaKnowledge)}
 - INVENTARIO ACTUAL: ${JSON.stringify(dbProperties)}
-
-### CONTEXTO INTERNO
-Hablas directamente con el Host (Brian o Israel) o su equipo técnico. Sé eficiente, informativo y mantén tu esencia profesional.
 `.trim();
 
         // 🧠 Cargar memorias privadas de la familia
@@ -188,7 +189,7 @@ Hablas directamente con el Host (Brian o Israel) o su equipo técnico. Sé efici
             .select('key, value');
         
         const memoryContext = familyKnowledge && familyKnowledge.length > 0
-            ? `\n\n[MEMORIAS DE LA FAMILIA]:\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
+            ? `\n\n[MEMORIAS CORPORATIVAS/FAMILIA]:\n${familyKnowledge.map(m => `- ${m.key}: ${m.value}`).join('\n')}`
             : "";
 
         const { text: responseText, toolCalls } = await generateText({
@@ -208,13 +209,13 @@ Hablas directamente con el Host (Brian o Israel) o su equipo técnico. Sé efici
                         const { error } = await supabaseServiceRole
                             .from('salty_family_knowledge')
                             .upsert({ key, value, category: category || 'general' });
-                        return error ? { error: error.message } : { success: true };
+                        return error ? { error: error.message } : { success: true, learned: key };
                     }
                 },
                 fetch_reservations: {
-                    description: 'Busca las reservas próximas o actuales para informar sobre quién llega y por qué plataforma.',
+                    description: 'Busca las reservas próximas o actuales.',
                     parameters: z.object({
-                        daysAhead: z.number().optional().describe('Número de días a futuro para buscar (default 7).')
+                        daysAhead: z.number().optional().describe('Días a futuro (default 7).')
                     }),
                     execute: async ({ daysAhead = 7 }: { daysAhead?: number }) => {
                         const today = new Date().toISOString().split('T')[0];
@@ -222,22 +223,64 @@ Hablas directamente con el Host (Brian o Israel) o su equipo técnico. Sé efici
                         future.setDate(future.getDate() + daysAhead);
                         const futureStr = future.toISOString().split('T')[0];
 
-                        const { data: bookings, error } = await supabaseServiceRole
+                        const { data: bookings } = await supabaseServiceRole
                             .from('bookings')
-                            .select('customer_name, check_in, check_out, source, property_id')
+                            .select('customer_name, check_in, check_out, source, property_id, total_price')
                             .eq('status', 'confirmed')
                             .gte('check_in', today)
                             .lte('check_in', futureStr);
 
-                        if (error) return { error: error.message };
+                        return { 
+                            count: bookings?.length || 0,
+                            bookings: (bookings || []).map((b: any) => ({
+                                ...b,
+                                villa: b.property_id === '1081171030449673920' ? 'Villa Retiro R' : 'Pirata Family'
+                            }))
+                        };
+                    }
+                },
+                get_financial_stats: {
+                    description: 'Obtiene estadísticas de ingresos y ocupación del mes actual solo para los dueños.',
+                    parameters: z.object({
+                        month: z.number().optional().describe('Mes (1-12)'),
+                        year: z.number().optional().describe('Año')
+                    }),
+                    execute: async ({ month, year }: { month?: number, year?: number }) => {
+                        const now = new Date();
+                        const m = month || now.getMonth() + 1;
+                        const y = year || now.getFullYear();
+                        const start = new Date(y, m - 1, 1).toISOString().split('T')[0];
+                        const end = new Date(y, m, 0).toISOString().split('T')[0];
 
-                        // Enriquecer con nombre de propiedad
-                        const bookingsNamed = (bookings || []).map((b: any) => ({
-                            ...b,
-                            villa: b.property_id === '1081171030449673920' ? 'Villa Retiro R' : 'Pirata Family'
-                        }));
+                        const { data: bks } = await supabaseServiceRole
+                            .from('bookings')
+                            .select('total_price, property_id')
+                            .eq('status', 'confirmed')
+                            .gte('check_in', start)
+                            .lte('check_in', end);
 
-                        return { bookings: bookingsNamed };
+                        const total = bks?.reduce((acc, b) => acc + (Number(b.total_price) || 0), 0) || 0;
+                        return { month: m, year: y, totalRevenue: total, count: bks?.length || 0 };
+                    }
+                },
+                manage_availability: {
+                    description: 'Manejo táctico: cambiar precio por noche o bloquear fechas específicas.',
+                    parameters: z.object({
+                        villa: z.enum(['retiro', 'pirata']),
+                        type: z.enum(['set_price', 'block_dates']),
+                        value: z.any().describe('Precio (número) o Array de fechas YYYY-MM-DD')
+                    }),
+                    execute: async ({ villa, type, value }: { villa: 'retiro' | 'pirata', type: 'set_price' | 'block_dates', value: any }) => {
+                        const propertyId = villa === 'retiro' ? '1081171030449673920' : '42839458';
+                        if (type === 'set_price') {
+                            const { error } = await supabaseServiceRole.from('properties').update({ price: Number(value) }).eq('id', propertyId);
+                            return error ? { error: error.message } : { success: true };
+                        } else {
+                            const { data: p } = await supabaseServiceRole.from('properties').select('blockedDates').eq('id', propertyId).single();
+                            const updated = [...new Set([...(p?.blockedDates || []), ...value])];
+                            const { error } = await supabaseServiceRole.from('properties').update({ blockedDates: updated }).eq('id', propertyId);
+                            return error ? { error: error.message } : { success: true };
+                        }
                     }
                 }
             }
