@@ -1,8 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { NotificationService } from '../services/NotificationService.js';
-import { CalendarSyncService } from '../services/CalendarSyncService.js';
+import { NotificationService } from '../src/services/NotificationService.js';
+import { CalendarSyncService } from '../src/services/CalendarSyncService.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';

@@ -2,7 +2,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { streamText, CoreMessage, tool } from 'ai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import { HOST_PHONE } from '../constants.js';
+import { HOST_PHONE } from '../src/constants.js';
 import {
     checkAvailabilityWithICal,
     logAbandonmentLead,
@@ -11,10 +11,10 @@ import {
     handleCrisisAlert,
     applyAIQuote,
     createTemporaryHold,
-    } from '../aiServices.js';
-import { SecurityGovernanceService } from '../services/SecurityGovernanceService.js';
-import { NotificationService } from '../services/NotificationService.js';
-import HOUSE_RULES from '../constants/house_rules.json' assert { type: 'json' };
+    } from '../src/aiServices.js';
+import { SecurityGovernanceService } from '../src/services/SecurityGovernanceService.js';
+import { NotificationService } from '../src/services/NotificationService.js';
+import HOUSE_RULES from '../src/constants/house_rules.json' assert { type: 'json' };
 
 export const config = {
     runtime: 'edge',
@@ -28,8 +28,9 @@ const supabase = createClient(
 const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
-const model = google('gemini-3-flash-preview', { // ⚡ ID Confirmado (Marzo 2026): Ultra-low latency Ops Mode
-    // ⚡ GROUNDING CAPABILITY: Habilita la búsqueda en Google para info en tiempo real
+
+// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 1.5 Flash Latest (Resilient Tool Calls)
+const model = google('gemini-1.5-flash-latest', { 
     structuredOutputs: true,
 });
 

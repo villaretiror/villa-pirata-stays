@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { BrowserRouter, useLocation } from 'react-router-dom';
 import App from './App';
 import { AuthProvider } from './contexts/AuthContext';
-import './src/index.css';
+import './index.css';
 import { PropertyProvider } from './contexts/PropertyContext';
 import { BookingProvider } from './contexts/BookingContext';
 

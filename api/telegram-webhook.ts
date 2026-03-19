@@ -1,19 +1,19 @@
 import { z } from 'zod';
-import { NotificationService } from '../services/NotificationService.js';
-import { supabase } from '../lib/supabase.js';
+import { NotificationService } from '../src/services/NotificationService.js';
+import { supabase } from '../src/lib/supabase.js';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { generateText, CoreMessage } from 'ai';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { VILLA_KNOWLEDGE } from '../constants/villa_knowledge.js';
-import { PROPERTIES } from '../constants.js';
-import { SECRETS_DATA } from '../constants/secrets_data.js';
+import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge.js';
+import { PROPERTIES } from '../src/constants.js';
+import { SECRETS_DATA } from '../src/constants/secrets_data.js';
 import {
     checkAvailabilityWithICal,
     findCalendarGaps,
     getPaymentVerificationStatus,
     handleCrisisAlert
-} from '../aiServices.js';
+} from '../src/aiServices.js';
 
 export const config = {
     // We remove the 'edge' runtime to use standard Node.js for better consistency with the chat engine
@@ -199,7 +199,7 @@ Cuando hablas con los Dueños (Brian o Israel), dejas de ser un concierge de hot
             : "";
 
         const { text: responseText, toolCalls } = await generateText({
-            model: google('gemini-2.5-flash'),
+            model: google('gemini-1.5-flash-latest'),
             system: `${VILLA_CONCIERGE_PROMPT}${memoryContext}\n\n[CONTEXTO DE AUTORIDAD]: ${authorityContext}`,
             prompt: `Mensaje de ${senderName}: ${text}`,
             temperature: 0.7,
