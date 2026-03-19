@@ -29,10 +29,12 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 2.5 Flash
-// Using the stable preview alias that Google's API accepts as of March 2026.
-// experimental_googleSearch REMOVED - it hijacks streamText output, causing empty responses.
-const model = google('gemini-2.5-flash-preview-04-17');
+// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 1.5 Flash
+// CONFIRMED WORKING with @ai-sdk/google@1.1.9 + streamText + tool calls.
+// - NO structuredOutputs (breaks streaming)
+// - NO experimental_googleSearch (hijacks stream, causes empty response)
+// - NO preview models (SDK v1.x cannot route them → External APIs: No outgoing requests)
+const model = google('gemini-1.5-flash');
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
 console.log(`🤖 [Salty 2.5 Engine]: Using Key starting with ${activeKey || 'NONE'}`);
