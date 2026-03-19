@@ -29,10 +29,10 @@ const google = createGoogleGenerativeAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 2.0 Flash
-// gemini-2.0-flash: Stable, fast, best tool calling + streaming combo.
-// NOTE: structuredOutputs REMOVED — it conflicts with streamText + tools.
-const model = google('gemini-2.0-flash');
+// ⚡ PRODUCTION MODEL (MAR 2026): Gemini 2.5 Flash
+// Using the stable preview alias that Google's API accepts as of March 2026.
+// experimental_googleSearch REMOVED - it hijacks streamText output, causing empty responses.
+const model = google('gemini-2.5-flash-preview-04-17');
 
 const activeKey = (process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "").substring(0, 10);
 console.log(`🤖 [Salty 2.5 Engine]: Using Key starting with ${activeKey || 'NONE'}`);
@@ -471,12 +471,9 @@ ${JSON.stringify(familyKnowledge, null, 2)}
         const result = await streamText({
             model: model, 
             messages: finalMessages,
-            maxSteps: 7, 
+            maxSteps: 5, 
             temperature: 0.75,
             tools: allTools,
-            // 🌐 CAPACIDAD: Búsqueda de Google (Grounding)
-            // @ts-ignore - Support for grounding in AI SDK v4
-            experimental_googleSearch: {}, 
             onFinish: async ({ text }) => {
                 if (sessionId) {
                     await supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'ai', text: text, intent: intentCategory });
