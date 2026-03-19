@@ -305,7 +305,15 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
         }
     }
 
-    return { basePrice, tax, discount, total: Number(total.toFixed(2)), nights, hasSeasonal };
+    return { 
+        basePrice, 
+        tax, 
+        discount, 
+        total: Number(total.toFixed(2)), 
+        nights, 
+        hasSeasonal, 
+        security_deposit: property.security_deposit || 0 
+    };
 };
 
 // 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)

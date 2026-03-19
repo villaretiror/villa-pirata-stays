@@ -94,23 +94,19 @@ export default async function handler(req: Request) {
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
             const VILLA_CONCIERGE_PROMPT = `
-### 🔱 LENGUAJE DE CONCIERGE DE ÉLITE (REGLA DE BRIAN):
-- Habla como un anfitrión de lujo en el Caribe. Cálido, elegante, impecable.
-- **PROHIBIDO**: No uses sintaxis técnica como asteriscos de negrita (**), bloques de código o sintaxis Markdown para links [texto](enlace).
-- **LIMPIEZA VISUAL**: Si necesitas dar un enlace, escríbelo como una URL limpia (https://...) o deja que el sistema inyecte el botón de pago.
+### 🔱 LENGUAJE DE CONCIERGE DE ÉLITE:
+- Habla como un anfitrión de lujo. Sin negritas (**), sin bloques de código, sin sintaxis Markdown para links.
+- **LIMPIEZA VISUAL**: Si necesitas dar un enlace, úsalo como URL limpia.
 
-### 💰 CERTEZA EN PAGOS:
-Confirmamos explícitamente que aceptamos:
-1. **Tarjeta de Crédito/Débito** (vía nuestro portal seguro).
-2. **PayPal** (integrado en el checkout).
-3. **ATH Móvil Business** al 787-356-0895 (Villa Retiro R LLC).
-Nada de "verificar si está habilitado". Di: "Tenemos PayPal y ATH Móvil listos para tu comodidad".
+### 💰 DEPÓSITO DE SEGURIDAD (REGLA DE BRIAN):
+- Explica que todas las reservas tienen un **Depósito de Seguridad Reembolsable**.
+- Este depósito **NO se paga ahora**. Se procesa 24h antes del Check-in para liberar los códigos de acceso.
+- El monto es dinámico y lo fija el Host (Brian). Siempre verifícalo en la cotización generada.
 
-### 🛎️ FLUJO DE RESERVA:
-Cuando el cliente quiera reservar:
-1. Usa el tool 'generate_booking_pattern'.
-2. Al responder, incluye la etiqueta secreta al final de tu mensaje: [PAYMENT_REQUEST: villa_id, total, check_in, check_out, guests, villa_name, null, base, tax] 
-3. El sistema convertirá esa etiqueta en un Botón de Pago interactivo. No crees botones manuales con Markdown.
+### 🛎️ FLUJO DE CUOTAS Y RESERVA:
+1. Usa 'generate_booking_pattern'.
+2. Al responder, incluye la etiqueta secreta al final: [PAYMENT_REQUEST: villa_id, total, check_in, check_out, guests, villa_name, hold_id, base, tax, security_deposit]
+3. El sistema mostrará un botón interactivo incluyendo el desglose del depósito de garantía.
 
 📅 Tiempo Real: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
 PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
@@ -150,9 +146,21 @@ PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
                             villa_id: { type: Type.STRING },
                             check_in: { type: Type.STRING },
                             check_out: { type: Type.STRING },
-                            guests: { type: Type.NUMBER, description: 'Número de huéspedes (opcional, default 2)' }
+                            guests: { type: Type.NUMBER }
                         },
                         required: ['villa_id', 'check_in', 'check_out']
+                    }
+                },
+                {
+                    name: 'update_security_deposit',
+                    description: 'ACTUALIZA el depósito de daños para una propiedad (SOLO PARA EL HOST).',
+                    parameters: {
+                        type: Type.OBJECT,
+                        properties: {
+                            villa_id: { type: Type.STRING },
+                            new_amount: { type: Type.NUMBER }
+                        },
+                        required: ['villa_id', 'new_amount']
                     }
                 }
             ];
@@ -186,6 +194,13 @@ PROPIEDAD: ${activePropertyName} (${effectivePropertyId}).
                         villa_name: propertyTitles[id] || "Villa",
                         guests: guests
                     };
+                },
+                update_security_deposit: async ({ villa_id, new_amount }: any) => {
+                   const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
+                                String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
+                   const { error } = await supabase.from('properties').update({ security_deposit: new_amount }).eq('id', id);
+                   if (error) return { status: 'error', message: error.message };
+                   return { status: 'success', message: `Depósito de garantía actualizado a $${new_amount} para ${propertyTitles[id] || id}.` };
                 }
             };
 

@@ -495,7 +495,8 @@ const Messages: React.FC = () => {
                 propertyName: rawData[5]?.trim() || 'Villa',
                 holdId: rawData[6]?.trim() || null,
                 basePrice: parseFloat(rawData[7]?.trim() || '0'),
-                tax: parseFloat(rawData[8]?.trim() || '0')
+                tax: parseFloat(rawData[8]?.trim() || '0'),
+                securityDeposit: parseFloat(rawData[9]?.trim() || '0')
               };
             } catch (e) {
               console.error("Payment parse error:", e);
@@ -593,24 +594,30 @@ const Messages: React.FC = () => {
                       </div>
 
                       {/* Pricing Section (image_0.png Loyalty) */}
-                      <div className="bg-black/5 p-5 rounded-3xl space-y-3">
-                         <div className="flex justify-between items-center text-xs">
-                            <span className="text-black/60 font-medium">Información del precio</span>
-                         </div>
-                         <div className="space-y-2">
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-bold text-black/80">Estancia de {Math.ceil((new Date(paymentData.checkOut).getTime() - new Date(paymentData.checkIn).getTime()) / (1000 * 60 * 60 * 24))} noches</span>
-                              <span className="text-xs font-bold text-black">${paymentData.basePrice || 0}</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span className="text-xs font-bold text-black/80">Impuestos (IVU 7%)</span>
-                              <span className="text-xs font-bold text-black">${paymentData.tax || 0}</span>
-                            </div>
-                         </div>
-                         <div className="pt-3 border-t border-black/10 flex justify-between items-center">
-                            <span className="text-sm font-black text-black">Total <span className="underline decoration-black/20 decoration-2">USD</span></span>
-                            <span className="text-xl font-black text-black tracking-tighter">${paymentData.total}</span>
-                         </div>
+                      <div className="bg-black/5 p-5 rounded-3xl space-y-4">
+                          <div className="space-y-2">
+                             <div className="flex justify-between items-center text-xs">
+                                <span className="text-black/60 font-medium">Estancia ({paymentData.checkIn} - {paymentData.checkOut})</span>
+                                <span className="text-black font-bold">${paymentData.basePrice}</span>
+                             </div>
+                             <div className="flex justify-between items-center text-xs">
+                                <span className="text-black/60 font-medium">Impuestos (IVU 7%)</span>
+                                <span className="text-black font-bold">${paymentData.tax}</span>
+                             </div>
+                             {paymentData.securityDeposit > 0 && (
+                               <div className="flex justify-between items-center text-xs pt-2 border-t border-black/5 mt-2">
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="material-icons text-[10px] text-green-600">shield</span>
+                                    <span className="text-black/60 font-bold uppercase tracking-widest text-[9px]">Depósito de Garantía (Reembolsable)</span>
+                                  </div>
+                                  <span className="text-green-600 font-bold">${paymentData.securityDeposit}</span>
+                               </div>
+                             )}
+                          </div>
+                          <div className="pt-3 border-t border-black/10 flex justify-between items-center">
+                             <span className="text-sm font-black text-black">Total <span className="underline decoration-black/20 decoration-2">USD</span></span>
+                             <span className="text-xl font-black text-black tracking-tighter">${paymentData.total}</span>
+                          </div>
                       </div>
 
                       {/* Dynamic Cancellation Policy */}
