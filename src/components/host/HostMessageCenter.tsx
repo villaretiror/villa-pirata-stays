@@ -82,53 +82,136 @@ interface HostMessageCenterProps {
 
 const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNavigate }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [threads, setThreads] = useState<Thread[]>(mockThreads);
-    const [activeThread, setActiveThread] = useState<Thread | null>(mockThreads[0]);
+    const [threads, setThreads] = useState<Thread[]>([]);
+    const [activeThread, setActiveThread] = useState<Thread | null>(null);
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputText, setInputText] = useState("");
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [isSaltyDrafting, setIsSaltyDrafting] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
-    const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (behavior: ScrollBehavior = "smooth") => {
+        messagesEndRef.current?.scrollIntoView({ behavior });
     };
 
+    // 1. Fetch Threads from vw_active_threads (SRE Phase 2 Optimized)
     useEffect(() => {
-        if (activeThread) {
-            fetchMessages(activeThread.id);
-        }
-    }, [activeThread]);
+        const fetchThreads = async () => {
+            const { data, error } = await supabase
+                .from('vw_active_threads' as any)
+                .select('*')
+                .limit(20);
 
-    const fetchMessages = async (threadId: string) => {
-        setLoading(true);
-        setTimeout(() => {
-            const mockChat: Message[] = [
-                { id: 1, text: "Hola, ¿podrían ayudarme con una duda?", sender: 'guest', created_at: new Date(Date.now() - 3600000).toISOString() },
-                { id: 2, text: "¡Hola! Claro que sí, dime cómo puedo ayudarte.", sender: 'host', created_at: new Date(Date.now() - 3500000).toISOString() },
-                { id: 3, text: activeThread?.lastMessage || "Perfecto, gracias.", sender: 'guest', created_at: new Date(Date.now() - 3400000).toISOString() }
-            ];
-            setMessages(mockChat);
-            scrollToBottom();
+            if (!error && data) {
+                // Map to Thread interface (Data comes already joined from view)
+                const mapped: Thread[] = (data as any[]).map(log => ({
+                    id: log.session_id,
+                    guestName: log.guest_name || `Interesado (${log.session_id.substring(0, 4)})`,
+                    source: 'Salty AI',
+                    lastMessage: `Corte de sesión: ${log.message_count} msgs`,
+                    timestamp: new Date(log.last_interaction).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    unread: log.last_sentiment === 'Urgente' ? 1 : 0,
+                    avatar: log.guest_avatar || `https://ui-avatars.com/api/?name=${log.session_id.substring(0, 2)}&background=random`,
+                    status: 'active',
+                    property: log.current_property || 'Web Visitor',
+                    propertyImage: log.current_property?.includes('Pirata') 
+                        ? 'https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/05f8a5b2-ef01-4470-a8f1-5f73fcba3301.jpeg?im_w=400'
+                        : 'https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/95730c30-f345-41de-bf0d-1d9562c775e4.jpeg?im_w=400',
+                    dates: 'Consultando...',
+                    paymentStatus: 'pending'
+                }));
+
+                setThreads([...mapped, ...mockThreads]);
+                if (mapped.length > 0 && !activeThread) setActiveThread(mapped[0]);
+                else if (!activeThread) setActiveThread(mockThreads[0]);
+            }
             setLoading(false);
-        }, 400);
-    };
+        };
+
+        fetchThreads();
+
+        // Realtime for Threads
+        const channel = supabase.channel('chat_logs_updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_logs' }, () => {
+                fetchThreads();
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, []);
+
+    // 2. Fetch Messages for Active Session
+    useEffect(() => {
+        if (!activeThread) return;
+
+        const fetchMessagesInternal = async () => {
+            setLoading(true);
+            const { data, error } = await supabase
+                .from('ai_chat_logs')
+                .select('*')
+                .eq('session_id', activeThread.id)
+                .order('created_at', { ascending: true });
+
+            if (!error && data) {
+                setMessages(data);
+                setTimeout(() => scrollToBottom("auto"), 100);
+            } else if (activeThread.id === '1' || activeThread.id === '2' || activeThread.id === '3') {
+                // Mock fallback original
+                const mockEntries: Message[] = [
+                    { id: 1, text: "Hola, ¿podrían ayudarme con una duda?", sender: 'guest', created_at: new Date(Date.now() - 3600000).toISOString() },
+                    { id: 2, text: "¡Hola! Claro que sí, dime cómo puedo ayudarte.", sender: 'host', created_at: new Date(Date.now() - 3500000).toISOString() },
+                    { id: 3, text: activeThread?.lastMessage || "Perfecto, gracias.", sender: 'guest', created_at: new Date(Date.now() - 3400000).toISOString() }
+                ];
+                setMessages(mockEntries);
+            } else {
+                setMessages([]);
+            }
+            setLoading(false);
+        };
+
+        fetchMessagesInternal();
+
+        // Realtime for Messages
+        const channel = supabase.channel(`messages_${activeThread.id}`)
+            .on('postgres_changes', { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'ai_chat_logs',
+                filter: `session_id=eq.${activeThread.id}`
+            }, (payload: any) => {
+                setMessages(prev => [...prev, payload.new as Message]);
+                setTimeout(() => scrollToBottom(), 100);
+            })
+            .subscribe();
+
+        return () => { supabase.removeChannel(channel); };
+    }, [activeThread?.id]);
 
     const handleSendMessage = async (e?: React.FormEvent) => {
         e?.preventDefault();
         if (!inputText.trim() || !activeThread) return;
 
-        const newMsg: Message = {
-            id: Date.now(),
-            text: inputText,
-            sender: 'host',
-            created_at: new Date().toISOString()
-        };
-
-        setMessages(prev => [...prev, newMsg]);
+        const text = inputText;
         setInputText("");
-        setTimeout(scrollToBottom, 100);
-        setThreads(prev => prev.map(t => t.id === activeThread.id ? { ...t, lastMessage: newMsg.text, timestamp: 'Ahora' } : t));
+
+        // 1. Insert into ai_chat_logs
+        const { error } = await supabase.from('ai_chat_logs').insert({
+            session_id: activeThread.id,
+            text: text,
+            sender: 'host',
+            intent: 'Human Response'
+        });
+
+        // 2. Trigger Human Takeover (Habilitar para evitar que Salty responda encima)
+        await supabase.from('chat_logs').update({
+            human_takeover_until: new Date(Date.now() + 30 * 60000).toISOString(), // 30 min takeover
+            last_interaction: new Date().toISOString()
+        }).eq('session_id', activeThread.id);
+
+        if (error) {
+            console.error("Error al enviar mensaje:", error);
+            alert("No se pudo enviar el mensaje a la nube.");
+        }
     };
 
     const generateSaltyDraft = () => {

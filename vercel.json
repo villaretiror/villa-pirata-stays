@@ -2,9 +2,18 @@
     "cleanUrls": false,
     "trailingSlash": false,
     "functions": {
-        "api/**/*.ts": {
+        "api/chat.ts": {
+            "runtime": "nodejs",
             "memory": 1024,
             "maxDuration": 60
+        },
+        "api/health-check.ts": {
+            "runtime": "edge",
+            "memory": 256
+        },
+        "api/**/*.ts": {
+            "memory": 512,
+            "maxDuration": 30
         }
     },
 
@@ -13,12 +22,21 @@
             "source": "/api/chat",
             "headers": [
                 {
-                    "key": "x-vercel-rate-limit",
-                    "value": "20"
+                    "key": "x-vercel-cache",
+                    "value": "BYPASS"
                 },
                 {
-                    "key": "x-vercel-rate-limit-header",
-                    "value": "x-ratelimit-limit"
+                    "key": "x-salty-sre-status",
+                    "value": "Pooler-Optimized"
+                }
+            ]
+        },
+        {
+            "source": "/api/health-check",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "s-maxage=60, stale-while-revalidate"
                 }
             ]
         },
