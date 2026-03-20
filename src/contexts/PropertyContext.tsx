@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Property, LocalGuideCategory, SiteContent, VillaKnowledge } from '../types';
 import { INITIAL_LOCAL_GUIDE, DEFAULT_SITE_CONTENT, DEFAULT_VILLA_KNOWLEDGE, PROPERTIES } from '../constants';
 import { supabase, isConfigured } from '../lib/supabase';
+import { mapSupabaseProperty } from '../utils/mappers';
 import { Database } from '../supabase_types';
 
 type PropertyRow = Database['public']['Tables']['properties']['Row'];
@@ -117,57 +118,9 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const { data: { user } } = await supabase.auth.getUser();
         const isAdmin = user?.email === 'villaretiror@gmail.com';
 
-        const mapped: Property[] = (propData as PropertyRow[]).map(p => {
-          const rawPolicies: any = p.policies;
-          const policies = {
-            checkInTime: rawPolicies?.checkInTime || '15:00',
-            checkOutTime: rawPolicies?.checkOutTime || '11:00',
-            guests: Number(rawPolicies?.guests || p.guests) || 1,
-            wifiName: rawPolicies?.wifiName || (p as any).wifi_name || '',
-            // 🛡️ SENSITIVE DATA STRIPING: Mask credentials for non-admin sessions
-            wifiPass: isAdmin ? (rawPolicies?.wifiPass || (p as any).wifi_pass || 'N/A') : '********',
-            accessCode: isAdmin ? (rawPolicies?.accessCode || (p as any).access_code || 'N/A') : 'CONFIDENCIAL',
-            cancellationPolicy: rawPolicies?.cancellationPolicy,
-            houseRules: p.house_rules || rawPolicies?.houseRules || []
-          };
-
-          return {
-            ...p,
-            id: String(p.id),
-            title: p.title || 'Propiedad sin título',
-            subtitle: p.subtitle || '',
-            location: p.location || '',
-            address: p.address || '',
-            description: p.description || '',
-            price: Number(p.price) || 0,
-            tax_rate: (p as any).tax_rate != null ? Number((p as any).tax_rate) : 7,
-            original_price: p.original_price != null ? Number(p.original_price) : null,
-            cleaning_fee: Number(p.cleaning_fee) || 0,
-            service_fee: Number(p.service_fee) || 0,
-            security_deposit: Number(p.security_deposit) || 0,
-            rating: Number(p.rating) || 0,
-            reviews_count: Number(p.reviews || (p as any).reviews_count) || 0,
-            images: p.images || [],
-            amenities: p.amenities || [],
-            featuredAmenity: (p as any).featuredAmenity,
-            category: (p as any).category,
-            guests: Number(p.guests) || 1,
-            bedrooms: Number(p.bedrooms) || 0,
-            beds: Number(p.beds) || 0,
-            baths: Number(p.baths) || 0,
-            fees: (p.fees as any) || {},
-            policies: policies,
-            blockedDates: p.blockeddates || [],
-            calendarSync: (p.calendarSync as any[]) || [],
-            seasonal_prices: (p.seasonal_prices as any[]) || [],
-            isOffline: p.is_offline || false,
-            min_price_floor: Number(p.min_price_floor) || 0,
-            max_discount_allowed: Number(p.max_discount_allowed) || 15,
-            offers: (p as any).offers || [],
-            reviews_list: (p as any).reviews_list || [],
-            host: (p as any).host || { name: 'Anfitrión', image: '', badges: [], yearsHosting: 0 }
-          } as Property;
-        });
+        const mapped: Property[] = (propData as PropertyRow[]).map(p => 
+          mapSupabaseProperty(p, undefined, { isAdmin })
+        );
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
 
         // C. Fetch Global System Settings
