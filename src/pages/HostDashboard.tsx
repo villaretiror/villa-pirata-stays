@@ -1015,60 +1015,41 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
           </div>
         ))}
       </div>
-                    <UserIcon className="w-3 h-3" /> Huésped
-                  </p>
-                  <p className="text-xs md:text-sm font-bold text-text-main truncate">{booking.profiles?.full_name}</p>
-                </div>
-                <div className="bg-gray-50/50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-soft-sm">
-                  <p className="text-[8px] md:text-[9px] font-bold uppercase text-gray-400 mb-2 tracking-widest flex items-center gap-2">
-                    <DollarSign className="w-3 h-3" /> Pago
-                  </p>
-                  <p className="text-lg md:text-xl font-serif font-black italic text-secondary tracking-tighter">${booking.total_price}</p>
-                </div>
-              </div>
+    </div>
+  );
+};
 
-              <div className="bg-gray-50 p-5 md:p-6 rounded-[2rem] md:rounded-[2.5rem] border border-gray-100 flex items-center gap-4 md:gap-6 group">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-[1.2rem] md:rounded-[1.5rem] overflow-hidden shadow-soft group-hover:scale-105 transition-transform duration-500 shrink-0">
-                  <img src={booking.properties?.images?.[0]} className="w-full h-full object-cover" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[8px] md:text-[9px] font-bold uppercase text-gray-400 tracking-widest mb-1 flex items-center gap-2">
-                    <Home className="w-3 h-3" /> Propiedad
-                  </p>
-                  <p className="text-xs md:text-sm font-bold text-text-main group-hover:text-primary transition-colors truncate">{booking.properties?.title}</p>
-                </div>
-              </div>
-
-              <div className="bg-blue-50/50 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-blue-100 flex items-start gap-4 md:gap-5">
-                <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm text-blue-500 shrink-0 border border-blue-50">
-                  <Info className="w-5 h-5" />
-                </div>
-                <div>
-                  <h4 className="text-[9px] font-bold uppercase text-blue-900 tracking-widest mb-1">Tips de Seguridad</h4>
-                  <p className="text-[10px] text-blue-700/80 font-medium leading-relaxed">
-                    Valida que el nombre y monto coincidan. Al confirmar, se liberarán las fechas automáticamente.
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-4 mt-8 md:mt-12 pb-6 md:pb-0">
-            <button
-              onClick={() => onReject(booking.id)}
-              className="flex-1 border border-red-200 text-red-500 py-4 md:py-5 rounded-[1.5rem] md:rounded-[2rem] font-bold text-[10px] md:text-[11px] uppercase tracking-[0.2em] hover:bg-red-50 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" /> Rechazar
-            </button>
-            <button
-              onClick={() => onApprove(booking.id)}
-              className="flex-[2] bg-black text-white py-4 md:py-5 rounded-[1.5rem] md:rounded-[2rem] font-bold text-[10px] md:text-[11px] uppercase tracking-[0.3em] hover:bg-gray-800 shadow-2xl transition-all active:scale-95 flex items-center justify-center gap-3"
-            >
-              <CheckCircle2 className="w-4 h-4 text-green-400" /> APROBAR PAGO
-            </button>
-          </div>
+const SmartValidationModal = ({ data, onConfirm, onClose }: { data: any, onConfirm: (d: any) => void, onClose: () => void }) => {
+  if (!data) return null;
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-[110] flex items-center justify-center p-4 animate-fade-in">
+      <div className="bg-white w-full max-w-lg rounded-[2.5rem] p-8 shadow-2xl animate-scale-up border border-gray-100/50">
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-2xl font-serif font-bold text-text-main leading-tight">Membresía Elite 🔱</h3>
+          <button onClick={() => onClose()} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <span className="material-icons">close</span>
+          </button>
         </div>
-      </motion.div>
+
+        <div className="bg-sand/10 p-6 rounded-2xl border border-orange-100/30 mb-6 font-medium text-xs text-text-main leading-relaxed max-h-[40vh] overflow-y-auto">
+          <pre className="whitespace-pre-wrap font-mono uppercase tracking-tighter">{JSON.stringify(data, null, 2)}</pre>
+        </div>
+
+        <div className="flex gap-4">
+          <button
+            onClick={() => onClose()}
+            className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-gray-500 hover:bg-gray-100 rounded-2xl transition-all"
+          >
+            Descartar
+          </button>
+          <button
+            onClick={() => onConfirm(data)}
+            className="flex-[2] py-4 text-xs font-black uppercase tracking-widest text-white bg-primary rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-98"
+          >
+            Confirmar e Importar 🔱
+          </button>
+        </div>
+      </div>
     </div>
   );
 };
