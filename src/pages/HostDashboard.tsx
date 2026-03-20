@@ -2081,7 +2081,7 @@ const HostDashboard: React.FC = () => {
             onClick={() => setActiveTab('availability')}
             className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95 group"
           >
-            <Download strokeWidth={2} className="w-3.5 h-3.5 text-[#FF7F3F] group-hover:scale-110 transition-transform" /> Sincronizar Calendarios
+            <RefreshCcw strokeWidth={2} className="w-3.5 h-3.5 text-[#FF7F3F] group-hover:scale-110 transition-transform" /> Gestionar Calendarios
           </button>
           <button className="bg-black text-white rounded-full p-3 w-12 h-12 flex items-center justify-center shadow-xl active:scale-90 transition-all hover:bg-primary">
             <Plus strokeWidth={2} className="w-6 h-6" />
@@ -2568,7 +2568,7 @@ const HostDashboard: React.FC = () => {
               <motion.div layoutId="hostNavPill" className="absolute inset-0 bg-white/10 rounded-xl" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
             )}
             <Calendar strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'availability' ? 'scale-110' : ''}`} />
-            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Reglas</span>
+            <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Calendario</span>
           </button>
 
           <button
