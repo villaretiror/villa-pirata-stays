@@ -44,8 +44,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
     return (
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
         {property.rating >= 4.9 && (
-          <div className="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl text-[10px] font-black uppercase tracking-widest text-text-main shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in">
-            <Flame size={12} className="text-primary fill-primary" />
+          <div className="bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-text-main shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
+            <Flame size={10} className="text-primary fill-primary" />
             Popular
           </div>
         )}
@@ -73,8 +73,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           )}
         </AnimatePresence>
 
-        <div className="bg-black/40 backdrop-blur-md px-3 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] text-white shadow-lg flex items-center gap-1.5 border border-white/10 animate-fade-in">
-          <Eye size={12} className="text-primary animate-pulse" />
+        <div className="bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-[0.15em] text-white shadow-lg flex items-center gap-1.5 border border-white/10 animate-fade-in opacity-60 group-hover:opacity-100 transition-opacity">
+          <Eye size={10} className="text-primary animate-pulse" />
           {viewers} Viendo ahora
         </div>
       </div>
@@ -210,7 +210,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({ property, onClick, index, i
           </div>
 
           <div className="text-right">
-            <span className="block text-[10px] font-black text-red-400/80 line-through decoration-red-400/40 mb-1">
+            <span className="block text-[10px] font-black text-red-500 line-through decoration-red-500/60 mb-1 drop-shadow-sm">
               ${property.original_price && property.original_price > property.price ? property.original_price : Math.round(property.price * 1.15)}
             </span>
             <div className="flex items-baseline gap-1.5 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 shadow-inner">

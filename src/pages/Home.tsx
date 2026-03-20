@@ -25,6 +25,7 @@ import {
   Mail,
   ChevronRight,
   CheckCircle2,
+  Star,
   Map as MapIcon
 } from 'lucide-react';
 import MapModal from '../components/MapModal';
@@ -463,15 +464,19 @@ const Home: React.FC = () => {
               <span className="text-primary italic">{siteContent?.cta.subtitle || "Todo lo que amas de Cabo Rojo a menos de 20 minutos."}</span>
             </h3>
             <p className="text-xs text-text-light mb-4 max-w-md">{siteContent?.cta.description || "Nuestras propiedades están ubicadas estratégicamente cerca de Boquerón, las mejores playas y restaurantes del suroeste."}</p>
-            <div className="flex gap-3 flex-wrap">
+            <div className="flex gap-4 flex-wrap">
               <a href="https://share.google/LBxZV0NwKZps4rliR" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
-                <HomeIcon size={14} className="text-primary" />
+                className="group/google flex items-center gap-3 bg-white/80 backdrop-blur-xl text-text-main px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-float hover:shadow-primary/20 hover:scale-105 active:scale-95 transition-all border border-white/50">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover/google:bg-primary/20 transition-colors">
+                  <Star size={14} className="text-primary fill-primary" />
+                </div>
                 Villa Retiro R en Google
               </a>
               <a href="https://share.google/iQA2MMS4C2Vv7HBIx" target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 bg-white text-text-main px-4 py-2.5 rounded-xl text-xs font-bold shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all border border-gray-100">
-                <HomeIcon size={14} className="text-secondary" />
+                className="group/google flex items-center gap-3 bg-white/80 backdrop-blur-xl text-text-main px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-float hover:shadow-secondary/20 hover:scale-105 active:scale-95 transition-all border border-white/50">
+                <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center group-hover/google:bg-secondary/20 transition-colors">
+                  <Star size={14} className="text-secondary fill-secondary" />
+                </div>
                 Pirata Family en Google
               </a>
             </div>

@@ -20,7 +20,7 @@ const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ propertyTitle }) =>
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-24 right-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-float hover:scale-110 transition-transform duration-300 flex items-center justify-center group"
+      className="fixed bottom-24 left-6 z-50 bg-[#25D366] text-white p-4 rounded-full shadow-float hover:scale-110 transition-transform duration-300 flex items-center justify-center group"
       aria-label="Contactar por WhatsApp"
     >
       <svg

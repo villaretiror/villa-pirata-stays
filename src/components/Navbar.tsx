@@ -28,10 +28,10 @@ const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, i
     <Link
       to={path}
       onClick={onClick}
-      className="group relative flex flex-col items-center justify-center gap-1 w-16 transition-all active:scale-95"
+      className="group relative flex flex-col items-center justify-center gap-1 w-[72px] transition-all active:scale-95"
     >
       <div className={`
-        relative flex items-center justify-center w-12 h-8 rounded-full z-10 transition-all duration-300
+        relative flex items-center justify-center w-12 h-9 rounded-full z-10 transition-all duration-300
         ${isActive && !isAvatar
           ? 'text-primary'
           : 'text-gray-400 group-hover:text-gray-600'
@@ -54,7 +54,7 @@ const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, i
         )}
       </div>
       <span className={`
-        text-[8px] font-medium uppercase tracking-[0.2em] transition-colors duration-300 truncate w-full text-center px-1
+        text-[7px] font-black uppercase tracking-[0.25em] transition-colors duration-300 w-full text-center px-0.5
         ${isActive ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}
       `}>
         {label}
