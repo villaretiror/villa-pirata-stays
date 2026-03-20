@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Property } from '../../../types';
 import { supabase } from '../../../lib/supabase';
-import { showToast } from '../../../pages/HostDashboard';
+import { showToast } from '../../../utils/toast';
 
 interface PhotoSectionProps {
   form: Property;

@@ -33,7 +33,7 @@ type TaskRow = Tables<'operation_tasks'>;
 
 // Joined types for nested queries
 type BookingWithDetails = BookingRow & {
-  profiles: { full_name: string | null; avatar_url: string | null; phone: string | null; email?: string | null; tags: string[] | null } | null;
+  profiles: { full_name: string | null; avatar: string | null; phone: string | null; email?: string | null; tags: string[] | null } | null;
   properties: { title: string; images: string[] | null; policies?: any } | null;
 };
 
@@ -108,13 +108,13 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
   const saveReview = () => {
     if (!newReview.author || !newReview.text) return;
     const review: Review = {
-      id: Date.now().toString(),
+      id: Math.random().toString(36).substr(2, 9),
       author: newReview.author,
       text: newReview.text,
       rating: newReview.rating || 5,
       date: newReview.date || 'Reciente',
       source: (newReview.source as 'Airbnb' | 'Booking.com' | 'Google') || 'Airbnb',
-      avatar: `https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 60)}`
+       avatar: `https://ui-avatars.com/api/?name=${newReview.author}&background=random`
     };
     onAddReview(property.id, review);
     setIsAdding(false);
@@ -274,8 +274,6 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId, onFilterChange }: { bookings: BookingRow[], expenses: ExpenseRow[], properties: Property[], selectedPropertyId: string, onFilterChange: (id: string) => void }) => {
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross');
   const [showOrigin, setShowOrigin] = useState(false);
-  const [newExpense, setNewExpense] = useState({ amount: '', category: 'Limpieza', description: '' });
-  const [isAddingExpense, setIsAddingExpense] = useState(false);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const creationDate = selectedProperty?.created_at ? new Date(selectedProperty.created_at) : null;
@@ -291,43 +289,35 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
   );
 
   const stats = useMemo(() => {
-    const data = [];
-    const now = new Date();
-    for (let i = 3; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const month = d.getMonth();
-      const year = d.getFullYear();
-      const monthStr = d.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
+    const data: any[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date();
+      date.setMonth(date.getMonth() - i);
+      const month = date.getMonth();
+      const year = date.getFullYear();
+      const monthStr = date.toLocaleString('es-ES', { month: 'short' }).toUpperCase();
 
-      const monBookings = filteredBookings.filter(b => {
-        if (!b.check_in) return false;
-        const checkIn = new Date(b.check_in);
-        return checkIn.getMonth() === month && checkIn.getFullYear() === year && (b.status === 'confirmed' || b.status === 'completed');
+      const monBookings = filteredBookings.filter((b: any) => {
+        const bDate = new Date(b.check_in);
+        return bDate.getMonth() === month && bDate.getFullYear() === year;
       });
 
-      const monExpenses = filteredExpenses.filter(e => {
-        if (!e.created_at) return false;
-        const createdAt = new Date(e.created_at);
-        return createdAt.getMonth() === month && createdAt.getFullYear() === year;
-      });
+      const income = monBookings.reduce((sum: number, b: any) => sum + (Number(b.total_price) || 0), 0);
+      const expense = filteredExpenses
+        .filter((e: any) => {
+          const eDate = new Date(e.created_at);
+          return eDate.getMonth() === month && eDate.getFullYear() === year;
+        })
+        .reduce((sum: number, e: any) => sum + (Number(e.amount) || 0), 0);
 
       const webIncome = monBookings
-        .filter(b => !b.source?.toLowerCase().includes('airbnb') && !b.source?.toLowerCase().includes('ota'))
-        .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
+        .filter((b: any) => !b.source?.toLowerCase().includes('airbnb') && !b.source?.toLowerCase().includes('ota'))
+        .reduce((sum: number, b: any) => sum + (Number(b.total_price) || 0), 0);
 
-      const otaIncome = monBookings
-        .filter(b => b.source?.toLowerCase().includes('airbnb') || b.source?.toLowerCase().includes('ota'))
-        .reduce((sum, b) => sum + (Number(b.total_price) || 0), 0);
-
-      const adjustedWeb = viewMode === 'net' ? webIncome * 0.97 : webIncome;
-      const adjustedOTA = viewMode === 'net' ? otaIncome * 0.85 : otaIncome;
-
-      const income = adjustedWeb + adjustedOTA;
-      const expense = monExpenses.reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+      const otaIncome = income - webIncome;
 
       const totalDaysInMonth = new Date(year, month + 1, 0).getDate();
       let availableDays = totalDaysInMonth;
-
       if (creationDate) {
         const cMonth = creationDate.getMonth();
         const cYear = creationDate.getFullYear();
@@ -338,7 +328,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         }
       }
 
-      const bookedDays = monBookings.reduce((sum, b) => {
+      const bookedDays = monBookings.reduce((sum: number, b: any) => {
         if (!b.check_in || !b.check_out) return sum;
         const start = new Date(b.check_in);
         const end = new Date(b.check_out);
@@ -350,61 +340,25 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
       data.push({
         name: monthStr,
         Total: income,
-        Web: adjustedWeb,
-        OTA: adjustedOTA,
+        Web: webIncome,
+        OTA: otaIncome,
         Gastos: expense,
         Profit: income - expense,
-        Ocupación: occupancy,
-        ProfitDiario: availableDays > 0 ? Math.round((income - expense) / availableDays) : 0
+        Ocupación: occupancy
       });
     }
     return data;
-  }, [filteredBookings, filteredExpenses, creationDate, viewMode]);
+  }, [filteredBookings, filteredExpenses, creationDate, selectedPropertyId]);
 
-  const currentMonthData = stats[stats.length - 1];
-  const margin = currentMonthData.Total > 0
-    ? Math.round((currentMonthData.Profit / currentMonthData.Total) * 100)
-    : 0;
+  const currentMonthData = stats[stats.length - 1] || { Total: 0, Profit: 0, Ocupación: 0, Gastos: 0 };
+  const margin = currentMonthData.Total > 0 ? Math.round((currentMonthData.Profit / currentMonthData.Total) * 100) : 0;
 
   const handleExport = () => {
-    const propName = selectedPropertyId === 'all' ? 'Todas_Villas' : selectedProperty?.title || 'Villa';
-    const month = currentMonthData.name;
-    const year = new Date().getFullYear();
-    const oldTitle = document.title;
-    document.title = `Reporte_${propName.replace(/\s+/g, '_')}_${month}_${year}`;
     window.print();
-    setTimeout(() => { document.title = oldTitle; }, 500);
-  };
-
-  const handleAddExpense = async () => {
-    if (!newExpense.amount || !newExpense.description) return alert("Completa el monto y descripción para registrar el gasto.");
-    
-    // If 'all' is selected but we need an ID, default to the first property or prompt them.
-    const propId = selectedPropertyId === 'all' ? properties[0]?.id : selectedPropertyId;
-    if (!propId) return;
-
-    setIsAddingExpense(true);
-    try {
-      await supabase.from('property_expenses').insert({
-        property_id: propId,
-        amount: parseFloat(newExpense.amount),
-        category: newExpense.category,
-        description: newExpense.description
-      });
-      // Recargar para refrescar los dashboards y graficas con el nuevo NET PROFIT
-      showToast("Gasto Operativo Registrado Correctamente ✅");
-      // Pequeno delay para que vean el toast antes de recargar
-      setTimeout(() => window.location.reload(), 1500);
-    } catch (e) {
-      console.error(e);
-      showToast("Error al registrar gasto operativo ❌");
-    } finally {
-      setIsAddingExpense(false);
-    }
   };
 
   return (
-    <div className="space-y-6 animate-fade-in print:bg-white print:p-0 mb-10">
+    <div className="space-y-8 animate-fade-in pb-10">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-4 rounded-3xl border border-gray-100 shadow-sm print:hidden">
         <select
           value={selectedPropertyId}
@@ -434,229 +388,65 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           onClick={handleExport}
           className="p-2 bg-black text-white rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group"
         >
-          <span className="material-icons text-sm group-hover:rotate-12 transition-transform">picture_as_pdf</span>
-          Exportar
+          <Printer className="w-4 h-4" />
+          Imprimir Reporte
         </button>
       </div>
 
-      <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm relative overflow-hidden">
+      <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-soft">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h3 className="font-serif font-black text-xl italic flex items-center gap-2">
-              <span className="material-icons text-primary">analytics</span> Rendimiento {viewMode === 'net' ? 'Neto' : 'Bruto'}
-            </h3>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-1">
-              Visualizando ingresos {viewMode === 'net' ? 'después de comisiones (est.)' : 'totales antes de tasas'}
-            </p>
+            <h3 className="text-2xl font-serif font-black italic text-text-main tracking-tighter">Análisis de Desempeño 🔱</h3>
+            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Métricas Consolidadas de los últimos 6 meses</p>
           </div>
-          <div className="flex flex-col items-end gap-3">
-            <div className="flex gap-4">
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-[#CBB28A]"></div><span className="text-[10px] font-black uppercase text-gray-400">Web</span></div>
-              <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-blue-400"></div><span className="text-[10px] font-black uppercase text-gray-400">OTAs</span></div>
-            </div>
-            <button
-              onClick={() => setShowOrigin(!showOrigin)}
-              className={`text-[9px] font-black uppercase px-3 py-1 rounded-lg border transition-all ${showOrigin ? 'bg-black text-white' : 'bg-white text-gray-400'}`}
-            >
-              {showOrigin ? 'Ocultar Origen' : 'Ver Desglose'}
-            </button>
+          <div className="flex flex-col items-end gap-1">
+            <span className="text-[10px] font-black text-primary uppercase tracking-widest">Margen Operativo</span>
+            <span className="text-2xl font-serif font-black italic">{margin}%</span>
           </div>
         </div>
 
         <div className="h-64 w-full" style={{ minHeight: '300px' }}>
           <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl border border-dashed border-gray-100 flex items-center justify-center text-[10px] font-black uppercase text-gray-300">Cargando Gráficas...</div>}>
-            <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+            <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats}>
                 <defs>
-                  <linearGradient id="colorWeb" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorOTA" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#FF7F3F" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#FF7F3F" stopOpacity={0} />
+                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.3}/>
+                    <stop offset="95%" stopColor="#CBB28A" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
-                <YAxis hide domain={[0, 'auto']} />
-                <Tooltip
-                  contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', fontSize: '10px', fontWeight: 900, textTransform: 'uppercase' }}
-                  itemStyle={{ padding: '2px 0' }}
+                <YAxis hide />
+                <Tooltip 
+                  contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="Web" 
-                  stroke="#CBB28A" 
-                  strokeWidth={4} 
-                  fillOpacity={1} 
-                  fill="url(#colorWeb)" 
-                  animationDuration={2500} 
-                  name="Web"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="OTA" 
-                  stroke="#FF7F3F" 
-                  strokeWidth={4} 
-                  fillOpacity={1} 
-                  fill="url(#colorOTA)" 
-                  animationDuration={3000} 
-                  name="Airbnb / Booking"
-                />
-                <Area 
-                  type="monotone" 
-                  dataKey="Profit" 
-                  stroke="#2D5A27" 
-                  strokeWidth={5} 
-                  fillOpacity={0.15} 
-                  fill="#2D5A27" 
-                  animationDuration={3500} 
-                  name="Utilidad Neta (Profit)"
-                />
-                <Area type="monotone" dataKey="Gastos" stroke="#FF7F3F" fillOpacity={0.05} fill="#FF7F3F" strokeWidth={2} opacity={0.3} name="Gastos Operativos" />
-            </AreaChart>
-          </ResponsiveContainer>
+                <Area type="monotone" dataKey="Total" stroke="#CBB28A" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={3} />
+                <Area type="monotone" dataKey="Profit" stroke="#2D5A27" fillOpacity={0} strokeWidth={4} />
+                <Area type="monotone" dataKey="Gastos" stroke="#EE4E4E" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
+              </AreaChart>
+            </ResponsiveContainer>
           </Suspense>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-secondary text-white p-6 rounded-[2.5rem] shadow-lg relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-4 opacity-10">
-            <span className="material-icons text-8xl">donut_large</span>
-          </div>
-          <h4 className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-4">Margen de Beneficio ({currentMonthData.name})</h4>
-          <div className="flex items-center gap-6">
-            <div className="relative w-24 h-24 flex items-center justify-center">
-              <svg className="w-full h-full transform -rotate-90">
-                <circle cx="48" cy="48" r="40" stroke="currentColor" strokeWidth="8" fill="transparent" className="opacity-10" />
-                <circle
-                  cx="48" cy="48" r="40" stroke="#CBB28A" strokeWidth="8" fill="transparent"
-                  strokeDasharray={251.2}
-                  strokeDashoffset={251.2 - (251.2 * margin) / 100}
-                  className="transition-all duration-1000"
-                />
-              </svg>
-              <span className="absolute text-xl font-black">{margin}%</span>
-            </div>
-            <div>
-              <p className="text-2xl font-black">${currentMonthData.Total.toLocaleString()}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest opacity-60">Utilidad {viewMode === 'net' ? 'Neta Est.' : 'Neta'}</p>
-              <div className="mt-2 p-2 bg-white/10 rounded-xl border border-white/10">
-                <p className="text-[8px] font-bold uppercase tracking-tighter text-primary-light leading-tight">
-                  {currentMonthData.Profit < 0
-                    ? `Faltan $${Math.abs(currentMonthData.Profit).toLocaleString()} para cubrir costos operativos.`
-                    : `Punto de equilibrio superado. Cada nueva reserva suma directamente a tu utilidad neta.`
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-black p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
+             <TrendingUp className="w-16 h-16" />
+           </div>
+           <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ingresos {currentMonthData.name}</p>
+           <p className="text-3xl font-serif font-black italic tracking-tighter text-primary-light">${currentMonthData.Total.toLocaleString()}</p>
         </div>
 
-        <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm">
-          <h4 className="text-[10px] font-black uppercase tracking-widest text-text-light mb-4">Tasa de Ocupación</h4>
-          <div className="h-40 w-full">
-            <Suspense fallback={<div className="h-full w-full bg-gray-50/20 animate-pulse rounded-2xl flex items-center justify-center text-[8px] font-black uppercase text-gray-300">Minimapa de Ocupación...</div>}>
-              <ResponsiveContainer width="100%" height="100%" minHeight={150}>
-                <LineChart data={stats}>
-                  <Line type="monotone" dataKey="Ocupación" stroke="#FF7F3F" strokeWidth={3} dot={false} animationDuration={4000} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Suspense>
-          </div>
-          <div className="flex justify-between items-center mt-4 pt-4 border-t border-gray-50">
-            <span className="text-[10px] font-black uppercase text-gray-400">Promedio Ocupación</span>
-            <span className="text-sm font-black text-[#2D5A27]">
-              {Math.round(stats.reduce((acc, s) => acc + s.Ocupación, 0) / stats.length)}%
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* RENDER EXPENSE REGISTER MODULE */}
-      <div className="bg-white p-6 md:p-8 rounded-[2.5rem] border border-gray-100 shadow-sm print:hidden">
-        <h3 className="font-serif font-black text-xl italic mb-6 border-b border-gray-50 pb-4">Registro Operativo (Deducciones)</h3>
-        
-        <div className="flex flex-col md:flex-row gap-4 items-end">
-          <div className="flex-1 w-full">
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1 block mb-2">Monto ($)</label>
-            <input 
-              type="number" step="0.01" 
-              placeholder="0.00" 
-              value={newExpense.amount}
-              onChange={e => setNewExpense({...newExpense, amount: e.target.value})}
-              className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-bold text-red-600 focus:bg-white transition-all outline-none" 
-            />
-          </div>
-          
-          <div className="flex-1 w-full">
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1 block mb-2">Categoría</label>
-            <select 
-              value={newExpense.category}
-              onChange={e => setNewExpense({...newExpense, category: e.target.value})}
-              className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-bold focus:bg-white transition-all outline-none"
-            >
-              <option value="Limpieza">Limpieza / Lavandería</option>
-              <option value="Mantenimiento">Mantenimiento / Reparaciones</option>
-              <option value="Utilidades">Utilidades (Agua, Luz, Internet)</option>
-              <option value="Suministros">Suministros (Café, Papel, etc.)</option>
-              <option value="Otros">Otros</option>
-            </select>
-          </div>
-
-          <div className="flex-[2] w-full">
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1 block mb-2">Descripción Evidencial</label>
-            <input 
-              type="text" 
-              value={newExpense.description}
-              onChange={e => setNewExpense({...newExpense, description: e.target.value})}
-              placeholder="Ej: Pintura Fachada - Factura #102..." 
-              className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-medium focus:bg-white transition-all outline-none" 
-            />
-          </div>
-
-          <button 
-            onClick={handleAddExpense}
-            disabled={isAddingExpense}
-            className="w-full md:w-auto bg-black text-white px-8 py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest active:scale-95 transition-all disabled:opacity-50"
-          >
-            {isAddingExpense ? 'Guardando...' : 'Deducir Gasto'}
-          </button>
+        <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft">
+           <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">Gastos Operativos</p>
+           <p className="text-3xl font-serif font-black italic tracking-tighter text-red-600">-${currentMonthData.Gastos.toLocaleString()}</p>
         </div>
 
-        {selectedPropertyId === 'all' && (
-          <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-4">Nota: El gasto se asignará a la propiedad predeterminada porque el filtro actual está en "Todas". Para asignar correctamente, filtra por la propiedad específica.</p>
-        )}
-      </div>
-
-
-      <div className="hidden print:block space-y-8 bg-white text-black p-10 font-sans">
-        <div className="flex justify-between items-start border-b-2 border-black pb-6">
-          <div>
-            <h1 className="text-4xl font-serif font-bold italic">Villa Retiro & Pirata Stays</h1>
-            <p className="text-xs font-black uppercase tracking-widest text-gray-500">Reporte Mensual de Operaciones</p>
-          </div>
-          <div className="text-right">
-            <p className="text-lg font-bold">{currentMonthData.name} {new Date().getFullYear()}</p>
-            <p className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Generado el {new Date().toLocaleDateString()}</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-3 gap-6">
-          <div className="border border-black p-4 rounded-xl text-center">
-            <p className="text-[10px] font-bold uppercase mb-1">Total Ingresos</p>
-            <p className="text-2xl font-black">${currentMonthData.Total.toLocaleString()}</p>
-          </div>
-          <div className="border border-black p-4 rounded-xl text-center">
-            <p className="text-[10px] font-bold uppercase mb-1">Total Gastos</p>
-            <p className="text-2xl font-black text-red-600">-${currentMonthData.Gastos.toLocaleString()}</p>
-          </div>
-          <div className="border border-black p-4 rounded-xl text-center bg-gray-50">
-            <p className="text-[10px] font-bold uppercase mb-1">Profit Neto</p>
-            <p className="text-2xl font-black text-[#2D5A27]">${currentMonthData.Profit.toLocaleString()}</p>
-          </div>
+        <div className="bg-primary/10 p-8 rounded-[2.5rem] border border-primary/20 shadow-sm">
+           <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Profit Real Neto</p>
+           <p className="text-3xl font-serif font-black italic tracking-tighter text-primary">${currentMonthData.Profit.toLocaleString()}</p>
         </div>
       </div>
     </div>
@@ -1637,6 +1427,21 @@ const HostDashboard: React.FC = () => {
   // Check if an offer is expired
   const isOfferActive = (offer: Offer) => {
     return new Date(offer.expiresAt) > new Date();
+  };
+
+  const handleSmartImport = async (data: any) => {
+    setIsSaving(true);
+    try {
+      const { error } = await supabase.from('properties').insert(data);
+      if (error) throw error;
+      showToast("¡Propiedad importada con éxito! 🔱");
+      fetchData();
+      setShowSmartValidation(null);
+    } catch (e: any) {
+      showToast(`Error: ${e.message}`);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   // --- REVIEW MANAGEMENT ---

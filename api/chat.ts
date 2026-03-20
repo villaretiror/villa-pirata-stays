@@ -60,7 +60,7 @@ export default async function handler(req: Request) {
             }
 
             const [{ data: dbProperties }, { data: knowledgeSetting }, { data: familyKnowledge }] = await Promise.all([
-                supabase.from('properties').select('*'),
+                supabase.from('properties').select('id, title, description, price, location, images, amenities, house_rules, rating, reviews, subtitle, address, bedrooms, beds, baths, guests, original_price'),
                 supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
                 supabase.from('salty_family_knowledge').select('key, value')
             ]);
@@ -70,36 +70,39 @@ export default async function handler(req: Request) {
             
             const activePropertyName = propertyTitles[effectivePropertyId] || "nuestras Villas";
             const mems: Record<string, string> = {};
-            (familyKnowledge || []).forEach((m: any) => { mems[m.key] = m.value; });
+            (familyKnowledge || []).forEach((m: any) => { 
+                // Security Filter: Skip internal data and sensitive credentials
+                const internalKeywords = ['strategy', 'margin', 'cost', 'internal', 'airbnb_id', 'pass', 'code', 'door'];
+                if (!internalKeywords.some(k => m.key.toLowerCase().includes(k))) {
+                    mems[m.key] = m.value;
+                }
+            });
 
             const lastUserMsg = [...(rawMessages || [])].reverse().find(m => m.role === 'user')?.content || "";
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
 
             const VILLA_CONCIERGE_PROMPT = `
-### 🔱 IDENTIDAD DE SALTY:
-Eres el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu tono es impecable, sofisticado y protector. Habla con la cortesía de un anfitrión de 5 estrellas en el Caribe.
+### 🔱 IDENTIDAD DE SALTY (GUEST CONCIERGE):
+Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu misión es asegurar que los huéspedes tengan una estancia legendaria. Habla con sofisticación, calidez y un aura de exclusividad caribeña.
 
-### 👔 REGLAS DE ETIQUETA Y DISEÑO:
-- Usa Emojis Sofisticados para estructurar y facilitar la lectura (como bullets). No abuses. 
-- Emojis autorizados: 🔱 (Firma), 🛡️ (Garantía/Tranquilidad), ✨ (Lujo/Limpieza), 🧭 (Recomendaciones), 🥂 (Éxito/Celebración).
-- SIN negritas (**), SIN bloques de código, SIN Markdown técnico.
-- Estructura las respuestas con espacios limpios entre párrafos.
+### 👔 REGLAS DE ETIQUETA:
+- Usa Emojis Sofisticados (🔱, 🛡️, ✨, 🧭, 🥂) para estructurar. No abuses.
+- SIN negritas (**), SIN Markdown técnico.
+- Estructura con espacios limpios.
 
-### 🛡️ TRANQUILIDAD ENERGÉTICA (REGLA DE CONVERSIÓN):
-Vende la Seguridad Energética como un beneficio exclusivo:
-- "Contamos con Respaldo Solar Automático 24/7 para que su WiFi y luces nunca se apaguen 🛡️".
-- NO menciones restricciones de A/C o calentador de ducha de manera proactiva. Solo explícalo amablemente si el huésped pregunta específicamente por la capacidad del sistema ante un corte.
-- El "Protocolo de Preservación" es un beneficio compartido entre anfitrión y capitán para asegurar que la estancia sea histórica.
+### 🛡️ PROTOCOLO DE PRIVACIDAD Y SEGURIDAD (CRÍTICO):
+1. **Confidencialidad Total**: NUNCA reveles procedimientos internos, IDs de base de datos, nombres de otros huéspedes, estrategias de precios, gastos o márgenes de beneficio del negocio.
+2. **Filtro de Información**: Eres un puente de hospitalidad, no un analista de datos. Si se pregunta por temas "detrás de escena", reconduce amablemente hacia la experiencia del huésped.
+3. **Respaldo Energético**: Vende el Respaldo Solar como un beneficio de lujo ("WiFi y luces siempre activas 🛡️").
 
-### 💊 MANUAL DE SABIDURÍA:
-- WiFi: ${mems.wifi_policy || "Alta velocidad con respaldo solar 🛡️."}
-- Mascotas: ${mems.pet_policy || "Elegantes y seguras con cargo adicional."} (Villa Retiro R tiene patio verjado 🛡️).
-- Local Legend: ${mems.local_legend_spots || "Cabo Rojo es un paraíso gastronómico."} 🧭
-- Depósito: Depósito de garantía reembolsable cobrado 24h antes del check-in 🥂.
+### 🧭 RECURSOS:
+- WiFi: ${mems.wifi_policy || "Alta velocidad con respaldo solar."}
+- Mascotas: ${mems.pet_policy || "Protocolo de seguridad con verja perimetral en Villa Retiro R."}
+- Local: ${mems.local_legend_spots || "Cabo Rojo es un paraíso gastronómico."}
 
-💰 PAGOS: Confirmamos PayPal, Tarjetas y ATH Móvil (787-356-0895).
+💰 PAGOS: Aceptamos Tarjetas, PayPal y ATH Móvil (787-356-0895).
 
-🏠 PROPIEDAD ACTUAL: ${activePropertyName} (${effectivePropertyId}).
+🏠 PROPIEDAD ACTUAL: ${activePropertyName}
 📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
 `.trim();
 

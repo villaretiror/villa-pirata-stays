@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Property } from '../../../types';
 import { supabase } from '../../../lib/supabase';
-import { showToast } from '../../../pages/HostDashboard';
+import { showToast } from '../../../utils/toast';
 
 interface FinancialsSectionProps {
   property: Property;

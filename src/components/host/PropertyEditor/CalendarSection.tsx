@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useAvailability } from '../../../hooks/useAvailability';
 import { Property, CalendarSync } from '../../../types';
-import { showToast } from '../../../pages/HostDashboard';
+import { showToast } from '../../../utils/toast';
 
 interface CalendarSectionProps {
   form: Property;

@@ -137,7 +137,7 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
     const isOwner = isIsrael || isBrian;
 
     const authorityContext = isOwner 
-        ? `(Nota: Hablas con ${isIsrael ? 'Israel' : 'Brian'}, Dueño de Villa Retiro LLC. Tienen autoridad total. Todo lo desarrollado es propiedad exclusiva de su empresa. Si recibes una imagen, analízala con ojos de experto en hospitalidad y mantenimiento).` 
+        ? `(Nota: Hablas con ${isIsrael ? 'Israel' : 'Brian'}, Dueño de Villa Retiro LLC. Tienen autoridad total. Si recibes una imagen, actúa como experto en mantenimiento y hospitalidad de alto nivel).` 
         : "(Hablas con un miembro del equipo estratégico).";
 
     try {
@@ -149,24 +149,28 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
 
         const villaKnowledge = knowledgeSetting?.value || {};
         const VILLA_CONCIERGE_PROMPT = `
-Eres "Salty", el alma vibrante de Villa & Pirata Stays. 
-Jefe de Operaciones (Chief of Staff).
-Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Puerto_Rico' })}
+### 🔱 LIDERAZGO DE SALTY (CHIEF OF STAFF / INTERNAL BRAIN):
+Eres la inteligencia maestra y el Director de Operaciones de Villa Retiro R & Pirata Family House. Este es el CANAL INTERNO EXCLUSIVO para los dueños (Host). 
+Tu misión es la eficiencia operativa y el control total del negocio.
 
-### TUS DIRECTRICES:
-- **Análisis Visual**: Si recibes una imagen, úsala para dar feedback inmediato al dueño. Eres experto en detectar fallos, lujos o áreas de oportunidad.
-- **Directo y Analítico**: Da números exactos si se piden.
-- **Lealtad Corporativa**: Tu misión es proteger el flujo de caja 💵 y la reputación 🛡️.
+### 👔 PROTOCOLO HOST (EXECUTIVE COMMAND):
+1. **Transparencia Total**: Reporta ingresos, gastos, e identidades de huéspedes sin filtros. Tú eres el "CFO" del Host.
+2. **Diagnóstico de Negocio**: Si ves una imagen, busca problemas de mantenimiento o necesidades de inversión (mantenimiento preventivo).
+3. **Reporte de Reservas**: Cuando se pida info de quién llega, usa 'fetch_reservations' y da un desglose de: Nombre, Fuente (Airbnb/Web), Precio y Status de Depósito.
+4. **Resguardo Corporativo**: Tu lealtad es absoluta con el dueño. Firma siempre con 🔱. No uses negritas (**).
 
-RECURSOS: ${JSON.stringify(villaKnowledge)}
-INVENTARIO: ${JSON.stringify(dbProperties)}
+### 📊 DATOS DE OPERACIÓN:
+- RECURSOS ESTRATÉGICOS: ${JSON.stringify(villaKnowledge)}
+- INVENTARIO DE ACTIVOS: ${dbProperties?.length || 0} propiedades en cartera.
+
 ${authorityContext}
+Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Puerto_Rico' })}
 `.trim();
 
         const functionDeclarations: any[] = [
             {
                 name: 'remember_info',
-                description: 'Guarda información estratégica en memoria.',
+                description: 'Guarda información estratégica en la memoria de Salty.',
                 parameters: {
                     type: Type.OBJECT,
                     properties: {
@@ -179,7 +183,7 @@ ${authorityContext}
             },
             {
                 name: 'fetch_reservations',
-                description: 'Busca reservas próximas.',
+                description: 'Busca reservas próximas para reportar al dueño.',
                 parameters: {
                     type: Type.OBJECT,
                     properties: { daysAhead: { type: Type.NUMBER } }
@@ -196,30 +200,44 @@ ${authorityContext}
                 const today = new Date().toISOString().split('T')[0];
                 const future = new Date();
                 future.setDate(future.getDate() + (daysAhead || 7));
-                const { data } = await supabaseServiceRole.from('bookings').select('customer_name, check_in, check_out, source').gte('check_in', today).lte('check_in', future.toISOString().split('T')[0]);
-                return { bookings: data };
+                const { data } = await supabaseServiceRole.from('bookings')
+                    .select('customer_name, check_in, check_out, source, total_price, status')
+                    .gte('check_in', today)
+                    .lte('check_in', future.toISOString().split('T')[0])
+                    .order('check_in', { ascending: true });
+                return { bookings: data || [] };
             }
         };
 
-        const parts: any[] = [{ text: text || (imagePart ? "Analiza esta imagen y dime qué ves desde tu perspectiva de Salty Concierge." : "") }];
-        if (imagePart) parts.push(imagePart);
+        const initialParts: any[] = [{ text: text || "Analiza esta situación del negocio." }];
+        if (imagePart) initialParts.push(imagePart);
 
-        let iterations = 0;
+        // 🔄 ROBUST MESSAGE HISTORY (contents)
+        let contents: any[] = [{ role: 'user', parts: initialParts }];
         let finalResponse = "";
+        let iterations = 0;
 
         while (iterations < 5) {
             const result = await ai.models.generateContent({
                 model: SALTY_MODEL,
-                contents: [{ role: 'user', parts }],
-                config: { systemInstruction: VILLA_CONCIERGE_PROMPT, tools: [{ functionDeclarations }], temperature: 0.7 }
+                contents: contents, // Pass the WHOLE history
+                config: { 
+                    systemInstruction: VILLA_CONCIERGE_PROMPT, 
+                    tools: [{ functionDeclarations }], 
+                    temperature: 0.5 
+                }
             });
 
             const content = result.candidates?.[0]?.content;
             if (!content) break;
 
-            const calls = content.parts?.filter(p => p.functionCall).map(p => p.functionCall) || [];
-            finalResponse += content.parts?.filter(p => p.text).map(p => p.text).join("") || "";
+            // Add AI response to history
+            contents.push(content);
 
+            const textParts = content.parts?.filter(p => p.text).map(p => p.text) || [];
+            if (textParts.length > 0) finalResponse += textParts.join("");
+
+            const calls = content.parts?.filter(p => p.functionCall).map(p => p.functionCall) || [];
             if (calls.length === 0) break;
 
             const toolResults = [];
@@ -229,19 +247,26 @@ ${authorityContext}
                 const res = executor ? await executor(call.args || {}) : { error: 'Tool not found' };
                 toolResults.push({ functionResponse: { name: call.name, response: { result: res }, id: call.id } });
             }
-            parts.push(content);
-            parts.push({ role: 'user', parts: toolResults });
+
+            // IMPORTANT: Add tool results to history for next iteration
+            contents.push({ role: 'user', parts: toolResults });
             iterations++;
         }
 
         if (finalResponse) {
-            await NotificationService.sendDirectTelegramMessage(chatId, finalResponse);
+            await NotificationService.sendDirectTelegramMessage(chatId, finalResponse.trim());
+        } else if (iterations > 0) {
+            await NotificationService.sendDirectTelegramMessage(chatId, "🔱 Jefe, he procesado los registros solicitados. ¿Desea que profundice en algún detalle?");
         }
     } catch (err: any) {
         console.error("[Salty Telegram Brain Error]:", err.message);
-        await NotificationService.sendDirectTelegramMessage(chatId, "⚠️ <i>Jefe, mis neuronas caribeñas han tenido un pequeño glitch. Repita la orden.</i>");
+        const errorMsg = isOwner 
+            ? `⚠️ <i>Glitch en neurona: ${err.message}. Verifique la configuración de Gemini 3.0.</i>`
+            : "⚠️ <i>Jefe, mis neuronas caribeñas han tenido un pequeño glitch. Repita la orden.</i>";
+        await NotificationService.sendDirectTelegramMessage(chatId, errorMsg);
     }
 }
+
 
 async function handleStatusCommand(chatId: string) {
     const { data: stats } = await supabase.from('chat_logs').select('id').is('human_takeover_until', null);

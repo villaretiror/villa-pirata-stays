@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../lib/supabase';
 import { ShieldCheck, Lock, Smartphone, AlertCircle, CheckCircle2 } from 'lucide-react';
-import { showToast } from '../../pages/HostDashboard';
+import { showToast } from '../../utils/toast';
 
 const SecuritySettings: React.FC = () => {
     const [mfaEnabled, setMfaEnabled] = useState(false);
