@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../contexts/AuthContext';
 
 interface SaltyToastProps {
     propertyId?: string;
@@ -11,14 +12,21 @@ interface SaltyToastProps {
 const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amenities }) => {
     const [showBubble, setShowBubble] = useState(false);
     const [isMinimized, setIsMinimized] = useState(true);
-    const [message, setMessage] = useState('');
+    const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
+    const [message, setMessage] = useState('');
+    const [isPulsing, setIsPulsing] = useState(false);
 
     // 🔱 SALTY'S DYNAMIC BRAIN: Contextual prompts by Brian's Logic
     const getContextualPill = () => {
         const path = location.pathname;
         
+        // 0. Returning Guest Hook (High Perception of Service)
+        if (user?.is_returning_guest && path === '/') {
+            return `¡Qué alegría volver a verte, Capitán ${user.name.split(' ')[0]}! 🔱 El trópico te extrañaba. ¿Buscamos tu fecha favorita?`;
+        }
+
         // 1. Home / General
         if (path === '/') return "¿Buscando el mejor precio? Reserva aquí conmigo y ahórrate el 15% de comisión que cobran otras plataformas. ¡Para más mofongos!";
         
@@ -44,12 +52,14 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             setMessage(getContextualPill());
             setShowBubble(true);
             setIsMinimized(false);
+            setIsPulsing(true);
         }, 3000);
 
         // Auto-minimize after 10 seconds to reduce screen clutter
         const autoMin = setTimeout(() => {
             setShowBubble(false);
             setIsMinimized(true);
+            setIsPulsing(false);
         }, 13000);
 
         return () => {
@@ -111,13 +121,24 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 }}
                 className={`pointer-events-auto cursor-pointer relative group`}
             >
-                {/* Visual "Living" Pulse */}
-                {!showBubble && (
-                    <div className="absolute inset-0 bg-primary/20 rounded-full animate-ping scale-110"></div>
-                )}
+                {/* Visual "Living" Pulse & Glow */}
+                <AnimatePresence>
+                    {isPulsing && (
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.8 }}
+                            animate={{ opacity: 1, scale: [1, 1.2, 1] }}
+                            exit={{ opacity: 0 }}
+                            transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                            className="absolute inset-[-10px] bg-primary/20 rounded-full blur-xl z-[-1]"
+                        />
+                    )}
+                </AnimatePresence>
                 
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-2xl border-4 border-white transition-all duration-500 ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100'}`}>
-                    <span className="text-2xl group-hover:rotate-12 transition-transform">🔱</span>
+                <div className={`w-14 h-14 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-2xl border-4 border-white transition-all duration-500 overflow-hidden ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100 ring-4 ring-primary/10 scale-105'}`}>
+                    <span className="text-2xl group-hover:rotate-12 transition-transform select-none">🔱</span>
+                    
+                    {/* Interior Gleam */}
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                 </div>
 
                 {/* Status Indicator */}

@@ -54,7 +54,7 @@ import {
   LayoutDashboard, User as UserIcon, AlertTriangle, Bell, Check, Trash2, Download,
   Plus, Tag, CheckCheck, DollarSign, GripHorizontal, RefreshCcw, UserX, ClipboardCheck,
   ListPlus, PlusCircle, HelpCircle, Printer, Anchor, ShieldCheck, Waves, Heart,
-  Save, Quote, ChevronDown
+  Save, Quote, ChevronDown, AlertCircle
 } from 'lucide-react';
 
 const CustomToast = () => {
@@ -1662,53 +1662,82 @@ const HostDashboard: React.FC = () => {
       animate="show"
       className="space-y-8 pb-32"
     >
-      {/* Salty Morning Briefing Slot */}
-      <motion.div variants={itemVariants} className="bg-gradient-to-br from-indigo-900 via-purple-900 to-black p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group border border-white/10">
-        <div className="absolute top-0 right-0 p-10 opacity-10 group-hover:scale-110 transition-transform duration-700">
-          <Sparkles strokeWidth={1} className="w-24 h-24" />
-        </div>
+      {/* ⚜️ SALTY EXECUTIVE BRIEFING: IA Command Center */}
+      <motion.div variants={itemVariants} className="bg-gradient-to-br from-[#0A0D14] via-[#1A1F2B] to-[#0A0D14] p-10 rounded-[3.5rem] text-white shadow-2xl relative overflow-hidden group border border-white/5">
+        {/* Glow Effects */}
+        <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] animate-pulse" />
+        
         <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-6">
-            <span className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] border border-white/10">Salty Morning Briefing</span>
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse"></span>
-            <button
-              onClick={async () => {
-                const res = await fetch('/api/master-cron?action=notify&ask=cleanup');
-                const data = await res.json();
-                alert(`Master Sync: ${JSON.stringify(data)}`);
-              }}
-              className="ml-auto bg-white/10 hover:bg-white/20 p-2 rounded-xl transition-all"
-              title="Sincronización Maestra (Audit)"
-            >
-              <span className="material-icons text-[14px]">sync_lock</span>
-            </button>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-white/5 backdrop-blur-md flex items-center justify-center border border-white/10 group-hover:border-primary/50 transition-all duration-500">
+                <Anchor className="w-5 h-5 text-primary animate-float" />
+              </div>
+              <div>
+                <span className="block text-[9px] font-black uppercase tracking-[0.3em] text-primary-light/60">Sistema Salty AI</span>
+                <span className="block text-[10px] font-bold text-white/40 tracking-wider">Executive Morning Briefing • {new Date().toLocaleDateString('es-PR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
+                <span className="text-[9px] font-black uppercase tracking-widest text-green-500/80">Operativo</span>
+              </div>
+              <button
+                onClick={async () => {
+                  showToast("Sincronizando Bitácora Maestra... 🔱");
+                  fetchData();
+                }}
+                className="p-2.5 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 hover:border-white/20"
+              >
+                <RefreshCcw className="w-4 h-4 text-white/40" />
+              </button>
+            </div>
           </div>
-          <h2 className="text-2xl md:text-4xl font-serif font-black italic tracking-tighter mb-4 leading-[1.1] max-w-2xl">
-            "{nextCheckins.length > 0
-              ? `Salty informa: ${nextCheckins.length} check-ins estratégicos hoy. Todo listo para la excelencia.`
-              : "La brisa del noroeste augura un día de 5 estrellas. Paz y rentabilidad en balance."}"
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/10">
-            <div className="flex items-center gap-4 group/item">
-              <div className="bg-white/10 p-2.5 rounded-2xl group-hover/item:bg-primary/20 transition-colors"><Calendar className="w-4 h-4 text-primary-light" /></div>
-              <div>
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Check-ins</p>
-                <p className="text-sm font-bold">{nextCheckins.filter(b => b.check_in === new Date().toISOString().split('T')[0]).length} Llegadas hoy</p>
+
+          <div className="max-w-3xl">
+            <h2 className="text-2xl md:text-5xl font-serif font-black italic tracking-tighter mb-8 leading-[1.05] text-white group-hover:text-primary-light/90 transition-colors duration-700">
+              "{leads.filter((l: any) => l.status === 'new').length > 0 
+                ? `Master, hay ${leads.filter((l: any) => l.status === 'new').length} capitanes interesados en el muelle. Sugiero abordarlos antes de que la marea baje.`
+                : nextCheckins.length > 0
+                ? `Todo listo para los ${nextCheckins.length} desembarcos de hoy. La reputación de la flota está en manos de la excelencia.`
+                : "La bitácora está limpia y la brisa es favorable. Un día perfecto para optimizar la logística de la temporada."}"
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-8 border-t border-white/5">
+            <div className="bg-white/5 p-5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all cursor-default group/stat">
+              <div className="flex items-center gap-3 mb-2">
+                <Calendar className="w-4 h-4 text-primary" />
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Check-ins</p>
               </div>
+              <p className="text-xl font-bold">{nextCheckins.filter(b => b.check_in === new Date().toISOString().split('T')[0]).length} Llegadas Hoy</p>
             </div>
-            <div className="flex items-center gap-4 group/item">
-              <div className="bg-white/10 p-2.5 rounded-2xl group-hover/item:bg-yellow-400/20 transition-colors"><Zap className="w-4 h-4 text-yellow-400" /></div>
-              <div>
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Cabo Rojo Live</p>
-                <p className="text-sm font-bold">29°C Despejado</p>
+
+            <div className="bg-white/5 p-5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all cursor-default group/stat">
+              <div className="flex items-center gap-3 mb-2">
+                <Users className="w-4 h-4 text-secondary" />
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Nuevos Leads</p>
               </div>
+              <p className="text-xl font-bold">{leads.filter((l: any) => l.status === 'new').length} Interesados</p>
             </div>
-            <div className="flex items-center gap-4 group/item">
-              <div className="bg-white/10 p-2.5 rounded-2xl group-hover/item:bg-red-400/20 transition-colors"><AlertTriangle className="w-4 h-4 text-red-400" /></div>
-              <div>
-                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Sistema Salty</p>
-                <p className="text-sm font-bold">{urgentAlerts.filter(a => a.status === 'new').length > 0 ? `${urgentAlerts.filter(a => a.status === 'new').length} Pendientes` : 'Operativo ✓'}</p>
+
+            <div className="bg-white/5 p-5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all cursor-default group/stat">
+              <div className="flex items-center gap-3 mb-2">
+                <Zap className="w-4 h-4 text-yellow-400" />
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Cabo Rojo</p>
               </div>
+              <p className="text-xl font-bold">29°C Despejado</p>
+            </div>
+
+            <div className="bg-white/5 p-5 rounded-3xl border border-white/5 hover:bg-white/10 transition-all cursor-default group/stat">
+              <div className="flex items-center gap-3 mb-2">
+                <AlertCircle className="w-4 h-4 text-red-500" />
+                <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.2em]">Alertas</p>
+              </div>
+              <p className="text-xl font-bold">{urgentAlerts.filter(a => a.status === 'new').length > 0 ? `${urgentAlerts.filter(a => a.status === 'new').length} Críticas` : 'Limpio ✓'}</p>
             </div>
           </div>
         </div>
@@ -2152,10 +2181,10 @@ const HostDashboard: React.FC = () => {
                             <span
                               key={tag}
                               className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${tag === 'VIP' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                  tag === 'Web Directa' ? 'bg-green-100 text-green-700 border-green-200' :
-                                    tag === 'Pet Friendly' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                      tag === 'Remote Worker' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' :
-                                        'bg-blue-100 text-blue-700 border-blue-200'
+                                tag === 'Web Directa' ? 'bg-green-100 text-green-700 border-green-200' :
+                                  tag === 'Pet Friendly' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                    tag === 'Remote Worker' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' :
+                                      'bg-blue-100 text-blue-700 border-blue-200'
                                 }`}
                             >
                               {tag}
