@@ -18,6 +18,7 @@ interface Thread {
     avatar: string;
     status: 'active' | 'archived';
     property?: string;
+    propertyImage?: string;
     dates?: string;
     paymentStatus?: 'paid' | 'pending';
 }
@@ -30,12 +31,57 @@ interface Message {
 }
 
 const mockThreads: Thread[] = [
-    { id: '1', guestName: 'Familia Torres', source: 'Directo', lastMessage: '¿Tienen toallas de playa disponibles?', timestamp: '10:42 AM', unread: 2, avatar: 'https://i.pravatar.cc/150?img=32', status: 'active', property: 'Pirata Family House', dates: '22 - 25 Mar', paymentStatus: 'paid' },
-    { id: '2', guestName: 'Michael Brown', source: 'Airbnb', lastMessage: 'We just landed in San Juan! Ready for the drive.', timestamp: 'Ayer', unread: 0, avatar: 'https://i.pravatar.cc/150?img=11', status: 'active', property: 'Villa Retiro R', dates: 'Hoy - 28 Mar', paymentStatus: 'paid' },
-    { id: '3', guestName: 'Ana Smith', source: 'Salty AI', lastMessage: '[Lead Capturado] El cliente preguntó por fechas en diciembre y dejó su correo.', timestamp: 'Martes', unread: 0, avatar: 'https://i.pravatar.cc/150?img=5', status: 'active', property: 'Interés en Pirata', dates: 'Diciembre', paymentStatus: 'pending' },
+    { 
+        id: '1', 
+        guestName: 'Familia Torres', 
+        source: 'Directo', 
+        lastMessage: '¿Tienen toallas de playa disponibles?', 
+        timestamp: '10:42 AM', 
+        unread: 2, 
+        avatar: 'https://i.pravatar.cc/150?img=32', 
+        status: 'active', 
+        property: 'Pirata Family House', 
+        propertyImage: 'https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/05f8a5b2-ef01-4470-a8f1-5f73fcba3301.jpeg?im_w=400',
+        dates: '22 - 25 Mar', 
+        paymentStatus: 'paid' 
+    },
+    { 
+        id: '2', 
+        guestName: 'Michael Brown', 
+        source: 'Airbnb', 
+        lastMessage: 'We just landed in San Juan! Ready for the drive.', 
+        timestamp: 'Ayer', 
+        unread: 0, 
+        avatar: 'https://i.pravatar.cc/150?img=11', 
+        status: 'active', 
+        property: 'Villa Retiro R', 
+        propertyImage: 'https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/95730c30-f345-41de-bf0d-1d9562c775e4.jpeg?im_w=400',
+        dates: 'Hoy - 28 Mar', 
+        paymentStatus: 'paid' 
+    },
+    { 
+        id: '3', 
+        guestName: 'Ana Smith', 
+        source: 'Salty AI', 
+        lastMessage: '[Lead Capturado] El cliente preguntó por fechas en diciembre y dejó su correo.', 
+        timestamp: 'Martes', 
+        unread: 0, 
+        avatar: 'https://i.pravatar.cc/150?img=5', 
+        status: 'active', 
+        property: 'Interés en Pirata', 
+        propertyImage: 'https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/fa1cce5f-f7b7-47e7-8502-b35a67c304d2.jpeg?im_w=400',
+        dates: 'Diciembre', 
+        paymentStatus: 'pending' 
+    },
 ];
 
-const HostMessageCenter: React.FC = () => {
+interface HostMessageCenterProps {
+    hostAvatar?: string;
+    onNavigate?: (tab: any) => void;
+}
+
+const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNavigate }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [threads, setThreads] = useState<Thread[]>(mockThreads);
     const [activeThread, setActiveThread] = useState<Thread | null>(mockThreads[0]);
     const [messages, setMessages] = useState<Message[]>([]);
@@ -217,6 +263,12 @@ const HostMessageCenter: React.FC = () => {
                                                 </div>
                                             )}
 
+                                            {isMe && (
+                                                <div className="w-10 h-10 rounded-full overflow-hidden ml-3 self-end mb-2 shadow-sm border-2 border-white order-last">
+                                                   <img src={hostAvatar || "https://i.pravatar.cc/150?u=host"} className="w-full h-full object-cover" alt="Host" />
+                                                </div>
+                                            )}
+
                                             {isAi && (
                                                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center mr-3 self-end mb-2 shadow-lg border-2 border-white">
                                                     <Sparkles className="text-white w-4 h-4" />
@@ -274,18 +326,31 @@ const HostMessageCenter: React.FC = () => {
                                       {isSaltyDrafting ? 'Analizando...' : 'Sugerir con Salty'}
                                    </button>
                                    <div className="h-6 w-px bg-gray-200" />
-                                   <button type="button" className="p-3 text-text-light hover:text-primary transition-colors">
+                                    <button 
+                                      type="button" 
+                                      onClick={() => alert("Santy Traducción: Esta función estará disponible en la v3.5 para traducción automática en tiempo real.")}
+                                      className="p-3 text-text-light hover:text-primary transition-colors"
+                                    >
                                       <Languages className="w-4 h-4" />
-                                   </button>
-                                   <button type="button" className="p-3 text-text-light hover:text-primary transition-colors">
+                                    </button>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => alert("Sistema de Citas: Podrás citar mensajes del huésped en tu respuesta próximamente.")}
+                                      className="p-3 text-text-light hover:text-primary transition-colors"
+                                    >
                                       <Quote className="w-4 h-4" />
-                                   </button>
+                                    </button>
                                 </div>
 
-                                <div className="flex items-end gap-4 bg-gray-50/80 rounded-[2.5rem] p-3 pr-4 border border-gray-100 focus-within:bg-white focus-within:shadow-xl transition-all group">
-                                    <button type="button" className="w-12 h-12 rounded-full text-gray-400 hover:text-primary flex items-center justify-center">
-                                        <PlusCircle className="w-6 h-6" />
-                                    </button>
+                                 <div className="flex items-end gap-4 bg-gray-50/80 rounded-[2.5rem] p-3 pr-4 border border-gray-100 focus-within:bg-white focus-within:shadow-xl transition-all group">
+                                     <input type="file" ref={fileInputRef} className="hidden" onChange={() => alert("Archivo listo para subir a la nube segura de Salty 🔱")} />
+                                     <button 
+                                        type="button" 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-12 h-12 rounded-full text-gray-400 hover:text-primary flex items-center justify-center transition-colors group-hover:bg-white shadow-sm"
+                                     >
+                                         <PlusCircle className="w-6 h-6" />
+                                     </button>
                                     
                                     <div className="flex-1 py-1">
                                         <textarea
@@ -338,7 +403,7 @@ const HostMessageCenter: React.FC = () => {
                     <div className="p-8 border-b border-gray-50 text-center">
                         <div className="inline-block px-3 py-1 rounded-full bg-primary/5 text-primary text-[8px] font-black uppercase tracking-[0.3em] mb-4 border border-primary/10">Contexto de Reserva</div>
                         <div className="relative w-40 h-40 mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white mb-6">
-                           <img src={activeThread.property === 'Pirata Family House' ? "https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=400" : "https://images.unsplash.com/photo-1542718610-a1d656d1884c?auto=format&fit=crop&q=80&w=400"} className="w-full h-full object-cover" alt="Property" />
+                           <img src={activeThread.propertyImage || 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=400'} className="w-full h-full object-cover" alt="Property" />
                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                               <p className="text-white text-[10px] font-black uppercase tracking-widest">{activeThread.property}</p>
                            </div>
@@ -363,16 +428,22 @@ const HostMessageCenter: React.FC = () => {
                               </div>
                            </div>
 
-                           <div className="p-2 space-y-3 px-4">
-                              <button className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-colors group">
-                                 <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60">Ver Expediente CRM</span>
-                                 <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all" />
-                              </button>
-                              <button className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-colors group">
-                                 <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60">Guía de Check-in</span>
-                                 <MapPin className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all" />
-                              </button>
-                           </div>
+                            <div className="p-2 space-y-3 px-4">
+                               <button 
+                                 onClick={() => onNavigate?.('conversion')}
+                                 className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-all group active:scale-95"
+                               >
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60 group-hover:text-primary transition-colors">Ver Expediente CRM</span>
+                                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all" />
+                               </button>
+                               <button 
+                                 onClick={() => alert("Manual de Protocolo: Se ha enviado una copia del manual de check-in al huésped.")}
+                                 className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-all group active:scale-95"
+                               >
+                                  <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60 group-hover:text-secondary transition-colors">Guía de Check-in</span>
+                                  <MapPin className="w-4 h-4 text-gray-300 group-hover:text-secondary transition-all" />
+                               </button>
+                            </div>
 
                            <div className="pt-4 border-t border-gray-50">
                               <div className="flex items-center gap-3 px-6 mb-4">

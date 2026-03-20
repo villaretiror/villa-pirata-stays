@@ -2618,7 +2618,7 @@ const HostDashboard: React.FC = () => {
           />
         )}
         {activeTab === 'conversion' && renderConversion()}
-        {activeTab === 'messages' && <HostMessageCenter />}
+        {activeTab === 'messages' && <HostMessageCenter hostAvatar={user?.avatar} onNavigate={(tab: any) => setActiveTab(tab)} />}
         {activeTab === 'insights' && <InsightViewer />}
         {activeTab === 'availability' && <HostAvailabilityManager properties={properties} />}
         {activeTab === 'help' && renderHelp()}
