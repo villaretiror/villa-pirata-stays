@@ -10,7 +10,10 @@ const ContractView = () => {
     const [property, setProperty] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
+    const [isEmbedded, setIsEmbedded] = useState(false);
+    
     useEffect(() => {
+        setIsEmbedded(window.self !== window.top);
         const CACHE_KEY = `cached_property_${propertyId}`;
 
         async function fetchProperty() {
@@ -65,10 +68,12 @@ const ContractView = () => {
 
     return (
         <div className="min-h-screen bg-[#FCFBF7] text-[#1A1A1A] font-sans">
-            <div className="max-w-3xl mx-auto px-6 py-12">
-                <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#FF6633] mb-8 transition-colors">
-                    <ArrowLeft size={18} /> Volver
-                </Link>
+            <div className={`max-w-3xl mx-auto px-6 ${isEmbedded ? 'py-4' : 'py-12'}`}>
+                {!isEmbedded && (
+                    <Link to="/" className="inline-flex items-center gap-2 text-gray-500 hover:text-[#FF6633] mb-8 transition-colors">
+                        <ArrowLeft size={18} /> Volver
+                    </Link>
+                )}
 
                 <motion.div
                     initial={{ opacity: 0, y: 20 }}
