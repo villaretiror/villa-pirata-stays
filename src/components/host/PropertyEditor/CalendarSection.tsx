@@ -4,16 +4,17 @@ import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterv
 import { es } from 'date-fns/locale';
 import { useAvailability } from '../../../hooks/useAvailability';
 import { Property, CalendarSync } from '../../../types';
-import { ChevronLeft, ChevronRight, Calendar, RefreshCw, X, ShieldCheck, Lock, Unlock, DollarSign, CalendarSearch } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, RefreshCcw, X, ShieldCheck, Lock, Unlock, DollarSign, CalendarSearch } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
 
 interface CalendarSectionProps {
   form: any;
   setForm: (form: any) => void;
   monthsCount?: number;
+  onRefresh?: (signal?: any) => any;
 }
 
-export default function CalendarSection({ form, setForm, monthsCount = 1 }: CalendarSectionProps) {
+export default function CalendarSection({ form, setForm, monthsCount = 1, onRefresh }: CalendarSectionProps) {
   const [calMonth, setCalMonth] = useState(new Date());
   const [isSyncing, setIsSyncing] = useState(false);
   const [selection, setSelection] = useState<{ start: Date | null, end: Date | null }>({ start: null, end: null });
@@ -74,6 +75,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1 }: Cale
     try {
       await fetch('/api/calendar/import', { method: 'POST' });
       await refreshAvailability();
+      if (onRefresh) onRefresh();
       showToast("Calendarios Sincronizados ✨");
     } catch (e) {
       showToast("Error al sincronizar");
@@ -222,7 +224,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1 }: Cale
             disabled={isSyncing}
             className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all shadow-sm disabled:opacity-50"
           >
-            <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             {isSyncing ? 'Sincronizando...' : 'Actualizar Canales'}
           </button>
         </div>
@@ -327,7 +329,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1 }: Cale
       <div className="bg-sand/30 p-10 rounded-[3.5rem] border border-orange-100/50 flex flex-col md:flex-row gap-8 items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
-            <RefreshCw className={`w-5 h-5 text-secondary ${isSyncing ? 'animate-spin' : ''}`} />
+            <RefreshCcw className={`w-5 h-5 text-secondary ${isSyncing ? 'animate-spin' : ''}`} />
             <h4 className="font-serif font-black italic text-xl text-text-main tracking-tight">Sincronización Inteligente</h4>
           </div>
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.15em] leading-relaxed max-w-lg">
