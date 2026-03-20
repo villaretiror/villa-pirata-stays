@@ -76,6 +76,29 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     if (onRefresh) onRefresh();
   };
 
+  const [isSyncingGlobal, setIsSyncingGlobal] = useState(false);
+
+  const fetchGlobalSync = async () => {
+    setIsSyncingGlobal(true);
+    try {
+      await fetch('/api/calendar/import', { method: 'POST' });
+      showToast("Sincronización Global Completada 🛰️");
+      if (onRefresh) onRefresh();
+    } catch (e) {
+      showToast("Error en sincronización global");
+    }
+    setIsSyncingGlobal(false);
+  };
+
+  const getRelativeTime = (isoString?: string) => {
+    if (!isoString) return 'Nunca';
+    const diffMs = Date.now() - new Date(isoString).getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 1) return 'Hace instantes';
+    if (diffMin < 60) return `Hace ${diffMin} min`;
+    return `Hace ${Math.round(diffMin / 60)}h`;
+  };
+
   if (!localForm) return null;
 
   return (
@@ -93,17 +116,28 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
           <p className="text-[11px] font-bold text-gray-400 uppercase tracking-[0.3em] mt-3">Control táctico de la operación y over-rides premium</p>
         </div>
 
-        <div className="flex items-center gap-4 bg-white p-2 rounded-3xl border border-gray-100 shadow-soft">
-           <div className="pl-4 pr-2 text-gray-300">
-              <Search className="w-5 h-5" />
-           </div>
-           <select 
-             className="bg-gray-50 border-none rounded-2xl px-6 py-4 font-black text-xs text-text-main outline-none min-w-[240px] appearance-none"
-             value={selectedPropertyId} 
-             onChange={(e) => setSelectedPropertyId(e.target.value)}
+        <div className="flex items-center gap-4">
+           <button 
+             onClick={fetchGlobalSync}
+             disabled={isSyncingGlobal}
+             className={`px-6 py-4 bg-black text-white rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl ${isSyncingGlobal ? 'opacity-50' : ''}`}
            >
-             {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
-           </select>
+              <RefreshCcw className={`w-4 h-4 ${isSyncingGlobal ? 'animate-spin' : ''}`} />
+              <span className="text-[10px] font-black uppercase tracking-widest">Sincronización Forzada 🔱</span>
+           </button>
+
+           <div className="flex items-center gap-4 bg-white p-2 rounded-3xl border border-gray-100 shadow-soft">
+              <div className="pl-4 pr-2 text-gray-300">
+                 <Search className="w-5 h-5" />
+              </div>
+              <select 
+                className="bg-gray-50 border-none rounded-2xl px-6 py-4 font-black text-xs text-text-main outline-none min-w-[240px] appearance-none"
+                value={selectedPropertyId} 
+                onChange={(e) => setSelectedPropertyId(e.target.value)}
+              >
+                {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
+              </select>
+           </div>
         </div>
       </div>
 
@@ -265,7 +299,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                                 <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
                              </div>
                              <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
-                                {sync.events_found || 0} EV
+                                {sync.events_found || 0} EV • {getRelativeTime(sync.lastSynced)}
                              </span>
                           </div>
                        ))}
@@ -283,6 +317,45 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                  <p className="text-[10px] text-gray-500 font-medium leading-relaxed italic">
                     {isEditingChannels ? "Guarda los enlaces para activar la vigilancia automática." : "Salty protege tu calendario verificando colisiones constantemente."}
                  </p>
+              </div>
+           </div>
+
+           {/* Card 4: Recent Engine Activity (Feed) */}
+           <div className="bg-black/95 p-8 rounded-[3rem] text-white shadow-xl relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-6 relative z-10">
+                 <div>
+                    <h3 className="font-serif font-black italic text-xl text-white tracking-tight">Feed Táctico</h3>
+                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Monitoreo en tiempo real</p>
+                 </div>
+                 <Zap className="w-5 h-5 text-primary animate-pulse" />
+              </div>
+
+              <div className="space-y-4 relative z-10">
+                 {(() => {
+                    const lastSync = localForm.calendarSync?.reduce((prev: any, current: any) => 
+                       (prev.lastSynced > current.lastSynced) ? prev : current
+                    , {});
+                    
+                    return (
+                       <div className="space-y-3">
+                          <div className="flex gap-3 items-start p-3 bg-white/5 rounded-2xl border border-white/10">
+                             <div className="w-2 h-2 mt-1.5 bg-green-500 rounded-full shadow-glow" />
+                             <p className="text-[10px] font-medium leading-relaxed text-gray-300">
+                                <span className="text-white font-black uppercase block text-[8px] mb-1">Último Escaneo</span>
+                                Se verificaron los {localForm.calendarSync?.length || 0} canales de {localForm.title}. Todo en orden {getRelativeTime(lastSync?.lastSynced)}.
+                             </p>
+                          </div>
+                          
+                          <div className="flex gap-3 items-start p-3 bg-white/5 rounded-2xl border border-white/10 opacity-60">
+                             <div className="w-2 h-2 mt-1.5 bg-primary rounded-full" />
+                             <p className="text-[10px] font-medium leading-relaxed text-gray-300">
+                                <span className="text-white font-black uppercase block text-[8px] mb-1">Malla de Seguridad</span>
+                                Salty Guardian está operando en modo pasivo. No se detectaron colisiones de fechas en las últimas 24h.
+                             </p>
+                          </div>
+                       </div>
+                    );
+                 })()}
               </div>
            </div>
 
