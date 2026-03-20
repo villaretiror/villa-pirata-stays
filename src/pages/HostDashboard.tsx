@@ -1015,71 +1015,6 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
           </div>
         ))}
       </div>
-    </div>
-  );
-};
-
-const SmartValidationModal = ({ booking, onApprove, onReject, onClose }: { booking: any, onApprove: (id: string) => void, onReject: (id: string) => void, onClose: () => void }) => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkSize = () => setIsMobile(window.innerWidth < 768);
-    checkSize();
-    window.addEventListener('resize', checkSize);
-    return () => window.removeEventListener('resize', checkSize);
-  }, []);
-
-  return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-xl z-[150] flex items-end md:items-center justify-center md:p-4 animate-fade-in print:hidden overflow-hidden">
-      <motion.div
-        drag={isMobile ? "y" : false}
-        dragConstraints={{ top: 0, bottom: 0 }}
-        dragElastic={{ top: 0.05, bottom: 0.5 }}
-        onDragEnd={(_, info) => {
-          if (isMobile && info.offset.y > 100) onClose();
-        }}
-        initial={isMobile ? { y: "100%" } : { scale: 0.95, opacity: 0 }}
-        animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
-        exit={isMobile ? { y: "100%" } : { scale: 0.95, opacity: 0 }}
-        transition={{ type: "spring", damping: 25, stiffness: 200 }}
-        className="bg-white w-full max-w-4xl md:rounded-[3rem] rounded-t-[3rem] overflow-hidden shadow-2xl flex flex-col md:flex-row h-[92vh] md:h-[85vh] relative"
-      >
-        {isMobile && (
-          <div className="absolute top-0 left-0 right-0 h-10 flex items-center justify-center z-50 bg-white/80 backdrop-blur-sm">
-            <div className="w-12 h-1.5 bg-gray-200 rounded-full" />
-          </div>
-        )}
-
-        {/* Recibo */}
-        <div className="md:w-1/2 w-full bg-gray-100 relative group overflow-hidden h-[35vh] md:h-full">
-          <img
-            src={booking.payment_proof_url || "https://placehold.co/600x800?text=Sin+Comprobante"}
-            alt="Recibo"
-            className="w-full h-full object-contain md:p-4 p-2 group-hover:scale-105 transition-transform duration-700"
-          />
-          <div className="absolute top-6 left-6 bg-orange-600 text-white text-[9px] font-bold px-4 py-2 rounded-full uppercase tracking-widest shadow-xl flex items-center gap-2 z-10">
-            <CreditCard className="w-4 h-4" />
-            ATH Móvil
-          </div>
-        </div>
-
-        {/* Datos */}
-        <div className="md:w-1/2 w-full p-8 md:p-12 flex flex-col justify-between overflow-y-auto no-scrollbar">
-          <div className="pt-2 md:pt-0">
-            <div className="flex justify-between items-start mb-8 md:mb-10">
-              <div>
-                <h3 className="text-2xl md:text-3xl font-serif font-black italic text-text-main tracking-tighter">Validación Rápida</h3>
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-text-light mt-1 md:mt-2">Reserva #{booking.id.slice(0, 8)}</p>
-              </div>
-              <button onClick={onClose} className="p-3 bg-gray-50 hover:bg-black hover:text-white rounded-full transition-all active:scale-90 shadow-sm hidden md:block">
-                <Check className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-6 md:space-y-8">
-              <div className="grid grid-cols-2 gap-4 md:gap-6">
-                <div className="bg-gray-50/50 p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] border border-gray-100 shadow-soft-sm">
-                  <p className="text-[8px] md:text-[9px] font-bold uppercase text-gray-400 mb-2 tracking-widest flex items-center gap-2">
                     <UserIcon className="w-3 h-3" /> Huésped
                   </p>
                   <p className="text-xs md:text-sm font-bold text-text-main truncate">{booking.profiles?.full_name}</p>
@@ -1940,7 +1875,7 @@ const HostDashboard: React.FC = () => {
         </div>
       </motion.div>
       <motion.div variants={itemVariants}>
-        <SavingsInsights realBookings={realBookings as any} />
+        <SavingsInsights bookings={realBookings as any} />
       </motion.div>
 
       {/* Quick Summary Dashboard */}
@@ -2749,7 +2684,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'analytics' && (
           <AnalysisDashboard
-            realBookings={realBookings as any}
+            bookings={realBookings as any}
             expenses={globalExpenses}
             properties={properties}
             selectedPropertyId={analyticsFilter}
@@ -2767,15 +2702,14 @@ const HostDashboard: React.FC = () => {
       <HostChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <WelcomeModal isOpen={showWelcomeModal} onClose={() => setShowWelcomeModal(false)} message={welcomeMessage} />
       {showSmartValidation && (
-        <SmartValidationModal
-          booking={showSmartValidation}
-          onApprove={handleApprovePayment}
-      {editingProperty && <PropertyEditorModal property={editingProperty as any} realBookings={realBookings as any} onSave={handleSaveProperty as any} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}          onClose={() => setShowSmartValidation(null)}
+        <SmartValidationModal 
+          data={showSmartValidation} 
+          onConfirm={handleSmartImport} 
+          onClose={() => setShowSmartValidation(null)}
         />
       )}
-      {editingProperty && <PropertyEditorModal property={editingProperty as any} realBookings={realBookings as any} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}
+      {editingProperty && <PropertyEditorModal property={editingProperty as any} realBookings={realBookings as any} onSave={handleSaveProperty as any} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
-
 
       {/* Host Navigation */}
       <nav className="fixed bottom-0 w-full bg-black border-t border-white/10 pb-safe pt-3 shadow-[0_-8px_30px_rgb(0,0,0,0.12)] z-40 overflow-x-auto no-scrollbar print:hidden">
