@@ -12,11 +12,74 @@ interface SaltyToastProps {
 const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amenities }) => {
     const [showBubble, setShowBubble] = useState(false);
     const [isMinimized, setIsMinimized] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [inputValue, setInputValue] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
     const { user } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [message, setMessage] = useState('');
     const [isPulsing, setIsPulsing] = useState(false);
+
+    const handleSendMessage = async () => {
+        if (!inputValue.trim()) return;
+        
+        const userMsg = { role: 'user', content: inputValue };
+        const newHistory = [...chatMessages, userMsg];
+        setChatMessages(newHistory);
+        setInputValue('');
+        setIsTyping(true);
+        setShowBubble(false);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: newHistory,
+                    propertyId,
+                    currentUrl: window.location.href
+                })
+            });
+
+            if (!response.ok) throw new Error();
+
+            const reader = response.body?.getReader();
+            let aiResponse = "";
+
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = new TextDecoder().decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('0:')) {
+                            try {
+                                const text = JSON.parse(line.substring(2));
+                                aiResponse += text;
+                                setChatMessages(prev => {
+                                    const last = prev[prev.length - 1];
+                                    if (last?.role === 'model') {
+                                        return [...prev.slice(0, -1), { ...last, content: aiResponse }];
+                                    } else {
+                                        return [...prev, { role: 'model', content: aiResponse }];
+                                    }
+                                });
+                            } catch (e) {}
+                        }
+                    }
+                }
+            }
+        } catch (e) {
+            setChatMessages(prev => [...prev, { role: 'model', content: "Lo siento, mis sensores de comunicación fallaron brevemente. ¿Podrías repetir?" }]);
+        } finally {
+            setIsTyping(false);
+        }
+    };
 
     // 🔱 SALTY'S DYNAMIC BRAIN: Contextual prompts by Brian's Logic
     const getContextualPill = () => {
@@ -70,36 +133,130 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
 
     return (
         <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none">
-            {/* 💬 Salty's Speech Bubble */}
+            {/* 💬 Salty's Speech Bubble / Mini-Chat */}
             <AnimatePresence>
-                {showBubble && (
+                {(showBubble || isExpanded) && (
                     <motion.div
                         initial={{ opacity: 0, scale: 0.8, y: 20, x: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
                         exit={{ opacity: 0, scale: 0.8, y: 10, x: 10 }}
-                        className="pointer-events-auto max-w-[280px] lg:max-w-xs mb-2"
+                        className={`pointer-events-auto transition-all duration-500 ${isExpanded ? 'w-[320px] md:w-[380px]' : 'max-w-[280px] lg:max-w-xs'} mb-2`}
                     >
-                        <div 
-                            className="bg-white/95 backdrop-blur-xl border border-black/5 p-4 rounded-[28px] rounded-br-[4px] shadow-2xl relative"
-                            onClick={() => navigate('/messages', { state: { property_id: propertyId } })}
-                        >
-                            {/* Close Button */}
-                            <button 
-                                onClick={(e) => { e.stopPropagation(); setShowBubble(false); setIsMinimized(true); }}
-                                className="absolute -top-2 -right-2 w-6 h-6 bg-white shadow-md rounded-full flex items-center justify-center text-gray-400 hover:text-black transition-colors"
-                            >
-                                <span className="material-icons text-xs">close</span>
-                            </button>
+                        <div className="bg-white/95 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] rounded-br-[4px] shadow-2xl relative overflow-hidden flex flex-col">
+                            {/* Header (Only in Expanded) */}
+                            {isExpanded && (
+                                <div className="p-4 bg-primary text-white flex justify-between items-center bg-gradient-to-r from-primary to-[#FF8A66]">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/20">
+                                            <span className="text-sm">🔱</span>
+                                        </div>
+                                        <div>
+                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none">Salty</p>
+                                            <p className="text-[8px] font-medium opacity-80">Concierge en Línea</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-1">
+                                        <button 
+                                            onClick={() => navigate('/messages')}
+                                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                                            title="Pantalla Completa"
+                                        >
+                                            <span className="material-icons text-sm">open_in_full</span>
+                                        </button>
+                                        <button 
+                                            onClick={() => { setIsExpanded(false); setIsMinimized(true); setShowBubble(false); }}
+                                            className="p-1.5 hover:bg-white/10 rounded-lg transition-colors"
+                                        >
+                                            <span className="material-icons text-sm">close</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
-                            <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1.5 flex items-center gap-1.5">
-                                🔱 Salty Concierge ✨
-                            </p>
-                            <p className="text-[13px] text-text-main font-semibold leading-relaxed tracking-tight cursor-pointer">
-                                {message}
-                            </p>
+                            {/* Toast Message (When not busy chatting) */}
+                            {!isExpanded && showBubble && (
+                                <div 
+                                    className="p-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
+                                    onClick={() => { setIsExpanded(true); setShowBubble(false); }}
+                                >
+                                    <button 
+                                        onClick={(e) => { e.stopPropagation(); setShowBubble(false); setIsMinimized(true); }}
+                                        className="absolute top-2 right-2 w-6 h-6 bg-white shadow-md rounded-full flex items-center justify-center text-gray-400 hover:text-black transition-colors z-20"
+                                    >
+                                        <span className="material-icons text-xs">close</span>
+                                    </button>
+
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1.5 flex items-center gap-1.5">
+                                        🔱 Salty Concierge ✨
+                                    </p>
+                                    <p className="text-[13px] text-text-main font-semibold leading-relaxed tracking-tight">
+                                        {message}
+                                    </p>
+                                </div>
+                            )}
+
+                            {/* Mini Chat Interface */}
+                            {isExpanded && (
+                                <>
+                                    <div className="flex-1 max-h-[300px] overflow-y-auto p-4 space-y-4 no-scrollbar scroll-smooth">
+                                        {/* Welcome Message if no chat yet */}
+                                        {chatMessages.length === 0 && (
+                                            <div className="bg-sand/30 p-3 rounded-2xl border border-primary/5">
+                                                <p className="text-xs text-text-main font-medium italic opacity-80">
+                                                    "Salty está recalibrando sus sensores... ¿En qué puedo asistirte, Capitán?"
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        {chatMessages.map((msg, idx) => (
+                                            <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                                <div className={`max-w-[85%] p-3 rounded-2xl text-[12px] leading-relaxed shadow-sm ${
+                                                    msg.role === 'user' 
+                                                    ? 'bg-black text-white rounded-tr-none' 
+                                                    : 'bg-sand/40 text-text-main rounded-tl-none border border-black/5'
+                                                }`}>
+                                                    {msg.content}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        
+                                        {isTyping && (
+                                            <div className="flex justify-start">
+                                                <div className="bg-sand/20 p-2 px-4 rounded-2xl border border-black/5 flex gap-1">
+                                                    <div className="w-1 h-1 bg-primary rounded-full animate-bounce"></div>
+                                                    <div className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                                                    <div className="w-1 h-1 bg-primary rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {/* Auto anchor to bottom would go here */}
+                                    </div>
+
+                                    {/* Input Area */}
+                                    <div className="p-3 bg-gray-50/50 border-t border-black/5 flex gap-2">
+                                        <input 
+                                            type="text"
+                                            placeholder="Escribe aquí..."
+                                            value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                            className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs focus:ring-2 ring-primary/20 outline-none shadow-inner"
+                                        />
+                                        <button 
+                                            onClick={handleSendMessage}
+                                            disabled={isTyping || !inputValue.trim()}
+                                            className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all font-black text-xs"
+                                        >
+                                            <span className="material-icons text-sm">send</span>
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                             
-                            {/* Indicator Triangle */}
-                            <div className="absolute bottom-0 right-4 w-4 h-4 bg-white/95 rotate-45 translate-y-2 border-r border-b border-black/5"></div>
+                            {/* Indicator Triangle (Only in Toast mode) */}
+                            {!isExpanded && (
+                                <div className="absolute bottom-0 right-4 w-4 h-4 bg-white/95 rotate-45 translate-y-2 border-r border-b border-black/5"></div>
+                            )}
                         </div>
                     </motion.div>
                 )}
@@ -112,10 +269,13 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => {
-                    if (showBubble) navigate('/messages');
+                    if (isExpanded) setIsExpanded(false);
                     else {
-                        setMessage(getContextualPill());
-                        setShowBubble(true);
+                        if (!showBubble) {
+                            setMessage(getContextualPill());
+                            setShowBubble(true);
+                        }
+                        setIsExpanded(true);
                         setIsMinimized(false);
                     }
                 }}
