@@ -56,7 +56,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
       case 'info': return <InfoSection form={form} setForm={setForm} />;
       case 'photos': return <PhotoSection form={form} setForm={setForm} />;
       case 'calendar': return <CalendarSection form={form} setForm={setForm} onRefresh={onRefresh} />;
-      case 'expenses': return <FinancialsSection property={property}  />;
+      case 'expenses': return <FinancialsSection property={property} bookings={realBookings} />;
       case 'policies': return <PoliciesSection form={form} setForm={setForm} />;
       default: return (
         <div className="text-center py-20 flex flex-col items-center">

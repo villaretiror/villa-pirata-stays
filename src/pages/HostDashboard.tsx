@@ -1607,8 +1607,8 @@ const HostDashboard: React.FC = () => {
               <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-soft-sm transition-all cursor-default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-sand flex items-center justify-center text-text-light text-xs font-black border border-white shadow-sm overflow-hidden">
-                    {booking.profiles?.avatar_url ? (
-                      <img src={booking.profiles.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
+                    {booking.profiles?.avatar ? (
+                      <img src={booking.profiles.avatar} className="w-full h-full object-cover" alt="Avatar" />
                     ) : (
                       booking.profiles?.full_name?.charAt(0) || 'H'
                     )}
