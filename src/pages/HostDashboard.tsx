@@ -85,6 +85,156 @@ const getSourceBadge = (source: string | null) => {
   return <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">🟢 Directo</span>;
 };
 
+// Componente para evitar el bug de hooks en el loop de propiedades
+function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) => void }) {
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [formData, setFormData] = useState({
+    availability_urgency_msg: p.availability_urgency_msg || '',
+    general_area_map_url: p.general_area_map_url || '',
+    exact_lat_long: p.exact_lat_long || '',
+    google_maps_url: p.google_maps_url || '',
+    waze_url: p.waze_url || '',
+    review_url: p.review_url || ''
+  });
+
+  const handleBlur = () => {
+    onSave({ ...p, ...formData });
+  };
+
+  const saltySuggest = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsGenerating(true);
+    // Simulación de análisis de Salty
+    setTimeout(() => {
+      const suggestions = [
+        "¡Última villa disponible para Semana Santa! 🌴",
+        "Solo queda 1 fin de semana libre en los próximos 30 días.",
+        "Reserva hoy y asegura tu refugio de lujo antes del Sold Out.",
+        "Detección de alta demanda: 12 personas viendo esta propiedad ahora."
+      ];
+      const random = suggestions[Math.floor(Math.random() * suggestions.length)];
+      setFormData(prev => ({ ...prev, availability_urgency_msg: random }));
+      onSave({ ...p, ...p, availability_urgency_msg: random });
+      setIsGenerating(false);
+      showToast("Salty ha optimizado tu mensaje 🔱");
+    }, 800);
+  };
+
+  return (
+    <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 relative overflow-hidden group">
+      {/* Decoración Visual */}
+      <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all" />
+      
+      <div className="relative z-10">
+        <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-50">
+          <h3 className="font-serif font-black italic text-2xl text-text-main tracking-tight">{p.title}</h3>
+          <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
+            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+            <span className="text-[8px] font-black uppercase tracking-widest text-text-light">Auto-Optimizer Active</span>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          {/* Columna 1: Urgencia y FOMO */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center">
+                <Zap className="w-4 h-4" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Psicología de Venta (FOMO)</h4>
+            </div>
+            
+            <div className="relative">
+              <label className="text-[9px] font-bold uppercase tracking-widest text-text-light mb-2 block ml-1">Mensaje de Urgencia</label>
+              <div className="relative">
+                <input 
+                  value={formData.availability_urgency_msg}
+                  onChange={e => setFormData({...formData, availability_urgency_msg: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-primary/10 outline-none transition-all pr-12"
+                  placeholder="Ej: Solo quedan 2 fines de semana..."
+                />
+                <button 
+                  onClick={saltySuggest}
+                  disabled={isGenerating}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black text-white rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg"
+                >
+                  {isGenerating ? <RefreshCcw className="w-3 h-3 animate-spin text-primary" /> : <Sparkles className="w-3 h-3" />}
+                </button>
+              </div>
+              <p className="text-[8px] text-gray-400 mt-2 italic">* Este mensaje aparecerá en la cabecera de la propiedad en la web.</p>
+            </div>
+          </div>
+
+          {/* Columna 2: Logística y GPS */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                <Map className="w-4 h-4" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Logística de Confianza</h4>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1">Mapa Estético (Supabase URL)</label>
+                <input 
+                  value={formData.general_area_map_url}
+                  onChange={e => setFormData({...formData, general_area_map_url: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-2 rounded-xl bg-gray-50 border border-gray-100 text-[9px] font-medium"
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1">Coordenadas GPS</label>
+                <input 
+                  value={formData.exact_lat_long}
+                  onChange={e => setFormData({...formData, exact_lat_long: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-2 rounded-xl bg-gray-50 border border-gray-100 text-[9px] font-medium"
+                  placeholder="18.0636, -67.1569"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1 text-center">Google Maps</label>
+                <input 
+                  value={formData.google_maps_url}
+                  onChange={e => setFormData({...formData, google_maps_url: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-2 rounded-lg bg-gray-50 border border-gray-100 text-[8px] text-center"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1 text-center">Waze</label>
+                <input 
+                  value={formData.waze_url}
+                  onChange={e => setFormData({...formData, waze_url: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-2 rounded-lg bg-gray-50 border border-gray-100 text-[8px] text-center"
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1 text-center">Reviews</label>
+                <input 
+                  value={formData.review_url}
+                  onChange={e => setFormData({...formData, review_url: e.target.value})}
+                  onBlur={handleBlur}
+                  className="w-full p-2 rounded-lg bg-gray-50 border border-gray-100 text-[8px] text-center"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const LoadingSpinner = () => (
   <div className="fixed inset-0 z-[110] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
     <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
@@ -2139,108 +2289,31 @@ const HostDashboard: React.FC = () => {
   );
 
   const renderConversion = () => (
-    <div className="space-y-6 animate-fade-in pb-20">
-      <div className="bg-orange-50 p-4 rounded-xl border border-orange-100 mb-2">
-        <div className="flex gap-3">
-          <span className="material-icons text-orange-600">bolt</span>
+    <div className="space-y-12 animate-fade-in pb-32">
+      <div className="bg-black p-8 rounded-[3rem] text-white shadow-2xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/20 rounded-full blur-[80px] -mr-32 -mt-32" />
+        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
           <div>
-            <h3 className="font-bold text-orange-800 text-sm">Optimización de Conversión</h3>
-            <p className="text-xs text-orange-600 leading-relaxed">
-              Configura elementos que crean urgencia y confianza para aumentar tus reservas directas.
-            </p>
+            <h2 className="text-3xl font-serif font-black italic tracking-tighter text-white leading-none">Conversion Optimizer</h2>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mt-3">Psicología de venta y señales de confianza 🔱</p>
+          </div>
+          <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
+             <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
+                <ShieldCheck className="w-6 h-6 text-primary" />
+             </div>
+             <div>
+                <p className="text-[8px] font-black uppercase text-gray-500">Confianza del Huésped</p>
+                <p className="text-xs font-bold text-white tracking-tight">Nivel: Muy Alto</p>
+             </div>
           </div>
         </div>
       </div>
 
-      {properties.map((p: Property) => {
-        const [formData, setFormData] = useState({
-          availability_urgency_msg: p.availability_urgency_msg || '',
-          general_area_map_url: p.general_area_map_url || '',
-          exact_lat_long: p.exact_lat_long || '',
-          google_maps_url: p.google_maps_url || '',
-          waze_url: p.waze_url || '',
-          review_url: p.review_url || ''
-        });
-
-        const handleBlur = () => {
-          handleSaveProperty({ ...p, ...formData });
-        };
-
-        return (
-          <div key={p.id} className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100">
-            <h3 className="font-serif font-black italic text-lg mb-6 border-b border-gray-50 pb-2">{p.title}</h3>
-            
-            <div className="space-y-4">
-              <div>
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Mensaje de Urgencia (Pulsaciones)</label>
-                <input 
-                  value={formData.availability_urgency_msg}
-                  onChange={e => setFormData({...formData, availability_urgency_msg: e.target.value})}
-                  onBlur={handleBlur}
-                  className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm mt-1"
-                  placeholder="Ej: Solo quedan 2 fines de semana en Abril"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">URL Mapa Estético (Pin General)</label>
-                  <input 
-                    value={formData.general_area_map_url}
-                    onChange={e => setFormData({...formData, general_area_map_url: e.target.value})}
-                    onBlur={handleBlur}
-                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm mt-1"
-                    placeholder="https://supabase.co/..."
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Coordenadas Exactas (GPS)</label>
-                  <input 
-                    value={formData.exact_lat_long}
-                    onChange={e => setFormData({...formData, exact_lat_long: e.target.value})}
-                    onBlur={handleBlur}
-                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-sm mt-1"
-                    placeholder="18.0636,-67.1569"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Google Maps URL</label>
-                  <input 
-                    value={formData.google_maps_url}
-                    onChange={e => setFormData({...formData, google_maps_url: e.target.value})}
-                    onBlur={handleBlur}
-                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-[10px] mt-1"
-                    placeholder="https://goo.gl/maps/..."
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Waze URL</label>
-                  <input 
-                    value={formData.waze_url}
-                    onChange={e => setFormData({...formData, waze_url: e.target.value})}
-                    onBlur={handleBlur}
-                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-[10px] mt-1"
-                    placeholder="https://waze.com/ul?..."
-                  />
-                </div>
-                <div>
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Google Review URL</label>
-                  <input 
-                    value={formData.review_url}
-                    onChange={e => setFormData({...formData, review_url: e.target.value})}
-                    onBlur={handleBlur}
-                    className="w-full p-3 rounded-xl bg-gray-50 border border-gray-100 text-[10px] mt-1"
-                    placeholder="https://g.page/r/..."
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })}
+      <div className="grid grid-cols-1 gap-10">
+        {properties.map((p: any) => (
+          <PropertyConversionCard key={p.id} p={p} onSave={handleSaveProperty} />
+        ))}
+      </div>
     </div>
   );
 
