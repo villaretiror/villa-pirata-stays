@@ -70,20 +70,30 @@ export const CalendarSyncService = {
 
     parseIcsToBlocks(icsText: string, propertyId: string) {
         const lines = icsText.split(/\r?\n/);
-        let inEvent = false, dtStart = '', dtEnd = '';
+        let inEvent = false, dtStart = '', dtEnd = '', summary = '', uid = '';
         const blocks = [];
 
         for (const rawLine of lines) {
             const line = rawLine.trim();
-            if (line === 'BEGIN:VEVENT') { inEvent = true; dtStart = ''; dtEnd = ''; continue; }
+            if (line === 'BEGIN:VEVENT') { 
+                inEvent = true; dtStart = ''; dtEnd = ''; summary = ''; uid = ''; continue; 
+            }
             if (line === 'END:VEVENT' && inEvent) {
                 inEvent = false;
                 if (dtStart.length >= 8 && dtEnd.length >= 8) {
                     const startRaw = dtStart.replace(/T.*/, '').trim();
                     const endRaw = dtEnd.replace(/T.*/, '').trim();
+                    const startDate = `${startRaw.substring(0, 4)}-${startRaw.substring(4, 6)}-${startRaw.substring(6, 8)}`;
+                    const endDate = `${endRaw.substring(0, 4)}-${endRaw.substring(4, 6)}-${endRaw.substring(6, 8)}`;
+                    
+                    // Generate a simple hash of the event contents to detect changes
+                    const eventHash = `${startDate}_${endDate}_${summary}_${uid}`.substring(0, 100);
+
                     blocks.push({
-                        start: `${startRaw.substring(0, 4)}-${startRaw.substring(4, 6)}-${startRaw.substring(6, 8)}`,
-                        end: `${endRaw.substring(0, 4)}-${endRaw.substring(4, 6)}-${endRaw.substring(6, 8)}`
+                        start: startDate,
+                        end: endDate,
+                        summary: summary,
+                        hash: eventHash
                     });
                 }
                 continue;
@@ -91,6 +101,8 @@ export const CalendarSyncService = {
             if (inEvent) {
                 if (line.startsWith('DTSTART')) dtStart = (line.split(':').pop() || '').trim();
                 if (line.startsWith('DTEND')) dtEnd = (line.split(':').pop() || '').trim();
+                if (line.startsWith('SUMMARY')) summary = (line.split(':').pop() || '').trim();
+                if (line.startsWith('UID')) uid = (line.split(':').pop() || '').trim();
             }
         }
         return blocks;
@@ -99,45 +111,53 @@ export const CalendarSyncService = {
     async syncBlocksWithDb(supabase: SupabaseClient, propertyId: string, propertyTitle: string, blocks: any[], platform: string) {
         let insertedCount = 0;
         let deletedCount = 0;
+        let updatedCount = 0;
 
         // 1. Fetch current 'external_block' records for this property and platform
         const { data: existing } = await supabase
             .from('bookings')
-            .select('id, check_in, check_out')
+            .select('id, check_in, check_out, sync_last_hash')
             .eq('property_id', propertyId)
             .eq('status', 'external_block')
             .eq('source', platform);
 
-        const existingMap = new Map((existing || []).map((b: any) => [`${b.check_in}_${b.check_out}`, b.id]));
+        const existingMap = new Map((existing || []).map((b: any) => [`${b.check_in}_${b.check_out}`, b]));
         const incomingKeys = new Set(blocks.map(b => `${b.start}_${b.end}`));
 
-        // 2. Identify MISSING blocks (Cancellations in Airbnb/Booking)
+        // 2. Identify MISSING blocks (Cancellations)
         const idsToDelete = (existing || [])
             .filter((b: any) => !incomingKeys.has(`${b.check_in}_${b.check_out}`))
             .map((b: any) => b.id);
 
         if (idsToDelete.length > 0) {
             const { error: delErr } = await supabase.from('bookings').delete().in('id', idsToDelete);
-            if (!delErr) {
-                deletedCount = idsToDelete.length;
-                console.log(`[CalendarSyncService] Freed ${deletedCount} cancelled dates for ${propertyTitle} [${platform}].`);
-            }
+            if (!delErr) deletedCount = idsToDelete.length;
         }
 
-        // 3. Identify NEW blocks (New reservations in Airbnb/Booking)
+        // 3. Identify NEW or CHANGED blocks
         const toInsert = [];
         for (const block of blocks) {
             const key = `${block.start}_${block.end}`;
-            if (!existingMap.has(key)) {
+            const match = existingMap.get(key);
+
+            if (!match) {
+                // New block
                 toInsert.push({
                     property_id: propertyId,
                     status: 'external_block',
                     check_in: block.start,
                     check_out: block.end,
                     source: platform,
+                    sync_last_hash: block.hash,
                     guests_count: 1,
                     total_price: 0
                 });
+            } else if (match.sync_last_hash !== block.hash) {
+                // Changed (same dates but different metadata/hash)
+                await supabase.from('bookings')
+                    .update({ sync_last_hash: block.hash, updated_at: new Date().toISOString() })
+                    .eq('id', match.id);
+                updatedCount++;
             }
         }
 
@@ -151,6 +171,6 @@ export const CalendarSyncService = {
             }
         }
 
-        return { inserted: insertedCount, deleted: deletedCount };
+        return { inserted: insertedCount, deleted: deletedCount, updated: updatedCount };
     }
 };

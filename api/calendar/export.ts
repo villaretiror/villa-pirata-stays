@@ -52,7 +52,17 @@ export default async function handler(req: any, res: any) {
         });
 
         // 2. Add Confirmed Bookings & External Blocks
+        const userAgent = req.headers['user-agent'] || '';
+        const isAirbnb = /airbnb/i.test(userAgent);
+        const isBooking = /booking/i.test(userAgent);
+
         bookings.forEach((booking: any) => {
+            // 🛡️ ANTI-LOOP ENGINE: Do not export external blocks to the same platform that created them
+            if (booking.status === 'external_block') {
+                if (isAirbnb && booking.source === 'Airbnb') return;
+                if (isBooking && booking.source === 'Booking') return; 
+            }
+
             const start = new Date(booking.check_in);
             const end = new Date(booking.check_out);
 

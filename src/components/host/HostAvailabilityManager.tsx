@@ -140,9 +140,17 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
 
   const deleteRule = async (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
+      if (!confirm('¿Estás seguro de que deseas eliminar esta regla estratégica?')) return;
       await supabase.from('availability_rules').delete().eq('id', id);
       fetchRules();
       if (editingRuleId === id) setPanelOpen(false);
+  };
+
+  const deleteExternalBlock = async (id: string, e: React.MouseEvent) => {
+      e.stopPropagation();
+      if (!confirm('⚠️ ¿BORRAR BLOQUEO EXTERNO?\nEsta acción eliminará el bloqueo del sitio web. Podría volver a aparecer en el próximo sync si aún existe en el portal de origen.')) return;
+      await supabase.from('bookings').delete().eq('id', id);
+      refreshAvailability();
   };
 
   const toggleDay = (dayIndex: number) => {
@@ -231,7 +239,18 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                                 "hold-lead": pendingLeads.map(p => new Date(p.check_in + 'T12:00:00'))
                             },
                             {
-                                "manual-block": activeProperty?.blockedDates?.map((d: string) => new Date(d + 'T12:00:00')) || []
+                                "manual-block": rules
+                                    .filter(r => r.is_blocked)
+                                    .flatMap(r => {
+                                        const dates = [];
+                                        let curr = new Date(r.start_date + 'T12:00:00');
+                                        const last = new Date(r.end_date + 'T12:00:00');
+                                        while (curr < last) {
+                                            dates.push(new Date(curr));
+                                            curr.setDate(curr.getDate() + 1);
+                                        }
+                                        return dates;
+                                    })
                             }
                         ]}
                     />
@@ -374,34 +393,67 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
           </div>
 
           <div className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-sm">
-             <h3 className="font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-primary" /> Reglas Activas (Overrides)</h3>
-             {rules.length === 0 ? (
-                 <div className="text-center p-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                     <p className="text-gray-500 font-medium">Ninguna regla customizada. Se usa configuración global.</p>
-                 </div>
-             ) : (
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                     {rules.map(r => (
-                         <div key={r.id} onClick={() => editRule(r)} className="cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-100 p-4 rounded-2xl transition-all relative group">
-                             <div className="flex justify-between items-start">
-                                 <div>
-                                     <p className="font-black text-sm">{new Date(r.start_date).toLocaleDateString()} al {new Date(r.end_date).toLocaleDateString()}</p>
-                                     <p className="text-xs font-bold text-gray-500 mt-1">{r.reason || 'Sin título'}</p>
-                                 </div>
-                                 <button onClick={(e) => deleteRule(r.id, e)} className="text-gray-400 hover:text-red-500 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                                     <Trash2 className="w-4 h-4" />
-                                 </button>
-                             </div>
-                             <div className="mt-3 flex gap-2 flex-wrap">
-                                 {r.min_nights && !r.is_blocked && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-lg">Min: {r.min_nights}N</span>}
-                                 {r.advance_notice_days === 0 && !r.is_blocked && <span className="bg-yellow-100 text-yellow-700 text-[10px] font-bold px-2 py-1 rounded-lg">Mismo Día</span>}
-                                 {r.price_override && !r.is_blocked && <span className="bg-green-100 text-green-700 text-[10px] font-bold px-2 py-1 rounded-lg">${r.price_override}/N</span>}
-                                 {r.is_blocked && <span className="bg-red-100 text-red-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest">BLOQUEADO</span>}
-                             </div>
-                         </div>
-                     ))}
-                 </div>
-             )}
+             <h3 className="font-bold flex items-center gap-2 mb-4"><Calendar className="w-5 h-5 text-primary" /> Reglas de Disponibilidad</h3>
+             
+             <div className="space-y-6">
+                {/* 1. Availability Overrides (Rules) */}
+                <div>
+                    <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3">Overrides Estratégicos</h4>
+                    {rules.length === 0 ? (
+                        <p className="text-[10px] text-gray-300 italic px-2">Sin reglas especiales activas.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {rules.map(r => (
+                                <div key={r.id} onClick={() => editRule(r)} className="cursor-pointer bg-gray-50 hover:bg-gray-100 border border-gray-100 p-4 rounded-2xl transition-all relative group">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-black text-sm">{new Date(r.start_date + 'T12:00:00').toLocaleDateString()} al {new Date(r.end_date + 'T12:00:00').toLocaleDateString()}</p>
+                                            <p className="text-xs font-bold text-gray-500 mt-1">{r.reason || 'Sin título'}</p>
+                                        </div>
+                                        <button onClick={(e) => deleteRule(r.id, e)} className="text-gray-400 hover:text-red-500 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <div className="mt-3 flex gap-2 flex-wrap">
+                                        {r.min_nights && !r.is_blocked && <span className="bg-primary/10 text-primary text-[10px] font-bold px-2 py-1 rounded-lg">Min: {r.min_nights}N</span>}
+                                        {r.is_blocked && <span className="bg-red-100 text-red-700 text-[10px] font-black px-2 py-1 rounded-lg uppercase tracking-widest">BLOQUEADO</span>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* 2. External iCal Blocks (The "Loop" Breaker) */}
+                <div>
+                    <div className="flex justify-between items-center mb-3">
+                        <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Bloqueos de Canal (iCal)</h4>
+                        <span className="text-[9px] font-bold text-gray-400 bg-gray-50 px-2 py-1 rounded-lg">Puntos Azules</span>
+                    </div>
+                    {allBookings.filter(b => b.status === 'external_block').length === 0 ? (
+                        <p className="text-[10px] text-gray-300 italic px-2">No hay bloqueos importados activos.</p>
+                    ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {allBookings.filter(b => b.status === 'external_block').map(b => (
+                                <div key={b.id} className="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl relative group">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-black text-sm text-blue-900">{new Date(b.check_in + 'T12:00:00').toLocaleDateString()} al {new Date(b.check_out + 'T12:00:00').toLocaleDateString()}</p>
+                                            <div className="flex items-center gap-2 mt-1">
+                                                <span className="text-[10px] font-black uppercase text-blue-500 bg-white px-2 py-0.5 rounded-md shadow-sm">{b.source}</span>
+                                                <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter italic">Importado automáticamente</span>
+                                            </div>
+                                        </div>
+                                        <button onClick={(e) => deleteExternalBlock(b.id, e)} className="text-blue-300 hover:text-red-500 bg-white p-2 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+             </div>
           </div>
         </div>
         

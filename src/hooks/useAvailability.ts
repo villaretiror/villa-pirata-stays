@@ -78,10 +78,12 @@ export const useAvailability = (propertyId: string | undefined) => {
                 }
             };
 
-            // Process Manual Blocks from Properties (Host Dashboard Primary Source)
-            if (propData?.blockeddates && Array.isArray(propData.blockeddates)) {
-                propData.blockeddates.forEach((dateStr: string) => {
-                    allBlocked.push(new Date(dateStr + 'T12:00:00'));
+            // Process Manual Blocks from Rules (Host Dashboard Primary Source)
+            if (rules && rules.length > 0) {
+                rules.forEach((r: any) => {
+                    if (r.is_blocked) {
+                        addRange(r.start_date, r.end_date);
+                    }
                 });
             }
             
@@ -102,14 +104,7 @@ export const useAvailability = (propertyId: string | undefined) => {
                 }
             }
 
-            // Process Manual Blocks (Hard Blocks from Rules)
-            if (rules && rules.length > 0) {
-                rules.forEach((r: any) => {
-                    if (r.is_blocked) {
-                        addRange(r.start_date, r.end_date);
-                    }
-                });
-            }
+
 
             // Process Bookings
             (activeBookings || []).forEach((b: { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null }) => {
