@@ -35,7 +35,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
   onRefresh 
 }) => {
   const [form, setForm] = useState(property);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'calendar' | 'seasonal' | 'fees' | 'offers' | 'policies' | 'conversion' | 'emergency' | 'cohosts' | 'expenses'>('calendar');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'policies' | 'emergency' | 'cohosts' | 'expenses'>('info');
 
   // Sync Form with property when it changes externally
   useEffect(() => {
@@ -43,7 +43,6 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
   }, [property]);
 
   const sections = [
-    { id: 'calendar', label: 'Disponibilidad', icon: 'calendar_month' },
     { id: 'info', label: 'Información', icon: 'info' },
     { id: 'photos', label: 'Galería', icon: 'photo_library' },
     { id: 'policies', label: 'Políticas', icon: 'gavel' },
@@ -55,7 +54,6 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
     switch (activeSection) {
       case 'info': return <InfoSection form={form} setForm={setForm} />;
       case 'photos': return <PhotoSection form={form} setForm={setForm} />;
-      case 'calendar': return <CalendarSection form={form} setForm={setForm} onRefresh={onRefresh} />;
       case 'expenses': return <FinancialsSection property={property} bookings={realBookings} />;
       case 'policies': return <PoliciesSection form={form} setForm={setForm} />;
       default: return (

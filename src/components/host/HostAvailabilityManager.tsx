@@ -9,8 +9,9 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id || '');
   const activeProperty = properties.find(p => p.id === selectedPropertyId);
   const [isSaving, setIsSaving] = useState(false);
+  const [isEditingChannels, setIsEditingChannels] = useState(false);
 
-  // local "form" state to talk to CalendarSection
+  // local "form" state to talk to CalendarSection and handle iCal
   const [localForm, setLocalForm] = useState<any>(null);
 
   useEffect(() => {
@@ -45,6 +46,34 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
        if (onRefresh) onRefresh();
     }
     setIsSaving(false);
+  };
+
+  const saveChannels = async () => {
+    setIsEditingChannels(false);
+    await handleUpdateProperty(localForm);
+  };
+
+  const updateAdvanceNotice = async (days: number) => {
+    const { error } = await supabase
+        .from('availability_rules')
+        .upsert({
+            property_id: selectedPropertyId,
+            advance_notice_days: days,
+            is_blocked: false,
+            start_date: '2000-01-01',
+            end_date: '2099-12-31'
+        }, { onConflict: 'property_id' });
+    
+    if (!error) {
+        showToast(`Antelación fijada en ${days} días 🔱`);
+        if (onRefresh) onRefresh();
+    } else {
+        showToast("Error al actualizar antelación");
+    }
+  };
+
+  const refreshData = () => {
+    if (onRefresh) onRefresh();
   };
 
   if (!localForm) return null;
@@ -83,7 +112,6 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
         {/* Lado Izquierdo: Master Calendar Workspace (3/4) */}
         <div className="xl:col-span-3 space-y-12">
            <div className="bg-white p-10 rounded-[4rem] border border-gray-100 shadow-xl overflow-hidden relative group">
-              {/* Background Glow */}
               <div className="absolute top-0 right-0 w-96 h-96 bg-primary/5 rounded-full blur-[100px] -mr-48 -mt-48 transition-all group-hover:bg-primary/10" />
               
               <div className="relative z-10">
@@ -91,6 +119,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                    form={localForm} 
                    setForm={handleUpdateProperty} 
                    monthsCount={2}
+                   onRefresh={refreshData}
                  />
               </div>
            </div>
@@ -114,7 +143,10 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                  </div>
                  <div>
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Bloqueos Externos</h4>
-                    <p className="text-3xl font-serif font-black italic mt-1">{activeProperty.blockedDates?.length || 0} <span className="text-xs font-sans text-gray-400">Total</span></p>
+                    <p className="text-3xl font-serif font-black italic mt-1">
+                      {activeProperty.calendarSync?.reduce((acc: number, f: any) => acc + (f.events_found || 0), 0) || 0}
+                      <span className="text-xs font-sans text-gray-400 ml-2">Eventos</span>
+                    </p>
                  </div>
               </div>
 
@@ -123,8 +155,11 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <Tag className="w-8 h-8 text-orange-600" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Reglas Activas</h4>
-                    <p className="text-3xl font-serif font-black italic mt-1">{localForm.seasonal_prices?.length || 0} <span className="text-xs font-sans text-gray-400">Precio</span></p>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Antelación</h4>
+                    <p className="text-3xl font-serif font-black italic mt-1">
+                      {activeProperty.availability_rules?.[0]?.advance_notice_days || 2}
+                      <span className="text-xs font-sans text-gray-400 ml-2">Días Req.</span>
+                    </p>
                  </div>
               </div>
            </div>
@@ -133,12 +168,11 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
         {/* Lado Derecho: Operational Controls (1/4) */}
         <div className="xl:col-span-1 space-y-8 sticky top-24">
            
-           {/* Card 1: Master Price Control */}
            <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden relative group">
               <div className="flex justify-between items-start mb-6">
                  <div>
                     <h3 className="font-serif font-black italic text-xl text-text-main tracking-tight">Tarifa Master</h3>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Precio base por noche</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Base por noche</p>
                  </div>
                  <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
                     <DollarSign className="w-6 h-6" />
@@ -155,18 +189,13 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                   className="w-full bg-gray-50 border border-gray-100 rounded-[2rem] pl-12 pr-6 py-6 font-black text-4xl text-text-main outline-none focus:bg-white transition-all shadow-inner" 
                 />
               </div>
-              
-              <div className="bg-sand/30 p-4 rounded-2xl text-[10px] font-medium text-gray-500 italic leading-relaxed">
-                 Este precio aplica automáticamente a todos los días que no tengan una regla de Tarifa Especial configurada.
-              </div>
            </div>
 
-           {/* Card 2: Strategic Block (Panic Mode) */}
            <div className={`p-8 rounded-[3rem] border shadow-xl transition-all relative overflow-hidden group ${localForm.is_offline ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
               <div className="flex justify-between items-start mb-8">
                  <div>
                     <h3 className={`font-serif font-black italic text-xl tracking-tight ${localForm.is_offline ? 'text-red-900' : 'text-text-main'}`}>Modo Emergencia</h3>
-                    <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${localForm.is_offline ? 'text-red-600' : 'text-gray-400'}`}>Visibilidad de la Villa</p>
+                    <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${localForm.is_offline ? 'text-red-600' : 'text-gray-400'}`}>Visibilidad</p>
                  </div>
                  <button 
                    onClick={() => handleUpdateProperty({ ...localForm, is_offline: !localForm.is_offline })}
@@ -175,51 +204,84 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${localForm.is_offline ? 'right-1' : 'left-1'}`} />
                  </button>
               </div>
-              
-              <div className={`p-5 rounded-3xl border transition-all ${localForm.is_offline ? 'bg-white/80 border-red-100 shadow-sm' : 'bg-gray-50 border-gray-100'}`}>
-                 <p className={`text-[11px] font-bold leading-relaxed ${localForm.is_offline ? 'text-red-800' : 'text-gray-500'}`}>
-                    {localForm.is_offline 
-                      ? "🚨 Villa Invisible: El calendario visitor y los resultados de búsqueda han sido deshabilitados." 
-                      : "✨ Villa en Línea: Los huéspedes pueden reservar directamente según tus reglas activas."}
-                 </p>
-              </div>
            </div>
 
-           {/* Card 3: External Channels (iCal Sync View) */}
            <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden relative group">
               <div className="flex justify-between items-start mb-6">
                  <div>
                     <h3 className="font-serif font-black italic text-xl text-text-main tracking-tight">Canales iCal</h3>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Conexiones externas activas</p>
+                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sincronización Maestra</p>
                  </div>
-                 <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center">
-                    <RefreshCcw className="w-6 h-6" />
-                 </div>
+                 <button 
+                    onClick={() => isEditingChannels ? saveChannels() : setIsEditingChannels(true)}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isEditingChannels ? 'bg-black text-white' : 'bg-gray-50 text-gray-400 hover:bg-black hover:text-white'}`}
+                 >
+                    {isEditingChannels ? <ShieldCheck className="w-5 h-5" /> : <RefreshCcw className="w-5 h-5" />}
+                 </button>
               </div>
 
-              <div className="space-y-3 mb-8">
-                 {localForm.calendarSync?.map((sync: any) => (
-                    <div key={sync.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                       <div className="flex items-center gap-3">
-                          <div className={`w-2 h-2 rounded-full ${sync.syncStatus === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
-                          <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
+              <div className="space-y-4 mb-8">
+                 {isEditingChannels ? (
+                    <div className="space-y-4 animate-fade-in">
+                       {['Airbnb', 'Booking.com'].map((plat) => {
+                          const existing = localForm.calendarSync?.find((s: any) => s.platform === plat);
+                          return (
+                             <div key={plat}>
+                                <label className="text-[8px] font-black uppercase text-gray-400 ml-2 mb-1 block">{plat} URL</label>
+                                <input 
+                                   defaultValue={existing?.url || ''}
+                                   placeholder={`Pegar URL de ${plat}...`}
+                                   onBlur={(e) => {
+                                      const newUrl = e.target.value;
+                                      const updatedSync = [...(localForm.calendarSync || [])];
+                                      const idx = updatedSync.findIndex(s => s.platform === plat);
+                                      if (idx >= 0) updatedSync[idx].url = newUrl;
+                                      else if (newUrl) updatedSync.push({ id: crypto.randomUUID(), platform: plat, url: newUrl });
+                                      setLocalForm({ ...localForm, calendarSync: updatedSync });
+                                   }}
+                                   className="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-[10px] outline-none focus:bg-white"
+                                />
+                             </div>
+                          );
+                       })}
+                       
+                       <div className="pt-2">
+                          <label className="text-[8px] font-black uppercase text-primary ml-2 mb-1 block">Antelación de Reserva</label>
+                          <select 
+                            defaultValue={activeProperty.availability_rules?.[0]?.advance_notice_days || 2}
+                            onChange={(e) => updateAdvanceNotice(Number(e.target.value))}
+                            className="w-full bg-primary/5 border border-primary/10 rounded-xl p-3 text-[10px] font-black text-primary outline-none"
+                          >
+                             {[0,1,2,3,4,5,7,14].map(d => <option key={d} value={d}>{d} días de antelación</option>)}
+                          </select>
                        </div>
-                       <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
-                          Ok
-                       </span>
                     </div>
-                 ))}
-                 {(!localForm.calendarSync || localForm.calendarSync.length === 0) && (
-                    <p className="text-[10px] text-gray-400 italic text-center py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">Sin canales externos conectados</p>
+                 ) : (
+                    <div className="space-y-3">
+                       {localForm.calendarSync?.map((sync: any) => (
+                          <div key={sync.id || sync.platform} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                             <div className="flex items-center gap-3">
+                                <div className={`w-2 h-2 rounded-full ${sync.syncStatus === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
+                                <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
+                             </div>
+                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
+                                {sync.events_found || 0} EV
+                             </span>
+                          </div>
+                       ))}
+                       {(!localForm.calendarSync || localForm.calendarSync.length === 0) && (
+                          <p className="text-[10px] text-gray-400 italic text-center py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">Sin canales externos</p>
+                       )}
+                    </div>
                  )}
               </div>
 
               <div className="bg-sand/30 p-5 rounded-3xl border border-orange-100/50">
                  <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <ShieldCheck className="w-3 h-3" /> Salty Guardian
+                    <ShieldCheck className="w-3 h-3" /> Salty Guardian 🔱
                  </p>
                  <p className="text-[10px] text-gray-500 font-medium leading-relaxed italic">
-                    Salty protege tu calendario verificando colisiones cada pocos minutos. Si detecta un conflicto, te avisará vía Telegram inmediatamente.
+                    {isEditingChannels ? "Guarda los enlaces para activar la vigilancia automática." : "Salty protege tu calendario verificando colisiones constantemente."}
                  </p>
               </div>
            </div>
