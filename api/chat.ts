@@ -4,6 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 import { HOST_PHONE } from '../src/constants.js';
 import {
     checkAvailabilityWithICal,
+    findCalendarGaps,
     applyAIQuote,
     } from '../src/aiServices.js';
 
@@ -95,6 +96,12 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
 2. **Filtro de Información**: Eres un puente de hospitalidad, no un analista de datos. Si se pregunta por temas "detrás de escena", reconduce amablemente hacia la experiencia del huésped.
 3. **Respaldo Energético**: Vende el Respaldo Solar como un beneficio de lujo ("WiFi y luces siempre activas 🛡️").
 
+### 📅 GESTIÓN DE DISPONIBILIDAD (SENTINEL VISION):
+- Si el huésped pregunta por la "próxima fecha disponible" o disponibilidad general, DEBES usar la herramienta get_available_slots.
+- No adivines fechas. NUNCA digas que no hay espacio sin antes haber escaneado los huecos.
+- Respeta al 100% los bloqueos de Airbnb y del Host. Son sagrados.
+- Si una villa está llena, ofrece la otra de forma elegante, pero informa primero de los huecos encontrados en la villa de interés original.
+
 ### 🧭 RECURSOS:
 - WiFi: ${mems.wifi_policy || "Alta velocidad con respaldo solar."}
 - Mascotas: ${mems.pet_policy || "Protocolo de seguridad con verja perimetral en Villa Retiro R."}
@@ -132,6 +139,17 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
                     }
                 },
                 {
+                    name: 'get_available_slots',
+                    description: 'Escanea el calendario en busca de los próximos huecos disponibles cuando el huésped no da fechas o pregunta por disponibilidad general.',
+                    parameters: {
+                        type: Type.OBJECT,
+                        properties: {
+                            villa_id: { type: Type.STRING }
+                        },
+                        required: ['villa_id']
+                    }
+                },
+                {
                     name: 'generate_booking_pattern',
                     description: 'Genera cotización oficial y enlace de reserva.',
                     parameters: {
@@ -156,8 +174,22 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
                         return id;
                     });
                     const results = await Promise.all(resolvedIds.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
-                    const available = resolvedIds.filter((_id: string, i: number) => results[i].available);
-                    return { status: 'success', available_ids: available, available_names: available.map((id: string) => propertyTitles[id] || id) };
+                    
+                    const response = resolvedIds.map((id: string, i: number) => ({
+                        id,
+                        name: propertyTitles[id] || id,
+                        available: results[i].available,
+                        is_request_only: results[i].is_request_only || false,
+                        reason: results[i].reason
+                    }));
+
+                    return { status: 'success', results: response };
+                },
+                get_available_slots: async ({ villa_id }: any) => {
+                    const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
+                               String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
+                    const slots = await findCalendarGaps(id);
+                    return { status: 'success', villa_name: propertyTitles[id], slots };
                 },
                 generate_booking_pattern: async ({ villa_id, check_in, check_out, guests = 2 }: any) => {
                     const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 

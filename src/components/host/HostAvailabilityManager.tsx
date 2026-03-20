@@ -20,7 +20,15 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
         ...activeProperty,
         blockedDates: activeProperty.blockeddates || activeProperty.blockedDates || [],
         seasonal_prices: activeProperty.seasonal_prices || [],
-        calendarSync: activeProperty.calendarSync || []
+        calendarSync: activeProperty.calendarSync || [],
+        sync_settings: activeProperty.sync_settings || {
+            min_nights: 2,
+            max_nights: 60,
+            advance_notice: 2,
+            prep_days: 0,
+            availability_window: 6,
+            allow_requests_beyond: true
+        }
       });
     }
   }, [activeProperty]);
@@ -32,11 +40,12 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     const { error } = await supabase
       .from('properties')
       .update({
-        blockeddates: updatedForm.blockedDates, // Corrected to lowercase for PG column
+        blockeddates: updatedForm.blockedDates,
         seasonal_prices: updatedForm.seasonal_prices,
         price: updatedForm.price,
         is_offline: updatedForm.is_offline,
-        calendarSync: updatedForm.calendarSync
+        calendarSync: updatedForm.calendarSync,
+        sync_settings: updatedForm.sync_settings // New: Dynamic Rule Persistence
       })
       .eq('id', selectedPropertyId);
 
@@ -195,171 +204,192 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                       <span className="text-xs font-sans text-gray-400 ml-2">Días Req.</span>
                     </p>
                  </div>
-              </div>
-           </div>
+            </div>
+         </div>
         </div>
-
-        {/* Lado Derecho: Operational Controls (1/4) */}
-        <div className="xl:col-span-1 space-y-8 sticky top-24">
+         
+        <div className="xl:col-span-1 space-y-6 sticky top-24">
            
-           <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden relative group">
-              <div className="flex justify-between items-start mb-6">
+           {/* 💰 FINANCIAL HUB */}
+           <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl overflow-hidden relative group">
+              <div className="flex justify-between items-center mb-4">
                  <div>
-                    <h3 className="font-serif font-black italic text-xl text-text-main tracking-tight">Tarifa Master</h3>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Base por noche</p>
+                    <h3 className="font-serif font-black italic text-lg text-text-main tracking-tight">Tarifa Base</h3>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Master Price</p>
                  </div>
-                 <div className="w-12 h-12 bg-primary/10 text-primary rounded-2xl flex items-center justify-center">
-                    <DollarSign className="w-6 h-6" />
+                 <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center">
+                    <DollarSign className="w-5 h-5" />
                  </div>
               </div>
-
-              <div className="relative mb-6">
-                <span className="absolute left-6 top-1/2 -translate-y-1/2 text-2xl font-black text-gray-300">$</span>
+              <div className="relative">
+                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-gray-300">$</span>
                 <input 
                   type="number" 
                   value={localForm.price} 
                   onChange={(e) => setLocalForm({ ...localForm, price: Number(e.target.value) })}
                   onBlur={() => handleUpdateProperty(localForm)}
-                  className="w-full bg-gray-50 border border-gray-100 rounded-[2rem] pl-12 pr-6 py-6 font-black text-4xl text-text-main outline-none focus:bg-white transition-all shadow-inner" 
+                  className="w-full bg-gray-50 border border-gray-100 rounded-2xl pl-10 pr-4 py-4 font-black text-3xl text-text-main outline-none focus:bg-white transition-all shadow-inner" 
                 />
               </div>
            </div>
 
-           <div className={`p-8 rounded-[3rem] border shadow-xl transition-all relative overflow-hidden group ${localForm.is_offline ? 'bg-red-50 border-red-100' : 'bg-white border-gray-100'}`}>
-              <div className="flex justify-between items-start mb-8">
-                 <div>
-                    <h3 className={`font-serif font-black italic text-xl tracking-tight ${localForm.is_offline ? 'text-red-900' : 'text-text-main'}`}>Modo Emergencia</h3>
-                    <p className={`text-[9px] font-bold uppercase tracking-widest mt-1 ${localForm.is_offline ? 'text-red-600' : 'text-gray-400'}`}>Visibilidad</p>
+           {/* 🛡️ REGLAS DE ORO (Golden Rules) - INSPIRADO EN FOTO #1 */}
+           <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-4">
+              <div className="flex items-center gap-3 mb-2">
+                 <div className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center shadow-lg">
+                    <Zap className="w-4 h-4" />
                  </div>
-                 <button 
-                   onClick={() => handleUpdateProperty({ ...localForm, is_offline: !localForm.is_offline })}
-                   className={`w-14 h-8 rounded-full transition-all relative shadow-inner ${localForm.is_offline ? 'bg-red-500' : 'bg-gray-200'}`}
-                 >
-                    <div className={`absolute top-1 w-6 h-6 bg-white rounded-full shadow-md transition-all ${localForm.is_offline ? 'right-1' : 'left-1'}`} />
-                 </button>
+                 <div>
+                    <h3 className="font-serif font-black italic text-lg text-text-main tracking-tight">Reglas de Oro</h3>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest">Cerebro Operativo</p>
+                 </div>
+              </div>
+
+              {/* Min Nights Card */}
+              <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md cursor-pointer">
+                 <div className="flex justify-between items-center mb-1">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Noches Mínimas</p>
+                    <span className="material-icons text-sm text-gray-300 group-hover:text-primary transition-colors">edit</span>
+                 </div>
+                 <div className="flex items-end gap-3">
+                    <p className="text-3xl font-serif font-black text-text-main">{localForm.sync_settings?.min_nights || 2}</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase mb-2">Regla por defecto</p>
+                 </div>
+                 <p className="text-[7px] text-gray-400 italic mt-2">Salty verificará esto antes de cotizar.</p>
+              </div>
+
+              {/* Advance Notice / Preaviso Card */}
+              <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md">
+                 <div className="flex justify-between items-center mb-1">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Preaviso (Seguridad)</p>
+                    <select 
+                        value={localForm.sync_settings?.advance_notice || 2}
+                        onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const updated = { ...localForm, sync_settings: { ...localForm.sync_settings, advance_notice: val } };
+                            handleUpdateProperty(updated);
+                            updateAdvanceNotice(val);
+                        }}
+                        className="bg-transparent border-none text-[9px] font-black text-primary uppercase focus:ring-0 outline-none cursor-pointer"
+                    >
+                        {[0,1,2,3,7].map(d => <option key={d} value={d}>Al menos {d} días</option>)}
+                    </select>
+                 </div>
+                 <div className="flex items-center gap-2">
+                    <ShieldCheck className="w-3.5 h-3.5 text-primary" />
+                    <p className="text-[10px] font-bold text-text-main uppercase tracking-tighter">Sin reservas de última hora</p>
+                 </div>
+              </div>
+
+              {/* Availability Window ( FOTO #1 REPLICA ) */}
+              <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 space-y-4">
+                 <div className="flex justify-between items-start">
+                    <div>
+                        <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Ventana de Disponibilidad</h4>
+                        <div className="flex items-baseline gap-2">
+                            <p className="text-2xl font-serif font-black text-text-main">{localForm.sync_settings?.availability_window || 6}</p>
+                            <p className="text-[9px] font-bold text-text-light uppercase">meses de anticipación</p>
+                        </div>
+                    </div>
+                    <Radio className="w-5 h-5 text-primary opacity-40" />
+                 </div>
+
+                 <div className="flex items-center justify-between pt-2 border-t border-primary/10">
+                    <div className="flex-1">
+                        <p className="text-[9px] font-black text-text-main uppercase leading-tight">¿Recibir solicitudes fuera del plazo?</p>
+                        <p className="text-[8px] text-gray-400 mt-1">Activa el "Modo Captación" de Salty.</p>
+                    </div>
+                    <button 
+                        onClick={() => {
+                            const val = !localForm.sync_settings?.allow_requests_beyond;
+                            const updated = { ...localForm, sync_settings: { ...localForm.sync_settings, allow_requests_beyond: val } };
+                            handleUpdateProperty(updated);
+                        }}
+                        className={`w-10 h-6 rounded-full transition-all relative ${localForm.sync_settings?.allow_requests_beyond ? 'bg-primary' : 'bg-gray-200'}`}
+                    >
+                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full shadow-md transition-all ${localForm.sync_settings?.allow_requests_beyond ? 'right-1' : 'left-1'}`} />
+                    </button>
+                 </div>
               </div>
            </div>
 
-           <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-xl overflow-hidden relative group">
-              <div className="flex justify-between items-start mb-6">
+           {/* 🛰️ SYNC & CHANNELS */}
+           <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl">
+              <div className="flex justify-between items-center mb-6">
                  <div>
-                    <h3 className="font-serif font-black italic text-xl text-text-main tracking-tight">Canales iCal</h3>
-                    <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-1">Sincronización Maestra</p>
+                    <h3 className="font-serif font-black italic text-lg text-text-main tracking-tight">Sincronización</h3>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mt-1">Canales iCal</p>
                  </div>
                  <button 
                     onClick={() => isEditingChannels ? saveChannels() : setIsEditingChannels(true)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isEditingChannels ? 'bg-black text-white' : 'bg-gray-50 text-gray-400 hover:bg-black hover:text-white'}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isEditingChannels ? 'bg-black text-white shadow-xl' : 'bg-gray-50 text-gray-400 hover:bg-black hover:text-white'}`}
                  >
-                    {isEditingChannels ? <ShieldCheck className="w-5 h-5" /> : <RefreshCcw className="w-5 h-5" />}
+                    {isEditingChannels ? <ShieldCheck className="w-5 h-5" /> : <RefreshCcw className="w-5 h-5 flex-shrink-0" />}
                  </button>
               </div>
 
-              <div className="space-y-4 mb-8">
+              <div className="space-y-3">
                  {isEditingChannels ? (
-                    <div className="space-y-4 animate-fade-in">
-                       {['Airbnb', 'Booking.com'].map((plat) => {
-                          const existing = localForm.calendarSync?.find((s: any) => s.platform === plat);
-                          return (
-                             <div key={plat}>
-                                <label className="text-[8px] font-black uppercase text-gray-400 ml-2 mb-1 block">{plat} URL</label>
-                                <input 
-                                   defaultValue={existing?.url || ''}
-                                   placeholder={`Pegar URL de ${plat}...`}
-                                   onBlur={(e) => {
-                                      const newUrl = e.target.value;
-                                      const updatedSync = [...(localForm.calendarSync || [])];
-                                      const idx = updatedSync.findIndex(s => s.platform === plat);
-                                      if (idx >= 0) updatedSync[idx].url = newUrl;
-                                      else if (newUrl) updatedSync.push({ id: crypto.randomUUID(), platform: plat, url: newUrl });
-                                      setLocalForm({ ...localForm, calendarSync: updatedSync });
-                                   }}
-                                   className="w-full bg-gray-50 border border-gray-100 rounded-xl p-3 text-[10px] outline-none focus:bg-white"
-                                />
-                             </div>
-                          );
-                       })}
-                       
-                       <div className="pt-2">
-                          <label className="text-[8px] font-black uppercase text-primary ml-2 mb-1 block">Antelación de Reserva</label>
-                          <select 
-                            defaultValue={activeProperty.availability_rules?.[0]?.advance_notice_days || 2}
-                            onChange={(e) => updateAdvanceNotice(Number(e.target.value))}
-                            className="w-full bg-primary/5 border border-primary/10 rounded-xl p-3 text-[10px] font-black text-primary outline-none"
-                          >
-                             {[0,1,2,3,4,5,7,14].map(d => <option key={d} value={d}>{d} días de antelación</option>)}
-                          </select>
-                       </div>
-                    </div>
+                     <div className="space-y-4 animate-scale-in">
+                        {['Airbnb', 'Booking.com'].map((plat) => {
+                           const existing = localForm.calendarSync?.find((s: any) => s.platform === plat);
+                           return (
+                              <div key={plat}>
+                                 <label className="text-[7px] font-black uppercase text-gray-400 mb-1 ml-2 block">{plat} URL</label>
+                                 <input 
+                                    defaultValue={existing?.url || ''}
+                                    placeholder={`URL de ${plat}...`}
+                                    onBlur={(e) => {
+                                       const newUrl = e.target.value;
+                                       const updatedSync = [...(localForm.calendarSync || [])];
+                                       const idx = updatedSync.findIndex(s => s.platform === plat);
+                                       if (idx >= 0) updatedSync[idx].url = newUrl;
+                                       else if (newUrl) updatedSync.push({ id: crypto.randomUUID(), platform: plat, url: newUrl });
+                                       setLocalForm({ ...localForm, calendarSync: updatedSync });
+                                    }}
+                                    className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-[10px] font-bold outline-none focus:bg-white focus:ring-1 focus:ring-primary/20 transition-all"
+                                 />
+                              </div>
+                           );
+                        })}
+                     </div>
                  ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                        {localForm.calendarSync?.map((sync: any) => (
-                          <div key={sync.id || sync.platform} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100">
-                             <div className="flex items-center gap-3">
-                                <div className={`w-2 h-2 rounded-full ${sync.syncStatus === 'success' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
-                             </div>
-                             <span className="text-[8px] font-bold text-gray-400 uppercase tracking-tighter">
-                                {sync.events_found || 0} EV • {getRelativeTime(sync.lastSynced)}
-                             </span>
-                          </div>
+                           <div key={sync.id || sync.platform} className="flex justify-between items-center p-3 bg-gray-50 rounded-2xl border border-gray-100 hover:border-primary/20 transition-all cursor-default group">
+                              <div className="flex items-center gap-2">
+                                 <div className={`w-1.5 h-1.5 rounded-full ${sync.syncStatus === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500 animate-pulse'}`} />
+                                 <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
+                              </div>
+                              <span className="text-[7px] font-bold text-gray-400 uppercase bg-white px-2 py-1 rounded-lg">
+                                 {getRelativeTime(sync.lastSynced)}
+                              </span>
+                           </div>
                        ))}
-                       {(!localForm.calendarSync || localForm.calendarSync.length === 0) && (
-                          <p className="text-[10px] text-gray-400 italic text-center py-4 bg-gray-50 rounded-2xl border border-dashed border-gray-200">Sin canales externos</p>
-                       )}
                     </div>
                  )}
               </div>
-
-              <div className="bg-sand/30 p-5 rounded-3xl border border-orange-100/50">
-                 <p className="text-[10px] font-black text-primary uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <ShieldCheck className="w-3 h-3" /> Salty Guardian 🔱
-                 </p>
-                 <p className="text-[10px] text-gray-500 font-medium leading-relaxed italic">
-                    {isEditingChannels ? "Guarda los enlaces para activar la vigilancia automática." : "Salty protege tu calendario verificando colisiones constantemente."}
-                 </p>
-              </div>
            </div>
 
-           {/* Card 4: Recent Engine Activity (Feed) */}
-           <div className="bg-black/95 p-8 rounded-[3rem] text-white shadow-xl relative overflow-hidden group">
-              <div className="flex justify-between items-start mb-6 relative z-10">
+           {/* ⚡ TACTICAL FEED (COMPACT) */}
+           <div className="bg-black p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+              <div className="flex justify-between items-start mb-4 relative z-10">
                  <div>
-                    <h3 className="font-serif font-black italic text-xl text-white tracking-tight">Feed Táctico</h3>
-                    <p className="text-[9px] font-bold text-gray-500 uppercase tracking-widest mt-1">Monitoreo en tiempo real</p>
+                    <h3 className="font-serif font-black italic text-lg text-white tracking-tight leading-none">Bitácora</h3>
+                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Salty Guardian 🔱</p>
                  </div>
-                 <Zap className="w-5 h-5 text-primary animate-pulse" />
+                 <Radio className="w-4 h-4 text-primary animate-pulse" />
               </div>
 
-              <div className="space-y-4 relative z-10">
-                 {(() => {
-                    const lastSync = localForm.calendarSync?.reduce((prev: any, current: any) => 
-                       (prev.lastSynced > current.lastSynced) ? prev : current
-                    , {});
-                    
-                    return (
-                       <div className="space-y-3">
-                          <div className="flex gap-3 items-start p-3 bg-white/5 rounded-2xl border border-white/10">
-                             <div className="w-2 h-2 mt-1.5 bg-green-500 rounded-full shadow-glow" />
-                             <p className="text-[10px] font-medium leading-relaxed text-gray-300">
-                                <span className="text-white font-black uppercase block text-[8px] mb-1">Último Escaneo</span>
-                                Se verificaron los {localForm.calendarSync?.length || 0} canales de {localForm.title}. Todo en orden {getRelativeTime(lastSync?.lastSynced)}.
-                             </p>
-                          </div>
-                          
-                          <div className="flex gap-3 items-start p-3 bg-white/5 rounded-2xl border border-white/10 opacity-60">
-                             <div className="w-2 h-2 mt-1.5 bg-primary rounded-full" />
-                             <p className="text-[10px] font-medium leading-relaxed text-gray-300">
-                                <span className="text-white font-black uppercase block text-[8px] mb-1">Malla de Seguridad</span>
-                                Salty Guardian está operando en modo pasivo. No se detectaron colisiones de fechas en las últimas 24h.
-                             </p>
-                          </div>
-                       </div>
-                    );
-                 })()}
+              <div className="space-y-3 relative z-10">
+                  <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+                     <p className="text-[9px] text-gray-300 leading-relaxed italic">
+                        "Vigilando {localForm.title}. Todo el perímetro digital está asegurado."
+                     </p>
+                  </div>
               </div>
            </div>
-
-        </div>
+         </div>
       </div>
     </div>
   );

@@ -36,7 +36,7 @@ export const checkAvailabilityWithICal = async (
     villaId: string,
     checkIn: string,
     checkOut: string
-): Promise<{ available: boolean; reason?: string }> => {
+): Promise<{ available: boolean; reason?: string; is_request_only?: boolean }> => {
 
     const qIn = new Date(checkIn);
     const qOut = new Date(checkOut);
@@ -56,31 +56,32 @@ export const checkAvailabilityWithICal = async (
         return { available: true };
     }
 
-    const hasOverlap = (dbBookings as BookingAvailRow[] || []).some((b: BookingAvailRow) => {
-        // Skip expired AI holds
-        if (
-            b.status === 'pending_ai_validation' &&
-            b.hold_expires_at &&
-            new Date(b.hold_expires_at) < now
-        ) {
-            return false;
-        }
-
+    const overlapBooking = (dbBookings as BookingAvailRow[] || []).find((b: BookingAvailRow) => {
+        if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
         const bIn = new Date(b.check_in);
         const bOut = new Date(b.check_out);
-        // Standard overlap: query starts before booking ends AND query ends after booking starts
         return qIn < bOut && qOut > bIn;
     });
 
-    if (hasOverlap) {
-        const conflictingBooking = (dbBookings as BookingAvailRow[] | null || []).find((b: BookingAvailRow) => {
-            if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
-            return new Date(b.check_in) < qOut && new Date(b.check_out) > qIn;
-        });
+    if (overlapBooking) {
+        const bIn = new Date(overlapBooking.check_in);
+        const bOut = new Date(overlapBooking.check_out);
+        const diffDays = (bOut.getTime() - bIn.getTime()) / (1000 * 3600 * 24);
+        const isExternal = overlapBooking.source && overlapBooking.source !== 'Direct Web';
 
-        const source = conflictingBooking?.source;
-        const reason = source && source !== 'Direct Web'
-            ? `Fechas no disponibles — reservado vía ${source}.`
+        // 🌟 ARCHITECTURE UPGRADE: The "Gold Window" Logic (Mar 2026)
+        // If it's a very long block (> 90 days) from an external source, it's likely a window setting.
+        // We don't block the AI; we flag it as "Request Only" to capture the lead.
+        if (isExternal && diffDays > 90) {
+            return { 
+                available: true, 
+                is_request_only: true, 
+                reason: 'Fuera de la ventana de reserva instantánea. Se permite solicitud manual.' 
+            };
+        }
+
+        const reason = isExternal
+            ? `Fechas no disponibles — reservado vía ${overlapBooking.source}.`
             : 'Fechas no disponibles — reserva directa existente.';
 
         return { available: false, reason };
@@ -199,32 +200,77 @@ export const getPaymentVerificationStatus = async (bookingId: string): Promise<s
     return 'Aún no hemos recibido el comprobante de pago.';
 };
 
-// 4. Gap Automation (Revenue Optimization)
+// 4. Gap Automation (Revenue Optimization & Sentinel Vision)
 export const findCalendarGaps = async (propertyId: string): Promise<{ start: string; end: string; nights: number }[]> => {
-    const { data: bookings } = await supabase
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+
+    const { data: bookings, error } = await supabase
         .from('bookings')
-        .select('check_in, check_out')
+        .select('check_in, check_out, source')
         .eq('property_id', propertyId)
         .neq('status', 'cancelled')
+        .gte('check_out', todayStr)
         .order('check_in', { ascending: true });
 
+    if (error) {
+        console.error("[findCalendarGaps] DB Error:", error);
+        return [];
+    }
+
+    // 🌟 FILTER: Technical Windows ( > 90 days ) should not block the gap scanner
+    const realBookings = (bookings || []).filter((b: { check_in: string; check_out: string; source: string | null }) => {
+        const bIn = new Date(b.check_in);
+        const bOut = new Date(b.check_out);
+        const diff = (bOut.getTime() - bIn.getTime()) / (1000 * 3600 * 24);
+        const isExternal = b.source && b.source !== 'Direct Web';
+        return !(isExternal && diff > 90);
+    });
+
     const gaps: { start: string; end: string; nights: number }[] = [];
-    if (!bookings || bookings.length < 2) return gaps;
+    let lastCheckout = new Date(todayStr + 'T12:00:00');
 
-    for (let i = 0; i < bookings.length - 1; i++) {
-        const endOfFirst = new Date(bookings[i].check_out);
-        const startOfSecond = new Date(bookings[i + 1].check_in);
-        const diffTime = Math.abs(startOfSecond.getTime() - endOfFirst.getTime());
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // 🔬 Sentinel Scan Logic: Traverse REAL bookings to find "Dead Air"
+    for (const b of realBookings) {
+        const bIn = new Date(b.check_in + 'T12:00:00');
+        const bOut = new Date(b.check_out + 'T12:00:00');
 
-        if (diffDays > 0 && diffDays < 3) {
+        if (bIn > lastCheckout) {
+            const diffTime = bIn.getTime() - lastCheckout.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays > 0) {
+                gaps.push({
+                    start: lastCheckout.toISOString().split('T')[0],
+                    end: b.check_in,
+                    nights: diffDays
+                });
+            }
+        }
+        
+        if (bOut > lastCheckout) {
+            lastCheckout = bOut;
+        }
+
+        if (gaps.length >= 5) break; // Optimization: First 5 slots are enough for Salty
+    }
+
+    // Logic for infinite availability after last booking (up to 180 days limit)
+    if (gaps.length < 5) {
+        const finalLimit = new Date();
+        finalLimit.setMonth(finalLimit.getMonth() + 6);
+        
+        if (lastCheckout < finalLimit) {
+            const diffTime = finalLimit.getTime() - lastCheckout.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             gaps.push({
-                start: bookings[i].check_out,
-                end: bookings[i + 1].check_in,
+                start: lastCheckout.toISOString().split('T')[0],
+                end: finalLimit.toISOString().split('T')[0],
                 nights: diffDays
             });
         }
     }
+
     return gaps;
 };
 
