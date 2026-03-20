@@ -126,7 +126,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
     <div className="bg-white rounded-[2.5rem] p-8 shadow-xl border border-gray-100 relative overflow-hidden group">
       {/* Decoración Visual */}
       <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all" />
-      
+
       <div className="relative z-10">
         <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-50">
           <h3 className="font-serif font-black italic text-2xl text-text-main tracking-tight">{p.title}</h3>
@@ -135,7 +135,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
             <span className="text-[8px] font-black uppercase tracking-widest text-text-light">Auto-Optimizer Active</span>
           </div>
         </div>
-        
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
           {/* Columna 1: Urgencia y FOMO */}
           <div className="space-y-6">
@@ -145,18 +145,18 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
               </div>
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Psicología de Venta (FOMO)</h4>
             </div>
-            
+
             <div className="relative">
               <label className="text-[9px] font-bold uppercase tracking-widest text-text-light mb-2 block ml-1">Mensaje de Urgencia</label>
               <div className="relative">
-                <input 
+                <input
                   value={formData.availability_urgency_msg}
-                  onChange={e => setFormData({...formData, availability_urgency_msg: e.target.value})}
+                  onChange={e => setFormData({ ...formData, availability_urgency_msg: e.target.value })}
                   onBlur={handleBlur}
                   className="w-full p-4 rounded-2xl bg-gray-50 border border-gray-100 text-sm font-medium focus:bg-white focus:ring-2 focus:ring-primary/10 outline-none transition-all pr-12"
                   placeholder="Ej: Solo quedan 2 fines de semana..."
                 />
-                <button 
+                <button
                   onClick={saltySuggest}
                   disabled={isGenerating}
                   className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-black text-white rounded-xl flex items-center justify-center hover:scale-110 active:scale-95 transition-all shadow-lg"
@@ -180,9 +180,9 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1">Mapa Estético (Supabase URL)</label>
-                <input 
+                <input
                   value={formData.general_area_map_url}
-                  onChange={e => setFormData({...formData, general_area_map_url: e.target.value})}
+                  onChange={e => setFormData({ ...formData, general_area_map_url: e.target.value })}
                   onBlur={handleBlur}
                   className="w-full p-2 rounded-xl bg-gray-50 border border-gray-100 text-[9px] font-medium"
                   placeholder="https://..."
@@ -190,9 +190,9 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
               </div>
               <div>
                 <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1">Coordenadas GPS</label>
-                <input 
+                <input
                   value={formData.exact_lat_long}
-                  onChange={e => setFormData({...formData, exact_lat_long: e.target.value})}
+                  onChange={e => setFormData({ ...formData, exact_lat_long: e.target.value })}
                   onBlur={handleBlur}
                   className="w-full p-2 rounded-xl bg-gray-50 border border-gray-100 text-[9px] font-medium"
                   placeholder="18.0636, -67.1569"
@@ -203,27 +203,27 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
             <div className="flex gap-2">
               <div className="flex-1">
                 <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1 text-center">Google Maps</label>
-                <input 
+                <input
                   value={formData.google_maps_url}
-                  onChange={e => setFormData({...formData, google_maps_url: e.target.value})}
+                  onChange={e => setFormData({ ...formData, google_maps_url: e.target.value })}
                   onBlur={handleBlur}
                   className="w-full p-2 rounded-lg bg-gray-50 border border-gray-100 text-[8px] text-center"
                 />
               </div>
               <div className="flex-1">
                 <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1 text-center">Waze</label>
-                <input 
+                <input
                   value={formData.waze_url}
-                  onChange={e => setFormData({...formData, waze_url: e.target.value})}
+                  onChange={e => setFormData({ ...formData, waze_url: e.target.value })}
                   onBlur={handleBlur}
                   className="w-full p-2 rounded-lg bg-gray-50 border border-gray-100 text-[8px] text-center"
                 />
               </div>
               <div className="flex-1">
                 <label className="text-[8px] font-bold uppercase tracking-widest text-text-light mb-1 block ml-1 text-center">Reviews</label>
-                <input 
+                <input
                   value={formData.review_url}
-                  onChange={e => setFormData({...formData, review_url: e.target.value})}
+                  onChange={e => setFormData({ ...formData, review_url: e.target.value })}
                   onBlur={handleBlur}
                   className="w-full p-2 rounded-lg bg-gray-50 border border-gray-100 text-[8px] text-center"
                 />
@@ -281,78 +281,78 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
     <div className="bg-white rounded-[3rem] p-10 shadow-soft border border-gray-100 group transition-all relative overflow-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
         <div className="flex-1">
-           <div className="flex items-center gap-3 mb-2">
-              <span className="w-2 h-2 rounded-full bg-primary" />
-              <h3 className="font-serif font-black italic text-2xl tracking-tighter text-text-main group-hover:text-primary transition-colors leading-none">
-                {property.title}
-              </h3>
-           </div>
-           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light opacity-50 ml-5">Social Proof Management</p>
+          <div className="flex items-center gap-3 mb-2">
+            <span className="w-2 h-2 rounded-full bg-primary" />
+            <h3 className="font-serif font-black italic text-2xl tracking-tighter text-text-main group-hover:text-primary transition-colors leading-none">
+              {property.title}
+            </h3>
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light opacity-50 ml-5">Social Proof Management</p>
         </div>
 
         <div className="flex items-center gap-8 bg-gray-50/80 p-6 rounded-3xl border border-gray-100 shadow-inner">
-           <div className="text-center">
-              <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Score Global</p>
-              <div className="flex items-baseline gap-1">
-                 <span className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.rating}</span>
-                 <Star className="w-3.5 h-3.5 text-primary fill-primary mb-1" />
-              </div>
-           </div>
-           <div className="w-px h-10 bg-gray-200" />
-           <div className="text-center">
-              <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Total Reseñas</p>
-              <p className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.count}</p>
-           </div>
+          <div className="text-center">
+            <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Score Global</p>
+            <div className="flex items-baseline gap-1">
+              <span className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.rating}</span>
+              <Star className="w-3.5 h-3.5 text-primary fill-primary mb-1" />
+            </div>
+          </div>
+          <div className="w-px h-10 bg-gray-200" />
+          <div className="text-center">
+            <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Total Reseñas</p>
+            <p className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.count}</p>
+          </div>
         </div>
       </div>
 
       {/* Sincronización Manual Styling */}
       <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-12">
-         <div className="md:col-span-5 relative group/input">
-            <label className="text-[9px] font-black uppercase tracking-[0.3em] text-text-light mb-3 block ml-1">Actualizar Puntuación</label>
-            <div className="relative">
-              <input
-                type="number"
-                step="0.01"
-                value={stats.rating}
-                onChange={e => setStats({ ...stats, rating: parseFloat(e.target.value) })}
-                className="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 font-serif font-black italic text-2xl outline-none focus:bg-white focus:border-primary/30 transition-all shadow-inner"
-              />
-              <Star className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-primary group-focus-within/input:rotate-12 transition-transform" />
-            </div>
-         </div>
-         <div className="md:col-span-5 relative group/input">
-            <label className="text-[9px] font-black uppercase tracking-[0.3em] text-text-light mb-3 block ml-1">Volumen de Feedback</label>
-            <div className="relative">
-              <input
-                type="number"
-                value={stats.count}
-                onChange={e => setStats({ ...stats, count: parseInt(e.target.value) })}
-                className="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 font-serif font-black italic text-2xl outline-none focus:bg-white focus:border-primary/30 transition-all shadow-inner"
-              />
-              <BarChart3 className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 opacity-30" />
-            </div>
-         </div>
-         <div className="md:col-span-2 flex items-end">
-            <button 
-              onClick={saveStats}
-              className="w-full h-[68px] bg-black text-white rounded-2xl hover:bg-gray-800 transition-all active:scale-95 shadow-xl flex items-center justify-center group/btn"
-              title="Guardar Cambios de Prestigio"
-            >
-              <Save className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
-            </button>
-         </div>
+        <div className="md:col-span-5 relative group/input">
+          <label className="text-[9px] font-black uppercase tracking-[0.3em] text-text-light mb-3 block ml-1">Actualizar Puntuación</label>
+          <div className="relative">
+            <input
+              type="number"
+              step="0.01"
+              value={stats.rating}
+              onChange={e => setStats({ ...stats, rating: parseFloat(e.target.value) })}
+              className="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 font-serif font-black italic text-2xl outline-none focus:bg-white focus:border-primary/30 transition-all shadow-inner"
+            />
+            <Star className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-primary group-focus-within/input:rotate-12 transition-transform" />
+          </div>
+        </div>
+        <div className="md:col-span-5 relative group/input">
+          <label className="text-[9px] font-black uppercase tracking-[0.3em] text-text-light mb-3 block ml-1">Volumen de Feedback</label>
+          <div className="relative">
+            <input
+              type="number"
+              value={stats.count}
+              onChange={e => setStats({ ...stats, count: parseInt(e.target.value) })}
+              className="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 font-serif font-black italic text-2xl outline-none focus:bg-white focus:border-primary/30 transition-all shadow-inner"
+            />
+            <BarChart3 className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 opacity-30" />
+          </div>
+        </div>
+        <div className="md:col-span-2 flex items-end">
+          <button
+            onClick={saveStats}
+            className="w-full h-[68px] bg-black text-white rounded-2xl hover:bg-gray-800 transition-all active:scale-95 shadow-xl flex items-center justify-center group/btn"
+            title="Guardar Cambios de Prestigio"
+          >
+            <Save className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+          </button>
+        </div>
       </div>
 
       {/* Reviews List Section */}
       <div className="space-y-6">
         <div className="flex justify-between items-center px-2">
           <div className="flex items-center gap-3">
-             <Quote className="w-5 h-5 text-primary opacity-40 rotate-180" />
-             <h4 className="font-serif font-black italic text-sm text-text-main tracking-tight">Selección de Reseñas Destacadas ({property.reviews_list?.length || 0})</h4>
+            <Quote className="w-5 h-5 text-primary opacity-40 rotate-180" />
+            <h4 className="font-serif font-black italic text-sm text-text-main tracking-tight">Selección de Reseñas Destacadas ({property.reviews_list?.length || 0})</h4>
           </div>
-          <button 
-            onClick={() => setIsAdding(!isAdding)} 
+          <button
+            onClick={() => setIsAdding(!isAdding)}
             className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full border transition-all ${isAdding ? 'bg-red-50 text-red-500 border-red-100' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'}`}
           >
             {isAdding ? 'Cerrar Panel' : '+ Añadir Manualmente'}
@@ -364,21 +364,21 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 relative z-10">
               <input placeholder="Nombre del Huésped" className="p-4 rounded-xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, author: e.target.value })} />
               <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, date: e.target.value })} />
-              
+
               <div className="relative">
-                 <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
-                    <option value="Airbnb">Origen: Airbnb</option>
-                    <option value="Booking.com">Origen: Booking.com</option>
-                    <option value="Google">Origen: Google Maps</option>
-                 </select>
-                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
+                <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
+                  <option value="Airbnb">Origen: Airbnb</option>
+                  <option value="Booking.com">Origen: Booking.com</option>
+                  <option value="Google">Origen: Google Maps</option>
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
               </div>
 
-               <div className="relative text-center">
-                 <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
-                    <option value={5}>Rating: ★ ★ ★ ★ ★</option>
-                    <option value={4}>Rating: ★ ★ ★ ★ ☆</option>
-                 </select>
+              <div className="relative text-center">
+                <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
+                  <option value={5}>Rating: ★ ★ ★ ★ ★</option>
+                  <option value={4}>Rating: ★ ★ ★ ★ ☆</option>
+                </select>
               </div>
             </div>
             <textarea
@@ -396,31 +396,31 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
             <div key={review.id} className="p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100 group/item hover:bg-white hover:shadow-soft transition-all relative">
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-4">
-                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                      <img src={review.avatar || "https://i.pravatar.cc/100"} alt="User" />
-                   </div>
-                   <div>
-                      <h4 className="font-serif font-black italic text-lg text-text-main group-hover/item:text-primary transition-colors leading-none truncate max-w-[150px]">{review.author}</h4>
-                      <p className="text-[8px] font-black uppercase tracking-widest text-text-light mt-1 opacity-50">{review.date}</p>
-                   </div>
+                  <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                    <img src={review.avatar || "https://i.pravatar.cc/100"} alt="User" />
+                  </div>
+                  <div>
+                    <h4 className="font-serif font-black italic text-lg text-text-main group-hover/item:text-primary transition-colors leading-none truncate max-w-[150px]">{review.author}</h4>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-text-light mt-1 opacity-50">{review.date}</p>
+                  </div>
                 </div>
                 <div className="bg-white px-3 py-1.5 rounded-full border border-gray-100 flex items-center gap-1.5 shadow-sm group-hover/item:scale-105 transition-transform">
-                   <div className={`w-1.5 h-1.5 rounded-full ${review.source === 'Airbnb' ? 'bg-[#FF385C]' : review.source === 'Booking.com' ? 'bg-[#003580]' : 'bg-green-500'}`} />
-                   <span className="text-[7px] font-black uppercase tracking-widest text-text-main">{review.source}</span>
+                  <div className={`w-1.5 h-1.5 rounded-full ${review.source === 'Airbnb' ? 'bg-[#FF385C]' : review.source === 'Booking.com' ? 'bg-[#003580]' : 'bg-green-500'}`} />
+                  <span className="text-[7px] font-black uppercase tracking-widest text-text-main">{review.source}</span>
                 </div>
               </div>
 
               <div className="flex gap-0.5 mb-4">
-                 {[...Array(review.rating || 5)].map((_, i) => (
-                    <Star key={i} className="w-2.5 h-2.5 text-primary fill-primary" />
-                 ))}
+                {[...Array(review.rating || 5)].map((_, i) => (
+                  <Star key={i} className="w-2.5 h-2.5 text-primary fill-primary" />
+                ))}
               </div>
-              
+
               <div className="relative">
-                 <Quote className="absolute -left-2 -top-2 w-6 h-6 text-primary opacity-5 rotate-180" />
-                 <p className="text-text-main text-[13px] leading-relaxed italic opacity-80 pl-6 border-l-2 border-primary/10">
-                   "{review.text}"
-                 </p>
+                <Quote className="absolute -left-2 -top-2 w-6 h-6 text-primary opacity-5 rotate-180" />
+                <p className="text-text-main text-[13px] leading-relaxed italic opacity-80 pl-6 border-l-2 border-primary/10">
+                  "{review.text}"
+                </p>
               </div>
             </div>
           ))}
@@ -428,8 +428,8 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
 
         {(property.reviews_list || []).length === 0 && !isAdding && (
           <div className="text-center py-12 bg-gray-50/30 rounded-[3rem] border border-dashed border-gray-100">
-             <Sparkles className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-             <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Tu legado está listo para ser documentado</p>
+            <Sparkles className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+            <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Tu legado está listo para ser documentado</p>
           </div>
         )}
       </div>
@@ -634,14 +634,14 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
               <AreaChart data={stats}>
                 <defs>
                   <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#CBB28A" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
                 />
                 <Area type="monotone" dataKey="Total" stroke="#CBB28A" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={3} />
@@ -655,21 +655,21 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-black p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
-           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
-             <TrendingUp className="w-16 h-16" />
-           </div>
-           <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ingresos {currentMonthData.name}</p>
-           <p className="text-3xl font-serif font-black italic tracking-tighter text-primary-light">${currentMonthData.Total.toLocaleString()}</p>
+          <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
+            <TrendingUp className="w-16 h-16" />
+          </div>
+          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ingresos {currentMonthData.name}</p>
+          <p className="text-3xl font-serif font-black italic tracking-tighter text-primary-light">${currentMonthData.Total.toLocaleString()}</p>
         </div>
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft">
-           <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">Gastos Operativos</p>
-           <p className="text-3xl font-serif font-black italic tracking-tighter text-red-600">-${currentMonthData.Gastos.toLocaleString()}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">Gastos Operativos</p>
+          <p className="text-3xl font-serif font-black italic tracking-tighter text-red-600">-${currentMonthData.Gastos.toLocaleString()}</p>
         </div>
 
         <div className="bg-primary/10 p-8 rounded-[2.5rem] border border-primary/20 shadow-sm">
-           <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Profit Real Neto</p>
-           <p className="text-3xl font-serif font-black italic tracking-tighter text-primary">${currentMonthData.Profit.toLocaleString()}</p>
+          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Profit Real Neto</p>
+          <p className="text-3xl font-serif font-black italic tracking-tighter text-primary">${currentMonthData.Profit.toLocaleString()}</p>
         </div>
       </div>
     </div>
@@ -731,7 +731,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            type: 'cohost_invitation', 
+            type: 'cohost_invitation',
             customerEmail: trimmedEmail, // Sync with backend key
             email: trimmedEmail, // Backward compatibility
             propertyName: propertyName,
@@ -768,19 +768,19 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
 
   const handleResendInvitation = async (ch: CohostRow) => {
     try {
-        await fetch('/api/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'cohost_invitation',
-            customerEmail: ch.email,
-            email: ch.email,
-            propertyName: propertyName,
-            propertyId: propertyId,
-            token: ch.invitation_token
-          })
-        });
-        onShowToast(`Invitación reenviada a ${ch.email} ✨`);
+      await fetch('/api/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'cohost_invitation',
+          customerEmail: ch.email,
+          email: ch.email,
+          propertyName: propertyName,
+          propertyId: propertyId,
+          token: ch.invitation_token
+        })
+      });
+      onShowToast(`Invitación reenviada a ${ch.email} ✨`);
     } catch (e) {
       console.error("Resend error:", e);
       onShowToast("Error al reenviar invitación.");
@@ -830,7 +830,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
   if (showEliteView) {
     return (
       <AnimatePresence>
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: -20 }}
@@ -838,9 +838,9 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
         >
           {/* Animated Background Orbs */}
           <div className="absolute inset-0 pointer-events-none overflow-hidden">
-            <motion.div 
-              animate={{ 
-                x: [0, 100, 0], 
+            <motion.div
+              animate={{
+                x: [0, 100, 0],
                 y: [0, -50, 0],
                 rotate: [0, 360],
               }}
@@ -850,7 +850,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
           </div>
 
           <div className="relative z-10">
-            <motion.div 
+            <motion.div
               initial={{ rotate: -45, scale: 0 }}
               animate={{ rotate: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
@@ -869,7 +869,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             </motion.div>
 
             {/* Elite Badge Display */}
-            <motion.div 
+            <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ delay: 0.6, type: "spring" }}
@@ -879,10 +879,10 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
               <span className="text-[10px] font-black text-white uppercase tracking-widest">HOST QUALITY ASSURED</span>
             </motion.div>
 
-            <motion.button 
+            <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
-              onClick={() => setShowEliteView(false)} 
+              onClick={() => setShowEliteView(false)}
               className="w-full py-5 bg-white text-black rounded-2xl font-black text-[12px] uppercase tracking-[0.4em] transition-all hover:bg-gray-100 shadow-xl"
             >
               Cerrar Dashboard
@@ -1135,7 +1135,7 @@ const HostDashboard: React.FC = () => {
     }
   }, [DASH_CACHE_KEY]);
 
-    const fetchData = useCallback(async (signal?: AbortSignal) => {
+  const fetchData = useCallback(async (signal?: AbortSignal) => {
     if (!user?.id || !user?.email) return;
 
     // SWR: Restaurar cache antes de empezar la carga real para UI instantánea
@@ -1144,15 +1144,15 @@ const HostDashboard: React.FC = () => {
 
     try {
       // 🔱 BUNDLE FETCHING: Single Atomic Snapshot for Zero Latency
-      const { data: bundle, error: bundleError } = await supabase.rpc('get_host_dashboard_bundle', { 
-        target_email: user.email.toLowerCase() 
+      const { data: bundle, error: bundleError } = await supabase.rpc('get_host_dashboard_bundle', {
+        target_email: user.email.toLowerCase()
       });
 
       if (bundleError) throw bundleError;
       if (!bundle) return;
 
       // 1. Unificación de Propiedades (Properties)
-      const mappedProps = (bundle.properties || []).map((p: any) => 
+      const mappedProps = (bundle.properties || []).map((p: any) =>
         mapSupabaseProperty(p, { name: user.name || '', avatar: user.avatar || '', role: user.role || '' }, { isAdmin: true })
       );
       onUpdateProperties(mappedProps);
@@ -1167,7 +1167,7 @@ const HostDashboard: React.FC = () => {
       const performance: Record<string, number> = {};
       const chartData: any[] = [];
       const monthsHistory: Record<string, number> = {};
-      
+
       typedBookings.forEach((b: any) => {
         const amount = Number(b.total_price) || 0;
         total += amount;
@@ -1175,13 +1175,13 @@ const HostDashboard: React.FC = () => {
         // Clasificar por Propiedad
         const propTitle = b.properties?.title || 'Villa';
         performance[propTitle] = (performance[propTitle] || 0) + amount;
-        
+
         // Historial Mensual basado en FECHA DE ESTADÍA (Check-in) para ver ocupación real
         if (b.check_in) {
           const stayDate = new Date(b.check_in);
           const monthKey = `${stayDate.getFullYear()}-${String(stayDate.getMonth() + 1).padStart(2, '0')}`;
           monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
-          
+
           if (stayDate.getMonth() === currentMonth && stayDate.getFullYear() === currentYear && b.status !== 'cancelled') {
             monthly += amount;
           }
@@ -1198,7 +1198,7 @@ const HostDashboard: React.FC = () => {
       setTotalRevenue(total);
       setMonthlyRevenue(monthly);
       setPropertyPerformance({ performance, chartData });
-      
+
       const today = new Date().toISOString().split('T')[0];
       const filteredBookings = typedBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected'));
       setRealBookings(filteredBookings);
@@ -1450,33 +1450,33 @@ const HostDashboard: React.FC = () => {
 
     try {
       // MASTER PAYLOAD: Sincronización de campos UI con columnas snake_case de DB
-      const payload: any = { 
-        ...updated, 
+      const payload: any = {
+        ...updated,
         host_id: hostId,
         // Unificación de nombres Estándar Real-Data
-        reviews: updated.reviews_count,        
-        is_offline: updated.isOffline,         
+        reviews: updated.reviews_count,
+        is_offline: updated.isOffline,
         cancellation_policy_type: updated.cancellation_policy_type,
         updated_at: new Date().toISOString()
       };
 
       // 🛰️ NOTIFICATION: Trigger Telegram alert if a Co-host makes the change
       if (user?.email !== 'villaretiror@gmail.com') {
-          // If we are here, role is checked or allowed. Let's inform the Master Host.
-          try {
-            fetch('/api/master-cron?action=notify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'cohost_action',
-                cohost: user?.email,
-                property: updated.title,
-                action: 'Edición de detalles de Villa (Backend Unified Sync)'
-              })
-            });
-          } catch (e) { console.warn("Action Notify Error:", e); }
+        // If we are here, role is checked or allowed. Let's inform the Master Host.
+        try {
+          fetch('/api/master-cron?action=notify', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'cohost_action',
+              cohost: user?.email,
+              property: updated.title,
+              action: 'Edición de detalles de Villa (Backend Unified Sync)'
+            })
+          });
+        } catch (e) { console.warn("Action Notify Error:", e); }
       }
-      
+
       // Eliminar variantes basura para mantener limpieza de tráfico y evitar errores de Schema Cache
       const junkFields = ['isOffline', 'isoffline', 'reviews_count', 'blockedDates'];
       junkFields.forEach(f => delete payload[f]);
@@ -1498,7 +1498,7 @@ const HostDashboard: React.FC = () => {
 
       if (updateError) {
         let msg = `Error técnico: ${updateError.message}`;
-        
+
         // Manejo amigable de errores de esquema (Master Prompt Requirement)
         if (updateError.code === 'PGRST204') {
           msg = "⚠️ Desconexión de Esquema: La columna 'reviews_count' no existe aún. Por favor, ejecuta el script ADD_MISSING_COLUMNS.sql en Supabase.";
@@ -1607,12 +1607,12 @@ const HostDashboard: React.FC = () => {
     const property = properties.find(p => p.id === propertyId);
     if (!property) return;
 
-    const updatedProp = { 
-      ...property, 
-      rating: newRating, 
-      reviews_count: newCount 
+    const updatedProp = {
+      ...property,
+      rating: newRating,
+      reviews_count: newCount
     };
-    
+
     // Autoguardar en Supabase
     handleSaveProperty(updatedProp);
   };
@@ -1621,11 +1621,11 @@ const HostDashboard: React.FC = () => {
     const property = properties.find(p => p.id === propertyId);
     if (!property) return;
 
-    const updatedProp: Property = { 
-      ...property, 
-      reviews_list: [review, ...(property.reviews_list || [])] 
+    const updatedProp: Property = {
+      ...property,
+      reviews_list: [review, ...(property.reviews_list || [])]
     };
-    
+
     // Autoguardar en Supabase
     handleSaveProperty(updatedProp);
   };
@@ -1684,8 +1684,8 @@ const HostDashboard: React.FC = () => {
             </button>
           </div>
           <h2 className="text-2xl md:text-4xl font-serif font-black italic tracking-tighter mb-4 leading-[1.1] max-w-2xl">
-            "{nextCheckins.length > 0 
-              ? `Salty informa: ${nextCheckins.length} check-ins estratégicos hoy. Todo listo para la excelencia.` 
+            "{nextCheckins.length > 0
+              ? `Salty informa: ${nextCheckins.length} check-ins estratégicos hoy. Todo listo para la excelencia.`
               : "La brisa del noroeste augura un día de 5 estrellas. Paz y rentabilidad en balance."}"
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/10">
@@ -2034,7 +2034,7 @@ const HostDashboard: React.FC = () => {
                       <p className="text-sm font-black text-slate-800">${booking.retained_amount_calculated || 0}</p>
                     </div>
                   </div>
-                  
+
                   {/* Desglose Interno para el Host */}
                   <div className="mt-3 pt-3 border-t border-red-100 flex justify-between items-center">
                     <div className="flex flex-col">
@@ -2149,15 +2149,14 @@ const HostDashboard: React.FC = () => {
                         <p className="font-bold text-sm text-text-main leading-tight">{lead.name}</p>
                         <div className="flex gap-1">
                           {(lead.tags || []).map((tag: string) => (
-                            <span 
+                            <span
                               key={tag}
-                              className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${
-                                tag === 'VIP' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                tag === 'Web Directa' ? 'bg-green-100 text-green-700 border-green-200' :
-                                tag === 'Pet Friendly' ? 'bg-purple-100 text-purple-700 border-purple-200' :
-                                tag === 'Remote Worker' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' :
-                                'bg-blue-100 text-blue-700 border-blue-200'
-                              }`}
+                              className={`text-[7px] font-black uppercase px-2 py-0.5 rounded-full border shadow-sm ${tag === 'VIP' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                  tag === 'Web Directa' ? 'bg-green-100 text-green-700 border-green-200' :
+                                    tag === 'Pet Friendly' ? 'bg-purple-100 text-purple-700 border-purple-200' :
+                                      tag === 'Remote Worker' ? 'bg-indigo-100 text-indigo-700 border-indigo-200' :
+                                        'bg-blue-100 text-blue-700 border-blue-200'
+                                }`}
                             >
                               {tag}
                             </span>
@@ -2174,8 +2173,8 @@ const HostDashboard: React.FC = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button 
-                      onClick={() => handleAddTag('lead', lead.id, lead.tags || [])} 
+                    <button
+                      onClick={() => handleAddTag('lead', lead.id, lead.tags || [])}
                       className="text-gray-300 hover:text-primary p-2 hover:bg-primary/5 rounded-full transition-all"
                       title="Añadir Etiqueta"
                     >
@@ -2199,12 +2198,12 @@ const HostDashboard: React.FC = () => {
       {/* Banner de Prestigio Premium */}
       <div className="bg-black p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
         <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:scale-125 duration-700">
-           <ShieldCheck strokeWidth={1} className="w-64 h-64 text-primary" />
+          <ShieldCheck strokeWidth={1} className="w-64 h-64 text-primary" />
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/20">
-               <Star className="w-5 h-5 text-primary fill-primary" />
+              <Star className="w-5 h-5 text-primary fill-primary" />
             </div>
             <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/5">Prestige & Authority Hub</span>
           </div>
@@ -2241,7 +2240,7 @@ const HostDashboard: React.FC = () => {
       <div className="flex justify-between items-center mb-4 px-2">
         <h2 className="text-3xl font-serif font-black italic tracking-tighter text-text-main">Villas de Autor</h2>
         <div className="flex gap-4">
-            <button
+          <button
             onClick={() => setActiveTab('availability')}
             className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95 group"
           >
@@ -2305,7 +2304,7 @@ const HostDashboard: React.FC = () => {
   );
   const renderPayments = () => {
     const totalPendingVal = pendingPayments.reduce((acc, p: any) => acc + (Number(p.total_price) || 0), 0);
-    
+
     return (
       <div className="space-y-10 animate-fade-in pb-32">
         {/* Header Específico de Pagos (Payment Hub) */}
@@ -2341,7 +2340,7 @@ const HostDashboard: React.FC = () => {
             <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-transparent" />
             <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Automatización (Stripe)</p>
             <h3 className="text-xl font-serif font-black italic text-white tracking-tighter mb-1 flex items-center gap-2">
-               Stripe Pay <span className="text-[8px] bg-primary px-2 py-0.5 rounded-full not-italic tracking-widest uppercase">Próximamente</span>
+              Stripe Pay <span className="text-[8px] bg-primary px-2 py-0.5 rounded-full not-italic tracking-widest uppercase">Próximamente</span>
             </h3>
             <p className="text-[10px] font-medium text-white/30 uppercase tracking-widest mt-1 italic">Cero Intervención Manual</p>
           </div>
@@ -2363,7 +2362,7 @@ const HostDashboard: React.FC = () => {
             {pendingPayments.map((payment: any) => (
               <div key={payment.id} className="bg-white rounded-[3rem] p-8 shadow-soft border border-gray-100 group hover:border-orange-100 transition-all relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-100 opacity-0 group-hover:opacity-100 transition-opacity" />
-                
+
                 <div className="flex items-center gap-5 mb-8">
                   <div className="w-16 h-16 rounded-full border-4 border-white shadow-float overflow-hidden flex-shrink-0">
                     <img src={payment.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="User" className="w-full h-full object-cover" />
@@ -2417,7 +2416,7 @@ const HostDashboard: React.FC = () => {
         ) : (
           <div className="bg-white/50 rounded-[4rem] p-24 text-center border-2 border-dashed border-gray-200 backdrop-blur-sm group">
             <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-500 shadow-inner">
-               <span className="material-icons text-4xl text-gray-400 group-hover:text-primary transition-colors">verified_user</span>
+              <span className="material-icons text-4xl text-gray-400 group-hover:text-primary transition-colors">verified_user</span>
             </div>
             <h4 className="text-xl font-serif font-black italic text-text-main mb-2">Liquidez Conciliada</h4>
             <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-light opacity-50">No hay pagos pendientes de validación</p>
@@ -2437,13 +2436,13 @@ const HostDashboard: React.FC = () => {
             <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.3em] mt-3">Psicología de venta y señales de confianza 🔱</p>
           </div>
           <div className="flex items-center gap-4 bg-white/5 p-4 rounded-2xl border border-white/10 backdrop-blur-md">
-             <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
-                <ShieldCheck className="w-6 h-6 text-primary" />
-             </div>
-             <div>
-                <p className="text-[8px] font-black uppercase text-gray-500">Confianza del Huésped</p>
-                <p className="text-xs font-bold text-white tracking-tight">Nivel: Muy Alto</p>
-             </div>
+            <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center">
+              <ShieldCheck className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <p className="text-[8px] font-black uppercase text-gray-500">Confianza del Huésped</p>
+              <p className="text-xs font-bold text-white tracking-tight">Nivel: Muy Alto</p>
+            </div>
           </div>
         </div>
       </div>
@@ -2463,7 +2462,7 @@ const HostDashboard: React.FC = () => {
           <h2 className="text-4xl font-serif font-black italic tracking-tighter text-text-main leading-tight mb-2">Equipe de Élite</h2>
           <p className="text-[10px] font-bold text-text-light uppercase tracking-[0.3em]">Gestión de protocolos y colaboradores</p>
         </div>
-        <button 
+        <button
           onClick={() => setActiveTab('help')}
           className="flex items-center gap-3 px-6 py-3 bg-black text-white rounded-2xl hover:bg-gray-800 transition-all font-black text-[10px] uppercase tracking-widest group shadow-xl"
         >
@@ -2479,10 +2478,10 @@ const HostDashboard: React.FC = () => {
               <div className="w-1.5 h-1.5 bg-primary rounded-full" />
               <h3 className="font-serif font-bold text-xl tracking-tight">{prop.title}</h3>
             </div>
-            <CohostManager 
-              propertyId={prop.id} 
-              propertyName={prop.title} 
-              onShowToast={showToast} 
+            <CohostManager
+              propertyId={prop.id}
+              propertyName={prop.title}
+              onShowToast={showToast}
             />
           </div>
         ))}
@@ -2505,13 +2504,13 @@ const HostDashboard: React.FC = () => {
           <p className="text-[11px] font-bold text-text-light uppercase tracking-[0.4em] mt-2">Refugios de Paz • Estándares de Excelencia Salty</p>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-             onClick={() => setActiveTab('team')}
-             className="px-6 py-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-black text-[10px] uppercase tracking-widest"
+          <button
+            onClick={() => setActiveTab('team')}
+            className="px-6 py-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-all font-black text-[10px] uppercase tracking-widest"
           >
-             Regresar al Equipo
+            Regresar al Equipo
           </button>
-          <button 
+          <button
             onClick={() => window.print()}
             className="p-4 bg-black text-white rounded-full hover:bg-gray-800 transition-all group shadow-xl"
           >
@@ -2538,28 +2537,28 @@ const HostDashboard: React.FC = () => {
         {/* Protocol Steps */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {[
-            { 
-              icon: <ShieldCheck className="text-primary w-10 h-10" />, 
-              title: "01. Seguridad Primero", 
+            {
+              icon: <ShieldCheck className="text-primary w-10 h-10" />,
+              title: "01. Seguridad Primero",
               desc: "Verificación obligatoria de cerraduras inteligentes, cámaras perimetrales y alarmas. Asegurar que el código del huésped es funcional 2 horas antes de su llegada."
             },
-            { 
-              icon: <Sparkles className="text-blue-400 w-10 h-10" />, 
-              title: "02. Limpieza de Élite", 
+            {
+              icon: <Sparkles className="text-blue-400 w-10 h-10" />,
+              title: "02. Limpieza de Élite",
               desc: "Estandarización tipo Yacht: sábanas tensadas, toallas blancas impecables y aroma cítrico suave en cada rincón. Cero rastro de estancias anteriores."
             },
-            { 
-              icon: <Waves className="text-cyan-400 w-10 h-10" />, 
-              title: "03. Mantenimiento Preventivo", 
+            {
+              icon: <Waves className="text-cyan-400 w-10 h-10" />,
+              title: "03. Mantenimiento Preventivo",
               desc: "Prueba de grifos, aire acondicionado a 23°C y verificación de gas/electricidad. Reportar cualquier mínima falla antes de que el huésped la note."
             },
-            { 
-              icon: <Heart className="text-red-400 w-10 h-10" />, 
-              title: "04. El 'Salty Effect'", 
+            {
+              icon: <Heart className="text-red-400 w-10 h-10" />,
+              title: "04. El 'Salty Effect'",
               desc: "Hielo en la nevera, kit de café local visible y control de clima personalizado. La villa debe sentirse viva, fresca y acogedora desde el primer segundo."
             }
           ].map((item, idx) => (
-            <motion.div 
+            <motion.div
               key={idx}
               whileHover={{ y: -8, scale: 1.02 }}
               className="bg-white p-10 rounded-[3.5rem] border border-gray-100 shadow-soft relative group transition-all"
@@ -2629,9 +2628,9 @@ const HostDashboard: React.FC = () => {
       <HostChat isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} />
       <WelcomeModal isOpen={showWelcomeModal} onClose={() => setShowWelcomeModal(false)} message={welcomeMessage} />
       {showSmartValidation && (
-        <SmartValidationModal 
-          data={showSmartValidation} 
-          onConfirm={handleSmartImport} 
+        <SmartValidationModal
+          data={showSmartValidation}
+          onConfirm={handleSmartImport}
           onClose={() => setShowSmartValidation(null)}
         />
       )}
@@ -2655,7 +2654,7 @@ const HostDashboard: React.FC = () => {
             <Zap strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'today' ? 'scale-110' : ''}`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Hoy</span>
           </button>
-          
+
           <button
             onClick={() => setActiveTab('listings')}
             className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'listings' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
@@ -2700,9 +2699,9 @@ const HostDashboard: React.FC = () => {
             <Sparkles strokeWidth={1.5} className={`w-5 h-5 relative z-10 ${activeTab === 'insights' ? 'scale-110' : ''} text-primary`} />
             <span className="text-[9px] font-medium uppercase tracking-[0.2em] relative z-10">Insights</span>
           </button>
-          
-          <button 
-            onClick={() => setActiveTab('availability')} 
+
+          <button
+            onClick={() => setActiveTab('availability')}
             className={`relative flex flex-col items-center gap-1.5 px-3 py-1 transition-all ${activeTab === 'availability' ? 'text-white' : 'text-gray-500 hover:text-gray-300'}`}
           >
             {activeTab === 'availability' && (
