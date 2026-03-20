@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Property, LocalGuideCategory, LocalGuideItem, Offer, CalendarSync, Review, User, SeasonalPrice, PromoCode } from '../types';
 import GuideCard from '../components/GuideCard';
@@ -20,6 +20,9 @@ import InsightViewer from '../components/host/InsightViewer';
 import HostAvailabilityManager from '../components/host/HostAvailabilityManager';
 import { useAvailability } from '../hooks/useAvailability';
 import PropertyEditorModal from '../components/host/PropertyEditorModal';
+import SectionErrorBoundary from '../components/SectionErrorBoundary';
+import { setToastCallback, showToast } from '../utils/toast';
+import { motion, AnimatePresence, Variants } from 'framer-motion';
 
 type BookingRow = Tables<'bookings'>;
 type ExpenseRow = Tables<'property_expenses'>;
@@ -33,8 +36,6 @@ type BookingWithDetails = BookingRow & {
   profiles: { full_name: string | null; avatar_url: string | null; phone: string | null; email?: string | null; tags: string[] | null } | null;
   properties: { title: string; images: string[] | null; policies?: any } | null;
 };
-import SectionErrorBoundary from '../components/SectionErrorBoundary';
-import { Suspense, lazy } from 'react';
 
 // 🚀 INDUSTRIAL OPTIMIZATION: Code Splitting for Analytics (Recharts)
 const LineChart = lazy(() => import('recharts').then(m => ({ default: m.LineChart })));
@@ -46,62 +47,22 @@ const Tooltip = lazy(() => import('recharts').then(m => ({ default: m.Tooltip })
 const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
 const AreaChart = lazy(() => import('recharts').then(m => ({ default: m.AreaChart })));
 const Area = lazy(() => import('recharts').then(m => ({ default: m.Area })));
+
 import {
-  Zap,
-  BarChart3,
-  CreditCard,
-  Home,
-  Users,
-  Star,
-  Map,
-  MessageCircle,
-  Menu,
-  CheckCircle2,
-  Calendar,
-  Key,
-  Wallet,
-  TrendingUp,
-  Sparkles,
-  ChevronRight,
-  Info,
-  Clock,
-  Send,
-  LayoutDashboard,
-  User as UserIcon,
-  AlertTriangle,
-  Bell,
-  Check,
-  Trash2,
-  Download,
-  Plus,
-  Tag,
-  CheckCheck,
-  DollarSign,
-  GripHorizontal,
-  RefreshCcw,
-  UserX,
-  ClipboardCheck,
-  ListPlus,
-  PlusCircle,
-  HelpCircle,
-  Printer,
-  Anchor,
-  ShieldCheck,
-  Waves,
-  Heart
+  Zap, BarChart3, CreditCard, Home, Users, Star, Map, MessageCircle, Menu, CheckCircle2,
+  Calendar, Key, Wallet, TrendingUp, Sparkles, ChevronRight, Info, Clock, Send,
+  LayoutDashboard, User as UserIcon, AlertTriangle, Bell, Check, Trash2, Download,
+  Plus, Tag, CheckCheck, DollarSign, GripHorizontal, RefreshCcw, UserX, ClipboardCheck,
+  ListPlus, PlusCircle, HelpCircle, Printer, Anchor, ShieldCheck, Waves, Heart
 } from 'lucide-react';
-import { motion, AnimatePresence, Variants } from 'framer-motion';
-
-import { setToastCallback, showToast } from '../utils/toast';
-
 
 const CustomToast = () => {
   const [toast, setToast] = useState<{ msg: string, visible: boolean }>({ msg: '', visible: false });
   useEffect(() => {
-    setToastCallback((msg: string) => setToast({ msg, visible: true }));
+    setToastCallback((msg: string) => {
       setToast({ msg, visible: true });
       setTimeout(() => setToast(prev => ({ ...prev, visible: false })), 3000);
-    };
+    });
   }, []);
 
   if (!toast.visible) return null;
@@ -115,7 +76,6 @@ const CustomToast = () => {
   );
 };
 
-// --- HELPER: Source Branding ---
 const getSourceBadge = (source: string | null) => {
   if (!source) return null;
   const s = source.toLowerCase();
@@ -1980,7 +1940,7 @@ const HostDashboard: React.FC = () => {
         </div>
       </motion.div>
       <motion.div variants={itemVariants}>
-        <SavingsInsights bookings={realBookings as any} />
+        <SavingsInsights realBookings={realBookings as any} />
       </motion.div>
 
       {/* Quick Summary Dashboard */}
@@ -2789,7 +2749,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'analytics' && (
           <AnalysisDashboard
-            bookings={realBookings as any}
+            realBookings={realBookings as any}
             expenses={globalExpenses}
             properties={properties}
             selectedPropertyId={analyticsFilter}
@@ -2810,11 +2770,10 @@ const HostDashboard: React.FC = () => {
         <SmartValidationModal
           booking={showSmartValidation}
           onApprove={handleApprovePayment}
-          onReject={handleRejectPayment}
-          onClose={() => setShowSmartValidation(null)}
+      {editingProperty && <PropertyEditorModal property={editingProperty as any} realBookings={realBookings as any} onSave={handleSaveProperty as any} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}          onClose={() => setShowSmartValidation(null)}
         />
       )}
-      {editingProperty && <PropertyEditorModal property={editingProperty} bookings={realBookings as any} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}
+      {editingProperty && <PropertyEditorModal property={editingProperty as any} realBookings={realBookings as any} onSave={handleSaveProperty} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}
       {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
 
 

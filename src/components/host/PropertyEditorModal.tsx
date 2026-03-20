@@ -13,11 +13,11 @@ import { showToast } from '../../utils/toast'; // Global toast service
 
 interface PropertyEditorModalProps {
   property: Property;
-  bookings: any[];
-  onSave: (p: Property) => void;
+  realBookings: any;
+  onSave: (p: Property) => any;
   onCancel: () => void;
   isSaving: boolean;
-  onRefresh: () => void;
+  onRefresh: (signal?: any) => any;
 }
 
 import InfoSection from './PropertyEditor/InfoSection';
@@ -28,7 +28,7 @@ import PoliciesSection from './PropertyEditor/PoliciesSection';
 
 const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({ 
   property, 
-  bookings, 
+  realBookings, 
   onSave, 
   onCancel, 
   isSaving, 
@@ -56,7 +56,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
       case 'info': return <InfoSection form={form} setForm={setForm} />;
       case 'photos': return <PhotoSection form={form} setForm={setForm} />;
       case 'calendar': return <CalendarSection form={form} setForm={setForm} onRefresh={onRefresh} />;
-      case 'expenses': return <FinancialsSection property={property} bookings={bookings} />;
+      case 'expenses': return <FinancialsSection property={property}  />;
       case 'policies': return <PoliciesSection form={form} setForm={setForm} />;
       default: return (
         <div className="text-center py-20 flex flex-col items-center">
