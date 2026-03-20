@@ -18,7 +18,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     if (activeProperty) {
       setLocalForm({
         ...activeProperty,
-        blockedDates: activeProperty.blockedDates || [],
+        blockedDates: activeProperty.blockeddates || activeProperty.blockedDates || [],
         seasonal_prices: activeProperty.seasonal_prices || [],
         calendarSync: activeProperty.calendarSync || []
       });
@@ -32,7 +32,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     const { error } = await supabase
       .from('properties')
       .update({
-        blockedDates: updatedForm.blockedDates,
+        blockeddates: updatedForm.blockedDates, // Corrected to lowercase for PG column
         seasonal_prices: updatedForm.seasonal_prices,
         price: updatedForm.price,
         is_offline: updatedForm.is_offline,

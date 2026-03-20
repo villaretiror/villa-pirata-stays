@@ -55,7 +55,15 @@ export const useAvailability = (propertyId: string | undefined) => {
                 }
             };
 
-            // Process Manual Blocks from Rules (Host Dashboard Primary Source)
+            // 1. Process Manual Blocks from Property Table (Legacy/Direct Blocks)
+            const legacyBlocked = propData.blockeddates || propData.blockedDates || [];
+            if (Array.isArray(legacyBlocked)) {
+                legacyBlocked.forEach((dStr: string) => {
+                    allBlocked.push(new Date(dStr + 'T12:00:00'));
+                });
+            }
+
+            // 2. Process Manual Blocks from Rules (Host Dashboard Primary Source)
             if (rules && rules.length > 0) {
                 rules.forEach((r: any) => {
                     if (r.is_blocked) {
