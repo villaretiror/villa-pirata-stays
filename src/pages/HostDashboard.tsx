@@ -894,24 +894,6 @@ const HostDashboard: React.FC = () => {
   const [globalExpenses, setGlobalExpenses] = useState<ExpenseRow[]>([]);
   const [analyticsFilter, setAnalyticsFilter] = useState<string>('all');
 
-  const fetchPayments = useCallback(async (signal?: AbortSignal) => {
-
-    try {
-      const { data } = await supabase
-        .from('bookings')
-        .select('*, profiles(full_name, avatar_url, phone, email, interest_tags, emergency_contact), properties(title, images, policies)')
-        .eq('status', 'waiting_approval')
-        .abortSignal(signal || new AbortController().signal);
-
-
-      if (data) {
-        setPendingPayments(prev => JSON.stringify(prev) === JSON.stringify(data) ? prev : (data as BookingWithDetails[]));
-      }
-    } catch (e) {
-      console.warn("fetchPayments error:", e);
-    }
-  }, []);
-
   // --- SWR ENGINE (Stale-While-Revalidate) ---
   const DASH_CACHE_KEY = `host_dash_cache_${user?.id}`;
 
@@ -930,135 +912,90 @@ const HostDashboard: React.FC = () => {
     }
   }, [DASH_CACHE_KEY]);
 
-  const fetchData = useCallback(async (signal?: AbortSignal) => {
-    if (!user?.id) return;
+    const fetchData = useCallback(async (signal?: AbortSignal) => {
+    if (!user?.id || !user?.email) return;
 
-    // SWR: Restaurar cache antes de empezar la carga real
+    // SWR: Restaurar cache antes de empezar la carga real para UI instantánea
     restoreCache();
-
     setIsLoading(true);
+
     try {
-      await fetchPayments(signal);
+      // 🔱 BUNDLE FETCHING: Single Atomic Snapshot for Zero Latency
+      const { data: bundle, error: bundleError } = await supabase.rpc('get_host_dashboard_bundle', { 
+        target_email: user.email.toLowerCase() 
+      });
 
-      const userEmail = user.email?.toLowerCase();
-      if (!userEmail) return;
+      if (bundleError) throw bundleError;
+      if (!bundle) return;
 
-      let hostPropertyIds: string[] = [];
-      if (userEmail === 'villaretiror@gmail.com') {
-        const { data: allProps } = await supabase.from('properties').select('id');
-        hostPropertyIds = allProps?.map((p: any) => p.id) || [];
-      } else {
-        const [owned, cohosted] = await Promise.all([
-          supabase.from('properties').select('id').eq('email', userEmail),
-          supabase.from('property_cohosts').select('property_id').eq('email', userEmail)
-        ]);
-        const ownedIds = owned.data?.map((p: any) => p.id) || [];
-        const cohostedIds = cohosted.data?.map((p: any) => p.property_id) || [];
-        hostPropertyIds = Array.from(new Set([...ownedIds, ...cohostedIds]));
-      }
+      // 1. Unificación de Propiedades (Properties)
+      const mappedProps = (bundle.properties || []).map((p: any) => 
+        mapSupabaseProperty(p, { name: user.name || '', avatar: user.avatar || '', role: user.role || '' }, { isAdmin: true })
+      );
+      onUpdateProperties(mappedProps);
 
-      if (hostPropertyIds.length === 0) {
-        setIsLoading(false);
-        onUpdateProperties([]);
-        return;
-      }
+      // 2. Inteligencia de Negocio & Finanzas (Revenue Analysis)
+      const typedBookings = bundle.bookings || [];
+      let total = 0; let monthly = 0;
+      const currentMonth = new Date().getMonth();
+      const currentYear = new Date().getFullYear();
+      const performance: Record<string, number> = {};
+      const chartData: any[] = [];
+      const monthsHistory: Record<string, number> = {};
 
-      const { data: props } = await supabase
-        .from('properties')
-        .select('*')
-        .in('id', hostPropertyIds.map(id => String(id)))
-        .abortSignal(signal || new AbortController().signal);
-
-      if (props && props.length > 0) {
-        const mappedProps = (props as Tables<'properties'>[]).map(p => 
-          mapSupabaseProperty(p, { name: user.name || '', avatar: user.avatar || '', role: user.role || '' }, { isAdmin: true })
-        );
-        onUpdateProperties(mappedProps);
-      }
-
-      const { data: allBookings } = await supabase
-        .from('bookings')
-        .select(`*, profiles(full_name, avatar_url, phone, email, interest_tags, emergency_contact), properties(title, images, policies)`)
-
-        .in('property_id', hostPropertyIds.map(id => String(id)))
-        .abortSignal(signal || new AbortController().signal);
-
-      if (allBookings) {
-        const typedBookings = allBookings as BookingWithDetails[];
-        let total = 0; let monthly = 0;
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        const performance: Record<string, number> = {};
-        const monthsHistory: Record<string, number> = {};
-
-        typedBookings.forEach((b) => {
-          if (b.status === 'confirmed' || b.status === 'completed') {
-            const amount = Number(b.total_price) || 0;
-            total += amount;
-            const propTitle = b.properties?.title || 'Villa Desconocida';
-            performance[propTitle] = (performance[propTitle] || 0) + amount;
-            if (b.created_at) {
-              const dateObj = new Date(b.created_at);
-              const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-              monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
-              if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) monthly += amount;
-            }
+      typedBookings.forEach((b: any) => {
+        if (b.status === 'confirmed' || b.status === 'completed') {
+          const amount = Number(b.total_price) || 0;
+          total += amount;
+          const propTitle = b.properties?.title || 'Villa';
+          performance[propTitle] = (performance[propTitle] || 0) + amount;
+          
+          if (b.created_at) {
+            const dateObj = new Date(b.created_at);
+            const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
+            monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
+            if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) monthly += amount;
           }
-        });
-
-        const chartData = [];
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(); d.setMonth(d.getMonth() - i);
-          const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-          chartData.push({ label: d.toLocaleString('es-PR', { month: 'short' }).toUpperCase(), val: monthsHistory[monthKey] || 0 });
         }
+      });
 
-        setTotalRevenue(total);
-        setMonthlyRevenue(monthly);
-        setPropertyPerformance({ performance, chartData });
-        const today = new Date().toISOString().split('T')[0];
-        const filteredBookings = typedBookings.filter((b) => (b.check_out >= today && b.status !== 'rejected'));
-        setRealBookings(filteredBookings);
-
-        // SWR: Persistir cache para carga instantánea futura
-        localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({
-          totalRevenue: total,
-          monthlyRevenue: monthly,
-          realBookings: filteredBookings,
-          globalExpenses: [] // Se actualizará en el siguiente bloque
-        }));
+      // Generar datos para Recharts (Últimos 6 meses)
+      for (let i = 5; i >= 0; i--) {
+        const d = new Date(); d.setMonth(d.getMonth() - i);
+        const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        chartData.push({ label: d.toLocaleString('es-PR', { month: 'short' }).toUpperCase(), val: monthsHistory[monthKey] || 0 });
       }
 
-      const { data: allExpenses } = await supabase
-        .from('property_expenses')
-        .select('*')
-        .in('property_id', hostPropertyIds.map(id => String(id)))
-        .abortSignal(signal || new AbortController().signal);
+      setTotalRevenue(total);
+      setMonthlyRevenue(monthly);
+      setPropertyPerformance({ performance, chartData });
+      
+      const today = new Date().toISOString().split('T')[0];
+      const filteredBookings = typedBookings.filter((b: any) => (b.check_out >= today && b.status !== 'rejected'));
+      setRealBookings(filteredBookings);
 
-      if (allExpenses) {
-        setGlobalExpenses(allExpenses);
-        // Actualizar cache con los gastos incluidos
-        const cached = JSON.parse(localStorage.getItem(DASH_CACHE_KEY) || '{}');
-        localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({ ...cached, globalExpenses: allExpenses }));
-      }
+      // 3. Gestión de Gastos (Expenses)
+      setGlobalExpenses(bundle.expenses || []);
 
-      // --- ANTI-ZOMBIE ENGINE: Auto-expire old waiting_approval bookings (> 4h) ---
-      const fourHoursAgo = new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString();
-      const { error: expireError } = await supabase
-        .from('bookings')
-        .update({ status: 'expired' })
-        .eq('status', 'waiting_approval')
-        .lt('created_at', fourHoursAgo);
+      // 4. Salty Intelligence (Leads, Alerts & Payments)
+      setLeads(bundle.leads || []);
+      setUrgentAlerts(bundle.alerts || []);
+      setPendingPayments(bundle.pending_payments || []);
 
-      if (expireError) console.warn("Anti-Zombie Error:", expireError);
+      // 5. Persistencia de Cache SWR
+      localStorage.setItem(DASH_CACHE_KEY, JSON.stringify({
+        totalRevenue: total,
+        monthlyRevenue: monthly,
+        realBookings: filteredBookings,
+        globalExpenses: bundle.expenses || []
+      }));
 
-      setIsLoading(false);
     } catch (err: any) {
-      if (err.name !== 'AbortError') console.error("fetchData FATAL Error:", err);
+      if (err.name !== 'AbortError') console.error("fetchDashboardBundle FATAL Error:", err);
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, user?.email, user?.name, user?.avatar, user?.role, onUpdateProperties, fetchPayments]);
+  }, [user?.id, user?.email, user?.name, user?.avatar, user?.role, onUpdateProperties, DASH_CACHE_KEY, restoreCache]);
 
   const nextCheckins = useMemo(() => {
     const dates = [0, 1, 2].map(days => {
@@ -1107,14 +1044,6 @@ const HostDashboard: React.FC = () => {
       await fetchData(controller.signal);
       if (!isSubscribed) return;
 
-      if (activeTab === 'leads' || activeTab === 'today') {
-        const { data: leadsData } = await supabase.from('leads').select('*').eq('status', 'new').order('created_at', { ascending: false }).abortSignal(controller.signal);
-        if (leadsData && isSubscribed) setLeads(leadsData as any);
-
-        const { data: alertsData } = await supabase.from('urgent_alerts').select('*').eq('status', 'new').order('created_at', { ascending: false }).abortSignal(controller.signal);
-        if (alertsData && isSubscribed) setUrgentAlerts(alertsData);
-      }
-
       const email = user.email?.toLowerCase();
       if (email) {
         const { data: pending } = await supabase.from('property_cohosts').select('id').eq('email', email).eq('status', 'pending');
@@ -1132,9 +1061,9 @@ const HostDashboard: React.FC = () => {
   // 3. Payment Specific Sync
   useEffect(() => {
     const controller = new AbortController();
-    if (activeTab === 'payments') fetchPayments(controller.signal);
+    if (activeTab === 'payments') fetchData(controller.signal);
     return () => controller.abort();
-  }, [activeTab, fetchPayments]);
+  }, [activeTab, fetchData]);
 
   // 4. 🔥 SUPREME ARCHITECT REALTIME ENGINE (Salty Memory Link)
   useEffect(() => {

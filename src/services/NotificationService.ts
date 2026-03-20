@@ -434,5 +434,22 @@ ${stats.syncDetails}
         return this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_bounce" }]]
         }, false); // Bounces son LOUD
+    },
+    /**
+     * 📅 SYNC SUMMARY: Reporte de Sincronización Masiva
+     */
+    async notifySyncSummary(totalImported: number, details: string): Promise<boolean> {
+        if (totalImported === 0 && !details.includes('❌')) return true; // No molestar si no hay cambios y no hay errores
+
+        const message = `
+🔄 <b>Salty: Resumen de Sincronización</b>
+━━━━━━━━━━━━━━━━━━━━
+${details.slice(0, 3000)} ${details.length > 3000 ? '...' : ''}
+
+<b>Total Nuevos Bloqueos:</b> +${totalImported} 🔱
+━━━━━━━━━━━━━━━━━━━━
+✨ <i>Tu calendario ahora está perfectamente alineado.</i>`;
+
+        return this.sendTelegramAlert(message, undefined, true); // Resumen silencioso
     }
 };

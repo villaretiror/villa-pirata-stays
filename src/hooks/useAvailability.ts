@@ -26,41 +26,18 @@ export const useAvailability = (propertyId: string | undefined) => {
         try {
             const now = new Date();
 
-            // 1. Fetch Manual Blocks from Property record (Primary source for Editor)
-            const { data: propData } = await supabase
-                .from('properties')
-                .select('blockeddates')
-                .eq('id', propertyId)
-                .single();
-
-            // 2. Fetch Active Bookings (Unified: Direct + iCal Synced)
-            // 🔓 AUTO-CANCEL LOGIC: Ignore bookings where auto_cancel_at is in the past
-            const { data: bks, error: bksError } = await supabase
-                .from('bookings')
-                .select('check_in, check_out, status, hold_expires_at, source, auto_cancel_at')
-                .eq('property_id', propertyId)
-                .neq('status', 'cancelled');
-
-            // 🧠 CLIENT-SIDE LIBERATION FILTER: If the payment window expired, we treat it as available
-            const activeBookings = (bks || []).filter((b: any) => {
-                if (b.auto_cancel_at && new Date(b.auto_cancel_at) < now) {
-                    console.warn(`[Auto-Cancel] Libreación de fechas para reserva expirada: ${b.check_in}`);
-                    return false;
-                }
-                return true;
+            // 🔱 BUNDLE FETCHING: Database-Level Consolidation for Maximum Velocity
+            // We move logic to Postgres to minimize network roundtrips and RTT
+            const { data: bundle } = await supabase.rpc('get_property_availability_bundle', { 
+                target_property_id: propertyId 
             });
 
-            // 3. Fetch Active Leads (Awaiting Payment - 15min TTL)
-            const { data: pending } = await supabase
-                .from('pending_bookings')
-                .select('check_in, check_out, expires_at')
-                .eq('property_id', propertyId)
-                .eq('status', 'pending_payment');
+            if (!bundle) return;
 
-            const { data: rules } = await supabase
-                .from('availability_rules')
-                .select('*')
-                .eq('property_id', propertyId);
+            const rules = bundle.rules || [];
+            const activeBookings = bundle.bookings || [];
+            const pending = bundle.leads || [];
+            const propData = bundle.property || {};
             
             if (rules) setAvailabilityRules(rules);
             if (activeBookings) setAllBookings(activeBookings);
