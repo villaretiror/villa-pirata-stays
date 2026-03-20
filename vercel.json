@@ -3,12 +3,10 @@
     "trailingSlash": false,
     "functions": {
         "api/chat.ts": {
-            "runtime": "nodejs",
             "memory": 1024,
             "maxDuration": 60
         },
         "api/health-check.ts": {
-            "runtime": "edge",
             "memory": 256
         },
         "api/**/*.ts": {
