@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../lib/supabase';
 import SmartImage from '../components/SmartImage';
 import { addDays, format, differenceInDays, parseISO } from 'date-fns';
+import { es } from 'date-fns/locale';
 import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
@@ -464,11 +465,11 @@ const Booking: React.FC = () => {
               >
                 <div className="bg-[#FFF4ED] p-6 rounded-[2rem] border-2 border-primary/20 transition-all group-hover:border-primary/40 shadow-sm">
                   <p className={TAG_STYLE + " text-[#FF7F3F] mb-1 font-black"}>Check-in</p>
-                  <p className="text-2xl font-serif font-black text-text-main">{format(startDate, 'dd MMM')}</p>
+                  <p className="text-2xl font-serif font-black text-text-main">{format(startDate, 'EEEE, dd MMM', { locale: es })}</p>
                 </div>
                 <div className="bg-[#FFF4ED] p-6 rounded-[2rem] border-2 border-primary/20 transition-all group-hover:border-primary/40 shadow-sm">
                   <p className={TAG_STYLE + " text-[#FF7F3F] mb-1 font-black"}>Check-out</p>
-                  <p className="text-2xl font-serif font-black text-text-main">{format(endDate, 'dd MMM')}</p>
+                  <p className="text-2xl font-serif font-black text-text-main">{format(endDate, 'EEEE, dd MMM', { locale: es })}</p>
                 </div>
               </div>
             )}
@@ -489,8 +490,8 @@ const Booking: React.FC = () => {
                 />
               </div>
               <textarea
-                placeholder="¿Alguna petición especial? (Ej: Cuna, decoración, early check-in...)"
-                className="w-full p-6 bg-white border border-black/5 rounded-[2.5rem] shadow-soft focus:ring-2 ring-primary/10 outline-none text-sm min-h-[140px] leading-relaxed"
+                placeholder="¿Alguna petición especial? Cuéntanos si celebras algo (Ej: Aniversario, cumpleaños) o si necesitas cuna/decoración especial..."
+                className="w-full p-6 bg-white border border-black/5 rounded-[2.5rem] shadow-soft focus:ring-2 ring-primary/10 outline-none text-sm min-h-[140px] leading-relaxed transition-all focus:shadow-lg"
                 value={guestMessage}
                 onChange={(e) => setGuestMessage(e.target.value)}
               />
@@ -499,17 +500,17 @@ const Booking: React.FC = () => {
 
           {/* Promo & Totals */}
           <section className="space-y-6 pt-6 border-t border-black/5">
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <input
                 type="text"
                 placeholder="CÓDIGO PROMO"
-                className="flex-1 px-6 py-4 bg-gray-50 border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-2 ring-primary/20 outline-none"
+                className="flex-1 px-6 py-4 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest focus:ring-2 ring-primary/20 outline-none shadow-sm placeholder:text-gray-300"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
               />
               <button
                 onClick={handleApplyPromo}
-                className="bg-black text-white px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-gray-800 transition-all"
+                className="bg-primary/10 text-primary px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10"
               >
                 Validar
               </button>
@@ -536,9 +537,12 @@ const Booking: React.FC = () => {
               </div>
               
               <div className="pt-6 border-t border-dashed border-gray-200 mt-2 flex justify-between items-end">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1">Inversión Final</p>
-                  <p className="text-xs text-text-light font-medium">Todo incluido • Pago Seguro</p>
+                <div className="flex flex-col gap-1.5">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mb-0.5">Inversión Final</p>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-green-50 rounded-lg w-fit border border-green-100 shadow-sm animate-fade-in">
+                    <span className="material-icons text-[14px] text-green-600">verified_user</span>
+                    <p className="text-[9px] text-green-700 font-black uppercase tracking-wider">Pago Seguro Protegido</p>
+                  </div>
                 </div>
                 <p className="text-5xl font-serif font-black text-text-main drop-shadow-sm">${total.toFixed(2)}</p>
               </div>
@@ -559,16 +563,21 @@ const Booking: React.FC = () => {
           {startDate && endDate && !isTooShort && (
             <section className="space-y-4 pt-6 border-t border-black/5">
               <h3 className={TAG_STYLE + " text-gray-400"}>3. Estatus Legal</h3>
-              <div className="flex items-start gap-4 p-6 bg-gray-50 rounded-[2rem] border border-gray-100 transition-all hover:bg-white hover:shadow-sm">
-                <input
-                  type="checkbox"
-                  id="contract-check"
-                  checked={contractAccepted}
-                  onChange={(e) => setContractAccepted(e.target.checked)}
-                  className="mt-1 w-6 h-6 rounded-lg border-gray-300 text-primary focus:ring-primary/20"
-                />
-                <label htmlFor="contract-check" className="text-xs font-bold text-text-main leading-relaxed cursor-pointer select-none">
-                  He leído y acepto el <button onClick={() => setShowContractModal(true)} className="text-primary underline">Contrato de Alquiler Vacacional</button> para {property.title}. Declaro que soy mayor de edad y me comprometo a seguir las reglas de la casa.
+              <div 
+                onClick={() => setContractAccepted(!contractAccepted)}
+                className={`flex items-start gap-4 p-6 rounded-[2.5rem] border transition-all cursor-pointer ${
+                  contractAccepted 
+                  ? 'bg-secondary/5 border-secondary/20 shadow-sm' 
+                  : 'bg-gray-50 border-gray-100 hover:bg-white hover:shadow-md'
+                }`}
+              >
+                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
+                  contractAccepted ? 'bg-secondary border-secondary text-white' : 'border-gray-300'
+                }`}>
+                  {contractAccepted && <span className="material-icons text-sm">check</span>}
+                </div>
+                <label className="text-[11px] font-bold text-text-main leading-relaxed cursor-pointer select-none">
+                  He leído y acepto el <button onClick={(e) => { e.stopPropagation(); setShowContractModal(true); }} className="text-primary underline">Contrato de Alquiler Vacacional</button> para {property.title}. Declaro que soy mayor de edad y me comprometo a seguir las reglas de la casa.
                 </label>
               </div>
             </section>
@@ -679,7 +688,11 @@ const Booking: React.FC = () => {
               <button
                 disabled={!startDate || !endDate}
                 onClick={() => setShowCalendarModal(false)}
-                className="w-full bg-black text-white py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-xs disabled:opacity-30 transition-all shadow-xl"
+                className={`w-full py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-xs transition-all shadow-xl ${
+                  startDate && endDate 
+                  ? 'bg-secondary text-white hover:scale-[1.02] active:scale-[0.98] shadow-secondary/20' 
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                }`}
               >
                 {startDate && endDate ? `Cerrar y Ver Resumen` : `Selecciona fechas para continuar`}
               </button>

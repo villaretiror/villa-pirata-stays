@@ -57,7 +57,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker { display: block !important; border: none !important; }
         .react-datepicker__header { background-color: white !important; border: none !important; padding-top: 20px !important; }
         .react-datepicker__current-month { font-family: 'serif' !important; font-weight: 800 !important; font-size: 1.1rem !important; margin-bottom: 10px !important; color: #1a1a1a !important; }
-        .react-datepicker__day-name { text-transform: uppercase !important; font-size: 10px !important; font-weight: 900 !important; color: #999 !important; }
+        .react-datepicker__day-name { text-transform: uppercase !important; font-size: 10px !important; font-weight: 900 !important; color: #4B5563 !important; }
         .react-datepicker__month-container { width: 100% !important; }
         
         /* Ocupado / Disabled (Airbnb/Booking Sync) */
