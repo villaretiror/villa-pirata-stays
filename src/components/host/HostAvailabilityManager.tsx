@@ -245,17 +245,54 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                  </div>
               </div>
 
-              {/* Min Nights Card */}
+              {/* Min Nights Card (INTERACTIVE) */}
               <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md cursor-pointer">
                  <div className="flex justify-between items-center mb-1">
                     <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Noches Mínimas</p>
-                    <span className="material-icons text-sm text-gray-300 group-hover:text-primary transition-colors">edit</span>
+                    <div className="relative">
+                        <select 
+                            value={localForm.sync_settings?.min_nights || 2}
+                            onChange={(e) => {
+                                const val = Number(e.target.value);
+                                const updated = { ...localForm, sync_settings: { ...localForm.sync_settings, min_nights: val } };
+                                handleUpdateProperty(updated);
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                        >
+                            {[1,2,3,4,5,7,14,30].map(n => <option key={n} value={n}>{n} noches</option>)}
+                        </select>
+                        <span className="material-icons text-sm text-gray-300 group-hover:text-primary transition-colors">edit</span>
+                    </div>
                  </div>
                  <div className="flex items-end gap-3">
                     <p className="text-3xl font-serif font-black text-text-main">{localForm.sync_settings?.min_nights || 2}</p>
-                    <p className="text-[8px] font-bold text-gray-400 uppercase mb-2">Regla por defecto</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase mb-2">Regla activa</p>
                  </div>
-                 <p className="text-[7px] text-gray-400 italic mt-2">Salty verificará esto antes de cotizar.</p>
+              </div>
+
+              {/* Max Nights Card (NEW) */}
+              <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md cursor-pointer">
+                 <div className="flex justify-between items-center mb-1">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Noches Máximas</p>
+                    <div className="relative">
+                        <select 
+                            value={localForm.sync_settings?.max_nights || 60}
+                            onChange={(e) => {
+                                const val = Number(e.target.value);
+                                const updated = { ...localForm, sync_settings: { ...localForm.sync_settings, max_nights: val } };
+                                handleUpdateProperty(updated);
+                            }}
+                            className="absolute inset-0 opacity-0 cursor-pointer"
+                        >
+                            {[7,14,30,60,90,180].map(n => <option key={n} value={n}>{n} noches</option>)}
+                        </select>
+                        <span className="material-icons text-sm text-gray-300 group-hover:text-primary transition-colors">edit</span>
+                    </div>
+                 </div>
+                 <div className="flex items-end gap-3">
+                    <p className="text-3xl font-serif font-black text-text-main">{localForm.sync_settings?.max_nights || 60}</p>
+                    <p className="text-[8px] font-bold text-gray-400 uppercase mb-2">Límite</p>
+                 </div>
               </div>
 
               {/* Advance Notice / Preaviso Card */}
@@ -281,13 +318,43 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                  </div>
               </div>
 
-              {/* Availability Window ( FOTO #1 REPLICA ) */}
+              {/* Preparation Days (New Card) */}
+              <div className="p-5 bg-gray-50 rounded-3xl border border-gray-100 group transition-all hover:bg-white hover:shadow-md">
+                 <div className="flex justify-between items-center mb-1">
+                    <p className="text-[9px] font-black text-gray-500 uppercase tracking-widest">Días de Preparación</p>
+                    <select 
+                        value={localForm.sync_settings?.prep_days || 0}
+                        onChange={(e) => {
+                            const val = Number(e.target.value);
+                            const updated = { ...localForm, sync_settings: { ...localForm.sync_settings, prep_days: val } };
+                            handleUpdateProperty(updated);
+                        }}
+                        className="bg-transparent border-none text-[9px] font-black text-primary uppercase focus:ring-0 outline-none cursor-pointer"
+                    >
+                        {[0,1,2].map(d => <option key={d} value={d}>{d === 0 ? 'Ninguno' : `${d} día`}</option>)}
+                    </select>
+                 </div>
+                 <p className="text-[10px] text-gray-400 italic">Tiempo de limpieza entre reservas.</p>
+              </div>
+
+              {/* Availability Window (INTERACTIVE) */}
               <div className="p-6 bg-primary/5 rounded-[2rem] border border-primary/10 space-y-4">
                  <div className="flex justify-between items-start">
                     <div>
                         <h4 className="text-[10px] font-black text-primary uppercase tracking-widest mb-1">Ventana de Disponibilidad</h4>
-                        <div className="flex items-baseline gap-2">
-                            <p className="text-2xl font-serif font-black text-text-main">{localForm.sync_settings?.availability_window || 6}</p>
+                        <div className="flex items-baseline gap-2 group relative">
+                            <select 
+                                value={localForm.sync_settings?.availability_window || 6}
+                                onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    const updated = { ...localForm, sync_settings: { ...localForm.sync_settings, availability_window: val } };
+                                    handleUpdateProperty(updated);
+                                }}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                            >
+                                {[3,6,9,12,24].map(m => <option key={m} value={m}>{m} meses</option>)}
+                            </select>
+                            <p className="text-2xl font-serif font-black text-text-main group-hover:text-primary transition-colors">{localForm.sync_settings?.availability_window || 6}</p>
                             <p className="text-[9px] font-bold text-text-light uppercase">meses de anticipación</p>
                         </div>
                     </div>
