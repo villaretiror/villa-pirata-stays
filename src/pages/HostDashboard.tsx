@@ -53,7 +53,8 @@ import {
   Calendar, Key, Wallet, TrendingUp, Sparkles, ChevronRight, Info, Clock, Send,
   LayoutDashboard, User as UserIcon, AlertTriangle, Bell, Check, Trash2, Download,
   Plus, Tag, CheckCheck, DollarSign, GripHorizontal, RefreshCcw, UserX, ClipboardCheck,
-  ListPlus, PlusCircle, HelpCircle, Printer, Anchor, ShieldCheck, Waves, Heart
+  ListPlus, PlusCircle, HelpCircle, Printer, Anchor, ShieldCheck, Waves, Heart,
+  Save, Quote, ChevronDown
 } from 'lucide-react';
 
 const CustomToast = () => {
@@ -264,7 +265,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
       rating: newReview.rating || 5,
       date: newReview.date || 'Reciente',
       source: (newReview.source as 'Airbnb' | 'Booking.com' | 'Google') || 'Airbnb',
-       avatar: `https://ui-avatars.com/api/?name=${newReview.author}&background=random`
+      avatar: `https://ui-avatars.com/api/?name=${newReview.author}&background=random`
     };
     onAddReview(property.id, review);
     setIsAdding(false);
@@ -273,92 +274,164 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
 
   const saveStats = () => {
     onUpdateStats(property.id, stats.rating, stats.count);
-    showToast("Puntuación actualizada correctamente.");
+    showToast("Prestigio de Propiedad Actualizado ✨");
   };
 
   return (
-    <div className="bg-white rounded-[2rem] p-6 shadow-soft border border-gray-100 mb-6 group transition-all">
-      <div className="flex justify-between items-start mb-4">
-        <h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main group-hover:text-primary transition-colors">{property.title}</h3>
-        <div className="flex items-center gap-1.5 text-primary font-black bg-primary/5 px-3 py-1 rounded-full text-[10px] uppercase tracking-widest border border-primary/10">
-          <span className="material-icons text-xs">star</span>
-          {property.rating}
+    <div className="bg-white rounded-[3rem] p-10 shadow-soft border border-gray-100 group transition-all relative overflow-hidden">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8 mb-12">
+        <div className="flex-1">
+           <div className="flex items-center gap-3 mb-2">
+              <span className="w-2 h-2 rounded-full bg-primary" />
+              <h3 className="font-serif font-black italic text-2xl tracking-tighter text-text-main group-hover:text-primary transition-colors leading-none">
+                {property.title}
+              </h3>
+           </div>
+           <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light opacity-50 ml-5">Social Proof Management</p>
+        </div>
+
+        <div className="flex items-center gap-8 bg-gray-50/80 p-6 rounded-3xl border border-gray-100 shadow-inner">
+           <div className="text-center">
+              <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Score Global</p>
+              <div className="flex items-baseline gap-1">
+                 <span className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.rating}</span>
+                 <Star className="w-3.5 h-3.5 text-primary fill-primary mb-1" />
+              </div>
+           </div>
+           <div className="w-px h-10 bg-gray-200" />
+           <div className="text-center">
+              <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Total Reseñas</p>
+              <p className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.count}</p>
+           </div>
         </div>
       </div>
 
-      {/* Quick Stats Editor */}
-      <div className="bg-sand/30 p-5 rounded-2xl mb-8 border border-orange-100/30">
-        <p className="text-[9px] font-black text-gray-400 mb-4 uppercase tracking-[0.2em] flex items-center gap-2">
-          <span className="material-icons text-xs">sync</span> Sincronización de Prestigio
-        </p>
-        <div className="flex gap-4 items-end">
-          <div className="flex-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Rating Global</label>
-            <input
-              type="number"
-              step="0.01"
-              value={stats.rating}
-              onChange={e => setStats({ ...stats, rating: parseFloat(e.target.value) })}
-              className="w-full p-3.5 rounded-xl border-none bg-white text-sm font-black shadow-inner shadow-black/5 outline-none focus:ring-2 ring-primary/20 transition-all"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Total Reseñas</label>
-            <input
-              type="number"
-              value={stats.count}
-              onChange={e => setStats({ ...stats, count: parseInt(e.target.value) })}
-              className="w-full p-3.5 rounded-xl border-none bg-white text-sm font-black shadow-inner shadow-black/5 outline-none focus:ring-2 ring-primary/20 transition-all"
-            />
-          </div>
-          <button onClick={saveStats} className="bg-black text-white p-3.5 rounded-xl shadow-xl shadow-black/10 active:scale-90 transition-all hover:bg-primary group/save">
-            <span className="material-icons text-sm group-hover/save:rotate-12 transition-transform">save</span>
-          </button>
-        </div>
+      {/* Sincronización Manual Styling */}
+      <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mb-12">
+         <div className="md:col-span-5 relative group/input">
+            <label className="text-[9px] font-black uppercase tracking-[0.3em] text-text-light mb-3 block ml-1">Actualizar Puntuación</label>
+            <div className="relative">
+              <input
+                type="number"
+                step="0.01"
+                value={stats.rating}
+                onChange={e => setStats({ ...stats, rating: parseFloat(e.target.value) })}
+                className="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 font-serif font-black italic text-2xl outline-none focus:bg-white focus:border-primary/30 transition-all shadow-inner"
+              />
+              <Star className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-primary group-focus-within/input:rotate-12 transition-transform" />
+            </div>
+         </div>
+         <div className="md:col-span-5 relative group/input">
+            <label className="text-[9px] font-black uppercase tracking-[0.3em] text-text-light mb-3 block ml-1">Volumen de Feedback</label>
+            <div className="relative">
+              <input
+                type="number"
+                value={stats.count}
+                onChange={e => setStats({ ...stats, count: parseInt(e.target.value) })}
+                className="w-full p-5 rounded-2xl bg-gray-50 border border-gray-100 font-serif font-black italic text-2xl outline-none focus:bg-white focus:border-primary/30 transition-all shadow-inner"
+              />
+              <BarChart3 className="absolute right-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 opacity-30" />
+            </div>
+         </div>
+         <div className="md:col-span-2 flex items-end">
+            <button 
+              onClick={saveStats}
+              className="w-full h-[68px] bg-black text-white rounded-2xl hover:bg-gray-800 transition-all active:scale-95 shadow-xl flex items-center justify-center group/btn"
+              title="Guardar Cambios de Prestigio"
+            >
+              <Save className="w-5 h-5 group-hover/btn:scale-110 transition-transform" />
+            </button>
+         </div>
       </div>
 
-      {/* Reviews List */}
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <h4 className="font-bold text-sm">Reseñas Destacadas ({property.reviews_list?.length || 0})</h4>
-          <button onClick={() => setIsAdding(!isAdding)} className="text-primary text-xs font-bold underline">
-            {isAdding ? 'Cancelar' : '+ Agregar Manualmente'}
+      {/* Reviews List Section */}
+      <div className="space-y-6">
+        <div className="flex justify-between items-center px-2">
+          <div className="flex items-center gap-3">
+             <Quote className="w-5 h-5 text-primary opacity-40 rotate-180" />
+             <h4 className="font-serif font-black italic text-sm text-text-main tracking-tight">Selección de Reseñas Destacadas ({property.reviews_list?.length || 0})</h4>
+          </div>
+          <button 
+            onClick={() => setIsAdding(!isAdding)} 
+            className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full border transition-all ${isAdding ? 'bg-red-50 text-red-500 border-red-100' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'}`}
+          >
+            {isAdding ? 'Cerrar Panel' : '+ Añadir Manualmente'}
           </button>
         </div>
 
         {isAdding && (
-          <div className="bg-sand p-4 rounded-xl border border-orange-200 animate-fade-in">
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <input placeholder="Nombre Autor" className="p-2 rounded-lg text-sm" onChange={e => setNewReview({ ...newReview, author: e.target.value })} />
-              <input placeholder="Fecha (ej. Mayo 2024)" className="p-2 rounded-lg text-sm" onChange={e => setNewReview({ ...newReview, date: e.target.value })} />
-              <select className="p-2 rounded-lg text-sm bg-white" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
-                <option value="Airbnb">Airbnb</option>
-                <option value="Booking.com">Booking.com</option>
-                <option value="Google">Google</option>
-              </select>
-              <select className="p-2 rounded-lg text-sm bg-white" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
-                <option value={5}>5 Estrellas</option>
-                <option value={4}>4 Estrellas</option>
-              </select>
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-sand p-8 rounded-[2.5rem] border border-orange-100 shadow-inner relative overflow-hidden">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 relative z-10">
+              <input placeholder="Nombre del Huésped" className="p-4 rounded-xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, author: e.target.value })} />
+              <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, date: e.target.value })} />
+              
+              <div className="relative">
+                 <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
+                    <option value="Airbnb">Origen: Airbnb</option>
+                    <option value="Booking.com">Origen: Booking.com</option>
+                    <option value="Google">Origen: Google Maps</option>
+                 </select>
+                 <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
+              </div>
+
+               <div className="relative text-center">
+                 <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
+                    <option value={5}>Rating: ★ ★ ★ ★ ★</option>
+                    <option value={4}>Rating: ★ ★ ★ ★ ☆</option>
+                 </select>
+              </div>
             </div>
             <textarea
-              placeholder="Copia y pega aquí el texto de la reseña..."
-              className="w-full p-3 rounded-lg text-sm mb-3 h-24"
+              placeholder="Copia el texto del testimonio aquí..."
+              className="w-full p-6 rounded-2xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm mb-5 h-32 leading-relaxed resize-none font-serif italic"
               onChange={e => setNewReview({ ...newReview, text: e.target.value })}
             />
-            <button onClick={saveReview} className="w-full bg-primary text-white font-bold py-2 rounded-lg text-sm">Guardar Reseña</button>
-          </div>
+            <button onClick={saveReview} className="w-full bg-black text-white font-black text-[10px] uppercase tracking-[0.3em] py-5 rounded-2xl shadow-xl hover:bg-gray-900 transition-all active:scale-95">Publicar Testimonio en Mi Web</button>
+          </motion.div>
         )}
 
-        {property.reviews_list?.map(review => (
-          <div key={review.id} className="p-4 bg-gray-50/30 rounded-2xl border border-gray-100/50 group/item hover:bg-white transition-all">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-serif font-black italic text-sm text-text-main tracking-tight group-hover/item:text-primary transition-colors">{review.author}</span>
-              <span className="text-[8px] font-black uppercase tracking-widest bg-white border border-gray-100 px-2.5 py-1 rounded-full text-gray-400 shadow-sm">{review.source}</span>
+        {/* Improved Review Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {property.reviews_list?.map(review => (
+            <div key={review.id} className="p-8 bg-gray-50/50 rounded-[2.5rem] border border-gray-100 group/item hover:bg-white hover:shadow-soft transition-all relative">
+              <div className="flex justify-between items-start mb-6">
+                <div className="flex items-center gap-4">
+                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
+                      <img src={review.avatar || "https://i.pravatar.cc/100"} alt="User" />
+                   </div>
+                   <div>
+                      <h4 className="font-serif font-black italic text-lg text-text-main group-hover/item:text-primary transition-colors leading-none truncate max-w-[150px]">{review.author}</h4>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-text-light mt-1 opacity-50">{review.date}</p>
+                   </div>
+                </div>
+                <div className="bg-white px-3 py-1.5 rounded-full border border-gray-100 flex items-center gap-1.5 shadow-sm group-hover/item:scale-105 transition-transform">
+                   <div className={`w-1.5 h-1.5 rounded-full ${review.source === 'Airbnb' ? 'bg-[#FF385C]' : review.source === 'Booking.com' ? 'bg-[#003580]' : 'bg-green-500'}`} />
+                   <span className="text-[7px] font-black uppercase tracking-widest text-text-main">{review.source}</span>
+                </div>
+              </div>
+
+              <div className="flex gap-0.5 mb-4">
+                 {[...Array(review.rating || 5)].map((_, i) => (
+                    <Star key={i} className="w-2.5 h-2.5 text-primary fill-primary" />
+                 ))}
+              </div>
+              
+              <div className="relative">
+                 <Quote className="absolute -left-2 -top-2 w-6 h-6 text-primary opacity-5 rotate-180" />
+                 <p className="text-text-main text-[13px] leading-relaxed italic opacity-80 pl-6 border-l-2 border-primary/10">
+                   "{review.text}"
+                 </p>
+              </div>
             </div>
-            <p className="text-text-light text-xs leading-relaxed italic opacity-80 line-clamp-2">"{review.text}"</p>
+          ))}
+        </div>
+
+        {(property.reviews_list || []).length === 0 && !isAdding && (
+          <div className="text-center py-12 bg-gray-50/30 rounded-[3rem] border border-dashed border-gray-100">
+             <Sparkles className="w-10 h-10 text-gray-200 mx-auto mb-3" />
+             <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Tu legado está listo para ser documentado</p>
           </div>
-        ))}
+        )}
       </div>
     </div>
   );
@@ -1086,25 +1159,31 @@ const HostDashboard: React.FC = () => {
 
       // 2. Inteligencia de Negocio & Finanzas (Revenue Analysis)
       const typedBookings = bundle.bookings || [];
+      // 2. Lógica de Ingresos (Stay-Based vs Booking-Based)
       let total = 0; let monthly = 0;
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
       const performance: Record<string, number> = {};
       const chartData: any[] = [];
       const monthsHistory: Record<string, number> = {};
-
+      
       typedBookings.forEach((b: any) => {
-        if (b.status === 'confirmed' || b.status === 'completed') {
-          const amount = Number(b.total_price) || 0;
-          total += amount;
-          const propTitle = b.properties?.title || 'Villa';
-          performance[propTitle] = (performance[propTitle] || 0) + amount;
+        const amount = Number(b.total_price) || 0;
+        total += amount;
+
+        // Clasificar por Propiedad
+        const propTitle = b.properties?.title || 'Villa';
+        performance[propTitle] = (performance[propTitle] || 0) + amount;
+        
+        // Historial Mensual basado en FECHA DE ESTADÍA (Check-in) para ver ocupación real
+        if (b.check_in) {
+          const stayDate = new Date(b.check_in);
+          const monthKey = `${stayDate.getFullYear()}-${String(stayDate.getMonth() + 1).padStart(2, '0')}`;
+          monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
           
-          if (b.created_at) {
-            const dateObj = new Date(b.created_at);
-            const monthKey = `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}`;
-            monthsHistory[monthKey] = (monthsHistory[monthKey] || 0) + amount;
-            if (dateObj.getMonth() === currentMonth && dateObj.getFullYear() === currentYear) monthly += amount;
+          if (stayDate.getMonth() === currentMonth && stayDate.getFullYear() === currentYear && b.status !== 'cancelled') {
+            monthly += amount;
           }
         }
       });
@@ -1604,31 +1683,31 @@ const HostDashboard: React.FC = () => {
               <span className="material-icons text-[14px]">sync_lock</span>
             </button>
           </div>
-          <h2 className="text-2xl md:text-3xl font-serif font-black italic tracking-tighter mb-4 leading-tight">
+          <h2 className="text-2xl md:text-4xl font-serif font-black italic tracking-tighter mb-4 leading-[1.1] max-w-2xl">
             "{nextCheckins.length > 0 
-              ? `Salty informa: Tenemos ${nextCheckins.length} check-ins estratégicos hoy. Todo listo para la excelencia.` 
-              : "La brisa de Cabo Rojo augura un día de 5 estrellas. Paz y rentabilidad en balance."}"
+              ? `Salty informa: ${nextCheckins.length} check-ins estratégicos hoy. Todo listo para la excelencia.` 
+              : "La brisa del noroeste augura un día de 5 estrellas. Paz y rentabilidad en balance."}"
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-white/10">
-            <div className="flex items-start gap-4">
-              <div className="bg-white/10 p-2 rounded-xl"><Calendar className="w-4 h-4 text-primary-light" /></div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-6 border-t border-white/10">
+            <div className="flex items-center gap-4 group/item">
+              <div className="bg-white/10 p-2.5 rounded-2xl group-hover/item:bg-primary/20 transition-colors"><Calendar className="w-4 h-4 text-primary-light" /></div>
               <div>
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Check-ins</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Check-ins</p>
                 <p className="text-sm font-bold">{nextCheckins.filter(b => b.check_in === new Date().toISOString().split('T')[0]).length} Llegadas hoy</p>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="bg-white/10 p-2 rounded-xl"><Zap className="w-4 h-4 text-yellow-400" /></div>
+            <div className="flex items-center gap-4 group/item">
+              <div className="bg-white/10 p-2.5 rounded-2xl group-hover/item:bg-yellow-400/20 transition-colors"><Zap className="w-4 h-4 text-yellow-400" /></div>
               <div>
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Clima en Vivo</p>
-                <p className="text-sm font-bold">29°C Parcialmente Nublado</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Cabo Rojo Live</p>
+                <p className="text-sm font-bold">29°C Despejado</p>
               </div>
             </div>
-            <div className="flex items-start gap-4">
-              <div className="bg-white/10 p-2 rounded-xl"><AlertTriangle className="w-4 h-4 text-red-400" /></div>
+            <div className="flex items-center gap-4 group/item">
+              <div className="bg-white/10 p-2.5 rounded-2xl group-hover/item:bg-red-400/20 transition-colors"><AlertTriangle className="w-4 h-4 text-red-400" /></div>
               <div>
-                <p className="text-[10px] font-black text-white/50 uppercase tracking-widest">Status Op.</p>
-                <p className="text-sm font-bold">{urgentAlerts.filter(a => a.status === 'new').length > 0 ? 'Revisión Pendiente' : 'Todo en Orden'}</p>
+                <p className="text-[9px] font-black text-white/40 uppercase tracking-[0.2em]">Sistema Salty</p>
+                <p className="text-sm font-bold">{urgentAlerts.filter(a => a.status === 'new').length > 0 ? `${urgentAlerts.filter(a => a.status === 'new').length} Pendientes` : 'Operativo ✓'}</p>
               </div>
             </div>
           </div>
@@ -1889,16 +1968,18 @@ const HostDashboard: React.FC = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-5 mb-8">
-                <div className="w-20 h-20 rounded-full overflow-hidden border-[6px] border-white shadow-float relative group-hover:scale-105 transition-transform duration-500">
+              <div className="flex items-center gap-6 mb-8">
+                <div className="w-20 h-20 rounded-full overflow-hidden border-[6px] border-white shadow-float relative flex-shrink-0 group-hover:scale-105 transition-transform duration-500">
                   <img src={booking.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="Guest" className="w-full h-full object-cover" />
-                  <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-4 border-white"></div>
+                  <div className="absolute -bottom-1 -right-1 bg-green-500 w-5 h-5 rounded-full border-4 border-white shadow-sm"></div>
                 </div>
-                <div>
-                  <h3 className="text-2xl font-serif font-black italic tracking-tighter text-text-main leading-tight">{booking.profiles?.full_name || 'Huésped'}</h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="text-lg font-serif font-black italic text-primary">${booking.total_price}</span>
-                    <span className="text-[10px] font-medium uppercase tracking-[0.2em] text-text-light opacity-50">• {booking.status}</span>
+                <div className="min-w-0">
+                  <h3 className="text-2xl md:text-3xl font-serif font-black italic tracking-tighter text-text-main leading-tight truncate">
+                    {booking.profiles?.full_name || 'Huésped'}
+                  </h3>
+                  <div className="flex items-center gap-3 mt-2">
+                    <span className="text-xl font-serif font-black italic text-primary tracking-tight">${booking.total_price}</span>
+                    <span className="bg-sand/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-text-light">{booking.status}</span>
                   </div>
                 </div>
               </div>
@@ -2114,32 +2195,36 @@ const HostDashboard: React.FC = () => {
   );
 
   const renderReviews = () => (
-    <div className="space-y-6 animate-fade-in">
-      <div className="bg-[#2D5A27]/5 p-6 rounded-[2rem] border border-[#2D5A27]/10 mb-6 backdrop-blur-sm relative overflow-hidden">
-        <div className="absolute -top-4 -right-4 opacity-5 pointer-events-none">
-          <span className="material-icons text-8xl">verified</span>
+    <div className="space-y-12 animate-fade-in pb-32">
+      {/* Banner de Prestigio Premium */}
+      <div className="bg-black p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-12 opacity-5 scale-150 rotate-12 transition-transform group-hover:scale-125 duration-700">
+           <ShieldCheck strokeWidth={1} className="w-64 h-64 text-primary" />
         </div>
-        <div className="flex gap-4 items-start relative z-10">
-          <div className="w-10 h-10 bg-[#2D5A27] text-white rounded-full flex items-center justify-center flex-shrink-0 shadow-lg shadow-[#2D5A27]/20">
-            <span className="material-icons text-xl">verified</span>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/20">
+               <Star className="w-5 h-5 text-primary fill-primary" />
+            </div>
+            <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/5">Prestige & Authority Hub</span>
           </div>
-          <div>
-            <h3 className="font-serif font-black italic text-lg text-[#2D5A27] tracking-tighter">Prestigio & Reputación</h3>
-            <p className="text-xs text-[#2D5A27]/80 leading-relaxed mt-1 font-medium italic">
-              "La excelencia es un hábito." — Mantén tu legado actualizado sincronizando manualmente tus mejores testimonios de Airbnb y plataformas externas para maximizar tu conversión.
-            </p>
-          </div>
+          <h2 className="text-4xl font-serif font-black italic tracking-tighter mb-4 leading-none">Tu Legado de Excelencia</h2>
+          <p className="text-sm text-white/50 max-w-2xl leading-relaxed italic">
+            "La reputación es la moneda del anfitrión." — Centraliza tus testimonios de Airbnb y Booking para elevar la confianza del próximo huésped.
+          </p>
         </div>
       </div>
 
-      {properties.map((p: Property) => (
-        <ReviewManager
-          key={p.id}
-          property={p}
-          onAddReview={handleAddManualReview}
-          onUpdateStats={handleUpdateReviewStats}
-        />
-      ))}
+      <div className="grid grid-cols-1 gap-12">
+        {properties.map((p: Property) => (
+          <ReviewManager
+            key={p.id}
+            property={p}
+            onAddReview={handleAddManualReview}
+            onUpdateStats={handleUpdateReviewStats}
+          />
+        ))}
+      </div>
     </div>
   );
 
@@ -2218,75 +2303,129 @@ const HostDashboard: React.FC = () => {
       </div>
     </div>
   );
-  const renderPayments = () => (
-    <div className="space-y-6 animate-fade-in mb-10 pb-12">
-      <div className="bg-orange-50/50 p-8 rounded-[2.5rem] border border-orange-100 flex items-center gap-6 shadow-sm">
-        <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-orange-600 shadow-soft-sm border border-orange-50">
-          <CreditCard strokeWidth={1.5} className="w-8 h-8" />
-        </div>
-        <div>
-          <h3 className="font-serif font-black italic text-xl text-orange-900 tracking-tighter">Conciliación ATH Móvil</h3>
-          <p className="text-[10px] text-orange-700/70 font-medium uppercase tracking-widest mt-1">Valida los comprobantes para confirmar estancias.</p>
-        </div>
-      </div>
-
-      {pendingPayments.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {pendingPayments.map((payment: any) => (
-            <div key={payment.id} className="bg-white rounded-[2.5rem] p-8 shadow-soft border border-gray-100 group hover:border-orange-100 transition-all">
-              <div className="flex items-center gap-4 mb-8">
-                <div className="w-14 h-14 rounded-full border-2 border-white shadow-soft overflow-hidden">
-                  <img src={payment.profiles?.avatar_url || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&q=80&w=200"} alt="User" className="w-full h-full object-cover" />
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-bold text-sm text-text-main leading-tight">{payment.profiles?.full_name}</h4>
-                  <p className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-light mt-1.5 opacity-60">
-                    <span className="text-secondary font-black">${payment.total_price}</span> • {payment.properties?.title}
-                  </p>
-                </div>
-                <div className="bg-orange-50 text-orange-600 px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-widest border border-orange-100">Pendiente</div>
-              </div>
-
-              <div className="mb-8">
-                <p className="text-[9px] font-bold uppercase text-gray-400 tracking-[0.3em] mb-3 ml-1">Comprobante:</p>
-                <div className="relative aspect-[4/3] rounded-[2rem] overflow-hidden border border-gray-100 bg-gray-50 group/img shadow-inner">
-                  <img src={payment.payment_proof_url} alt="Proof" className="w-full h-full object-contain p-4 group-hover/img:scale-105 transition-transform duration-700" />
-                  <a
-                    href={payment.payment_proof_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all duration-300 backdrop-blur-sm"
-                  >
-                    <span className="text-white text-[9px] font-bold uppercase tracking-[0.2em] border border-white/20 px-6 py-3 rounded-full hover:bg-white hover:text-black transition-all">Ver Pantalla Completa</span>
-                  </a>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => handleRejectPayment(payment.id)}
-                  className="py-5 rounded-[1.8rem] border border-gray-100 text-red-500 font-bold text-[10px] uppercase tracking-[0.2em] hover:bg-red-50 transition-all active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" /> Rechazar
-                </button>
-                <button
-                  onClick={() => handleApprovePayment(payment.id)}
-                  className="py-5 rounded-[1.8rem] bg-black text-white font-bold text-[10px] uppercase tracking-[0.3em] hover:bg-gray-800 shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
-                >
-                  <CheckCircle2 className="w-4 h-4 text-green-400" /> Confirmar
-                </button>
-              </div>
+  const renderPayments = () => {
+    const totalPendingVal = pendingPayments.reduce((acc, p: any) => acc + (Number(p.total_price) || 0), 0);
+    
+    return (
+      <div className="space-y-10 animate-fade-in pb-32">
+        {/* Header Específico de Pagos (Payment Hub) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-orange-50/80 p-6 rounded-[2.5rem] border border-orange-100 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+              <CreditCard className="w-16 h-16 text-orange-600" />
             </div>
-          ))}
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-orange-700/60 mb-2">Conciliación Manual</p>
+            <h3 className="text-xl font-serif font-black italic text-orange-900 tracking-tighter mb-1">ATH Móvil</h3>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
+              <p className="text-[10px] font-bold text-orange-900/60 uppercase">{pendingPayments.filter(p => p.payment_method === 'ath_movil').length} Pendientes</p>
+            </div>
+          </div>
+
+          <div className="bg-blue-50/80 p-6 rounded-[2.5rem] border border-blue-100 relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
+              <span className="material-icons text-6xl text-blue-600">payments</span>
+            </div>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-700/60 mb-2">Pasarela Activa</p>
+            <h3 className="text-xl font-serif font-black italic text-blue-900 tracking-tighter mb-1">PayPal Hub</h3>
+            <div className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+              <p className="text-[10px] font-bold text-blue-900/60 uppercase">En Verificación</p>
+            </div>
+          </div>
+
+          <div className="bg-black p-6 rounded-[2.5rem] text-white relative overflow-hidden group border border-white/5 shadow-2xl">
+            <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
+              <ShieldCheck className="w-16 h-16 text-primary" />
+            </div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-transparent" />
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Automatización (Stripe)</p>
+            <h3 className="text-xl font-serif font-black italic text-white tracking-tighter mb-1 flex items-center gap-2">
+               Stripe Pay <span className="text-[8px] bg-primary px-2 py-0.5 rounded-full not-italic tracking-widest uppercase">Próximamente</span>
+            </h3>
+            <p className="text-[10px] font-medium text-white/30 uppercase tracking-widest mt-1 italic">Cero Intervención Manual</p>
+          </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-[2rem] p-12 text-center border border-dashed border-gray-200">
-          <span className="material-icons text-4xl text-gray-200 mb-2">done_all</span>
-          <p className="text-xs font-bold text-gray-400">Todos los pagos están al día</p>
-        </div>
-      )}
-    </div>
-  );
+
+        {/* Resumen de Liquidez en Vuelo */}
+        {totalPendingVal > 0 && (
+          <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-100 flex justify-between items-center px-8 shadow-soft-sm">
+            <div className="flex items-center gap-3">
+              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
+              <p className="text-[10px] font-black uppercase tracking-widest text-text-light">Dinero en Proceso de Validación</p>
+            </div>
+            <p className="text-xl font-serif font-black italic text-text-main tracking-tighter">${totalPendingVal.toLocaleString()}</p>
+          </div>
+        )}
+
+        {pendingPayments.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {pendingPayments.map((payment: any) => (
+              <div key={payment.id} className="bg-white rounded-[3rem] p-8 shadow-soft border border-gray-100 group hover:border-orange-100 transition-all relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-100 opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                <div className="flex items-center gap-5 mb-8">
+                  <div className="w-16 h-16 rounded-full border-4 border-white shadow-float overflow-hidden flex-shrink-0">
+                    <img src={payment.profiles?.avatar_url || "https://i.pravatar.cc/150"} alt="User" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-serif font-black italic text-xl text-text-main leading-tight tracking-tight truncate">{payment.profiles?.full_name}</h4>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <span className="text-lg font-serif font-bold text-green-600 tracking-tight">${payment.total_price}</span>
+                      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-light opacity-40">• {payment.properties?.title}</span>
+                    </div>
+                  </div>
+                  <div className="bg-orange-50 text-orange-600 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border border-orange-100 shadow-sm">Audit</div>
+                </div>
+
+                <div className="mb-8">
+                  <div className="flex justify-between items-center mb-4 px-2">
+                    <p className="text-[10px] font-black uppercase text-text-light tracking-[0.3em]">Comprobante Digital</p>
+                    <span className="text-[9px] font-medium text-text-light opacity-50 uppercase tracking-widest">{payment.payment_method?.replace('_', ' ')}</span>
+                  </div>
+                  <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-gray-100 bg-gray-50 group/img shadow-inner ring-1 ring-black/5">
+                    <img src={payment.payment_proof_url} alt="Proof" className="w-full h-full object-contain p-2 group-hover/img:scale-105 transition-transform duration-700" />
+                    <a
+                      href={payment.payment_proof_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center opacity-0 group-hover/img:opacity-100 transition-all duration-300 backdrop-blur-md"
+                    >
+                      <span className="material-icons text-white text-3xl mb-2">zoom_out_map</span>
+                      <span className="text-white text-[9px] font-black uppercase tracking-[0.3em] border-t border-white/20 pt-2">Ver Pantalla Completa</span>
+                    </a>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-5">
+                  <button
+                    onClick={() => handleRejectPayment(payment.id)}
+                    className="py-5 rounded-2xl border border-gray-100 text-red-500 font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-50 transition-all active:scale-95 flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <Trash2 className="w-4 h-4" /> Rechazar
+                  </button>
+                  <button
+                    onClick={() => handleApprovePayment(payment.id)}
+                    className="py-5 rounded-2xl bg-black text-white font-black text-[10px] uppercase tracking-[0.3em] hover:bg-gray-800 shadow-xl transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4 text-primary" /> Confirmar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white/50 rounded-[4rem] p-24 text-center border-2 border-dashed border-gray-200 backdrop-blur-sm group">
+            <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:scale-110 transition-transform duration-500 shadow-inner">
+               <span className="material-icons text-4xl text-gray-400 group-hover:text-primary transition-colors">verified_user</span>
+            </div>
+            <h4 className="text-xl font-serif font-black italic text-text-main mb-2">Liquidez Conciliada</h4>
+            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-light opacity-50">No hay pagos pendientes de validación</p>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const renderConversion = () => (
     <div className="space-y-12 animate-fade-in pb-32">
