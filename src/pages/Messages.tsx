@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import PayPalPayment from '../components/PayPalPayment';
@@ -455,8 +456,8 @@ const Messages: React.FC = () => {
               <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
             </div>
             <div>
-              <p className="font-serif font-black italic text-lg text-text-main tracking-tighter">Salty - Concierge</p>
-              <p className="text-[9px] text-green-600 font-bold uppercase tracking-[0.2em] flex items-center gap-1.5">
+              <p className="font-serif font-black italic text-lg text-[#1a1a1a] tracking-tighter">Salty · Concierge VRR</p>
+              <p className="text-[9px] text-[#BBA27E] font-black uppercase tracking-[0.2em] flex items-center gap-1.5">
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -740,7 +741,7 @@ const Messages: React.FC = () => {
                   <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
                 </div>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary animate-pulse">Salty está consultando el calendario y disponibilidad real...</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#BBA27E] animate-pulse">Salty está consultando disponibilidad real en Cabo Rojo...</p>
             </div>
           </div>
         )}
@@ -748,16 +749,31 @@ const Messages: React.FC = () => {
       </div>
 
       <form onSubmit={handleSendMessage} className="p-4 pb-[max(1rem,env(safe-area-inset-bottom,16px))] bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
+        <button
+          type="button"
+          className="bg-[#1a1a1a] text-[#BBA27E] w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all group overflow-hidden relative"
+          onClick={() => {
+            alert("Próximamente: Salty te escuchará y hablará contigo en tiempo real. ¡Estamos afinando su voz de Capitán!");
+          }}
+        >
+          <motion.div 
+            animate={{ scale: [1, 1.2, 1] }} 
+            transition={{ duration: 2, repeat: Infinity }}
+            className="material-icons opacity-80"
+          >
+            mic
+          </motion.div>
+        </button>
         <input
           value={inputText}
           onChange={e => setInputText(e.target.value)}
-          placeholder="Ej: ¿Qué fechas hay disponibles?"
-          className="flex-1 bg-[#f4f3f0] border-none rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-primary/20 focus:bg-white transition-all text-text-main placeholder:text-gray-400"
+          placeholder="Habla con Salty..."
+          className="flex-1 bg-white border border-black/5 rounded-2xl px-5 py-4 text-sm focus:ring-2 focus:ring-[#BBA27E]/20 focus:bg-white transition-all text-text-main placeholder:text-gray-400"
         />
         <button
           type="submit"
           disabled={!inputText.trim() || isTyping}
-          className="bg-primary text-white w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-50 disabled:active:scale-100"
+          className="bg-[#BBA27E] text-[#1a1a1a] w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-90 transition-all disabled:opacity-50 disabled:active:scale-100"
         >
           <span className="material-icons">send</span>
         </button>

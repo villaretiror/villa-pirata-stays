@@ -64,6 +64,11 @@ export const PropertyDetails: React.FC = () => {
   const [showAmenities, setShowAmenities] = useState(false);
   const [showHostDrawer, setShowHostDrawer] = useState(false);
   const [activeSection, setActiveSection] = useState<string | null>(null);
+  const [translatedReviews, setTranslatedReviews] = useState<Record<number, boolean>>({});
+
+  const toggleTranslation = (index: number) => {
+    setTranslatedReviews(prev => ({ ...prev, [index]: !prev[index] }));
+  };
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
 
   // Currency conversion (Simulated for display)
@@ -631,9 +636,16 @@ export const PropertyDetails: React.FC = () => {
                       <Star key={j} size={14} fill={j < rev.rating ? 'currentColor' : 'none'} />
                     ))}
                   </div>
-                  <p className="text-lg text-text-main font-serif italic leading-relaxed mb-6">
-                    "{rev.text}"
+                  <p className="text-lg text-text-main font-serif italic leading-relaxed mb-4">
+                    "{translatedReviews[i] ? `[TRADUCIDO POR SALTY]: ${rev.text}` : rev.text}"
                   </p>
+                  <button 
+                    onClick={() => toggleTranslation(i)}
+                    className="text-[10px] font-black uppercase tracking-[0.2em] text-[#BBA27E] mb-6 flex items-center gap-2 hover:opacity-70 transition-opacity"
+                  >
+                    <span className="material-icons text-[14px]">translate</span>
+                    {translatedReviews[i] ? 'Ver Original' : 'Salty: Traducir al Español'}
+                  </button>
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-black/5">
                   <div className="flex items-center gap-3">
