@@ -6,6 +6,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import './index.css';
 import { PropertyProvider } from './contexts/PropertyContext';
 import { BookingProvider } from './contexts/BookingContext';
+import { AlertTriangle } from 'lucide-react';
 
 // 1. Error Boundary Wrapper
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
@@ -26,7 +27,7 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boole
     if (this.state.hasError) {
       return (
         <div className="min-h-screen bg-sand flex flex-col items-center justify-center p-6 text-center">
-          <span className="material-icons text-primary text-5xl mb-4">error_outline</span>
+          <AlertTriangle className="text-primary w-12 h-12 mb-4" />
           <h2 className="font-serif text-2xl font-bold mb-2">Algo salió mal</h2>
           <p className="text-text-light text-sm mb-6">Hemos tenido un problema al cargar esta sección. Por favor, intenta recargar.</p>
           <button

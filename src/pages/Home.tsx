@@ -26,8 +26,11 @@ import {
   ChevronRight,
   CheckCircle2,
   Star,
-  Map as MapIcon
+  Map as MapIcon,
+  BellOff
 } from 'lucide-react';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import MapModal from '../components/MapModal';
 import StickyBookingBar from '../components/StickyBookingBar';
 import { LocalGuideItem } from '../types';
@@ -78,36 +81,31 @@ const Home: React.FC = () => {
 
   console.log("FILTRO ACTIVO:", { adults, children, pets, activeCategory, propertiesCount: properties.length });
 
-  // Filter Logic based on Guests (Adults + Kids) AND Pets AND Category
-  const filteredProperties = properties.filter(property => {
-    // 0. Emergency Check: Don't show offline properties
-    if (property.isOffline) return false;
+  // 🚀 PERFORMANCE: Memoize filtered results to prevent UI jank during category switches
+  const filteredProperties = React.useMemo(() => {
+    return properties.filter(property => {
+      if (property.isOffline) return false;
+      const totalHumans = adults + children;
+      const capacity = Number(property.guests) || 1;
+      if (capacity < totalHumans) return false;
 
-    const totalHumans = adults + children;
+      if (pets > 0) {
+        const hText = (property.amenities || []).join(" ").toLowerCase();
+        if (!hText.includes("pet") && !hText.includes("mascota")) return false;
+      }
 
-    // 1. Check Capacity (Robust check using the flat column)
-    const capacity = Number(property.guests) || 1;
-    if (capacity < totalHumans) return false;
+      if (activeCategory === "todo") return true;
+      const aText = (property.amenities || []).join(" ").toLowerCase();
+      const dText = (property.description || "").toLowerCase();
 
-    // 2. Check Pets (Automatic filter if pets > 0)
-    if (pets > 0) {
-      const amenitiesText = (property.amenities || []).join(" ").toLowerCase();
-      const isPetFriendly = amenitiesText.includes("pet") || amenitiesText.includes("mascota");
-      if (!isPetFriendly) return false;
-    }
+      if (activeCategory === "piscina") return aText.includes("piscina") || dText.includes("piscina");
+      if (activeCategory === "playa") return dText.includes("playa") || dText.includes("mar") || dText.includes("beach");
+      if (activeCategory === "mascotas") return aText.includes("pet") || aText.includes("mascota");
 
-    // 3. Check Category
-    if (activeCategory === "todo") return true;
+      return true;
+    });
+  }, [properties, adults, children, pets, activeCategory]);
 
-    const amenitiesText = (property.amenities || []).join(" ").toLowerCase();
-    const descText = (property.description || "").toLowerCase();
-
-    if (activeCategory === "piscina") return amenitiesText.includes("piscina") || descText.includes("piscina");
-    if (activeCategory === "playa") return descText.includes("playa") || descText.includes("mar") || descText.includes("beach");
-    if (activeCategory === "mascotas") return amenitiesText.includes("pet") || amenitiesText.includes("mascota");
-
-    return true;
-  });
   const getSectionTitle = () => {
     if (pets > 0) return 'Alojamientos Pet Friendly';
     switch (activeCategory) {
@@ -120,9 +118,9 @@ const Home: React.FC = () => {
 
   const getGuestSummary = () => {
     const parts = [];
-    if (adults > 0) parts.push(`${adults} ad`);
-    if (children > 0) parts.push(`${children} ni`);
-    if (pets > 0) parts.push(`${pets} masc`);
+    if (adults > 0) parts.push(`${adults}${adults > 1 ? ' ad' : ' ad'}`);
+    if (children > 0) parts.push(`${children}${children > 1 ? ' ni' : ' ni'}`);
+    if (pets > 0) parts.push(`${pets}🐾`);
     return parts.join(', ');
   };
 
@@ -181,7 +179,6 @@ const Home: React.FC = () => {
             </div>
 
             <div className="mb-8 overflow-y-auto max-h-[60vh] pr-2 no-scrollbar">
-              {/* --- DATES SECTION --- */}
               <div className="mb-8">
                 <BookingCalendar 
                   startDate={startDate} 
@@ -191,20 +188,18 @@ const Home: React.FC = () => {
                     setStartDate(start);
                     setEndDate(end);
                   }} 
-                  blockedDates={[]} // General search doesn't block dates globally
+                  blockedDates={[]} 
                 />
               </div>
 
-              {/* --- GUESTS SECTION --- */}
               <div className="space-y-1 mb-4">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-text-light mb-4">¿Quiénes se unen a la aventura?</h3>
+                <h3 className="font-bold text-sm uppercase tracking-wider text-text-light mb-4">Integrantes</h3>
                 <CounterRow label="Exploradores Adultos" sub="Edad 13+" val={adults} setVal={setAdults} min={1} />
                 <CounterRow label="Pequeños Capitanes" sub="Edad 2 - 12" val={children} setVal={setChildren} min={0} />
-                <CounterRow label="Mascotas Capitanas" sub="Patas bienvenidas 🐾" val={pets} setVal={setPets} min={0} />
+                <CounterRow label="Mascotas" sub="Patas bienvenidas 🐾" val={pets} setVal={setPets} min={0} />
               </div>
             </div>
 
-            {/* 🧠 SMART TIP AREA: Dynamic Salty Insight */}
             <div className="mb-6 min-h-[65px] flex items-center justify-center text-center px-6 bg-sand/50 rounded-3xl border border-orange-100/30">
               <AnimatePresence mode="wait">
                 <motion.p
@@ -215,23 +210,9 @@ const Home: React.FC = () => {
                    className="text-[11px] font-bold text-secondary italic leading-relaxed"
                 >
                   {(() => {
-                    const day = startDate?.getDay();
-                    const isWeekend = day === 5 || day === 6 || day === 0;
-                    const month = startDate?.getMonth();
-                    const dateVal = startDate?.getDate();
-                    
-                    // Holiday Logic
-                    let holidayMsg = "";
-                    if (month === 11 && dateVal === 25) holidayMsg = "¡Vaya regalo de Navidad! 🎄";
-                    else if (month === 0 && dateVal === 6) holidayMsg = "Día de Reyes en el trópico. 👑";
-                    else if (isWeekend) holidayMsg = "¡Ah, un fin de semana épico! 🥂";
-                    
-                    if (pets > 0) return `🔱 Salty: "Villa Retiro R tiene el espacio seguro que sus patitas necesitan. 🐾 ${holidayMsg}"`;
-                    if (children > 0) return `🔱 Salty: "Perfecto para una escapada familiar histórica. ✨ ${holidayMsg}"`;
-                    if (adults === 2) return `🔱 Salty: "Estas fechas son muy buscadas para escapadas románticas. 🛡️ ${holidayMsg}"`;
-                    if (adults > 4) return `🔱 Salty: "¡Capitán! Grupos grandes aman estas fechas. 🛡️ ${holidayMsg}"`;
-                    
-                    return holidayMsg || "🔱 Salty: \"Cabo Rojo le espera con su mejor gala. ¿Zarpamos?\"";
+                    if (pets > 0 && adults + children > 4) return "🔱 Salty: \"Villa Retiro R tiene el espacio seguro que sus patitas necesitan para grupos grandes. 🛡️\"";
+                    if (children > 0) return "🔱 Salty: \"Nuestras villas cuentan con áreas seguras para que los más pequeños exploren con libertad. ✨\"";
+                    return "🔱 Salty: \"Cabo Rojo le espera con su mejor gala. ¿Zarpamos?\"";
                   })()}
                 </motion.p>
               </AnimatePresence>
@@ -242,7 +223,7 @@ const Home: React.FC = () => {
               className="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all hover:bg-primary-dark uppercase tracking-[0.2em] text-xs"
             >
               <Search size={16} />
-              Explorar propiedades
+              Ver Disponibilidad
             </button>
           </div>
         </div>
@@ -257,36 +238,23 @@ const Home: React.FC = () => {
               <span className="text-primary italic font-medium">{siteContent?.hero.slogan}</span>
             </h1>
           </div>
-          <div
-            onClick={() => {
-              const el = document.getElementById('notif-status');
-              if (el) {
-                el.innerText = siteContent?.hero.notif_promo || "¡Pronto! Notificaciones de Élite.";
-                setTimeout(() => { if (el) el.innerText = siteContent?.hero.notif_status || "¡Hola, Viajero! 👋"; }, 3000);
-              }
-            }}
-            className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group"
-          >
+          <div className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group overflow-hidden relative">
             <Bell size={24} className="text-secondary group-hover:scale-110 transition-transform" />
           </div>
         </div>
-
-        <div className="h-6 -mt-4 mb-4">
-          <p id="notif-status" className="text-text-light text-sm font-medium transition-all duration-500">{siteContent?.hero.notif_status || "¡Hola, Viajero! 👋"}</p>
-        </div>
+        <p className="text-text-light text-sm font-medium transition-all duration-500">{siteContent?.hero.notif_status || "¡Hola, Viajero! 👋"}</p>
       </div>
 
-      {/* Search Bar - Modern Glass */}
       <div
         onClick={() => setIsSearchOpen(true)}
-        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10"
+        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10 mx-6"
       >
         <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform">
           <Search size={20} />
         </div>
         <div className="flex-1 px-4">
           <p className="font-bold text-text-main text-sm">
-            {startDate ? `${startDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })} - ${endDate ? endDate.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' }) : '...'}` : 'Cabo Rojo, PR'}
+            {startDate ? `${format(startDate, 'dd MMM', { locale: es })} - ${endDate ? format(endDate, 'dd MMM', { locale: es }) : '...'}` : 'Cabo Rojo, PR'}
           </p>
           <p className="text-xs text-text-light">{getGuestSummary()}</p>
         </div>
@@ -295,8 +263,8 @@ const Home: React.FC = () => {
         </div>
       </div>
 
-      {/* Categories - Modern Pills */}
-      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2 relative z-10 px-1">
+      {/* Categories */}
+      <div className="flex items-center gap-3 mt-8 overflow-x-auto no-scrollbar pb-2 relative z-10 px-6">
         {categories.map((cat) => (
           <button
             key={cat.id}
@@ -312,40 +280,27 @@ const Home: React.FC = () => {
         ))}
       </div>
 
-      {/* Main Content Area */}
       <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-10 pb-32">
-        {/* Sabor Local Header & Filters */}
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 text-center md:text-left">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 opacity-80">Cabo Rojo Experience</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 opacity-80">Explora con Salty</p>
               <h2 className="font-serif font-bold text-4xl text-text-main leading-[1.1] tracking-tight">Sabor Local & <span className="text-secondary italic font-medium">Aventura.</span></h2>
             </div>
             
-            {/* Experience Pills - ACTIVADORES DINÁMICOS */}
             <div className="flex gap-2 p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-[2rem] border border-white/50 w-fit mx-auto md:mx-0 shadow-inner">
               {[
                 { id: 'beaches', label: 'Playas', icon: Palmtree },
-                { id: 'gastronomy', label: 'Gastronomía', icon: Utensils },
-                { id: 'nearby', label: 'Cerca de Ti', icon: MapPin }
+                { id: 'gastronomy', label: 'Comer', icon: Utensils },
+                { id: 'nearby', label: 'Guía', icon: MapPin }
               ].map(tab => (
                 <button
                   key={tab.id}
-                  onClick={() => {
-                    if (activeGuideTab === tab.id) {
-                      setActiveGuideTab(null);
-                    } else {
-                      setActiveGuideTab(tab.id);
-                      setTimeout(() => {
-                        const el = document.getElementById(`section-${tab.id}`);
-                        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }, 100);
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-500 shadow-sm active:scale-95 ${
+                  onClick={() => setActiveGuideTab(activeGuideTab === tab.id ? null : tab.id)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-bold uppercase tracking-widest transition-all duration-500 shadow-sm ${
                     activeGuideTab === tab.id 
                     ? 'bg-primary text-white scale-105 shadow-primary/20' 
-                    : 'bg-white text-text-light hover:text-primary hover:bg-white'
+                    : 'bg-white text-text-light hover:text-primary'
                   }`}
                 >
                   <tab.icon size={14} />
@@ -356,7 +311,6 @@ const Home: React.FC = () => {
           </div>
         </div>
 
-        {/* ON-DEMAND LOCAL CONTENT (Filtros Foto 4) */}
         <AnimatePresence mode="wait">
           {activeGuideTab && (
             <motion.div
@@ -367,20 +321,15 @@ const Home: React.FC = () => {
               transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
               className="mb-20"
             >
-              {/* Playas del Paraíso Section */}
-              {activeGuideTab === 'beaches' && (
-                <div id="section-beaches" className="scroll-mt-32">
+              <div id={`section-${activeGuideTab}`} className="scroll-mt-32">
                   <div className="flex justify-between items-end mb-8">
                     <div>
                       <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
-                      <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.beaches || "Playas del Paraíso"}</h2>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-primary/5 flex items-center justify-center border border-primary/10 text-primary">
-                      <Palmtree size={24} />
+                      <h2 className="font-serif font-bold text-3xl text-text-main">Destinos Recomendados</h2>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {localGuideData.find(g => g.id === 'beaches')?.items.map((item, i) => (
+                    {localGuideData.find(g => g.id === activeGuideTab)?.items.map((item, i) => (
                       <GuideCard 
                         key={i} 
                         item={item} 
@@ -392,106 +341,10 @@ const Home: React.FC = () => {
                       />
                     ))}
                   </div>
-                </div>
-              )}
-
-              {/* Ruta Gastronómica Section */}
-              {activeGuideTab === 'gastronomy' && (
-                <div id="section-gastronomy" className="scroll-mt-32">
-                  <div className="flex justify-between items-end mb-8">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-1">Sabor Local</p>
-                      <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.gastronomy || "Ruta Gastronómica"}</h2>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-secondary/5 flex items-center justify-center border border-secondary/10 text-secondary">
-                      <Utensils size={24} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {localGuideData.find(g => g.id === 'gastronomy')?.items.map((item, i) => (
-                      <GuideCard 
-                        key={i} 
-                        item={item} 
-                        onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} 
-                        onMapClick={(guideItem) => {
-                          setSelectedGuideItem(guideItem);
-                          setIsMapModalOpen(true);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Cerca de Ti Section */}
-              {activeGuideTab === 'nearby' && (
-                <div id="section-nearby" className="scroll-mt-32">
-                  <div className="flex justify-between items-end mb-8">
-                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light mb-1">Logística & Entorno</p>
-                      <h2 className="font-serif font-bold text-3xl text-text-main">{siteContent?.sections.nearby || "Cerca de Ti"}</h2>
-                    </div>
-                    <div className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center border border-gray-100 text-text-light">
-                      <MapPin size={24} />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {localGuideData.find(g => g.id === 'nearby')?.items.map((item, i) => (
-                      <GuideCard 
-                        key={i} 
-                        item={item} 
-                        onAskSalty={(name) => navigate('/messages', { state: { initialPlace: name } })} 
-                        onMapClick={(guideItem) => {
-                          setSelectedGuideItem(guideItem);
-                          setIsMapModalOpen(true);
-                        }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
-
-        {/* CTA Banner */}
-        <div className="mb-10 bg-gradient-to-br from-secondary/10 via-primary/5 to-transparent rounded-3xl p-6 border border-secondary/20 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl"></div>
-          <div className="relative z-10">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-secondary mb-2">📍 Sector Samán, Cabo Rojo</p>
-            <h3 className="font-serif font-bold text-lg text-text-main leading-snug mb-2">
-              {siteContent?.cta.title || "Hospédate en el corazón del Paraíso."}<br />
-              <span className="text-primary italic">{siteContent?.cta.subtitle || "Todo lo que amas de Cabo Rojo a menos de 20 minutos."}</span>
-            </h3>
-            <p className="text-xs text-text-light mb-4 max-w-md">{siteContent?.cta.description || "Nuestras propiedades están ubicadas estratégicamente cerca de Boquerón, las mejores playas y restaurantes del suroeste."}</p>
-            <div className="flex gap-4 flex-wrap">
-              <a href="https://share.google/LBxZV0NwKZps4rliR" target="_blank" rel="noopener noreferrer"
-                className="group/google flex items-center gap-3 bg-white/80 backdrop-blur-xl text-text-main px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-float hover:shadow-primary/20 hover:scale-105 active:scale-95 transition-all border border-white/50">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center group-hover/google:bg-primary/20 transition-colors">
-                  <Star size={14} className="text-primary fill-primary" />
-                </div>
-                Villa Retiro R en Google
-              </a>
-              <a href="https://share.google/iQA2MMS4C2Vv7HBIx" target="_blank" rel="noopener noreferrer"
-                className="group/google flex items-center gap-3 bg-white/80 backdrop-blur-xl text-text-main px-6 py-3.5 rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-float hover:shadow-secondary/20 hover:scale-105 active:scale-95 transition-all border border-white/50">
-                <div className="w-8 h-8 rounded-full bg-secondary/10 flex items-center justify-center group-hover/google:bg-secondary/20 transition-colors">
-                  <Star size={14} className="text-secondary fill-secondary" />
-                </div>
-                Pirata Family en Google
-              </a>
-            </div>
-          </div>
-        </div>
-
-        {/* Social Proof - Reviews Carousel */}
-        {!isLoading && properties.length > 0 && (
-          <div className="mb-16 border-y border-gray-100/50 py-4">
-            <div className="text-center mb-2">
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">Lo que dicen nuestros huéspedes</p>
-            </div>
-            <ReviewCarousel limit={8} />
-          </div>
-        )}
 
         {/* Listings Header */}
         <div id="property-grid" ref={resultsRef} className="flex justify-between items-center mb-6 scroll-mt-32">
@@ -503,9 +356,9 @@ const Home: React.FC = () => {
           </span>
         </div>
 
-        {/* Listings Grid - Luxury Stagger Entry */}
+        {/* Listings Grid */}
         <motion.div 
-          className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+          className="grid grid-cols-1 lg:grid-cols-2 gap-6 pb-20"
           initial="hidden"
           animate="show"
           variants={{
@@ -528,21 +381,9 @@ const Home: React.FC = () => {
                   key={property.id}
                   layout
                   variants={{
-                    hidden: { opacity: 0, y: 40, scale: 0.96 },
-                    show: { 
-                      opacity: 1, 
-                      y: 0, 
-                      scale: 1,
-                      transition: {
-                        duration: 0.8,
-                        ease: [0.16, 1, 0.3, 1]
-                      }
-                    },
-                    exit: { 
-                      opacity: 0, 
-                      scale: 0.9, 
-                      transition: { duration: 0.4 } 
-                    }
+                    hidden: { opacity: 0, y: 40 },
+                    show: { opacity: 1, y: 0 },
+                    exit: { opacity: 0, scale: 0.9 }
                   }}
                 >
                   <PropertyCard
@@ -556,20 +397,29 @@ const Home: React.FC = () => {
               ))}
             </AnimatePresence>
           ) : (
-            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center bg-white rounded-3xl border border-dashed border-gray-200">
-              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mb-4 animate-pulse text-gray-300">
-                <Search size={40} />
+            /* 🐆 LUXURY EMPTY STATE */
+            <div className="col-span-full flex flex-col items-center justify-center py-20 px-10 text-center bg-white/40 border border-white/50 rounded-[3rem] backdrop-blur-md">
+              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-inner">
+                 <Search size={48} className="animate-pulse" />
               </div>
-              <p className="text-text-main font-bold text-lg">Sin estancias disponibles</p>
-              <p className="text-sm text-text-light mt-1 mb-6 max-w-[200px]">
-                Intenta cambiar los filtros para encontrar tu estancia ideal.
+              <p className="text-text-main font-serif italic text-2xl font-bold mb-2">No encontramos coincidencias hoy</p>
+              <p className="text-sm text-text-light mb-8 max-w-[300px] leading-relaxed">
+                Sin embargo, Salty sugiere que pruebes con menos personas o cambies de categoría para ver nuestros tesoros disponibles.
               </p>
-              <button
-                onClick={() => { setAdults(1); setChildren(0); setPets(0); setActiveCategory('todo'); }}
-                className="text-primary font-bold text-sm bg-primary/10 px-6 py-3 rounded-xl hover:bg-primary/20 transition-colors"
-              >
-                Limpiar filtros
-              </button>
+              <div className="flex flex-col gap-3 w-full max-w-xs">
+                 <button
+                   onClick={() => { setAdults(1); setChildren(0); setPets(0); setActiveCategory('todo'); }}
+                   className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
+                 >
+                   Zarpar de Nuevo (Limpiar Todo)
+                 </button>
+                 <button 
+                   onClick={() => navigate('/messages')}
+                   className="w-full bg-white text-primary border border-primary/20 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest"
+                 >
+                   Preguntar a Salty por Fechas
+                 </button>
+              </div>
             </div>
           )}
         </motion.div>

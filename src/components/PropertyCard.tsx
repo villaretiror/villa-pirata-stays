@@ -35,7 +35,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   // Staggered animation delay based on index
   const delay = index * 100;
 
-  const viewers = React.useMemo(() => Math.floor(Math.random() * (8 - 3 + 1)) + 3, []);
+  const viewers = React.useMemo(() => {
+    const base = (property.rating || 0) >= 4.9 ? 7 : 3;
+    return Math.floor(Math.random() * 5) + base;
+  }, [property.rating]);
 
   const getBadges = () => {
     return (

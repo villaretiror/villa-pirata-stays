@@ -14,9 +14,15 @@ const SmartImage: React.FC<SmartImageProps> = ({
     const [error, setError] = useState(false);
     const [loaded, setLoaded] = useState(false);
 
-    // Basic optimization for common providers if not already present
+    // 🚀 BOUTIQUE OPTIMIZATION: Handle Airbnb (muscache) and Unsplash resizing
     let optimizedSrc = error ? fallbackSrc : src;
-    if (optimizedSrc?.includes('unsplash.com') && !optimizedSrc.includes('auto=format')) {
+    
+    if (optimizedSrc?.includes('muscache.com')) {
+        // Append im_w to Airbnb images for optimized loading (720 is ideal for 1x cards)
+        optimizedSrc = optimizedSrc.includes('?') 
+            ? `${optimizedSrc}&im_w=720` 
+            : `${optimizedSrc}?im_w=720`;
+    } else if (optimizedSrc?.includes('unsplash.com') && !optimizedSrc.includes('auto=format')) {
         optimizedSrc += optimizedSrc.includes('?') ? '&auto=format' : '?auto=format';
     }
 

@@ -91,7 +91,7 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed bottom-4 pb-[env(safe-area-inset-bottom,12px)] left-0 right-0 z-50 flex justify-center pointer-events-none animate-slide-up">
+    <nav className="fixed bottom-6 pb-[env(safe-area-inset-bottom,20px)] left-0 right-0 z-50 flex justify-center pointer-events-none animate-slide-up">
       <div className="relative flex justify-center w-full max-w-sm">
         <AnimatePresence>
           {showMenu && (
