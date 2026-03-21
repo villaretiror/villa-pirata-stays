@@ -18,7 +18,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   index, 
   onClick, 
   isFavorite, 
-  onToggleFavorite 
+  onToggleFavorite
 }) => {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLElement>(null);
@@ -47,22 +47,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
         )}
         
-        {/* 🔱 SALTY POWER BADGES: Reveal on hover for a clean default look */}
-        <AnimatePresence>
-          {isHovered && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              className="flex flex-col gap-2"
-            >
-              <div className="bg-black text-[#F4EBD0] px-2.5 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5 ring-1 ring-white/10">
-                <Zap size={10} className="text-secondary fill-secondary" />
-                Salty Direct™ -15%
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* 🔱 SALTY POWER BADGES: Reserved for dynamic alerts */}
       </div>
     );
   };
@@ -83,7 +68,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       className="group cursor-pointer relative bg-white rounded-[2.5rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-700 flex flex-col border border-black/5"
     >
       {/* Visual Header / Media */}
-      <div className="relative aspect-[4/5] overflow-hidden m-2 rounded-[2rem]">
+      <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden m-2 rounded-[2rem]">
         {getBadges()}
         
         <div className="absolute top-4 right-4 z-10">
