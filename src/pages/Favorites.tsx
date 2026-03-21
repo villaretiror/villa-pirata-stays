@@ -24,7 +24,7 @@ const Favorites: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-sand/30 pb-32 px-6 pt-12 animate-fade-in relative overflow-hidden">
+    <div className="min-h-screen bg-sand/30 pb-32 px-6 pt-12 animate-fade-in relative overflow-hidden transition-colors duration-1000">
       {/* 🌊 Background Aesthetic elements */}
       <div className="absolute top-[-10%] right-[-5%] w-64 h-64 bg-primary/5 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute bottom-[20%] left-[-10%] w-80 h-80 bg-secondary/5 rounded-full blur-[120px] pointer-events-none" />
@@ -35,21 +35,21 @@ const Favorites: React.FC = () => {
           <motion.div 
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="w-16 h-16 bg-white/60 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center shadow-xl border border-white/40 group overflow-hidden"
+            className="w-16 h-16 bg-white/60 dark-bg-white-10 backdrop-blur-xl rounded-[1.5rem] flex items-center justify-center shadow-xl border border-white/40 group overflow-hidden"
           >
             <motion.div
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
             >
-              <Heart className="w-8 h-8 text-primary shadow-sm" fill="#FF7F3F" />
+              <Heart className="w-8 h-8 text-primary dark-text-accent shadow-sm" fill="currentColor" />
             </motion.div>
             <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/30 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           </motion.div>
           <div>
-            <h1 className="text-4xl md:text-5xl font-serif font-black italic text-text-main tracking-tighter leading-none">
+            <h1 className="text-4xl md:text-5xl font-serif font-black italic text-text-main dark-text-white tracking-tighter leading-none">
               Mi Bitácora
             </h1>
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/60 mt-2 flex items-center gap-2">
+            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/60 dark-text-accent/60 mt-2 flex items-center gap-2">
               <Anchor className="w-3 h-3" />
               {favoriteProperties.length} Reservas en Potencia
             </p>
@@ -64,81 +64,77 @@ const Favorites: React.FC = () => {
             variants={containerVariants}
             initial="hidden"
             animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 relative z-10"
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10"
           >
             {favoriteProperties.map((property, index) => (
               <motion.div key={property.id} variants={itemVariants}>
-                <PropertyCard
-                  property={property}
+                <PropertyCard 
+                  property={property} 
                   index={index}
-                  onClick={(id) => navigate(`/property/${id}`)}
+                  onToggleFavorite={() => toggleFavorite(property.id)}
                   isFavorite={true}
-                  onToggleFavorite={toggleFavorite}
+                  onClick={() => navigate(`/property/${property.id}`)}
                 />
               </motion.div>
             ))}
           </motion.div>
         ) : (
           <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-32 text-center px-4 relative z-10"
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-20 text-center"
           >
-            {/* Empty State: Glassmorphism Card */}
-            <div className="bg-white/40 backdrop-blur-2xl p-12 rounded-[4rem] border border-white/60 shadow-2xl max-w-lg relative overflow-hidden group">
-              <div className="absolute -top-20 -right-20 w-40 h-40 bg-primary/10 rounded-full blur-3xl group-hover:bg-primary/20 transition-all duration-700" />
-              
-              <div className="w-24 h-24 bg-white/80 shadow-inner rounded-[2rem] flex items-center justify-center mb-8 border border-white mx-auto relative">
-                <Heart className="w-10 h-10 text-gray-200" />
-                <motion.div 
-                  animate={{ scale: [1, 1.05, 1], rotate: [0, 5, -5, 0] }}
-                  transition={{ repeat: Infinity, duration: 4 }}
-                  className="absolute -top-2 -right-2 bg-primary text-white p-2 rounded-xl shadow-lg"
+            <div className="relative mb-8">
+              <div className="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-150" />
+              <div className="relative w-32 h-32 bg-white/40 dark-bg-white-10 backdrop-blur-md rounded-full flex items-center justify-center border border-white/50 shadow-2xl">
+                <Heart className="w-16 h-16 text-primary/30 dark-text-accent/30" />
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }}
+                  transition={{ repeat: Infinity, duration: 3 }}
+                  className="absolute"
                 >
-                  <Compass className="w-4 h-4" />
+                  <Compass className="w-12 h-12 text-primary dark-text-accent" />
                 </motion.div>
               </div>
-
-              <h3 className="font-serif font-black italic text-3xl text-text-main mb-4 leading-tight">
-                "¿Aún no has elegido tu refugio?"
-              </h3>
-              
-              <div className="flex flex-col gap-4 mb-10">
-                <p className="text-text-light text-sm font-medium leading-relaxed italic opacity-80">
-                  Salty recomienda: Explora nuestras colecciones y guarda las que más vibren con tu estilo de viaje.
-                </p>
-                <div className="h-px bg-gradient-to-r from-transparent via-black/5 to-transparent w-full" />
-                <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">
-                  Acceso Exclusivo a Tarifas Web Directas
-                </p>
-              </div>
-
-              <button
-                onClick={() => navigate('/')}
-                className="w-full bg-primary hover:bg-[#FF8A66] text-white font-black uppercase tracking-[0.2em] py-6 rounded-[2.5rem] shadow-xl shadow-primary/20 flex items-center justify-center gap-3 transition-all active:scale-95 group/btn overflow-hidden relative"
-              >
-                <div className="absolute inset-0 bg-white/20 translate-x-[-100%] group-hover/btn:translate-x-[100%] transition-transform duration-1000" />
-                <Sparkles className="w-5 h-5" />
-                Explorar Colecciones
-                <ChevronRight className="w-5 h-5 group-hover/btn:translate-x-1 transition-transform" />
-              </button>
             </div>
             
-            {/* Salty Proactive Tip at bottom of Empty State */}
-            <motion.div 
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              className="mt-10 flex items-center gap-3 bg-black/5 px-6 py-3 rounded-full border border-black/5"
+            <h2 className="text-3xl font-serif font-bold text-text-main dark-text-white mb-4">Tu bitácora está esperando su primera entrada</h2>
+            <p className="max-w-md text-text-light dark-text-gray-400 mb-10 text-lg leading-relaxed">
+              "El primer paso de un gran viaje es elegir el refugio perfecto. Explora nuestras villas y guarda las que te roben el aliento." — <span className="font-bold text-primary dark-text-accent">Salty</span>
+            </p>
+            
+            <motion.button
+              whileHover={{ scale: 1.05, boxShadow: "0 0 30px rgba(255, 107, 53, 0.3)" }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/')}
+              className="group relative flex items-center gap-3 bg-primary dark-bg-accent text-white font-bold py-5 px-10 rounded-2xl shadow-float overflow-hidden transition-all duration-300"
             >
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-[10px] shadow-sm">🔱</div>
-              <p className="text-[10px] font-bold text-text-main uppercase tracking-widest">
-                Salty Note: <span className="text-text-light font-medium normal-case">Guardar una villa te permite comparar calendarios sin prisa.</span>
-              </p>
-            </motion.div>
+              <span className="relative z-10">Explorar Destinos</span>
+              <Sparkles className="w-5 h-5 relative z-10 animate-pulse" />
+              <ChevronRight className="w-5 h-5 relative z-10 transition-transform group-hover:translate-x-1" />
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
+
+      <style>{`
+        .dark-bg-white-10 {
+          transition: background-color 1s;
+        }
+        .salty-mode .dark-bg-white-10 {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+        .salty-mode .dark-text-accent {
+          color: #F2CC8F !important;
+        }
+        .salty-mode .dark-text-white {
+          color: #FFFFFF !important;
+        }
+        .salty-mode .dark-bg-accent {
+          background-color: #F2CC8F !important;
+        }
+      `}</style>
     </div>
   );
 };

@@ -60,4 +60,32 @@
       transform: translateX(100%);
     }
   }
+
+  /* 🔱🔱🔱🔱 SALTY MODE (NIGHT THEME) 🔱🔱🔱🔱 */
+  .salty-mode {
+    --sand: #050A18;
+    background-color: var(--sand) !important;
+    color: #F3F4F6 !important;
+    transition: background-color 1s ease, color 1s ease;
+  }
+
+  .salty-mode .bg-sand { background-color: #050A18 !important; }
+  .salty-mode .bg-white { background-color: rgba(255, 255, 255, 0.05) !important; }
+  .salty-mode .text-text-main { color: #F3F4F6 !important; }
+  .salty-mode .text-primary { color: #D4AF37 !important; }
+  .salty-mode .bg-primary { background-color: #D4AF37 !important; }
+  .salty-mode .border-white\/40, 
+  .salty-mode .border-gray-100 { 
+    border-color: rgba(255, 255, 255, 0.1) !important; 
+  }
+  .salty-mode .glass {
+    background: rgba(10, 20, 40, 0.7) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  .salty-mode .text-text-light { color: #9CA3AF !important; }
+  .salty-mode .bg-white\/60 { background-color: rgba(255, 255, 255, 0.05) !important; }
+  
+  /* Hover overrides for gold theme */
+  .salty-mode .hover\:bg-primary:hover { background-color: #B8860B !important; }
+  .salty-mode .text-primary\/60 { color: rgba(212, 175, 55, 0.6) !important; }
 }

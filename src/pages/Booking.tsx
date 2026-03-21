@@ -394,18 +394,40 @@ const Booking: React.FC = () => {
 
       <div className="relative bg-white/80 backdrop-blur-xl w-full max-w-2xl h-full sm:h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl border border-white/40">
 
-        <header className="px-8 py-6 flex items-center justify-between sticky top-0 bg-white sm:bg-white/80 backdrop-blur-xl z-20 border-b border-black/5">
-          <button
-            onClick={() => navigate(-1)}
-            className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-all active:scale-95"
-          >
-            <span className="material-icons text-text-main">close</span>
-          </button>
-          <div className="text-center">
-            <h2 className="font-serif font-black text-xl text-text-main leading-none">Confirmar Estancia</h2>
-            <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mt-1 italic">Boutique Stays Experience</p>
+        <header className="px-8 py-6 flex flex-col gap-4 sticky top-0 bg-white sm:bg-white/80 backdrop-blur-xl z-20 border-b border-black/5">
+          <div className="flex items-center justify-between">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-all active:scale-95"
+            >
+              <span className="material-icons text-text-main">close</span>
+            </button>
+            <div className="text-center">
+              <h2 className="font-serif font-black text-xl text-text-main leading-none">Confirmar Estancia</h2>
+              <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mt-1 italic">Boutique Stays Experience</p>
+            </div>
+            <div className="w-12"></div>
           </div>
-          <div className="w-12"></div>
+
+          {/* 🔱 MOD: Progressive Navigation Bar */}
+          <div className="flex items-center justify-center gap-2 px-10">
+            {[
+              { id: 'dates', icon: 'calendar_month', active: !!(startDate && endDate) },
+              { id: 'details', icon: 'person', active: !!(phone.length > 5) },
+              { id: 'payment', icon: 'account_balance_wallet', active: contractAccepted }
+            ].map((step, idx) => (
+              <React.Fragment key={step.id}>
+                <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${step.active ? 'opacity-100 scale-110' : 'opacity-30'}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${step.active ? 'bg-primary border-primary text-white shadow-lg' : 'border-gray-400'}`}>
+                    <span className="material-icons text-sm">{step.icon}</span>
+                  </div>
+                </div>
+                {idx < 2 && (
+                  <div className={`h-[2px] flex-1 max-w-[40px] rounded-full transition-colors duration-500 ${step.active ? 'bg-primary' : 'bg-gray-200'}`} />
+                )}
+              </React.Fragment>
+            ))}
+          </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-10 no-scrollbar pb-32">

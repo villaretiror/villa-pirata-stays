@@ -53,8 +53,27 @@ export default async function handler(req: any, res: any) {
         const text = msg.text || msg.caption || "";
 
         // 🛡️ SECURITY GATE
-        const allowedIdsStr = process.env.ALLOWED_TELEGRAM_CHAT_IDS || process.env.TELEGRAM_CHAT_ID || '9395794184,2085187904';
-        const allowedIds = allowedIdsStr.split(',').map(id => id.trim()).filter(id => id.length > 0);
+        const allowedIdsStr = process.env.ALLOWED_TELEGRAM_CHAT_IDS || '';
+        const allowedIds = allowedIdsStr.split(',').filter(id => id.trim() !== '');
+
+        async function notifyHost(message: string) {
+            if (allowedIds.length === 0) {
+                console.warn("⚠️ No se han configurado ALLOWED_TELEGRAM_CHAT_IDS. Notificaciones omitidas.");
+                return;
+            }
+            
+            for (const chatId of allowedIds) {
+                await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text: message,
+                        parse_mode: 'HTML'
+                    })
+                });
+            }
+        }
 
         if (!allowedIds.includes(chatId)) {
             return res.status(200).send('OK');
@@ -117,6 +136,28 @@ export default async function handler(req: any, res: any) {
                 await supabase.from('ai_chat_logs').insert({ session_id: sessionId, sender: 'host', text: text });
                 await NotificationService.sendDirectTelegramMessage(chatId, "✅ <i>Mensaje entregado en la web. Salty ha sido silenciado por 30 mins para esta sesión.</i>");
             }
+        }
+        else if (text.startsWith('/daily_report')) {
+            const { data: bookings } = await supabaseServiceRole.from('bookings').select('total_price, created_at').gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString());
+            const { data: leads } = await supabaseServiceRole.from('pending_bookings').select('id, created_at').gte('created_at', new Date(new Date().setHours(0,0,0,0)).toISOString());
+            
+            const totalRevenue = bookings?.reduce((sum, b) => sum + (b.total_price || 0), 0) || 0;
+            const count = bookings?.length || 0;
+            const leadCount = leads?.length || 0;
+
+            const report = `
+🔱 <b>REPORTE EJECUTIVO DE HOY</b> 🔱
+------------------------------------
+📅 <b>Fecha:</b> ${new Date().toLocaleDateString('es-ES', { day: 'numeric', month: 'long' })}
+💰 <b>Ingresos Brutos:</b> $${totalRevenue.toFixed(2)}
+📥 <b>Reservas Nuevas:</b> ${count}
+🎯 <b>Leads Generados:</b> ${leadCount}
+------------------------------------
+<i>Salty is watching. Everything under control, Captain.</i>
+            `.trim();
+            
+            await notifyHost(report);
+            return res.status(200).send('OK');
         }
         else if (text.toLowerCase().includes('salty') || text.startsWith('/') || msg.chat.type === 'private' || imagePart) {
             await handleAIConsultation(chatId, text, msg.from, imagePart);
