@@ -66,18 +66,33 @@ export const getWhatsAppWelcomeMsg = (data: {
   return `¡Hola ${data.guestName}! Gracias por elegir ${data.propertyName}. Aquí tus instrucciones de llegada: \n\n📍 Ubicación: ${data.googleMapsLink} \n🔑 Código de puerta: ${data.accessCode} \n\n¡Cualquier duda, estamos a tu orden!`;
 };
 
+export const getBookingWAMessage = (data: {
+    guestName: string;
+    propertyName: string;
+    checkIn: string;
+    checkOut: string;
+    total: number | string;
+    method?: string;
+}) => {
+    return `¡Hola! Confirmo mi reserva en *${data.propertyName}*.\n\n👤 Huésped: ${data.guestName}\n📅 Check-in: ${data.checkIn}\n📅 Check-out: ${data.checkOut}\n💰 Total: $${data.total}\n💳 Pago: ${data.method || 'Pendiente'}\n\n¡Estamos muy emocionados! 🏝️`;
+};
+
 export const generateWhatsAppLink = (phone: string, message: string): string => {
   const cleanPhone = phone.replace(/\D/g, '');
   return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 };
 
-export const getHostInstructionMessage = (guestName: string, propertyName: string, accessCode: string): string => {
-    return `¡Hola ${guestName}! Solo quería saludarte y confirmar que ya estamos listos para recibirte en ${propertyName}. El código de acceso para tu llegada será: ${accessCode}. ¿Tienes alguna duda sobre la ubicación o el check-in?`;
+export const getHostInstructionMessage = (data: {
+    guestName: string, 
+    propertyName: string, 
+    accessCode: string,
+    googleMapsLink?: string
+}): string => {
+    return `¡Hola ${data.guestName}! Solo quería saludarte y confirmar que ya estamos listos para recibirte en ${data.propertyName}. El código de acceso para tu llegada será: ${data.accessCode}. ¿Tienes alguna duda sobre la ubicación (${data.googleMapsLink || ''}) o el check-in?`;
 };
 
 // 5. Ported Helpers (Internal)
 export const importPropertyFromUrl = async (url: string) => {
-    // This is typically a complex logic for scraping, keeping signature for compatibility
     console.warn("importPropertyFromUrl no implementado en esta versión consolidada.");
     return null;
 };

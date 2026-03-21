@@ -61,10 +61,10 @@ export interface CalendarSync {
 }
 
 // 🛡️ OMIT ALL FIELDS THAT ARE OVERRIDDEN TO AVOID CONFLICTS
-type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images';
+type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'original_price';
 
 export interface Property extends Omit<PropertyRow, PropertyOmissions> {
-  original_price?: number | null;
+  original_price: number | null; // Corregido para coincidir con DB
   images: string[];
   reviews_list?: Review[];
   offers?: Offer[];
@@ -74,6 +74,11 @@ export interface Property extends Omit<PropertyRow, PropertyOmissions> {
   calendarSync: CalendarSync[];
   seasonal_prices?: SeasonalPrice[];
   isOffline?: boolean; 
+  // Extensiones detectadas en errores de Vercel
+  availability_urgency_msg?: string | null;
+  exact_lat_long?: string | null;
+  general_area_map_url?: string | null;
+  is_cleaning_in_progress?: boolean;
   host: {
     name: string;
     image: string;
@@ -124,6 +129,8 @@ export interface User extends Partial<ProfileRow> {
   role: 'guest' | 'host' | 'admin';
   name?: string; 
   avatar?: string; 
+  registeredAt?: string; // Para compatibilidad con Profile.tsx
+  emergencyContact?: string; // Alias snake_case
   favoriteProperties?: string[];
 }
 

@@ -22,7 +22,7 @@ const Profile: React.FC = () => {
   const [formData, setFormData] = useState({
     name: user?.name || '',
     phone: user?.phone || '',
-    emergencyContact: user?.emergencyContact || ''
+    emergencyContact: user?.emergency_contact || ''
   });
 
   const [greeting, setGreeting] = useState('');
@@ -40,7 +40,7 @@ const Profile: React.FC = () => {
       await updateUser({
         name: formData.name,
         phone: formData.phone,
-        emergencyContact: formData.emergencyContact
+        emergency_contact: formData.emergencyContact
       });
       setIsEditing(false);
     } catch (e) {
@@ -91,7 +91,7 @@ const Profile: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
           >
             <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">{greeting}</p>
-            <h1 className="text-3xl font-serif text-white font-bold">{user.name.split(' ')[0]}</h1>
+            <h1 className="text-3xl font-serif text-white font-bold">{(user.name || 'Huésped').split(' ')[0]}</h1>
           </motion.div>
           <button
             onClick={() => navigate('/')}
@@ -162,7 +162,7 @@ const Profile: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-sand/30 p-4 rounded-3xl">
                     <p className="text-[10px] font-bold text-text-light uppercase mb-1">Miembro desde</p>
-                    <p className="text-xs font-bold text-text-main">{new Date(user.registeredAt).getFullYear()}</p>
+                    <p className="text-xs font-bold text-text-main">{new Date(user.registeredAt || user.created_at || Date.now()).getFullYear()}</p>
                   </div>
                   <div className="bg-sand/30 p-4 rounded-3xl">
                     <p className="text-[10px] font-bold text-text-light uppercase mb-1">Estatus</p>
@@ -198,7 +198,7 @@ const Profile: React.FC = () => {
                         placeholder="Nombre y relación"
                       />
                     ) : (
-                      <p className="text-sm font-bold text-text-main">{user.emergencyContact || 'Sin asignar'}</p>
+                      <p className="text-sm font-bold text-text-main">{user.emergency_contact || 'Sin asignar'}</p>
                     )}
                   </div>
                 </div>

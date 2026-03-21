@@ -116,7 +116,7 @@ export const PropertyDetails: React.FC = () => {
       };
 
       updateMeta('og:title', `${property.title} · Boutique Stays`, true);
-      updateMeta('og:description', property.description.slice(0, 160), true);
+      updateMeta('og:description', (property.description || '').slice(0, 160), true);
       updateMeta('og:image', property.images[0], true);
       updateMeta('og:url', window.location.href, true);
       updateMeta('og:image:width', '1200', true);
@@ -404,7 +404,7 @@ export const PropertyDetails: React.FC = () => {
           <section className="space-y-6">
             <h2 className="text-3xl font-serif font-bold text-text-main">Amenidades de Élite</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {property.amenities.slice(0, 8).map((am, i) => {
+              {(property.amenities || []).slice(0, 8).map((am, i) => {
                 const isSafety = am.toLowerCase().includes('solar') || am.toLowerCase().includes('cisterna') || am.toLowerCase().includes('agua') || am.toLowerCase().includes('generador');
                 return (
                   <div key={i} className={`flex items-center gap-4 group p-2 rounded-2xl transition-all ${isSafety ? 'bg-[#E1EAD1]/30 border border-[#D0DCB8]/30' : 'hover:bg-white'}`}>
@@ -500,6 +500,10 @@ export const PropertyDetails: React.FC = () => {
                   </span>
                 </div>
                 <p className={TAG_STYLE + " text-gray-400 mb-1"}>Inversión Preferencial</p>
+                <span className="material-icons text-white text-sm">pool</span>
+                <span className="text-[10px] font-black uppercase text-white/90">
+                  {(property.amenities || []).length} amenidades elite
+                </span>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-5xl font-serif font-black text-text-main">
                     {symbols[currency]}{convertedPrice}
@@ -751,7 +755,7 @@ export const PropertyDetails: React.FC = () => {
               {/* Content */}
               <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {property.amenities.map((amenity, i) => (
+                  {(property.amenities || []).map((amenity, i) => (
                     <div key={i} className="flex items-center gap-5 p-5 rounded-[2rem] bg-sand/30 border border-orange-50/50">
                       <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft">
                         {amenity.toLowerCase().includes('piscina') ? <Droplets size={24} /> :
