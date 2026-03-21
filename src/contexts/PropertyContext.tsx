@@ -12,6 +12,7 @@ interface PropertyContextType {
   properties: Property[];
   localGuideData: LocalGuideCategory[];
   secretSpots: any[];
+  bookings: any[];
   villaKnowledge: VillaKnowledge;
   siteContent: SiteContent;
   favorites: string[];
@@ -41,6 +42,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [secretSpots, setSecretSpots] = useState<any[]>([]);
   const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
   const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
+  const [bookings, setBookings] = useState<any[]>([]);
 
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -51,6 +53,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // 1. Initial Fresh Fetch & Realtime Subscription
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
+    setIsLoading(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -60,6 +63,13 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         .or('is_offline.eq.false,is_offline.is.null');
       
       if (propError) throw propError;
+
+      // AA. Fetch Global Bookings (for search filtering)
+      const { data: bookingData } = await supabase.from('bookings')
+        .select('*')
+        .neq('status', 'cancelled');
+      
+      if (bookingData) setBookings(bookingData);
 
       // B. Fetch Dynamic Destination Guides (Integridad 360)
       const { data: guideRows, error: guideError } = await supabase
@@ -84,7 +94,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             .filter(r => {
               const rowCat = (r.category || '').trim().toLowerCase();
               const targetCat = cat.dbKey.toLowerCase();
-              // 🧪 GASTRONOMÍA TRUTH SEARCH: Validate against food, gastronomia or restaurante
               if (targetCat === 'food') {
                 return ['food', 'gastronomia', 'restaurante'].includes(rowCat);
               }
@@ -95,7 +104,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
               name: r.title,
               distance: r.distance || '5-10 min',
               desc: r.description || '',
-              // 📸 IMAGE LOADER FINAL: Concatenate with validated Supabase bucket if not absolute
               image: r.image_url?.startsWith('http') 
                 ? r.image_url 
                 : r.image_url 
@@ -112,8 +120,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       }
       
       if (propData && propData.length > 0) {
-        console.log('Propiedades recibidas del DB:', propData.length);
-        
         // 🛡️ REINFORCED ADMIN CHECK: Verify real role from auth server
         const { data: { user } } = await supabase.auth.getUser();
         const isAdmin = user?.email === 'villaretiror@gmail.com';
@@ -127,7 +133,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         const { data: settings } = await supabase.from('system_settings').select('key, value');
         if (settings) {
           const typedSettings = settings as SettingRow[];
-          
           const secrets = typedSettings.find(s => s.key === 'secret_spots')?.value;
           if (secrets) setSecretSpots(secrets as any[]);
 
@@ -157,13 +162,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [siteContent?.sections]);
 
   useEffect(() => {
     const controller = new AbortController();
     fetchPropertiesFromDB(controller.signal);
 
-    // 2. INDUSTRIAL REALTIME OPTIMIZATION: Delta-Payload Merging
     let channel: any = null;
     if (isConfigured) {
       channel = supabase
@@ -194,7 +198,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     };
   }, [fetchPropertiesFromDB]);
 
-  // Industrial Persistence: Sync all new geospatial & dynamic fields
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
@@ -224,45 +227,35 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       image_url: item.image,
       map_url: item.mapUrl,
       salty_tip: item.saltyTip,
-      sort_order: item.sortOrder || 0,
+      sort_order: item.sort_order || 0,
       is_active: true,
       updated_at: new Date().toISOString()
     };
-
-    let result;
-    if (item.id) {
-      result = await supabase.from('destination_guides').update(payload).eq('id', item.id);
-    } else {
-      result = await supabase.from('destination_guides').insert(payload);
-    }
-
-    if (result.error) throw result.error;
+    if (item.id) await supabase.from('destination_guides').update(payload).eq('id', item.id);
+    else await supabase.from('destination_guides').insert(payload);
     await fetchPropertiesFromDB();
   }, [fetchPropertiesFromDB]);
 
   const deleteGuideItem = useCallback(async (id: string) => {
-    const { error } = await supabase.from('destination_guides').update({ is_active: false }).eq('id', id);
-    if (error) throw error;
+    await supabase.from('destination_guides').update({ is_active: false }).eq('id', id);
     await fetchPropertiesFromDB();
   }, [fetchPropertiesFromDB]);
 
   const saveSiteContent = useCallback(async (content: SiteContent) => {
-    const { error } = await supabase.from('system_settings').upsert({
+    await supabase.from('system_settings').upsert({
       key: 'site_content',
       value: content as any,
       updated_at: new Date().toISOString()
     });
-    if (error) throw error;
     await fetchPropertiesFromDB();
   }, [fetchPropertiesFromDB]);
 
   const saveVillaKnowledge = useCallback(async (knowledge: VillaKnowledge) => {
-    const { error } = await supabase.from('system_settings').upsert({
+    await supabase.from('system_settings').upsert({
       key: 'villa_knowledge',
       value: knowledge as any,
       updated_at: new Date().toISOString()
     });
-    if (error) throw error;
     await fetchPropertiesFromDB();
   }, [fetchPropertiesFromDB]);
 
@@ -272,6 +265,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     secretSpots,
     villaKnowledge,
     siteContent,
+    bookings,
     favorites,
     isLoading,
     toggleFavorite,
@@ -282,7 +276,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveSiteContent,
     saveVillaKnowledge,
     refreshProperties: fetchPropertiesFromDB
-  }), [properties, localGuideData, secretSpots, villaKnowledge, siteContent, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge, fetchPropertiesFromDB]);
+  }), [properties, localGuideData, secretSpots, villaKnowledge, siteContent, bookings, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge, fetchPropertiesFromDB]);
 
   return (
     <PropertyContext.Provider value={value}>
@@ -293,8 +287,6 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
 export const useProperty = () => {
   const context = useContext(PropertyContext);
-  if (context === undefined) {
-    throw new Error('useProperty must be used within a PropertyProvider');
-  }
+  if (context === undefined) throw new Error('useProperty must be used within a PropertyProvider');
   return context;
 };

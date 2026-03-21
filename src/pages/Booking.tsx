@@ -47,7 +47,7 @@ const Booking: React.FC = () => {
     nights
   } = useBooking(property);
 
-  const { availabilityRules, isLoading: isAvailabilityLoading, isRangeAvailable } = useAvailability(id);
+  const { blockedDates, availabilityRules, isLoading: isAvailabilityLoading, isRangeAvailable } = useAvailability(id);
 
   const [phone, setPhone] = useState(user?.phone || '');
   const [guestMessage, setGuestMessage] = useState('');
@@ -474,7 +474,7 @@ const Booking: React.FC = () => {
                   startDate={startDate}
                   endDate={endDate}
                   onChange={handleDateChange}
-                  blockedDates={(property.blockedDates || []).map(d => new Date(d + 'T12:00:00'))}
+                  blockedDates={blockedDates}
                 />
                 <button
                   onClick={() => setShowCalendarModal(false)}
