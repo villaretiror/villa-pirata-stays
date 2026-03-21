@@ -87,7 +87,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
         
         // 0. Returning Guest Hook (High Perception of Service)
         if (user?.is_returning_guest && path === '/') {
-            return `¡Qué alegría volver a verte, Capitán ${user.name.split(' ')[0]}! 🔱 El trópico te extrañaba. ¿Buscamos tu fecha favorita?`;
+            return `¡Qué alegría volver a verte, Capitán ${(user.name || 'Huésped').split(' ')[0]}! 🔱 El trópico te extrañaba. ¿Buscamos tu fecha favorita?`;
         }
 
         // 1. Home / General

@@ -167,7 +167,7 @@ const Navbar: React.FC = () => {
             <NavItem
               path={user ? "#" : "/login"}
               icon={UserIcon}
-              label={user ? (user.name.split(' ')[0]) : "Entrar"}
+              label={user ? (user.name?.split(' ')[0] || "Perfil") : "Entrar"}
               currentPath={currentPath}
               isAvatar={!!user}
               userAvatar={user?.avatar}

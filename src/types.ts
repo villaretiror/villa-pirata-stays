@@ -64,7 +64,7 @@ export interface CalendarSync {
 type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'original_price';
 
 export interface Property extends Omit<PropertyRow, PropertyOmissions> {
-  original_price: number | null; // Corregido para coincidir con DB
+  original_price?: number | null; 
   images: string[];
   reviews_list?: Review[];
   offers?: Offer[];
@@ -131,6 +131,7 @@ export interface User extends Partial<ProfileRow> {
   avatar?: string; 
   registeredAt?: string; // Para compatibilidad con Profile.tsx
   emergencyContact?: string; // Alias snake_case
+  verificationStatus?: 'verified' | 'pending' | 'rejected' | 'none' | 'unverified';
   favoriteProperties?: string[];
 }
 

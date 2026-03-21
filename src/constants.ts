@@ -260,7 +260,7 @@ export const PROPERTIES: Property[] = [
     min_price_floor: 120,
     max_discount_allowed: 15
   }
-];
+] as any as Property[];
 
 export const DEFAULT_SITE_CONTENT = {
   hero: {
@@ -306,7 +306,7 @@ export const DEFAULT_VILLA_KNOWLEDGE = {
     deposit: "Gestionado manualmente vía Dashboard."
   },
   amenities: {
-    general: "Piscina privada o acceso a áreas recreativas, Internet de Alta Velocidad (Cable Estable), Sistema Solar (Energía 24/7), AC en habitaciones, BBQ, Cocina Equipada, Toallas de playa."
+    general: "Piscina privada or acceso a áreas recreativas, Internet de Alta Velocidad (Cable Estable), Sistema Solar (Energía 24/7), AC en habitaciones, BBQ, Cocina Equipada, Toallas de playa."
   },
   emergencies: {
     contact: "Equipo de Villa & Pirata (vía chat o WhatsApp).",

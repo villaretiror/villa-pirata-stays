@@ -6,7 +6,7 @@ import { Property } from '../types';
  * Este archivo sirve como caché local y referencia de diseño para el "Perfection Baseline".
  */
 
-export const scratchPadVillas: Property[] = [
+export const scratchPadVillas: Property[] = ([
   {
     id: '1081171030449673920',
     title: 'Villa Retiro R',
@@ -156,4 +156,4 @@ export const scratchPadVillas: Property[] = [
     min_price_floor: 120,
     max_discount_allowed: 15
   }
-];
+] as any) as Property[];
