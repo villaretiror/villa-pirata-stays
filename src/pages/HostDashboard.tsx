@@ -1667,7 +1667,7 @@ const HostDashboard: React.FC = () => {
         {/* Glow Effects */}
         <div className="absolute -top-24 -right-24 w-64 h-64 bg-primary/10 rounded-full blur-[100px] animate-pulse" />
         <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-secondary/10 rounded-full blur-[100px] animate-pulse" />
-        
+
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
@@ -1679,7 +1679,7 @@ const HostDashboard: React.FC = () => {
                 <span className="block text-[10px] font-bold text-white/40 tracking-wider">Executive Morning Briefing • {new Date().toLocaleDateString('es-PR', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
@@ -1699,11 +1699,11 @@ const HostDashboard: React.FC = () => {
 
           <div className="max-w-3xl">
             <h2 className="text-2xl md:text-5xl font-serif font-black italic tracking-tighter mb-8 leading-[1.05] text-white group-hover:text-primary-light/90 transition-colors duration-700">
-              "{leads.filter((l: any) => l.status === 'new').length > 0 
+              "{leads.filter((l: any) => l.status === 'new').length > 0
                 ? `Master, hay ${leads.filter((l: any) => l.status === 'new').length} capitanes interesados en el muelle. Sugiero abordarlos antes de que la marea baje.`
                 : nextCheckins.length > 0
-                ? `Todo listo para los ${nextCheckins.length} desembarcos de hoy. La reputación de la flota está en manos de la excelencia.`
-                : "La bitácora está limpia y la brisa es favorable. Un día perfecto para optimizar la logística de la temporada."}"
+                  ? `Todo listo para los ${nextCheckins.length} desembarcos de hoy. La reputación de la flota está en manos de la excelencia.`
+                  : "La bitácora está limpia y la brisa es favorable. Un día perfecto para optimizar la logística de la temporada."}"
             </h2>
           </div>
 
