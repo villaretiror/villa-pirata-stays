@@ -32,7 +32,18 @@ import {
   LogIn,
   Gavel,
   Shield,
-  FireExtinguisher
+  FireExtinguisher,
+  Coffee,
+  Microwave,
+  Fan,
+  Tv,
+  Wifi,
+  Wind,
+  Waves,
+  Utensils,
+  Car,
+  GlassWater,
+  CigaretteOff
 } from 'lucide-react';
 
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
@@ -217,23 +228,55 @@ export const PropertyDetails: React.FC = () => {
     );
   };
 
-  // Amenity icon mapper
-  const getAmenityIcon = (amenity: string): string => {
+  // Adaptive Amenity Icon Mapper
+  const getAmenityIcon = (amenity: string): React.ReactNode => {
     const lower = amenity.toLowerCase();
-    if (lower.includes('piscina')) return 'pool';
-    if (lower.includes('generador') || lower.includes('eléctric') || lower.includes('solar')) return 'bolt';
-    if (lower.includes('wifi') || lower.includes('internet') || lower.includes('cable') || lower.includes('mbps')) return 'wifi';
-    if (lower.includes('bbq') || lower.includes('parrilla')) return 'outdoor_grill';
-    if (lower.includes('pet') || lower.includes('mascota')) return 'pets';
-    if (lower.includes('aire') || lower.includes('acondicionado')) return 'ac_unit';
-    if (lower.includes('cocina')) return 'kitchen';
-    if (lower.includes('check-in') || lower.includes('lockbox')) return 'lock_open';
-    if (lower.includes('cisterna') || lower.includes('agua')) return 'water_drop';
-    if (lower.includes('estacionamiento')) return 'local_parking';
-    if (lower.includes('tv') || lower.includes('streaming')) return 'tv';
-    if (lower.includes('playa') || lower.includes('beach')) return 'beach_access';
-    if (lower.includes('privacidad') || lower.includes('seguridad')) return 'security';
-    return 'check_circle';
+    const size = 20;
+    const color = "currentColor";
+
+    if (lower.includes('piscina')) return <Waves size={size} className={color} />;
+    if (lower.includes('solar') || lower.includes('generador')) return <Zap size={size} className={color} />;
+    if (lower.includes('cisterna') || lower.includes('agua')) return <GlassWater size={size} className={color} />;
+    if (lower.includes('wifi') || lower.includes('internet')) return <Wifi size={size} className={color} />;
+    if (lower.includes('aire') || lower.includes('ac') || lower.includes('acondicionado')) return <Wind size={size} className={color} />;
+    if (lower.includes('cocina') || lower.includes('estufa') || lower.includes('horno')) return <Utensils size={size} className={color} />;
+    if (lower.includes('cafetera') || lower.includes('keurig')) return <Coffee size={size} className={color} />;
+    if (lower.includes('microondas')) return <Microwave size={size} className={color} />;
+    if (lower.includes('tv') || lower.includes('netflix') || lower.includes('streaming')) return <Tv size={size} className={color} />;
+    if (lower.includes('parking') || lower.includes('estacionamiento')) return <Car size={size} className={color} />;
+    if (lower.includes('bbq') || lower.includes('parrilla')) return <FireExtinguisher size={size} className={color} />;
+    if (lower.includes('seguridad') || lower.includes('cámara')) return <ShieldCheck size={size} className={color} />;
+    if (lower.includes('fumar')) return <CigaretteOff size={size} className={color} />;
+    
+    return <CheckCircle2 size={size} className={color} />;
+  };
+
+  // Amenity Categorization Logic
+  const categorizeAmenities = (amenities: string[]) => {
+    const categories: Record<string, string[]> = {
+      'Suministros Críticos': [],
+      'Cocina y Comedor': [],
+      'Entretenimiento': [],
+      'Exterior y Relax': [],
+      'Seguridad y Otros': []
+    };
+
+    amenities.forEach(am => {
+      const lower = am.toLowerCase();
+      if (lower.includes('solar') || lower.includes('generador') || lower.includes('cisterna') || lower.includes('agua')) {
+        categories['Suministros Críticos'].push(am);
+      } else if (lower.includes('cocina') || lower.includes('cafetera') || lower.includes('microondas') || lower.includes('tostadora') || lower.includes('horno') || lower.includes('estufa')) {
+        categories['Cocina y Comedor'].push(am);
+      } else if (lower.includes('tv') || lower.includes('wifi') || lower.includes('internet') || lower.includes('streaming') || lower.includes('dvd')) {
+        categories['Entretenimiento'].push(am);
+      } else if (lower.includes('piscina') || lower.includes('bbq') || lower.includes('balcón') || lower.includes('terraza') || lower.includes('parking')) {
+        categories['Exterior y Relax'].push(am);
+      } else {
+        categories['Seguridad y Otros'].push(am);
+      }
+    });
+
+    return Object.entries(categories).filter(([_, items]) => items.length > 0);
   };
 
   const toggleSection = (section: string) => {
@@ -401,31 +444,27 @@ export const PropertyDetails: React.FC = () => {
           </section>
 
           {/* Amenities Grid */}
-          <section className="space-y-6">
-            <h2 className="text-3xl font-serif font-bold text-text-main">Amenidades de Élite</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {(property.amenities || []).slice(0, 8).map((am, i) => {
-                const isSafety = am.toLowerCase().includes('solar') || am.toLowerCase().includes('cisterna') || am.toLowerCase().includes('agua') || am.toLowerCase().includes('generador');
-                return (
-                  <div key={i} className={`flex items-center gap-4 group p-2 rounded-2xl transition-all ${isSafety ? 'bg-[#E1EAD1]/30 border border-[#D0DCB8]/30' : 'hover:bg-white'}`}>
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-transform ${isSafety ? 'bg-white text-[#4A5D23]' : 'bg-sand text-primary'}`}>
-                      {am.toLowerCase().includes('piscina') ? <Droplets size={20} /> :
-                       am.toLowerCase().includes('solar') || am.toLowerCase().includes('generador') ? <Zap size={20} /> :
-                       am.toLowerCase().includes('wifi') ? <Compass size={20} /> :
-                       am.toLowerCase().includes('ac') || am.toLowerCase().includes('aire') ? <Zap size={20} /> :
-                       <CheckCircle2 size={20} />}
-                    </div>
-                    <span className="font-bold text-text-main">{am}</span>
-                  </div>
-                );
-              })}
+          <section className="space-y-8">
+            <div className="flex justify-between items-center">
+              <h2 className="text-3xl font-serif font-bold text-text-main">Amenidades de Élite</h2>
+              <button
+                onClick={() => setShowAmenities(true)}
+                className="text-primary text-[10px] font-black uppercase tracking-[0.2em] border-b border-primary/20 pb-1"
+              >
+                Ver todas ({(property.amenities || []).length})
+              </button>
             </div>
-            <button
-              onClick={() => setShowAmenities(true)}
-              className="w-full py-4 border-2 border-black/5 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-black hover:text-white transition-all shadow-soft"
-            >
-              Explorar las {(property.amenities || []).length} comodidades
-            </button>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {(property.amenities || []).slice(0, 8).map((am, i) => (
+                <div key={i} className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-black/5 shadow-soft group hover:border-primary/20 hover:translate-y-[-4px] transition-all">
+                  <div className="w-12 h-12 rounded-2xl bg-sand flex items-center justify-center text-primary mb-3 group-hover:scale-110 transition-transform">
+                    {getAmenityIcon(am)}
+                  </div>
+                  <span className="text-[10px] font-bold text-text-main text-center uppercase tracking-tight">{am}</span>
+                </div>
+              ))}
+            </div>
           </section>
 
           {/* Host Card Minimal */}
@@ -753,24 +792,27 @@ export const PropertyDetails: React.FC = () => {
               </div>
 
               {/* Content */}
-              <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {(property.amenities || []).map((amenity, i) => (
-                    <div key={i} className="flex items-center gap-5 p-5 rounded-[2rem] bg-sand/30 border border-orange-50/50">
-                      <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft">
-                        {amenity.toLowerCase().includes('piscina') ? <Droplets size={24} /> :
-                         amenity.toLowerCase().includes('solar') || amenity.toLowerCase().includes('generador') ? <Zap size={24} /> :
-                         amenity.toLowerCase().includes('wifi') ? <Compass size={24} /> :
-                         amenity.toLowerCase().includes('ac') || amenity.toLowerCase().includes('aire') ? <Zap size={24} /> :
-                         <CheckCircle2 size={24} />}
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-bold text-text-main">{amenity}</span>
-                        <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Incluido</span>
-                      </div>
+              <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar space-y-12">
+                {categorizeAmenities(property.amenities || []).map(([category, items]) => (
+                  <div key={category} className="space-y-6">
+                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary bg-primary/5 w-fit px-4 py-1.5 rounded-full border border-primary/10">
+                      {category}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {items.map((amenity, i) => (
+                        <div key={i} className="flex items-center gap-5 p-5 rounded-[2rem] bg-sand/30 border border-orange-50/50 group hover:bg-white transition-all">
+                          <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
+                            {getAmenityIcon(amenity)}
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-text-main">{amenity}</span>
+                            <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Incluido ✓</span>
+                          </div>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
 
               <div className="p-8 bg-white border-t border-black/5 pb-safe">

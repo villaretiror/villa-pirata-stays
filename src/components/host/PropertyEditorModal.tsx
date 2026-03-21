@@ -25,6 +25,7 @@ import PhotoSection from './PropertyEditor/PhotoSection';
 import CalendarSection from './PropertyEditor/CalendarSection';
 import FinancialsSection from './PropertyEditor/FinancialsSection';
 import PoliciesSection from './PropertyEditor/PoliciesSection';
+import AmenitiesSection from './PropertyEditor/AmenitiesSection';
 
 const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({ 
   property, 
@@ -35,7 +36,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
   onRefresh 
 }) => {
   const [form, setForm] = useState(property);
-  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'policies' | 'emergency' | 'cohosts' | 'expenses'>('info');
+  const [activeSection, setActiveSection] = useState<'info' | 'photos' | 'policies' | 'emergency' | 'cohosts' | 'expenses' | 'amenities'>('info');
 
   // Sync Form with property when it changes externally
   useEffect(() => {
@@ -45,6 +46,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
   const sections = [
     { id: 'info', label: 'Información', icon: 'info' },
     { id: 'photos', label: 'Galería', icon: 'photo_library' },
+    { id: 'amenities', label: 'Amenidades', icon: 'check_circle' },
     { id: 'policies', label: 'Políticas', icon: 'gavel' },
     { id: 'expenses', label: 'Finanzas Mensuales', icon: 'analytics' },
     { id: 'emergency', label: 'Pánico / Emergencia', icon: 'emergency' },
@@ -56,6 +58,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
       case 'photos': return <PhotoSection form={form} setForm={setForm} />;
       case 'expenses': return <FinancialsSection property={property} bookings={realBookings} />;
       case 'policies': return <PoliciesSection form={form} setForm={setForm} />;
+      case 'amenities': return <AmenitiesSection form={form} setForm={setForm} />;
       default: return (
         <div className="text-center py-20 flex flex-col items-center">
           <div className="w-16 h-16 bg-sand/30 rounded-full flex items-center justify-center text-primary mb-4 animate-pulse">

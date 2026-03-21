@@ -13,11 +13,11 @@ interface PropertyCardProps {
   onToggleFavorite?: (id: string) => void;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ 
-  property, 
-  index, 
-  onClick, 
-  isFavorite, 
+const PropertyCard: React.FC<PropertyCardProps> = ({
+  property,
+  index,
+  onClick,
+  isFavorite,
   onToggleFavorite
 }) => {
   const navigate = useNavigate();
@@ -46,7 +46,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             Popular
           </div>
         )}
-        
+
         {/* 🔱 SALTY POWER BADGES: Reserved for dynamic alerts */}
       </div>
     );
@@ -70,12 +70,12 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
       {/* Visual Header / Media */}
       <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden m-2 rounded-[2rem]">
         {getBadges()}
-        
+
         <div className="absolute top-4 right-4 z-10">
-          <button 
-            onClick={(e) => { 
-                e.stopPropagation(); 
-                if (onToggleFavorite) onToggleFavorite(property.id);
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (onToggleFavorite) onToggleFavorite(property.id);
             }}
             className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center transition-all active:scale-90 ${isFavorite ? 'text-red-500 bg-white/40' : 'text-white hover:bg-white hover:text-red-500'}`}
           >
@@ -86,8 +86,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         {/* 🎥 LIQUID IMAGE: Dynamic cropping & parallax */}
         <div className="absolute inset-0 scale-110">
           <motion.div style={{ y }} className="h-full w-full">
-            <SmartImage 
-              src={property.images[currentImageIndex]} 
+            <SmartImage
+              src={property.images[currentImageIndex]}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt={property.title || 'Villa'}
             />
@@ -99,7 +99,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* Real-time viewer count */}
         <div className="absolute bottom-5 left-5 flex items-center gap-2 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 group/viewer">
-           <div className="relative flex h-2 w-2">
+          <div className="relative flex h-2 w-2">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
           </div>
@@ -168,11 +168,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           </div>
 
           <div className="text-right">
-             {property.original_price && (
-                <span className="block text-[10px] font-black text-red-500 line-through decoration-red-500/60 mb-1 drop-shadow-sm">
-                  ${property.original_price}
-                </span>
-             )}
+            {property.original_price && (
+              <span className="block text-[10px] font-black text-red-500 line-through decoration-red-500/60 mb-1 drop-shadow-sm">
+                ${property.original_price}
+              </span>
+            )}
             <div className="flex items-baseline gap-1.5 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 shadow-inner">
               <span className="font-black text-2xl text-text-main">${property.price || 0}</span>
               <span className="text-[10px] font-black uppercase text-primary tracking-widest">/noche</span>
