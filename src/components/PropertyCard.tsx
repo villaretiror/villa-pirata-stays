@@ -199,9 +199,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 ${property.original_price}
               </span>
             )}
-            <div className="flex items-baseline gap-1.5 bg-primary/5 px-4 py-2 rounded-2xl border border-primary/10 shadow-inner">
-              <span className="font-black text-2xl text-text-main">${property.price || 0}</span>
-              <span className="text-[10px] font-black uppercase text-primary tracking-widest">/noche</span>
+            <div className="flex items-baseline gap-1.5 bg-[#BBA27E] px-4 py-2 rounded-2xl border border-[#BBA27E]/20 shadow-lg">
+              <span className="font-black text-2xl text-[#1a1a1a]">${property.price || 0}</span>
+              <span className="text-[10px] font-black uppercase text-[#1a1a1a]/70 tracking-widest">/noche</span>
             </div>
           </div>
         </div>

@@ -554,14 +554,14 @@ export const PropertyDetails: React.FC = () => {
                   </h3>
                   <span className="text-text-light font-bold">/ noche {currency}</span>
                 </div>
-                <div className="flex items-center gap-1.5 mt-2 text-[#FF7F3F]">
-                  <Zap size={14} className="fill-[#FF7F3F]" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Reservado 3 veces en las últimas 48h</span>
+                <div className="flex items-center gap-1.5 mt-2 text-[#BBA27E]">
+                  <Zap size={14} className="fill-[#BBA27E]" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Reserva instantánea preferida por VRR</span>
                 </div>
               </div>
 
               <div className="space-y-4">
-                <div className="flex flex-col gap-2 p-4 bg-sand/30 rounded-3xl border border-orange-100/50">
+                <div className="flex flex-col gap-2 p-4 bg-white/50 rounded-3xl border border-[#BBA27E]/10">
                   <div className="flex items-center gap-3 text-text-main">
                     <Calendar size={18} className="text-primary" />
                     <span className="font-bold text-sm">Estancia mínima: 2 noches</span>
@@ -594,7 +594,7 @@ export const PropertyDetails: React.FC = () => {
 
             {/* Secure Map Widget */}
             <div className="bg-white p-6 rounded-[3rem] border border-black/5 shadow-soft space-y-4">
-              <h4 className={TAG_STYLE + " text-gray-400"}>Ubicación Estratégica</h4>
+              <h4 className={TAG_STYLE + " text-[#BBA27E] opacity-70"}>Ubicación Estratégica</h4>
               <div 
                 className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer shadow-inner border border-black/5" 
                 onClick={() => window.open(p.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${p.exact_lat_long || p.location}`, '_blank')}

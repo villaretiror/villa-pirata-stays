@@ -91,14 +91,14 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
         }
 
         // 1. Home / General
-        if (path === '/') return "¿Buscando el mejor precio? Reserva aquí conmigo y ahórrate el 15% de comisión que cobran otras plataformas. ¡Para más mofongos!";
+        if (path === '/') return "¿Buscando la exclusividad al mejor precio? Permíteme asistirte para ahorrar un 15% vs OTAs. ¡El Caribe te espera! 🔱";
         
         // 2. Property Details (Experience Sale)
         if (path.includes('/property')) {
             const title = propertyTitle || "esta villa";
-            if (title.includes('Retiro')) return `En Villa Retiro R el patio es verjado y seguro para tu mascota. Además, tenemos energía solar de backup por si falla la red externa. 🔱`;
-            if (title.includes('Pirata')) return `Pirata House es ideal para la familia. El patio es abierto, así que pedimos supervisión constante de las mascotas. ✨`;
-            return `¿Te imaginas despertar en ${title}? Wifi de alta velocidad y respaldo solar para que nada apague tu vibra.`;
+            if (title.includes('Retiro')) return `En Villa Retiro R la seguridad y el confort son absolutos. Contamos con respaldo solar completo para que nada interrumpa tu paz. 🔱`;
+            if (title.includes('Pirata')) return `Pirata House es el refugio familiar por excelencia. Estaré encantado de explicarte las facilidades para niños y mascotas. ✨`;
+            return `Te asisto para que vivas la experiencia en ${title}. Calidad garantizada por VRR Stays.`;
         }
         
         // 3. Booking / Checkout (Trust Closure)
@@ -145,14 +145,14 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                         <div className="bg-white/95 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] rounded-br-[4px] shadow-2xl relative overflow-hidden flex flex-col">
                             {/* Header (Only in Expanded) */}
                             {isExpanded && (
-                                <div className="p-4 bg-primary text-white flex justify-between items-center bg-gradient-to-r from-primary to-[#FF8A66]">
+                                <div className="p-4 bg-[#1a1a1a] text-[#BBA27E] flex justify-between items-center border-b border-[#BBA27E]/10">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/20">
+                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-[#BBA27E]/20">
                                             <span className="text-sm">🔱</span>
                                         </div>
                                         <div>
-                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none">Salty</p>
-                                            <p className="text-[8px] font-medium opacity-80">Concierge en Línea</p>
+                                            <p className="text-[10px] font-black uppercase tracking-widest leading-none text-white">Salty</p>
+                                            <p className="text-[8px] font-black uppercase tracking-[0.2em] text-[#BBA27E] opacity-70">Concierge Oficial VRR</p>
                                         </div>
                                     </div>
                                     <div className="flex gap-1">
@@ -186,8 +186,8 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                         <span className="material-icons text-xs">close</span>
                                     </button>
 
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1.5 flex items-center gap-1.5">
-                                        🔱 Salty Concierge ✨
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-[#BBA27E] mb-1.5 flex items-center gap-1.5">
+                                        🔱 Salty Concierge VRR ✨
                                     </p>
                                     <p className="text-[13px] text-text-main font-semibold leading-relaxed tracking-tight">
                                         {message}
@@ -245,7 +245,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                         <button 
                                             onClick={handleSendMessage}
                                             disabled={isTyping || !inputValue.trim()}
-                                            className="w-10 h-10 bg-primary text-white rounded-xl flex items-center justify-center shadow-lg shadow-primary/20 hover:scale-105 active:scale-95 disabled:opacity-50 transition-all font-black text-xs"
+                                            className="w-10 h-10 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all font-black text-xs"
                                         >
                                             <span className="material-icons text-sm">send</span>
                                         </button>
@@ -294,11 +294,11 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     )}
                 </AnimatePresence>
                 
-                <div className={`w-14 h-14 rounded-full bg-gradient-to-tr from-primary to-[#FF8A66] flex items-center justify-center text-white shadow-2xl border-4 border-white transition-all duration-500 overflow-hidden ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100 ring-4 ring-primary/10 scale-105'}`}>
+                <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[#BBA27E] shadow-2xl border-4 border-white transition-all duration-500 overflow-hidden ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100 ring-4 ring-[#BBA27E]/10 scale-105'}`}>
                     <span className="text-2xl group-hover:rotate-12 transition-transform select-none">🔱</span>
                     
                     {/* Interior Gleam */}
-                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
+                    <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                 </div>
 
                 {/* Status Indicator */}
