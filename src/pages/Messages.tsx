@@ -531,7 +531,9 @@ const Messages: React.FC = () => {
                 <div className={`flex items-center gap-1.5 mb-2 text-[9px] font-bold uppercase tracking-[0.1em] ${m.sender === 'guest' ? 'text-white/40' : 'text-primary/70'}`}>
                   {m.sender === 'guest' ? 'Usted' : (
                     <span className="flex items-center gap-1.5">
-                      <span className="material-icons text-[12px]">auto_awesome</span>
+                      <div className="w-5 h-5 rounded-full overflow-hidden border border-black/5 flex-shrink-0">
+                         <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
+                      </div>
                       <span className="font-serif font-black italic tracking-tighter text-[11px]">Salty Concierge</span>
                     </span>
                   )}

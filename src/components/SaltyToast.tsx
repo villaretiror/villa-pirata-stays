@@ -147,8 +147,8 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                             {isExpanded && (
                                 <div className="p-4 bg-[#1a1a1a] text-[#BBA27E] flex justify-between items-center border-b border-[#BBA27E]/10">
                                     <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center border border-[#BBA27E]/20">
-                                            <span className="text-sm">🔱</span>
+                                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#BBA27E]/20">
+                                            <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-black uppercase tracking-widest leading-none text-white">Salty</p>
@@ -294,8 +294,8 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     )}
                 </AnimatePresence>
                 
-                <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center text-[#BBA27E] shadow-2xl border-4 border-white transition-all duration-500 overflow-hidden ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100 ring-4 ring-[#BBA27E]/10 scale-105'}`}>
-                    <span className="text-2xl group-hover:rotate-12 transition-transform select-none">🔱</span>
+                <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center shadow-2xl border-4 border-white transition-all duration-500 overflow-hidden ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100 ring-4 ring-[#BBA27E]/10 scale-105'}`}>
+                    <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                     
                     {/* Interior Gleam */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
