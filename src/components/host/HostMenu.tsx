@@ -27,7 +27,8 @@ import {
   Receipt,
   Search,
   Check,
-  BookOpen
+  BookOpen,
+  Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -38,6 +39,7 @@ interface HostMenuProps {
   onNavigate?: (view: any) => void;
   onGoToProtocol?: () => void;
   onGoToTeam?: () => void;
+  onGoToConcierge?: () => void;
 }
 
 interface Task {
@@ -121,7 +123,7 @@ const ModalWrapper = ({ children, onClose, isOpen }: { children: React.ReactNode
   );
 };
 
-const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProtocol, onGoToTeam }) => {
+const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProtocol, onGoToTeam, onGoToConcierge }) => {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<ModalType>('none');
@@ -591,6 +593,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
           { id: 'payouts', icon: DollarSign, label: 'Pagos', color: 'blue' },
           { id: 'alerts', icon: Bell, label: 'Alertas', color: 'orange' },
           { id: 'protocol', icon: BookOpen, label: 'Protocolo', color: 'green' },
+          { id: 'concierge', icon: Eye, label: 'Tracking', color: 'blue' },
           { id: 'exit', icon: Power, label: 'Salir', color: 'red' }
         ].map(btn => (
           <button
@@ -599,6 +602,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
               if (btn.id === 'exit') return onNavigate && onNavigate('home');
               if (btn.id === 'protocol') return onGoToProtocol && onGoToProtocol();
               if (btn.id === 'cohost') return onGoToTeam && onGoToTeam();
+              if (btn.id === 'concierge') return onGoToConcierge && onGoToConcierge();
               setActiveModal(btn.id as ModalType);
             }}
             className={`bg-white p-8 rounded-[2.5rem] shadow-soft border border-gray-50 flex flex-col items-center gap-5 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden`}

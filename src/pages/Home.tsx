@@ -623,21 +623,9 @@ const Home: React.FC = () => {
                 };
 
                 try {
-                  // 1. Save to Supabase (Backup)
+                  // 1. Save to Supabase -> Database Trigger will handle the Emails!
                   const { error: dbError } = await supabase.from('contact_leads').insert(leadData);
                   if (dbError) throw dbError;
-
-                  // 2. Send Emails via Resend
-                  const response = await fetch('/api/send', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                      type: 'contact',
-                      contactData: leadData
-                    })
-                  });
-
-                  if (!response.ok) throw new Error('Error al enviar el correo');
 
                   alert("¡Mensaje enviado con éxito! Recibirás una confirmación en tu email.");
                   target.reset();

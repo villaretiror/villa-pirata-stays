@@ -16,6 +16,8 @@
     "@google/genai": "^1.46.0",
     "@js-temporal/polyfill": "^0.5.1",
     "@paypal/react-paypal-js": "^9.0.1",
+    "@react-email/components": "^1.0.10",
+    "@react-email/render": "^2.0.4",
     "@supabase/supabase-js": "^2.39.3",
     "canvas-confetti": "^1.9.4",
     "date-fns": "^3.6.0",

@@ -21,6 +21,7 @@ import HostAvailabilityManager from '../components/host/HostAvailabilityManager'
 import { useAvailability } from '../hooks/useAvailability';
 import PropertyEditorModal from '../components/host/PropertyEditorModal';
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
+import { DigitalConcierge } from '../components/host/DigitalConcierge';
 import { setToastCallback, showToast } from '../utils/toast';
 import { motion, AnimatePresence, Variants } from 'framer-motion';
 
@@ -1069,7 +1070,7 @@ const SmartValidationModal = ({ data, onConfirm, onClose }: { data: any, onConfi
 
 // --- MAIN COMPONENT ---
 
-type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team' | 'help' | 'availability';
+type Tab = 'today' | 'calendar' | 'listings' | 'guidebook' | 'messages' | 'reviews' | 'menu' | 'leads' | 'payments' | 'analytics' | 'seasonal' | 'conversion' | 'settings' | 'insights' | 'team' | 'help' | 'availability' | 'concierge';
 
 const HostDashboard: React.FC = () => {
   const navigate = useNavigate();
@@ -1337,29 +1338,7 @@ const HostDashboard: React.FC = () => {
       showToast("¡Reserva confirmada! ✨");
       setShowSmartValidation(null);
 
-      // TRIGGER EMAIL AUTOMATION
-      try {
-        await fetch('/api/send', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            type: 'reservation_confirmed',
-            customerName: booking.profiles?.full_name || 'Huésped',
-            customerEmail: booking.profiles?.email || 'anfitrion@villaretiror.com',
-            propertyName: booking.properties?.title || 'Villa Retiro',
-            checkIn: booking.check_in,
-            checkOut: booking.check_out,
-            accessCode: booking.properties?.policies?.accessCode || "C-" + (bookingId?.slice(-4) || 'XXXX'),
-            wifiName: booking.properties?.policies?.wifiName || 'Villa Retiro Guest',
-            wifiPass: booking.properties?.policies?.wifiPass || 'vacaciones2024',
-            propertyId: booking.property_id,
-            totalPrice: booking.total_price
-          })
-        });
-      } catch (err) {
-        console.error("Error triggering email:", err);
-      }
-
+      // Database Trigger will handle the Emails!
       fetchData();
     }
   };
@@ -2636,7 +2615,7 @@ const HostDashboard: React.FC = () => {
         {activeTab === 'settings' && renderSettings()}
         {activeTab === 'reviews' && renderReviews()}
         {activeTab === 'leads' && renderLeads()}
-        {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} onGoToProtocol={() => setActiveTab('help')} onGoToTeam={() => setActiveTab('team')} />}
+        {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={onNavigate} onGoToProtocol={() => setActiveTab('help')} onGoToTeam={() => setActiveTab('team')} onGoToConcierge={() => setActiveTab('concierge')} />}
         {activeTab === 'team' && renderTeam()}
         {activeTab === 'payments' && renderPayments()}
         {activeTab === 'analytics' && (
@@ -2650,6 +2629,7 @@ const HostDashboard: React.FC = () => {
         )}
         {activeTab === 'conversion' && renderConversion()}
         {activeTab === 'messages' && <HostMessageCenter hostAvatar={user?.avatar} onNavigate={(tab: any) => setActiveTab(tab)} />}
+        {activeTab === 'concierge' && <DigitalConcierge />}
         {activeTab === 'insights' && <InsightViewer />}
         {activeTab === 'availability' && <HostAvailabilityManager properties={properties} />}
         {activeTab === 'help' && renderHelp()}
