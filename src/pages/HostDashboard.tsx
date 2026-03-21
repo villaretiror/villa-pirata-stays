@@ -254,7 +254,7 @@ interface ReviewManagerProps {
 const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, onAddReview }) => {
   const [isAdding, setIsAdding] = useState(false);
   const [newReview, setNewReview] = useState<Partial<Review>>({ rating: 5, source: 'Airbnb', date: 'Mayo 2024' });
-  const [stats, setStats] = useState({ rating: property.rating, count: property.reviews_count });
+  const [stats, setStats] = useState({ rating: property.rating || 5, count: property.reviews_count || 0 });
 
   const saveReview = () => {
     if (!newReview.author || !newReview.text) return;
@@ -273,7 +273,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
   };
 
   const saveStats = () => {
-    onUpdateStats(property.id, stats.rating, stats.count);
+    onUpdateStats(property.id, stats.rating || 5, stats.count || 0);
     showToast("Prestigio de Propiedad Actualizado ✨");
   };
 
@@ -1531,7 +1531,9 @@ const HostDashboard: React.FC = () => {
     if (!hostId) return;
 
     try {
-      const importedData = await importPropertyFromUrl(url);
+      const importedData: any = await importPropertyFromUrl(url);
+      if (!importedData) throw new Error("No se pudo importar la data");
+      
       const { data: dbItem, error } = await supabase.from('properties').insert({
         host_id: hostId,
         title: importedData.title || 'Nueva Propiedad',
@@ -1539,7 +1541,7 @@ const HostDashboard: React.FC = () => {
         address: importedData.address || '',
         description: importedData.description || '',
         price: importedData.price || 150,
-        email: user.email?.toLowerCase(),
+        email: user.email?.toLowerCase() || '',
         location: 'Isabela, PR',
         images: importedData.images || [],
         amenities: importedData.amenities || [],

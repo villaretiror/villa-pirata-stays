@@ -153,8 +153,8 @@ export const PropertyDetails: React.FC = () => {
   }
 
   // 🛡️ Safety Stack Detection
-  const hasSolar = property.amenities.some(am => am.toLowerCase().includes('solar') || am.toLowerCase().includes('generador'));
-  const hasCistern = property.amenities.some(am => am.toLowerCase().includes('cisterna') || am.toLowerCase().includes('agua'));
+  const hasSolar = (property.amenities || []).some(am => am.toLowerCase().includes('solar') || am.toLowerCase().includes('generador'));
+  const hasCistern = (property.amenities || []).some(am => am.toLowerCase().includes('cisterna') || am.toLowerCase().includes('agua'));
 
   // Local constant to satisfy TS
   const p = property;
@@ -424,7 +424,7 @@ export const PropertyDetails: React.FC = () => {
               onClick={() => setShowAmenities(true)}
               className="w-full py-4 border-2 border-black/5 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-black hover:text-white transition-all shadow-soft"
             >
-              Explorar las {property.amenities.length} comodidades
+              Explorar las {(property.amenities || []).length} comodidades
             </button>
           </section>
 

@@ -439,17 +439,15 @@ const Booking: React.FC = () => {
             </section>
           )}
 
-          {startDate && endDate && !isTooShort && contractAccepted && (
             <div className="animate-slide-up">
               <PaymentProcessor 
                 total={total}
-                propertyName={property.title}
                 bookingId={recoverData?.booking_id || 'new'}
                 onSuccess={handlePaymentSuccess}
-                isLoading={isProcessing}
+                isProcessing={isProcessing}
+                user={user}
               />
             </div>
-          )}
         </div>
 
         <AnimatePresence>
@@ -473,9 +471,10 @@ const Booking: React.FC = () => {
                   </button>
                 </div>
                 <BookingCalendar
-                  propertyId={id!}
-                  onDateSelect={handleDateChange}
-                  selectedRange={[startDate, endDate]}
+                  startDate={startDate}
+                  endDate={endDate}
+                  onChange={handleDateChange}
+                  blockedDates={(property.blockedDates || []).map(d => new Date(d + 'T12:00:00'))}
                 />
                 <button
                   onClick={() => setShowCalendarModal(false)}
