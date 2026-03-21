@@ -384,9 +384,9 @@ export const PropertyDetails: React.FC = () => {
             <h1 className="text-4xl md:text-6xl font-serif font-black text-text-main leading-none tracking-tighter mb-4">
               {property.title}
             </h1>
-            <div className="flex items-center gap-2 text-secondary font-bold">
-              <MapPin size={20} className="text-primary" />
-              <span className="text-lg underline decoration-primary/30 underline-offset-8">{property.location}</span>
+            <div className="flex items-center gap-2 text-[#BBA27E] font-black uppercase tracking-[0.2em] text-xs">
+              <MapPin size={18} className="text-[#BBA27E]" />
+              <span className="underline underline-offset-8 decoration-[#BBA27E]/30">{property.location}</span>
             </div>
           </div>
 
@@ -569,7 +569,7 @@ export const PropertyDetails: React.FC = () => {
 
                 <Link
                   to={`/booking/${property.id}`}
-                  className="w-full bg-[#FF7F3F] text-white py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-xl shadow-[#FF7F3F]/30 hover:scale-[1.02] active:scale-95 transition-all outline outline-2 outline-white/20"
+                  className="w-full bg-[#1a1a1a] text-[#BBA27E] py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border border-[#BBA27E]/20"
                 >
                   Vivir la Experiencia
                   <Compass size={20} />
@@ -637,12 +637,12 @@ export const PropertyDetails: React.FC = () => {
                 </div>
                 <div className="flex items-center justify-between pt-6 border-t border-black/5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-sand rounded-full flex items-center justify-center font-black text-primary text-xs">
+                    <div className="w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center font-black text-[#BBA27E] text-xs">
                       {rev.author.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-text-main">{rev.author}</p>
-                      <p className="text-[10px] text-gray-400 font-medium uppercase tracking-widest">{rev.date}</p>
+                      <p className="font-bold text-sm text-[#1a1a1a]">{rev.author}</p>
+                      <p className="text-[10px] text-[#BBA27E] font-black uppercase tracking-[0.2em]">{rev.date}</p>
                     </div>
                   </div>
                   {getSourceLabel(rev.source)}

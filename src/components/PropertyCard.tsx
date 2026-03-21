@@ -72,17 +72,32 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     >
       {/* Visual Header / Media */}
       <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden m-2 rounded-[2rem]">
-        {getBadges()}
-
-        <div className="absolute top-4 right-4 z-10">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (onToggleFavorite) onToggleFavorite(property.id);
-            }}
-            className={`w-10 h-10 rounded-full bg-white/20 backdrop-blur-xl border border-white/30 flex items-center justify-center transition-all active:scale-90 ${isFavorite ? 'text-red-500 bg-white/40' : 'text-white hover:bg-white hover:text-red-500'}`}
+        <div className="absolute top-4 left-4 z-20 flex flex-col gap-2">
+            {/* 🔱 VRR SIGNATURE BADGE */}
+            <motion.div 
+               initial={{ opacity: 0, x: -10 }}
+               animate={{ opacity: 1, x: 0 }}
+               transition={{ delay: delay / 1000 + 0.3 }}
+               className="bg-[#1a1a1a]/80 backdrop-blur-md border border-[#BBA27E]/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg"
+            >
+              <div className="w-4 h-4 text-[#BBA27E]">
+                 <svg viewBox="0 0 100 100" fill="currentColor"><text y="70" x="50" text-anchor="middle" font-family="serif" font-weight="black" font-style="italic" font-size="50">VRR</text></svg>
+              </div>
+              <span className="text-[8px] font-black text-white uppercase tracking-[0.2em] leading-none">Elite Stay</span>
+            </motion.div>
+            {getBadges()}
+        </div>
+        
+        <div className="absolute top-4 right-4 z-20">
+          <button 
+            onClick={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(property.id); }}
+            className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg backdrop-blur-md border ${
+              isFavorite 
+                ? 'bg-[#BBA27E] border-[#BBA27E] text-white' 
+                : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
+            }`}
           >
-            <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+            <Star size={18} fill={isFavorite ? "currentColor" : "none"} strokeWidth={2.5} />
           </button>
         </div>
 

@@ -218,31 +218,33 @@ const Home: React.FC = () => {
               </AnimatePresence>
             </div>
 
-            <button
-              onClick={handleSearch}
-              className="w-full bg-primary text-white font-black py-5 rounded-2xl shadow-lg shadow-primary/30 flex items-center justify-center gap-2 transform active:scale-[0.98] transition-all hover:bg-primary-dark uppercase tracking-[0.2em] text-xs"
-            >
-              <Search size={16} />
-              Ver Disponibilidad
-            </button>
+            <button 
+          onClick={handleSearch}
+          className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:shadow-[#BBA27E]/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-[#BBA27E]/20"
+        >
+          <Search size={16} className="group-hover:scale-110 transition-transform" />
+          Ver Disponibilidad
+        </button>
           </div>
         </div>
       )}
 
       {/* Header Content */}
       <div className="relative z-10 px-6 pt-12 pb-6">
-        <div className="flex justify-between items-center mb-6">
+        <div className="flex justify-between items-end mb-1">
           <div>
-            <h1 className="text-4xl font-serif font-bold text-text-main leading-[1.1] tracking-tight">
-              {siteContent?.hero.title}: <br />
-              <span className="text-primary italic font-medium">{siteContent?.hero.slogan}</span>
+            <h1 className="text-4xl md:text-5xl font-serif italic font-black text-[#1a1a1a] leading-tight tracking-tighter">
+              Villa Retiro R
             </h1>
+            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-[#BBA27E] mt-1">Cabo Rojo · Puerto Rico</p>
           </div>
           <div className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group overflow-hidden relative">
-            <Bell size={24} className="text-secondary group-hover:scale-110 transition-transform" />
+            <Bell size={24} className="text-[#1a1a1a] group-hover:scale-110 transition-transform" />
           </div>
         </div>
-        <p className="text-text-light text-sm font-medium transition-all duration-500">{siteContent?.hero.notif_status || "¡Hola, Viajero! 👋"}</p>
+        <p className="text-[#BBA27E]/60 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+          Salty · Concierge Oficial VRR 🌟
+        </p>
       </div>
 
       <div
@@ -409,7 +411,7 @@ const Home: React.FC = () => {
               <div className="flex flex-col gap-3 w-full max-w-xs">
                  <button
                    onClick={() => { setAdults(1); setChildren(0); setPets(0); setActiveCategory('todo'); }}
-                   className="w-full bg-primary text-white font-black py-4 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest"
+                   className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black py-4 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest border border-[#BBA27E]/20"
                  >
                    Zarpar de Nuevo (Limpiar Todo)
                  </button>

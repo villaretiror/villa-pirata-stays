@@ -33,20 +33,20 @@ const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, i
       <div className={`
         relative flex items-center justify-center w-12 h-9 rounded-full z-10 transition-all duration-300
         ${isActive && !isAvatar
-          ? 'text-primary'
+          ? 'text-[#BBA27E]'
           : 'text-gray-400 group-hover:text-gray-600'
         }
       `}>
         {isActive && !isAvatar && (
           <motion.div
             layoutId="navPill"
-            className="absolute inset-0 bg-primary/10 rounded-full"
+            className="absolute inset-0 bg-[#BBA27E]/10 rounded-full"
             transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
           />
         )}
 
         {isAvatar ? (
-          <div className={`w-8 h-8 rounded-full border-2 transition-all overflow-hidden ${isActive ? 'border-primary ring-2 ring-primary/20' : 'border-gray-200'}`}>
+          <div className={`p-2.5 rounded-2xl transition-all duration-500 relative ${isActive ? 'bg-[#BBA27E] text-[#1a1a1a] shadow-lg shadow-[#BBA27E]/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
             <SmartImage src={userAvatar || ''} className="w-full h-full object-cover" />
           </div>
         ) : (
@@ -55,7 +55,7 @@ const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, i
       </div>
       <span className={`
         text-[7px] font-black uppercase tracking-[0.25em] transition-colors duration-300 w-full text-center px-0.5
-        ${isActive ? 'text-primary' : 'text-gray-400 group-hover:text-gray-500'}
+        ${isActive ? 'text-[#BBA27E]' : 'text-gray-400 group-hover:text-gray-500'}
       `}>
         {label}
       </span>
@@ -99,15 +99,15 @@ const Navbar: React.FC = () => {
               initial={{ opacity: 0, y: 20, scale: 0.95, filter: 'blur(10px)' }}
               animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: 20, scale: 0.95, filter: 'blur(10px)' }}
-              className="absolute bottom-20 w-[90%] bg-white/90 backdrop-blur-2xl border border-white/50 rounded-[2.5rem] shadow-2xl p-3 pointer-events-auto overflow-hidden"
+              className="absolute bottom-24 w-[90%] bg-[#1a1a1a]/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl p-3 pointer-events-auto overflow-hidden text-white"
             >
               <div className="p-4 mb-2 flex items-center gap-3 bg-sand/30 rounded-[1.8rem]">
-                <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
+                <div className="w-10 h-10 rounded-full border-2 border-[#BBA27E] overflow-hidden">
                   <SmartImage src={user?.avatar || ''} className="w-full h-full object-cover" />
                 </div>
                 <div>
                   <p className="text-xs font-black text-text-main uppercase tracking-widest">{user?.name}</p>
-                  <p className="text-[10px] font-bold text-primary">
+                  <p className="text-[10px] font-bold text-[#BBA27E]">
                     {user?.email === 'villaretiror@gmail.com' ? 'Master Host' : 'Huésped VIP'}
                   </p>
                 </div>
@@ -121,10 +121,10 @@ const Navbar: React.FC = () => {
                     localStorage.setItem('host_mode_preferred', 'true');
                     setShowMenu(false);
                   }}
-                  className="flex items-center gap-3 px-5 py-3.5 bg-primary/10 hover:bg-primary/20 rounded-[1.5rem] transition-all group mb-1 border border-primary/20"
+                  className="flex items-center gap-3 px-5 py-3.5 bg-[#BBA27E]/10 hover:bg-[#BBA27E]/20 rounded-[1.5rem] transition-all group mb-1 border border-[#BBA27E]/20"
                 >
-                  <LayoutDashboard strokeWidth={1.5} className="w-5 h-5 text-primary" />
-                  <span className="text-xs font-bold text-primary tracking-wide">Panel de Host (Admin)</span>
+                  <LayoutDashboard strokeWidth={1.5} className="w-5 h-5 text-[#BBA27E]" />
+                  <span className="text-xs font-bold text-[#BBA27E] tracking-wide">Panel de Host (Admin)</span>
                 </Link>
               )}
 
@@ -137,8 +137,8 @@ const Navbar: React.FC = () => {
                     onClick={() => setShowMenu(false)}
                     className="flex items-center gap-3 px-5 py-3.5 hover:bg-black/5 rounded-[1.5rem] transition-all group"
                   >
-                    <ItemIcon strokeWidth={1.5} className="w-5 h-5 text-gray-400 group-hover:text-primary transition-colors" />
-                    <span className="text-xs font-medium text-text-main">{item.label}</span>
+                    <ItemIcon strokeWidth={1.5} className="w-5 h-5 text-gray-400 group-hover:text-[#BBA27E] transition-colors" />
+                    <span className="text-xs font-medium text-white/70 group-hover:text-white transition-colors">{item.label}</span>
                   </Link>
                 );
               })}
@@ -156,7 +156,7 @@ const Navbar: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <ul className="pointer-events-auto bg-white/80 backdrop-blur-xl shadow-[0_12px_40px_-12px_rgba(0,0,0,0.1)] rounded-[2.5rem] px-6 py-2.5 flex items-center justify-between w-[95%] m-0 list-none">
+        <ul className="pointer-events-auto bg-[#1a1a1a]/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2.5rem] px-6 py-2.5 flex items-center justify-between w-[95%] m-0 list-none border border-white/10">
           <li><NavItem path="/" icon={Compass} label="Explorar" currentPath={currentPath} /></li>
           <li><NavItem path="/favorites" icon={Heart} label="Favoritos" currentPath={currentPath} /></li>
           <li><NavItem path="/messages" icon={MessageCircle} label="Chat" currentPath={currentPath} /></li>
