@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { CheckCircle2, Receipt, ArrowLeft } from 'lucide-react';
 import { generateWhatsAppLink, getBookingWAMessage } from '../utils';
 import { HOST_PHONE } from '../constants';
 
@@ -49,7 +50,7 @@ const Success: React.FC = () => {
           className="absolute inset-[-20%] bg-secondary/40 blur-3xl rounded-full"
         />
         <div className="w-28 h-28 bg-gradient-to-br from-secondary to-blue-400 rounded-full flex items-center justify-center shadow-float relative z-10 text-white border-4 border-white/50">
-          <span className="material-icons text-5xl">check</span>
+          <CheckCircle2 size={48} className="text-white" />
         </div>
       </motion.div>
 
@@ -84,7 +85,7 @@ const Success: React.FC = () => {
             onClick={() => navigate(`/reservation/${bookingData?.id || 'latest'}`)}
             className="w-full bg-black text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-lg hover:bg-gray-900 active:scale-95 transition-all flex items-center justify-center gap-3 group"
           >
-            <span className="material-icons text-sm group-hover:rotate-12 transition-transform">confirmation_number</span>
+            <Receipt size={16} className="group-hover:rotate-12 transition-transform" />
             Gestionar mi Estancia
           </button>
 
@@ -119,7 +120,7 @@ const Success: React.FC = () => {
           onClick={() => navigate('/')}
           className="text-secondary font-bold text-sm flex items-center gap-2 mx-auto hover:text-blue-600 transition-colors group"
         >
-          <span className="material-icons text-sm group-hover:-translate-x-1 transition-transform">arrow_back</span>
+          <ArrowLeft size={16} className="group-hover:-translate-x-1 transition-transform" />
           Volver al Inicio
         </motion.button>
       </footer>

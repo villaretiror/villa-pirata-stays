@@ -4,6 +4,22 @@ import { supabase } from '../lib/supabase';
 import { useBooking } from '../contexts/BookingContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { format, differenceInDays } from 'date-fns';
+import { 
+  X, 
+  Wifi, 
+  Navigation, 
+  Car, 
+  Sparkles, 
+  ArrowRight, 
+  ShieldCheck, 
+  Lock, 
+  Unlock, 
+  CheckCircle, 
+  Circle, 
+  Info, 
+  Copy,
+  Receipt
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const StayDashboard: React.FC = () => {
@@ -131,7 +147,7 @@ const StayDashboard: React.FC = () => {
                     onClick={() => navigate('/')}
                     className="absolute top-6 left-6 w-10 h-10 bg-black/20 backdrop-blur-xl border border-white/10 rounded-full flex items-center justify-center hover:bg-white/10 transition-all active:scale-90"
                 >
-                    <span className="material-icons text-white">close</span>
+                    <X size={20} className="text-white" />
                 </button>
             </header>
 
@@ -146,8 +162,8 @@ const StayDashboard: React.FC = () => {
                             <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-white/50 mb-1">Acceso a la Villa</h2>
                             <p className="text-lg font-serif font-bold text-white">Estado: {accessLevel === 3 ? 'Oro (Acceso Total)' : 'Progresando'}</p>
                         </div>
-                        <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary border border-primary/20">
-                            <span className="material-icons">{accessLevel === 3 ? 'lock_open' : 'lock'}</span>
+                        <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center text-primary mb-4 border border-white/10 shadow-lg">
+                            {accessLevel === 3 ? <Unlock size={24} /> : <Lock size={24} />}
                         </div>
                     </div>
 
@@ -156,7 +172,7 @@ const StayDashboard: React.FC = () => {
                         <div className={`p-6 rounded-3xl border transition-all duration-700 ${accessLevel >= 3 ? 'bg-primary/10 border-primary/30 shadow-inner' : 'bg-white/5 border-white/5 grayscale'}`}>
                             <div className="flex justify-between items-center mb-2">
                                 <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Código de Entrada</p>
-                                {accessLevel >= 3 && <span className="material-icons text-green-400 text-sm">verified</span>}
+                                {accessLevel >= 3 && <CheckCircle size={14} className="text-green-400" />}
                             </div>
                             <div className="flex items-center justify-between">
                                 <span className={`font-mono tracking-[0.4em] ${accessLevel >= 3 ? 'text-4xl font-black text-white' : 'text-xl italic text-white/20'}`}>
@@ -164,7 +180,7 @@ const StayDashboard: React.FC = () => {
                                 </span>
                                 {accessLevel >= 3 && (
                                     <button onClick={() => copyToClipboard(lockCode, 'Código')} className="p-3 bg-white/10 rounded-xl hover:bg-white/20 active:scale-90">
-                                        <span className="material-icons text-sm">content_copy</span>
+                                        <Copy size={16} />
                                     </button>
                                 )}
                             </div>
@@ -173,22 +189,22 @@ const StayDashboard: React.FC = () => {
                         {/* Progress Stepper */}
                         <div className="grid grid-cols-3 gap-2 py-4 border-y border-white/5">
                             <div className="text-center">
-                                <span className={`material-icons text-sm mb-1 ${isPaid ? 'text-primary' : 'text-white/20'}`}>{isPaid ? 'check_circle' : 'circle'}</span>
+                                <span className={`mb-1 ${isPaid ? 'text-primary' : 'text-white/20'}`}>{isPaid ? <CheckCircle size={14} /> : <Circle size={14} />}</span>
                                 <p className={`text-[8px] font-bold uppercase tracking-tighter ${isPaid ? 'text-white' : 'text-white/20'}`}>Pago</p>
                             </div>
                             <div className="text-center">
-                                <span className={`material-icons text-sm mb-1 ${isSigned ? 'text-primary' : 'text-white/20'}`}>{isSigned ? 'check_circle' : 'circle'}</span>
+                                <span className={`mb-1 ${isSigned ? 'text-primary' : 'text-white/20'}`}>{isSigned ? <CheckCircle size={14} /> : <Circle size={14} />}</span>
                                 <p className={`text-[8px] font-bold uppercase tracking-tighter ${isSigned ? 'text-white' : 'text-white/20'}`}>Contrato</p>
                             </div>
                             <div className="text-center">
-                                <span className={`material-icons text-sm mb-1 ${isCheckinDay ? 'text-primary' : 'text-white/20'}`}>{isCheckinDay ? 'check_circle' : 'circle'}</span>
+                                <span className={`mb-1 ${isCheckinDay ? 'text-primary' : 'text-white/20'}`}>{isCheckinDay ? <CheckCircle size={14} /> : <Circle size={14} />}</span>
                                 <p className={`text-[8px] font-bold uppercase tracking-tighter ${isCheckinDay ? 'text-white' : 'text-white/20'}`}>Llegada</p>
                             </div>
                         </div>
 
                         {accessLevel < 3 && (
                             <div className="bg-orange-950/30 border border-orange-500/20 p-4 rounded-2xl flex gap-3 items-center">
-                                <span className="material-icons text-orange-500 text-lg">info</span>
+                                <Info size={16} className="text-orange-500" />
                                 <p className="text-[10px] text-orange-200/80 leading-snug">
                                     Complete el pago y firme su contrato para revelar el código {diffDays > 0 ? `el día ${booking.check_in}` : 'hoy'}.
                                 </p>
@@ -208,7 +224,7 @@ const StayDashboard: React.FC = () => {
                             <h3 className="text-xl font-bold">Unirse al WiFi</h3>
                         </div>
                         <div className={`w-12 h-12 rounded-2xl flex items-center justify-center relative z-10 ${accessLevel >= 3 ? 'bg-white text-primary' : 'bg-white/5 text-white/20'}`}>
-                            <span className="material-icons">wifi</span>
+                            <Wifi size={24} />
                         </div>
                     </a>
 
@@ -251,7 +267,7 @@ const StayDashboard: React.FC = () => {
                             target="_blank"
                             className="bg-white/10 hover:bg-white/20 p-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
-                            <span className="material-icons text-green-400">navigation</span>
+                            <Navigation size={16} className="text-green-400" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Google Maps</span>
                         </a>
                         <a 
@@ -259,7 +275,7 @@ const StayDashboard: React.FC = () => {
                             target="_blank"
                             className="bg-white/10 hover:bg-white/20 p-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
-                            <span className="material-icons text-blue-400">directions_car</span>
+                            <Car size={16} className="text-blue-400" />
                             <span className="text-[10px] font-black uppercase tracking-widest">Waze</span>
                         </a>
                     </div>
@@ -271,7 +287,7 @@ const StayDashboard: React.FC = () => {
                     <div className="relative z-10">
                         <div className="flex items-center gap-4 mb-6">
                             <div className="w-14 h-14 bg-primary rounded-full flex items-center justify-center shadow-lg shadow-primary/20">
-                                <span className="material-icons text-white text-3xl">auto_awesome</span>
+                                <Sparkles size={28} className="text-white" />
                             </div>
                             <div>
                                 <h2 className="text-xl font-serif font-black italic">Salty Concierge</h2>
@@ -284,7 +300,7 @@ const StayDashboard: React.FC = () => {
                                 onClick={() => navigate('/messages', { state: { in_stay: true, property_id: booking.property_id, villa: prop?.title } })}
                                 className="w-full bg-white text-black py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all shadow-xl shadow-black/50"
                             >
-                                💬 Preguntar algo a Salty <span className="material-icons text-sm">arrow_forward</span>
+                                💬 Preguntar algo a Salty <ArrowRight size={14} />
                             </button>
                             <p className="text-[9px] text-center text-white/30 italic">
                                 "Salty conoce cada detalle de esta propiedad, desde el A/C hasta la cafetera."
