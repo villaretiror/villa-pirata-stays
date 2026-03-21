@@ -16,7 +16,6 @@ export const CalendarSyncService = {
         const reports: string[] = [];
         let totalGlobalImported = 0;
 
-        // 🔱 HYPER-DRIVE SYNC: Parallel property processing
         await Promise.all(properties.map(async (prop) => {
             const feeds: any[] = prop.calendarSync || [];
             if (feeds.length === 0) return;
@@ -24,7 +23,6 @@ export const CalendarSyncService = {
             const updatedFeeds = [...feeds];
             let propImported = 0;
 
-            // ⚡ PARALLEL FEEDS: Direct sync within the same property
             await Promise.all(feeds.map(async (feed, idx) => {
                 if (!feed.url) return;
 
@@ -32,7 +30,7 @@ export const CalendarSyncService = {
                     const tsUrl = feed.url + (feed.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
                     const response = await fetch(tsUrl, {
                         headers: { 'User-Agent': 'VillaRetiro-Cron-Engine/3.0' },
-                        signal: AbortSignal.timeout(10000) // 10s timeout
+                        signal: AbortSignal.timeout(10000)
                     });
 
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -57,11 +55,9 @@ export const CalendarSyncService = {
                 }
             }));
 
-            // Sync the JSON property back to reflect the new lastSynced status
             await supabase.from('properties').update({ "calendarSync": updatedFeeds }).eq('id', prop.id);
         }));
 
-        // 🛰️ BUNDLE NOTIFICATION: Send one summary instead of 50 alerts
         await NotificationService.notifySyncSummary(totalGlobalImported, reports.join('\n'));
 
         return { total: totalGlobalImported, details: reports.join('\n') };
@@ -115,7 +111,6 @@ export const CalendarSyncService = {
         const existingMap = new Map((existing || []).map((b: any) => [`${b.check_in}_${b.check_out}`, b]));
         const incomingKeys = new Set(blocks.map(b => `${b.start}_${b.end}`));
 
-        // 1. Delete expired / cancelled external blocks
         const idsToDelete = (existing || [])
             .filter((b: any) => !incomingKeys.has(`${b.check_in}_${b.check_out}`))
             .map((b: any) => b.id);
@@ -125,7 +120,6 @@ export const CalendarSyncService = {
             if (!delErr) deletedCount = idsToDelete.length;
         }
 
-        // 2. Identify new or changed blocks
         const toInsert = [];
         for (const block of blocks) {
             const key = `${block.start}_${block.end}`;
@@ -157,5 +151,41 @@ export const CalendarSyncService = {
         }
 
         return { inserted: insertedCount, deleted: deletedCount, updated: updatedCount };
+    },
+
+    async getBlockedDatesFromUrl(url: string): Promise<string[]> {
+        try {
+            const isFrontend = typeof window !== 'undefined';
+            const fetchUrl = isFrontend 
+                ? `/api/proxy-ical?url=${encodeURIComponent(url)}`
+                : url;
+
+            const response = await fetch(fetchUrl);
+            if (!response.ok) throw new Error("Fetch failed");
+            
+            let icsText = '';
+            if (isFrontend) {
+                const data = await response.json();
+                icsText = data.contents;
+            } else {
+                icsText = await response.text();
+            }
+
+            const blocks = this.parseIcsToBlocks(icsText, 'preview');
+            const days: string[] = [];
+            
+            for (const b of blocks) {
+                const current = new Date(`${b.start}T12:00:00`);
+                const end = new Date(`${b.end}T12:00:00`);
+                while (current < end) {
+                    days.push(current.toISOString().split('T')[0]);
+                    current.setDate(current.getDate() + 1);
+                }
+            }
+            return Array.from(new Set(days));
+        } catch (error: any) {
+            console.error('[CalendarSyncService] getBlockedDates Error:', error.message);
+            return [];
+        }
     }
 };

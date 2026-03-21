@@ -1,22 +1,29 @@
-import { Property, SeasonalPrice } from './types';
+import { CalendarSyncService } from './services/CalendarSyncService';
+import { FinanceService } from './services/FinanceService';
+import { SeasonalPrice } from './types';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 
-
-// 1. iCal Helpers - Precision & Robustness
-const parseICalDateStr = (raw: string): string => {
-  // Handles DTSTART:20240501 or DTSTART;VALUE=DATE:20240501
-  const val = raw.includes(':') ? raw.split(':').pop() || '' : raw;
-  if (val.length < 8) return '';
-  const y = val.substring(0, 4);
-  const m = val.substring(4, 6);
-  const d = val.substring(6, 8);
+// 1. Date Helpers
+export const formatDate = (date: Date): string => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
+};
+
+export const formatDateLong = (dateStr: string): string => {
+  try {
+    return format(new Date(dateStr + 'T12:00:00'), 'dd MMM yyyy', { locale: es });
+  } catch (e) {
+    return dateStr;
+  }
 };
 
 export const getDatesInRange = (startStr: string, endStr: string): string[] => {
   const dates: string[] = [];
-  const curr = new Date(`${startStr}T12:00:00`); // Use T12 to avoid day shifts
+  const curr = new Date(`${startStr}T12:00:00`); 
   const end = new Date(`${endStr}T12:00:00`);
-
   while (curr < end) {
     const y = curr.getFullYear();
     const m = String(curr.getMonth() + 1).padStart(2, '0');
@@ -28,27 +35,12 @@ export const getDatesInRange = (startStr: string, endStr: string): string[] => {
 };
 
 export const parseICalData = (icalData: string): string[] => {
-  const events: string[] = [];
-  const lines = icalData.split(/\r\n|\n|\r/);
-  let inEvent = false;
-  let dtStartRaw = '';
-  let dtEndRaw = '';
-
-  for (const line of lines) {
-    if (line.startsWith('BEGIN:VEVENT')) {
-      inEvent = true;
-      dtStartRaw = ''; dtEndRaw = '';
-    } else if (line.startsWith('END:VEVENT')) {
-      inEvent = false;
-      const start = parseICalDateStr(dtStartRaw);
-      const end = parseICalDateStr(dtEndRaw);
-      if (start && end) events.push(...getDatesInRange(start, end));
-    } else if (inEvent) {
-      if (line.startsWith('DTSTART')) dtStartRaw = line;
-      else if (line.startsWith('DTEND')) dtEndRaw = line;
-    }
-  }
-  return Array.from(new Set(events));
+  const blocks = CalendarSyncService.parseIcsToBlocks(icalData, 'frontend-utils');
+  const dates: string[] = [];
+  blocks.forEach(b => {
+    dates.push(...getDatesInRange(b.start, b.end));
+  });
+  return Array.from(new Set(dates));
 };
 
 // 2. Formatting Helpers
@@ -56,97 +48,16 @@ export const formatCurrency = (amount: number): string => {
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
     currency: 'USD',
-    minimumFractionDigits: 0
   }).format(amount);
 };
 
-export const formatDateLong = (dateStr: string): string => {
-  if (!dateStr) return '';
-  const date = new Date(`${dateStr}T12:00:00`);
-  return new Intl.DateTimeFormat('es-PR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric'
-  }).format(date);
+// 3. iCal Fetching (Frontend only due to proxy)
+export const fetchICalData = async (url: string): Promise<string[]> => {
+  return CalendarSyncService.getBlockedDatesFromUrl(url);
 };
 
-// 3. Real iCal Fetching Engine
-export const fetchICalData = async (url: string): Promise<string> => {
-  if (!url.startsWith('http')) throw new Error('URL de calendario inválida.');
-
-  // Usamos nuestro proxy backend edge-runtime para saltarnos CORS
-  const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-
-  try {
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error('Error al conectar con el servidor externo.');
-
-    const data = await response.json();
-    if (!data.contents) throw new Error('El calendario está vacío o no es accesible.');
-
-    return data.contents;
-  } catch (error: any) {
-    console.error("iCal Fetch Error:", error);
-    throw new Error(`Error de sincronización: ${error.message}`);
-  }
-};
-
-// 4. Magic Importer - Metadata Extraction via CORS Proxy
-export const importPropertyFromUrl = async (url: string): Promise<Partial<Property>> => {
-  if (!url.startsWith('http')) throw new Error('URL inválida.');
-
-  const proxyUrl = `/api/proxy-ical?url=${encodeURIComponent(url)}`;
-
-  try {
-    const response = await fetch(proxyUrl);
-    if (!response.ok) throw new Error('Error de conexión con el proxy.');
-
-    const data = await response.json();
-    const html = data.contents;
-
-    // Función auxiliar para extraer contenido de meta tags específicos
-    const getMeta = (prop: string) => {
-      const match = html.match(new RegExp(`<meta[^>]*property=["']${prop}["'][^>]*content=["']([^"']*)["']`, 'i')) ||
-        html.match(new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*property=["']${prop}["']`, 'i'));
-      return match ? match[1] : null;
-    };
-
-    const title = getMeta('og:title') || "Nueva Villa Importada";
-    const description = getMeta('og:description') || "Descripción no disponible.";
-    const image = getMeta('og:image');
-
-    return {
-      title: title.split(' - ')[0], // Limpiar títulos largos de Airbnb
-      description: description,
-      images: image ? [image] : ["https://images.unsplash.com/photo-1582268611958-ebaf1615627d?auto=format&fit=crop&q=80&w=1200"],
-      price: 250, // Default price
-      rating: 4.9,
-      reviews_count: 15,
-      amenities: ['WiFi de Alta Velocidad', 'Check-in Autónomo', 'Cocina Completa']
-    };
-  } catch (error: any) {
-    console.error("Import Error:", error);
-    throw new Error('No pudimos extraer los datos automáticamente.');
-  }
-};
-
-// 4. WhatsApp Automation
-export const generateWhatsAppLink = (phone: string, message: string): string => {
-  const cleanPhone = phone.replace(/\D/g, '');
-  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-};
-
-export const getBookingWAMessage = (data: {
-  guestName: string,
-  propertyName: string,
-  checkIn: string,
-  checkOut: string,
-  total: number
-}): string => {
-  return `¡Hola! Soy ${data.guestName}, acabo de reservar ${data.propertyName} para las fechas del ${data.checkIn} al ${data.checkOut} a través de la web oficial de Villa Retiro R. El total de mi inversión es de $${data.total}. Aquí mi confirmación.`;
-};
-
-export const getHostInstructionMessage = (data: {
+// 4. Salty Message Generators
+export const getWhatsAppWelcomeMsg = (data: {
   guestName: string,
   propertyName: string,
   accessCode: string,
@@ -155,49 +66,31 @@ export const getHostInstructionMessage = (data: {
   return `¡Hola ${data.guestName}! Gracias por elegir ${data.propertyName}. Aquí tus instrucciones de llegada: \n\n📍 Ubicación: ${data.googleMapsLink} \n🔑 Código de puerta: ${data.accessCode} \n\n¡Cualquier duda, estamos a tu orden!`;
 };
 
-// 5. Revenue Optimization Helpers
-export const validatePromoCode = (promo: any, nights: number, hasSeasonalNight: boolean = false): { valid: boolean; message?: string } => {
-  if (!promo.active) return { valid: false, message: "Código inactivo." };
-
-  const now = new Date();
-  if (now < new Date(promo.valid_from) || now > new Date(promo.valid_to)) {
-    return { valid: false, message: "Código fuera de fecha." };
-  }
-
-  if (nights < promo.min_stay_nights) {
-    return { valid: false, message: `Estancia mínima de ${promo.min_stay_nights} noches.` };
-  }
-
-  // 1. Anti-Abuse: Max uses
-  if (promo.max_uses && promo.current_uses >= promo.max_uses) {
-    return { valid: false, message: "Límite de usos alcanzado para este código." };
-  }
-
-  // 2. Anti-Abuse: Seasonal Exclusion
-  if (hasSeasonalNight && !promo.allow_on_seasonal_prices) {
-    return { valid: false, message: "Este cupón no es válido durante temporadas altas (Precios Especiales)." };
-  }
-
-  return { valid: true };
+export const generateWhatsAppLink = (phone: string, message: string): string => {
+  const cleanPhone = phone.replace(/\D/g, '');
+  return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 };
 
-export const isSeasonalDate = (dateStr: string, seasonalPrices: SeasonalPrice[] = []): boolean => {
-  const checkDate = new Date(`${dateStr}T12:00:00`);
-  return seasonalPrices.some(s => {
-    const start = new Date(`${s.startDate}T12:00:00`);
-    const end = new Date(`${s.endDate}T12:00:00`);
-    return checkDate >= start && checkDate <= end;
-  });
+export const getHostInstructionMessage = (guestName: string, propertyName: string, accessCode: string): string => {
+    return `¡Hola ${guestName}! Solo quería saludarte y confirmar que ya estamos listos para recibirte en ${propertyName}. El código de acceso para tu llegada será: ${accessCode}. ¿Tienes alguna duda sobre la ubicación o el check-in?`;
 };
 
-export const getNightlyPrice = (basePrice: number, dateStr: string, seasonalPrices: SeasonalPrice[] = []): number => {
-  const checkDate = new Date(`${dateStr}T12:00:00`);
+// 5. Ported Helpers (Internal)
+export const importPropertyFromUrl = async (url: string) => {
+    // This is typically a complex logic for scraping, keeping signature for compatibility
+    console.warn("importPropertyFromUrl no implementado en esta versión consolidada.");
+    return null;
+};
 
-  const activeSeason = seasonalPrices.find(s => {
-    const start = new Date(`${s.startDate}T12:00:00`);
-    const end = new Date(`${s.endDate}T12:00:00`);
-    return checkDate >= start && checkDate <= end;
-  });
+// 6. Finance Redirects
+export const getNightlyPrice = (basePrice: number, dateStr: string, seasonalPrices?: SeasonalPrice[]): number => {
+  return FinanceService.getNightlyPrice(basePrice, dateStr, seasonalPrices);
+};
 
-  return activeSeason ? activeSeason.price : basePrice;
+export const isSeasonalDate = (dateStr: string, seasonalPrices?: SeasonalPrice[]): boolean => {
+  return FinanceService.isSeasonalDate(dateStr, seasonalPrices);
+};
+
+export const validatePromoCode = (promo: any, nights: number, hasSeasonal: boolean) => {
+    return FinanceService.validatePromo(promo, nights, hasSeasonal);
 };

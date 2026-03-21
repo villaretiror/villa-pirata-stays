@@ -1,17 +1,22 @@
+import { Database } from './supabase_types';
+
 export type ViewState = 'guest' | 'host';
 
-export interface Review {
-  id: string;
-  booking_id?: string | null;       // FK → bookings.id. null = importada de Airbnb/Booking.com
-  property_id?: string;
-  user_id?: string | null;           // FK → auth.users
+// 🔱 EXPLICIT ACCESS TO SUPABASE ROWS
+export type PropertyRow = Database['public']['Tables']['properties']['Row'];
+export type BookingRow = Database['public']['Tables']['bookings']['Row'];
+export type ReviewRow = Database['public']['Tables']['reviews']['Row'];
+export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+export type PromoCodeRow = Database['public']['Tables']['promo_codes']['Row'];
+export type LeadRow = Database['public']['Tables']['leads']['Row'];
+
+export interface Review extends Partial<ReviewRow> {
   author: string;
-  date: string;                      // ISO string (created_at formateado para display)
-  rating: number;                    // 1.0 – 5.0
   text: string;
+  rating: number;
+  date?: string; 
+  avatar?: string; 
   source: 'Airbnb' | 'Booking.com' | 'Google' | 'Direct';
-  avatar?: string;                   // avatar_url de la DB (opcional)
-  is_visible?: boolean;
 }
 
 export interface Offer {
@@ -27,17 +32,9 @@ export interface SeasonalPrice {
   label: string;
 }
 
-export interface PromoCode {
-  id: string;
+export interface PromoCode extends Partial<PromoCodeRow> {
   code: string;
   discount_percent: number;
-  min_stay_nights: number;
-  valid_from: string;
-  valid_to: string;
-  active: boolean;
-  max_uses?: number;
-  current_uses?: number;
-  allow_on_seasonal_prices: boolean;
 }
 
 export type FeeStructure = Record<string, number>;
@@ -63,50 +60,20 @@ export interface CalendarSync {
   syncStatus: 'success' | 'error' | 'syncing';
 }
 
-export interface Property {
-  id: string;
-  host_id?: string;
-  title: string;
-  subtitle: string;
-  location: string;
-  address: string;
-  description: string;
-  price: number;
-  tax_rate?: number;
-  original_price?: number | null;   // Precio de referencia para mostrar tachado. Si es null, no se muestra.
-  cleaning_fee: number;
-  service_fee: number;
-  security_deposit: number;
-  rating: number;
-  reviews_count: number;
+// 🛡️ OMIT ALL FIELDS THAT ARE OVERRIDDEN TO AVOID CONFLICTS
+type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images';
+
+export interface Property extends Omit<PropertyRow, PropertyOmissions> {
+  original_price?: number | null;
   images: string[];
-  amenities: string[];
-  featuredAmenity?: string;
-  category?: 'Boutique' | 'Familiar';
-  guests: number;
-  bedrooms: number;
-  beds: number;
-  baths: number;
   reviews_list?: Review[];
   offers?: Offer[];
   fees: FeeStructure;
   policies: Policies;
   blockedDates: string[];
   calendarSync: CalendarSync[];
-  availability_urgency_msg?: string;
-  general_area_map_url?: string;
-  exact_lat_long?: string;
-  google_maps_url?: string;
-  waze_url?: string;
-  review_url?: string;
-  isOffline?: boolean;
-  is_cleaning_in_progress?: boolean;
-  min_price_floor: number;
-  max_discount_allowed: number;
-  cancellation_policy_type?: CancellationPolicyType;
   seasonal_prices?: SeasonalPrice[];
-  created_at?: string;
-  updated_at?: string;
+  isOffline?: boolean; 
   host: {
     name: string;
     image: string;
@@ -115,37 +82,17 @@ export interface Property {
   };
 }
 
-export interface Booking {
-  id: string;
-  property_id: string;
-  user_id?: string;
-  customer_name?: string;
-  source?: string;
-  check_in: string;
-  check_out: string;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'pending_ai_validation' | 'emergency_support' | 'expired';
-  guests: number;
-  email_sent?: boolean;
-  payment_method?: string;
-  payment_proof_url?: string;
-  total_price: number;
+export interface Booking extends Omit<BookingRow, 'applied_policy'> {
   applied_policy?: {
     type: CancellationPolicyType;
-    snapshot: string; // Resumen textual de la regla legal aplicada
+    snapshot: string;
   };
-  cancelled_at?: string;
-  cancellation_reason?: string;
-  cleaning_fee_at_booking?: number | null;
-  service_fee_at_booking?: number | null;
-  refund_amount_calculated?: number | null;
-  retained_amount_calculated?: number | null;
-  cancellation_snapshot?: any;
-  paymentDetails: {
+  paymentDetails?: {
     method: 'Credit Card' | 'ATH Movil' | 'Cash';
     transactionId?: string;
     paidAt?: string;
   };
-  nightlyBreakdown: {
+  nightlyBreakdown?: {
     basePrice: number;
     nights: number;
     cleaningFee: number;
@@ -173,31 +120,14 @@ export interface LocalGuideCategory {
   items: LocalGuideItem[];
 }
 
-export interface User {
-  id: string;
-  email: string;
-  name: string;
+export interface User extends Partial<ProfileRow> {
   role: 'guest' | 'host' | 'admin';
-  avatar?: string;
-  phone?: string;
-  verificationStatus: 'unverified' | 'pending' | 'verified';
-  emergencyContact?: string;
-  bio?: string;
-  registeredAt: string;
+  name?: string; 
+  avatar?: string; 
   favoriteProperties?: string[];
-  given_concessions?: { date: string; type: string; discount: number }[];
 }
 
-export interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  phone?: string;
-  message: string;
-  date_of_interest?: string;
-  status: 'new' | 'contacted' | 'converted' | 'closed';
-  created_at: string;
-}
+export interface Lead extends Partial<LeadRow> {}
 
 export interface SiteContent {
   hero: {
