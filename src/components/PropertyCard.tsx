@@ -1,7 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { Star, MapPin, Users, Heart, Sparkles, Flame, Zap, Compass, MessageCircle } from 'lucide-react';
+import { Star, MapPin, Users, Heart, Sparkles, Flame, Zap, Compass, MessageCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Property } from '../types';
 import SmartImage from './SmartImage';
 
@@ -106,8 +106,30 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           <span className="text-[9px] font-black text-white uppercase tracking-widest">{viewers} mirando ahora</span>
         </div>
 
+        {/* 🏹 NAV ARROWS: Premium navigation */}
+        <div className="absolute inset-0 z-20 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : property.images.length - 1));
+            }}
+            className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all active:scale-90"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setCurrentImageIndex((prev) => (prev < property.images.length - 1 ? prev + 1 : 0));
+            }}
+            className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all active:scale-90"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </div>
+
         {/* Stitched Image Navigation (Mobile & Desktop) */}
-        <div className="absolute inset-x-0 bottom-0 p-5 flex justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-500">
+        <div className="absolute inset-x-0 bottom-0 p-5 flex justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity translate-y-2 group-hover:translate-y-0 duration-500 z-30">
           {property.images.slice(0, 5).map((_, i) => (
             <button
               key={i}
