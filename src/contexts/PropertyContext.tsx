@@ -30,13 +30,14 @@ interface PropertyContextType {
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
 
 export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [isLoading, setIsLoading] = useState(true);
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
       const saved = localStorage.getItem('vp_properties');
       return (saved && JSON.parse(saved).length > 0) ? JSON.parse(saved) : PROPERTIES;
     } catch { return PROPERTIES; }
   });
+
+  const [isLoading, setIsLoading] = useState(properties.length === 0);
 
   const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>(INITIAL_LOCAL_GUIDE);
   const [secretSpots, setSecretSpots] = useState<any[]>([]);
@@ -53,35 +54,51 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   // 1. Initial Fresh Fetch & Realtime Subscription
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
-    setIsLoading(true);
+    // Only show global loading if we don't have any properties yet
+    if (properties.length === 0) {
+      setIsLoading(true);
+    }
+    
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      // A. Fetch Properties
-      const { data: propData, error: propError } = await supabase.from('properties')
-        .select('*', { abortSignal: signal || new AbortController().signal })
-        .or('is_offline.eq.false,is_offline.is.null');
+      const controller = new AbortController();
+      const currentSignal = signal || controller.signal;
+
+      // Parallel Fetch Strategy: Minimize RTT wait time
+      const [
+        { data: propData, error: propError },
+        { data: bookingData, error: bookingError },
+        { data: guideRows, error: guideError },
+        { data: settingsData, error: settingsError },
+        { data: { user } }
+      ] = await Promise.all([
+        supabase.from('properties')
+          .select('*')
+          .or('is_offline.eq.false,is_offline.is.null')
+          .abortSignal(currentSignal),
+        supabase.from('bookings')
+          .select('*')
+          .neq('status', 'cancelled')
+          .abortSignal(currentSignal),
+        supabase.from('destination_guides')
+          .select('*')
+          .eq('is_active', true)
+          .order('sort_order', { ascending: true })
+          .abortSignal(currentSignal),
+        supabase.from('system_settings')
+          .select('key, value')
+          .abortSignal(currentSignal),
+        supabase.auth.getUser()
+      ]);
       
       if (propError) throw propError;
+      if (bookingError) console.error("Booking Fetch Error:", bookingError);
+      if (guideError) console.error("Guide Fetch Error:", guideError);
+      if (settingsError) console.error("Settings Fetch Error:", settingsError);
 
-      // AA. Fetch Global Bookings (for search filtering)
-      const { data: bookingData } = await supabase.from('bookings')
-        .select('*')
-        .neq('status', 'cancelled');
-      
       if (bookingData) setBookings(bookingData);
 
-      // B. Fetch Dynamic Destination Guides (Integridad 360)
-      const { data: guideRows, error: guideError } = await supabase
-        .from('destination_guides')
-        .select('*')
-        .eq('is_active', true)
-        .order('sort_order', { ascending: true });
-
-      if (guideError) console.error("Guide Fetch Error:", guideError);
-
+      // B. Process Dynamic Destination Guides
       if (guideRows && guideRows.length > 0) {
-        // 🗺️ INDUSTRIAL CATEGORY MAPPING: Validated against destination_guides truth
         const categories = [
           { id: 'beaches', category: siteContent?.sections.beaches || 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
           { id: 'gastronomy', category: siteContent?.sections.gastronomy || 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
@@ -115,54 +132,46 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             }))
         }));
         setLocalGuideData(mappedGuide);
-      } else {
-        setLocalGuideData(INITIAL_LOCAL_GUIDE);
       }
-      
-      if (propData && propData.length > 0) {
-        // 🛡️ REINFORCED ADMIN CHECK: Verify real role from auth server
-        const { data: { user } } = await supabase.auth.getUser();
-        const isAdmin = user?.email === 'villaretiror@gmail.com';
 
+      // C. Process System Settings
+      if (settingsData) {
+        const typedSettings = settingsData as SettingRow[];
+        const secrets = typedSettings.find(s => s.key === 'secret_spots')?.value;
+        if (secrets) setSecretSpots(secrets as any[]);
+
+        const knowledge = typedSettings.find(s => s.key === 'villa_knowledge')?.value;
+        if (knowledge) setVillaKnowledge(knowledge as any);
+
+        const content = typedSettings.find(s => s.key === 'site_content')?.value;
+        if (content) {
+          setSiteContent(prev => ({ 
+            ...prev, 
+            ...(content as any),
+            contact: { ...(prev.contact), ...((content as any).contact || {}) },
+            hero: { ...(prev.hero), ...((content as any).hero || {}) },
+            sections: { ...(prev.sections), ...((content as any).sections || {}) }
+          }));
+        }
+      }
+
+      // D. Process Properties
+      if (propData && propData.length > 0) {
+        const isAdmin = user?.email === 'villaretiror@gmail.com';
         const mapped: Property[] = (propData as PropertyRow[]).map(p => 
           mapSupabaseProperty(p, undefined, { isAdmin })
         );
         setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
-
-        // C. Fetch Global System Settings
-        const { data: settings } = await supabase.from('system_settings').select('key, value');
-        if (settings) {
-          const typedSettings = settings as SettingRow[];
-          const secrets = typedSettings.find(s => s.key === 'secret_spots')?.value;
-          if (secrets) setSecretSpots(secrets as any[]);
-
-          const knowledge = typedSettings.find(s => s.key === 'villa_knowledge')?.value;
-          if (knowledge) setVillaKnowledge(knowledge as any);
-
-          const content = typedSettings.find(s => s.key === 'site_content')?.value;
-          if (content) {
-            setSiteContent(prev => ({ 
-              ...prev, 
-              ...(content as any),
-              contact: { ...(prev.contact), ...((content as any).contact || {}) },
-              hero: { ...(prev.hero), ...((content as any).hero || {}) },
-              sections: { ...(prev.sections), ...((content as any).sections || {}) }
-            }));
-          }
-        }
-      } else {
-        setProperties(prev => prev.length > 0 ? prev : PROPERTIES);
       }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
         console.error("fetchPropertiesFromDB Error:", err);
-        setProperties(prev => prev.length > 0 ? prev : PROPERTIES);
-        setLocalGuideData(prev => prev.length > 0 ? prev : INITIAL_LOCAL_GUIDE);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [siteContent?.sections]);
+  }, [siteContent?.sections]); // Stable dependencies to prevent loop
+
 
   useEffect(() => {
     const controller = new AbortController();
@@ -196,7 +205,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       controller.abort();
       if (channel) supabase.removeChannel(channel);
     };
-  }, [fetchPropertiesFromDB]);
+  }, []); // Run ONLY once on mount
+
 
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));

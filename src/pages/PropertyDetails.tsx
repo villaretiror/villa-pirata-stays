@@ -148,7 +148,9 @@ export const PropertyDetails: React.FC = () => {
     }
   }, [property]);
 
-  if (isLoading) return <PropertyDetailsSkeleton />;
+  // 2. Performance: Only show skeleton if we don't have this property in memory yet
+  if (isLoading && !property) return <PropertyDetailsSkeleton />;
+
 
   if (!property) {
     return (
