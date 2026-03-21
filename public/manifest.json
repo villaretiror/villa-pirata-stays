@@ -1,15 +1,15 @@
 {
-  "short_name": "VP Stays",
-  "name": "Villa & Pirata Stays",
+  "short_name": "VRR Retreats",
+  "name": "Villa Retiro R · Retreats",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a1a1a'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='50' fill='%23BBA27E'>VP</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a1a1a'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='45' fill='%23BBA27E'>VRR</text><rect y='68' x='20' width='60' height='1' fill='%23BBA27E'/></svg>",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23BBA27E'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='50' fill='%23ffffff'>VP</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23BBA27E'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='45' fill='%23ffffff'>VRR</text></svg>",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "maskable"
@@ -20,7 +20,7 @@
   "theme_color": "#1a1a1a",
   "background_color": "#EFEBE3",
   "orientation": "portrait-primary",
-  "description": "Boutique Stays en Cabo Rojo, PR. Experiencia de lujo con Salty Concierge.",
+  "description": "Retreats en Cabo Rojo, PR. Villa Retiro R.",
   "lang": "es-PR",
   "categories": ["travel", "lifestyle"]
 }

@@ -29,10 +29,34 @@ import { useProperty } from './contexts/PropertyContext';
 import { supabase } from './lib/supabase';
 import CustomCursor from './components/CustomCursor';
 
-// ⏳ Shell Loading Component for Suspense
+// ⏳ Shell Loading Component for Suspense (Elite Branding)
 const PageLoader = () => (
-  <div className="fixed inset-0 bg-sand flex items-center justify-center z-[9999]">
-    <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+  <div className="fixed inset-0 bg-[#fdfcfb] flex flex-col items-center justify-center z-[9999]">
+    <motion.div 
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="flex flex-col items-center"
+    >
+      <div className="relative mb-6">
+        <span className="font-serif italic font-black text-5xl tracking-tighter text-[#1a1a1a]">VRR</span>
+        <motion.div 
+          initial={{ width: 0 }}
+          animate={{ width: '140%' }}
+          transition={{ duration: 1, repeat: Infinity, repeatType: 'reverse' }}
+          className="absolute -bottom-1 -left-[20%] h-[2px] bg-[#BBA27E]"
+        />
+      </div>
+      <div className="flex gap-1.5">
+        {[0, 1, 2].map((i) => (
+          <motion.div
+            key={i}
+            animate={{ opacity: [0.2, 1, 0.2] }}
+            transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+            className="w-1.5 h-1.5 rounded-full bg-[#1a1a1a]"
+          />
+        ))}
+      </div>
+    </motion.div>
   </div>
 );
 
