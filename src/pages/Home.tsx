@@ -272,8 +272,8 @@ const Home: React.FC = () => {
             key={cat.id}
             onClick={() => handleCategorySelect(cat.id)}
             className={`flex items-center gap-2 px-6 py-3.5 rounded-full border whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeCategory === cat.id
-              ? 'bg-secondary text-white border-secondary shadow-xl shadow-secondary/20 scale-105'
-              : 'bg-white/80 backdrop-blur-sm border-white/50 text-gray-500 shadow-soft hover:bg-white hover:text-text-main hover:-translate-y-0.5'
+              ? 'bg-[#1a1a1a] text-[#BBA27E] border-[#BBA27E]/30 shadow-2xl scale-105'
+              : 'bg-white/80 backdrop-blur-sm border-white/50 text-gray-500 shadow-soft hover:bg-white hover:text-[#1a1a1a] hover:-translate-y-0.5'
               }`}
           >
             <cat.icon size={14} />
@@ -401,7 +401,7 @@ const Home: React.FC = () => {
           ) : (
             /* 🐆 LUXURY EMPTY STATE */
             <div className="col-span-full flex flex-col items-center justify-center py-20 px-10 text-center bg-white/40 border border-white/50 rounded-[3rem] backdrop-blur-md">
-              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-inner">
+              <div className="w-24 h-24 bg-[#BBA27E]/10 rounded-full flex items-center justify-center mb-6 text-[#BBA27E] shadow-inner border border-[#BBA27E]/20">
                  <Search size={48} className="animate-pulse" />
               </div>
               <p className="text-text-main font-serif italic text-2xl font-bold mb-2">No encontramos coincidencias hoy</p>
@@ -416,8 +416,14 @@ const Home: React.FC = () => {
                    Zarpar de Nuevo (Limpiar Todo)
                  </button>
                  <button 
+                  onClick={() => setIsSearchOpen(false)}
+                  className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black py-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-[0.2em] border border-[#BBA27E]/20"
+                >
+                  Confirmar Selección
+                </button>
+                 <button 
                    onClick={() => navigate('/messages')}
-                   className="w-full bg-white text-primary border border-primary/20 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest"
+                   className="w-full bg-white text-[#1a1a1a] border border-[#BBA27E]/30 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest shadow-sm hover:bg-[#BBA27E]/10 transition-colors"
                  >
                    Preguntar a Salty por Fechas
                  </button>
@@ -428,7 +434,7 @@ const Home: React.FC = () => {
 
         {/* Contact / Leads Form Section */}
         <div className="mt-20 mb-10 bg-white rounded-[3rem] p-8 lg:p-12 shadow-float border border-gray-100/50 relative overflow-hidden">
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-orange-400 to-secondary"></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#BBA27E]"></div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -436,7 +442,7 @@ const Home: React.FC = () => {
                 {siteContent?.contact?.title?.includes('Salty') ? (
                   <>
                     {siteContent.contact.title.replace('Salty', '').replace('.', '')}
-                    <span className="text-primary italic"> Salty.</span>
+                    <span className="text-[#BBA27E] italic"> Salty · VRR.</span>
                   </>
                 ) : (
                   siteContent?.contact?.title

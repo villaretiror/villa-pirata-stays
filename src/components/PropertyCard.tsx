@@ -44,9 +44,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     return (
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
         {(property.rating || 0) >= 4.9 && (
-          <div className="bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-text-main shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
-            <Flame size={10} className="text-primary fill-primary" />
-            Popular
+          <div className="bg-[#BBA27E] px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-[#1a1a1a] shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
+            <Flame size={10} className="fill-[#1a1a1a]" />
+            Colección Élite
           </div>
         )}
 
@@ -110,6 +110,14 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               alt={property.title || 'Villa'}
             />
           </motion.div>
+        </div>
+
+        {/* 📸 VRR WATERMARK (SUBTLE) */}
+        <div className="absolute bottom-5 right-5 z-20 opacity-20 pointer-events-none mix-blend-overlay">
+           <svg viewBox="0 0 100 100" className="w-12 h-12 text-white fill-current">
+              <text y="70" x="50" textAnchor="middle" fontFamily="serif" fontWeight="black" fontStyle="italic" fontSize="40">VRR</text>
+              <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="2" />
+           </svg>
         </div>
 
         {/* Gradient Overlay for Legibility */}
