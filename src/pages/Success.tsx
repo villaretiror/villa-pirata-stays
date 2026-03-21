@@ -26,8 +26,8 @@ const Success: React.FC = () => {
 
       {/* Decoración de fondo suave */}
       <div className="absolute top-0 left-0 w-full h-full opacity-30 pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-secondary/5 blur-[120px] rounded-full"></div>
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-primary/5 blur-[120px] rounded-full"></div>
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-[#BBA27E]/10 blur-[120px] rounded-full"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-[#1a1a1a]/5 blur-[120px] rounded-full"></div>
       </div>
 
       {/* Icono de Éxito con Halo Animado */}
@@ -49,8 +49,8 @@ const Success: React.FC = () => {
           }}
           className="absolute inset-[-20%] bg-secondary/40 blur-3xl rounded-full"
         />
-        <div className="w-28 h-28 bg-gradient-to-br from-secondary to-blue-400 rounded-full flex items-center justify-center shadow-float relative z-10 text-white border-4 border-white/50">
-          <CheckCircle2 size={48} className="text-white" />
+         <div className="w-28 h-28 bg-gradient-to-br from-[#1a1a1a] to-[#3a3a3a] rounded-full flex items-center justify-center shadow-2xl relative z-10 text-[#BBA27E] border-4 border-[#BBA27E]/20">
+          <CheckCircle2 size={48} className="text-[#BBA27E]" />
         </div>
       </motion.div>
 
@@ -64,8 +64,8 @@ const Success: React.FC = () => {
         <h1 className="text-4xl md:text-5xl font-serif font-black mb-4 text-text-main tracking-tight">
           ¡Confirmado! 🏝️
         </h1>
-        <p className="text-text-light text-lg font-medium mb-12 max-w-sm mx-auto leading-relaxed px-4">
-          Prepárate para los mejores atardeceres de tu vida en <span className="text-secondary font-black">{bookingData?.propertyName || 'Boutique Stays'}</span>.
+        <p className="text-[#1a1a1a]/60 text-lg font-medium mb-12 max-w-sm mx-auto leading-relaxed px-4">
+          Prepárate para los mejores atardeceres de tu vida en <span className="text-[#BBA27E] font-black">{bookingData?.propertyName || 'Villa Retiro R'}</span>.
         </p>
       </motion.div>
 
@@ -76,17 +76,17 @@ const Success: React.FC = () => {
         transition={{ delay: 0.5, type: "spring", stiffness: 100, damping: 12 }}
         className="backdrop-blur-xl bg-white/70 rounded-[2.5rem] p-8 mb-12 shadow-float w-full max-w-md border border-white/80 relative overflow-hidden z-10"
       >
-        <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-secondary via-blue-300 to-primary opacity-60"></div>
+        <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#BBA27E] opacity-60"></div>
 
         <h3 className="font-serif text-2xl font-bold text-text-main mb-6">Próximos Pasos</h3>
 
         <div className="space-y-4">
           <button
             onClick={() => navigate(`/reservation/${bookingData?.id || 'latest'}`)}
-            className="w-full bg-black text-white font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-lg hover:bg-gray-900 active:scale-95 transition-all flex items-center justify-center gap-3 group"
+            className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-3 group border border-[#BBA27E]/20"
           >
             <Receipt size={16} className="group-hover:rotate-12 transition-transform" />
-            Gestionar mi Estancia
+            Gestionar Reservación
           </button>
 
           <button
