@@ -22,5 +22,8 @@
   "orientation": "portrait-primary",
   "description": "Retreats en Cabo Rojo, PR. Villa Retiro R.",
   "lang": "es-PR",
-  "categories": ["travel", "lifestyle"]
+  "categories": [
+    "travel",
+    "lifestyle"
+  ]
 }
