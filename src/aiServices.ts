@@ -11,6 +11,11 @@ export const resolvePropertyId = async (input: string, client: SupabaseClient): 
     if (!isNaN(Number(cleanInput)) && cleanInput.length >= 8) return cleanInput;
     if (cleanInput.length > 20) return cleanInput; // UUID-like
 
+    // 🔱 PRIORITY SHORT-MAP: Instant recognition for keywords
+    const lower = cleanInput.toLowerCase();
+    if (lower.includes('retiro') || (lower.includes('villa') && !lower.includes('pirata'))) return '1081171030449673920';
+    if (lower.includes('pirata')) return '42839458';
+
     // 2. Fuzzy Clean (Remove fillers)
     const fillers = ['para', 'en', 'villa', 'retiro', 'retiro r', 'la', 'house', 'family'];
     let fuzzy = cleanInput.toLowerCase();
