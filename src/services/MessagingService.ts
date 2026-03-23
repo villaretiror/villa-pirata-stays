@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { supabase } from '../lib/supabase.js';
 import { NotificationService } from './NotificationService.js';
+import twilio from 'twilio';
 
 const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
 
@@ -138,7 +139,7 @@ export const MessagingService = {
         propertyId?: string;
         bookingId?: string;
     }) {
-        const cleanPhone = options.to.replace(/\D/g, '');
+        const cleanPhone = options.to.includes('+') ? options.to : `+${options.to.replace(/\D/g, '')}`;
         const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
         
         // Link dinámico de pago si se provee propertyId
@@ -149,10 +150,18 @@ export const MessagingService = {
         const fullMessage = `${options.content}${payLink}\n\n🔱 Salty Concierge`;
 
         try {
-            console.log(`[MessagingService] SMS Dispatch to ${cleanPhone}: ${fullMessage}`);
+            console.log(`[MessagingService] Sending real SMS to ${cleanPhone}...`);
 
-            // 🔱 Placeholder para Integración (Twilio / Sinch / etc)
-            // await twilio.messages.create({ body: fullMessage, to: options.to, from: '...' });
+            const client = twilio(
+                process.env.TWILIO_ACCOUNT_SID || process.env.VITE_TWILIO_ACCOUNT_SID,
+                process.env.TWILIO_AUTH_TOKEN || process.env.VITE_TWILIO_AUTH_TOKEN
+            );
+
+            const message = await client.messages.create({
+                body: fullMessage,
+                to: cleanPhone,
+                from: process.env.TWILIO_PHONE_NUMBER || process.env.VITE_TWILIO_PHONE_NUMBER || '+15075788506'
+            });
 
             // Logger de Auditoría en Supabase
             await supabase.from('sms_logs').insert({
@@ -160,10 +169,11 @@ export const MessagingService = {
                 content: fullMessage,
                 property_id: options.propertyId || null,
                 booking_id: options.bookingId || null,
-                status: 'dispatched'
+                status: 'sent',
+                resend_id: message.sid // Reutilizando para el SID de Twilio
             });
 
-            return { success: true, message: "Dispatched to carrier" };
+            return { success: true, sid: message.sid };
         } catch (err: any) {
             console.error('[MessagingService] SMS Error:', err.message);
             return { success: false, error: err.message };
