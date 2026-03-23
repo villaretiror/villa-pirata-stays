@@ -70,18 +70,18 @@ const SaltyVoiceButton: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-28 left-6 z-[99999] flex flex-col items-center gap-4 pointer-events-auto">
+        <div className="fixed bottom-48 left-6 z-[99999] flex flex-col items-center gap-6 pointer-events-auto scale-90 md:scale-100 origin-bottom-left">
             {/* ☎️ REAL PHONE CALL BUTTON (Direct Connection) */}
             <a
-                href="tel:+15075788506"
-                className="group relative p-3.5 rounded-2xl bg-orange-600 shadow-[0_10px_25px_rgba(234,88,12,0.4)] border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 animate-fade-in"
-                aria-label="Llamar a Salty por teléfono"
+                href="tel:+12092673503"
+                className="group relative p-3.5 rounded-2xl bg-[#BBA27E] shadow-[0_10px_25px_rgba(187,162,126,0.4)] border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 animate-fade-in"
+                aria-label="Llamar a Salty al +1 209 267 3503"
             >
-                <span className="material-icons text-white text-xl">phone_in_talk</span>
+                <span className="material-icons text-[#1a1a1a] text-xl">phone_in_talk</span>
                 
                 {/* Floating Label */}
-                <span className="absolute left-full ml-3 bg-orange-600 text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-2 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap">
-                    Llamar por Teléfono ☎️
+                <span className="absolute left-full ml-3 bg-[#BBA27E] text-[#1a1a1a] text-[9px] font-black uppercase tracking-[0.2em] px-3 py-2 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap">
+                    Llamar al Concierge ☎️
                 </span>
             </a>
 

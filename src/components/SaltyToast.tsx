@@ -22,6 +22,105 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const [message, setMessage] = useState('');
     const [isPulsing, setIsPulsing] = useState(false);
 
+    // 🔱 AUDIO RECORDING STATES (MEDIA RECORDER)
+    const [isRecording, setIsRecording] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            const chunks: Blob[] = [];
+
+            recorder.ondataavailable = (e) => chunks.push(e.data);
+            recorder.onstop = async () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                const reader = new FileReader();
+                reader.readAsDataURL(audioBlob);
+                reader.onloadend = async () => {
+                    const base64Data = (reader.result as string).split(',')[1];
+                    const userMsg = { 
+                        role: 'user', 
+                        content: [
+                            { text: "Capitán, he grabado esta nota de voz para usted." },
+                            { inlineData: { mimeType: 'audio/webm', data: base64Data } }
+                        ] 
+                    };
+                    
+                    setChatMessages(prev => [...prev, { role: 'user', content: "🎙️ [Nota de Voz Grabada]" }]);
+                    setIsTyping(true);
+
+                    try {
+                        const response = await fetch('/api/chat', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                messages: [...chatMessages, userMsg],
+                                propertyId
+                            })
+                        });
+
+                        if (response.ok) {
+                            const reader = response.body?.getReader();
+                            let aiResponse = "";
+                            if (reader) {
+                                while (true) {
+                                    const { done, value } = await reader.read();
+                                    if (done) break;
+                                    const chunk = new TextDecoder().decode(value);
+                                    const lines = chunk.split('\n');
+                                    for (const line of lines) {
+                                        if (line.startsWith('0:')) {
+                                            const text = JSON.parse(line.substring(2));
+                                            aiResponse += text;
+                                            setChatMessages(prev => {
+                                                const last = prev[prev.length - 1];
+                                                if (last?.role === 'model') return [...prev.slice(0, -1), { ...last, content: aiResponse }];
+                                                return [...prev, { role: 'model', content: aiResponse }];
+                                            });
+                                        }
+                                    }
+                                }
+                                
+                                if (aiResponse) {
+                                    const ut = new SpeechSynthesisUtterance(aiResponse);
+                                    const voices = window.speechSynthesis.getVoices();
+                                    const preferredVoice = voices.find(v => 
+                                        (v.lang.startsWith('es') && v.name.includes('Google')) || 
+                                        (v.lang.startsWith('es') && v.name.includes('Premium')) ||
+                                        (v.lang.startsWith('es') && v.name.includes('Monica'))
+                                    ) || voices.find(v => v.lang.startsWith('es'));
+                                    if (preferredVoice) ut.voice = preferredVoice;
+                                    ut.lang = 'es-ES';
+                                    window.speechSynthesis.speak(ut);
+                                }
+                            }
+                        }
+                    } catch (err) {
+                        console.error("Audio upload error:", err);
+                    } finally {
+                        setIsTyping(false);
+                    }
+                };
+            };
+
+            recorder.start();
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+        } catch (err) {
+            console.error("Mic access denied:", err);
+            alert("No pude acceder al micrófono. Verifique los permisos en su navegador. 🔱");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && isRecording) {
+            mediaRecorder.stop();
+            setIsRecording(false);
+            mediaRecorder.stream.getTracks().forEach(track => track.stop());
+        }
+    };
+
     const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
         
@@ -74,12 +173,9 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     }
                 }
 
-                // 🔱 ELITE AUDIO OUTPUT: Speak the response after it finishes streaming
                 if (aiResponse) {
                     const utterance = new SpeechSynthesisUtterance(aiResponse);
                     const voices = window.speechSynthesis.getVoices();
-                    
-                    // 🔱 ELITE CHOICE: Search for sophisticated Spanish voices
                     const preferredVoice = voices.find(v => 
                         (v.lang.startsWith('es') && v.name.includes('Google')) || 
                         (v.lang.startsWith('es') && v.name.includes('Premium')) ||
@@ -89,7 +185,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     if (preferredVoice) utterance.voice = preferredVoice;
                     utterance.lang = 'es-ES';
                     utterance.rate = 1.0;
-                    utterance.pitch = 0.95; // Slightly deeper for authority
+                    utterance.pitch = 0.95;
                     window.speechSynthesis.speak(utterance);
                 }
             }
@@ -100,36 +196,25 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
         }
     };
 
-    // 🔱 SALTY'S DYNAMIC BRAIN: Contextual prompts by Brian's Logic
     const getContextualPill = () => {
         const path = location.pathname;
-        
-        // 0. Returning Guest Hook (High Perception of Service)
         if (user?.is_returning_guest && path === '/') {
             return `¡Qué alegría volver a verte, Capitán ${(user.name || 'Huésped').split(' ')[0]}! 🔱 El trópico te extrañaba. ¿Buscamos tu fecha favorita?`;
         }
-
-        // 1. Home / General
         if (path === '/') return "¿Buscando la exclusividad al mejor precio? Permíteme asistirte para ahorrar un 15% vs OTAs. ¡El Caribe te espera! 🔱";
-        
-        // 2. Property Details (Experience Sale)
         if (path.includes('/property')) {
             const title = propertyTitle || "esta villa";
             if (title.includes('Retiro')) return `En Villa Retiro R la seguridad y el confort son absolutos. Contamos con respaldo solar completo para que nada interrumpa tu paz. 🔱`;
             if (title.includes('Pirata')) return `Pirata House es el refugio familiar por excelencia en Cabo Rojo. Estaré encantado de asistirte en cada detalle de tu próxima estancia. ✨`;
             return `Te asisto para que vivas la experiencia en ${title}. Calidad garantizada por VRR Stays.`;
         }
-        
-        // 3. Booking / Checkout (Trust Closure)
         if (path.includes('/booking') || path.includes('/reservation')) {
             return "Tranquilo, el depósito de garantía es 100% reembolsable tras tu salida. ¡Reserva con total paz mental!";
         }
-
         return "¡Hola! Soy Salty. Estoy aquí para que tu estancia en Cabo Rojo sea histórica. ¿Alguna duda?";
     };
 
     useEffect(() => {
-        // Delay Salty's entry for a "Premium" feel
         const timer = setTimeout(() => {
             setMessage(getContextualPill());
             setShowBubble(true);
@@ -137,7 +222,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             setIsPulsing(true);
         }, 3000);
 
-        // Auto-minimize after 10 seconds to reduce screen clutter
         const autoMin = setTimeout(() => {
             setShowBubble(false);
             setIsMinimized(true);
@@ -152,7 +236,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
 
     return (
         <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none">
-            {/* 💬 Salty's Speech Bubble / Mini-Chat */}
             <AnimatePresence>
                 {(showBubble || isExpanded) && (
                     <motion.div
@@ -162,7 +245,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                         className={`pointer-events-auto transition-all duration-500 ${isExpanded ? 'w-[320px] md:w-[380px]' : 'max-w-[280px] lg:max-w-xs'} mb-2`}
                     >
                         <div className="bg-white/95 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] rounded-br-[4px] shadow-2xl relative overflow-hidden flex flex-col">
-                            {/* Header (Only in Expanded) */}
                             {isExpanded && (
                                 <div className="p-4 bg-[#1a1a1a] text-[#BBA27E] flex justify-between items-center border-b border-[#BBA27E]/10">
                                     <div className="flex items-center gap-2">
@@ -192,7 +274,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 </div>
                             )}
 
-                            {/* Toast Message (When not busy chatting) */}
                             {!isExpanded && showBubble && (
                                 <div 
                                     className="p-4 cursor-pointer hover:bg-gray-50/50 transition-colors"
@@ -204,7 +285,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                     >
                                         <span className="material-icons text-xs">close</span>
                                     </button>
-
                                     <p className="text-[9px] font-black uppercase tracking-widest text-[#BBA27E] mb-1.5 flex items-center gap-1.5">
                                         🔱 Salty Concierge VRR ✨
                                     </p>
@@ -214,11 +294,9 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 </div>
                             )}
 
-                            {/* Mini Chat Interface */}
                             {isExpanded && (
                                 <>
                                     <div className="flex-1 max-h-[300px] overflow-y-auto p-4 space-y-4 no-scrollbar scroll-smooth">
-                                        {/* Welcome Message if no chat yet */}
                                         {chatMessages.length === 0 && (
                                             <div className="bg-[#BBA27E]/10 p-4 rounded-2xl border border-[#BBA27E]/20">
                                                 <p className="text-xs text-[#1a1a1a] font-medium italic leading-relaxed">
@@ -248,75 +326,26 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                 </div>
                                             </div>
                                         )}
-                                        {/* Auto anchor to bottom would go here */}
                                     </div>
 
-                                    {/* Input Area */}
                                     <div className="p-3 bg-gray-50/50 border-t border-black/5 flex gap-2 items-center">
+                                        {/* 🎙️ FULL MULTIMODAL MEDIA RECORDER BUTTON */}
                                         <button
                                             type="button"
-                                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isTyping ? 'bg-red-50 text-red-500' : 'bg-black text-[#BBA27E] hover:bg-gray-900'}`}
-                                            onClick={() => {
-                                                const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
-                                                
-                                                if (!SpeechRecognition) {
-                                                    alert("Capitán, este navegador no admite voz. Use Chrome/Safari para la experiencia total. 🔱");
-                                                    return;
-                                                }
-
-                                                alert("Salty está activando sus oídos... 🎙️🔱");
-
-                                                // 🛡️ REINFORCED: Immediate cleanup of any existing instance
-                                                if ((window as any)._saltyRecognition) {
-                                                    try { (window as any)._saltyRecognition.abort(); } catch(e){}
-                                                }
-
-                                                const recognition = new SpeechRecognition();
-                                                (window as any)._saltyRecognition = recognition;
-                                                
-                                                recognition.lang = 'es-ES';
-                                                recognition.continuous = false;
-                                                recognition.interimResults = false;
-
-                                                recognition.onstart = () => {
-                                                    setIsTyping(true);
-                                                    console.log("[Salty Audio] Listening...");
-                                                };
-
-                                                recognition.onresult = (event: any) => {
-                                                    const transcript = event.results[0][0].transcript;
-                                                    setInputValue(transcript);
-                                                    setIsTyping(false);
-                                                    
-                                                    // 🔱 ELITE MANEUVER: Auto-send the message once speech is recognized
-                                                    setTimeout(() => {
-                                                        const sendBtn = document.getElementById('salty-send-btn');
-                                                        if (sendBtn) sendBtn.click();
-                                                        else handleSendMessage();
-                                                    }, 500);
-                                                };
-
-                                                recognition.onerror = (event: any) => {
-                                                    setIsTyping(false);
-                                                    console.error("[Salty Audio Error]:", event.error);
-                                                    if (event.error === 'not-allowed') {
-                                                        alert("Micrófono bloqueado. 🔱 Verifique los permisos.");
-                                                    } else if (event.error !== 'no-speech') {
-                                                        alert(`Error acústico: ${event.error}. 🎙️`);
-                                                    }
-                                                };
-
-                                                recognition.onend = () => setIsTyping(false);
-
-                                                try { recognition.start(); } catch (e) { setIsTyping(false); }
-                                            }}
+                                            onMouseDown={startRecording}
+                                            onMouseUp={stopRecording}
+                                            onTouchStart={startRecording}
+                                            onTouchEnd={stopRecording}
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                                                isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-black text-[#BBA27E] hover:bg-gray-900'
+                                            }`}
+                                            title="Mantenga presionado para grabar audio"
                                         >
-                                            <span className={`material-icons text-lg ${isTyping ? 'animate-pulse text-red-500' : ''}`}>
-                                                {isTyping ? 'graphic_eq' : 'mic'}
+                                            <span className="material-icons text-lg">
+                                                {isRecording ? 'graphic_eq' : 'mic'}
                                             </span>
                                         </button>
 
-                                        {/* 🔱 MULTI-MODAL ATTACHMENT PORT */}
                                         <input 
                                             type="file" 
                                             id="salty-file-input" 
@@ -325,9 +354,9 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                             onChange={async (e) => {
                                                 const file = e.target.files?.[0];
                                                 if (!file) return;
-
                                                 setIsTyping(true);
                                                 const reader = new FileReader();
+                                                reader.readAsDataURL(file);
                                                 reader.onloadend = async () => {
                                                     const base64Data = (reader.result as string).split(',')[1];
                                                     const userMsg = { 
@@ -337,11 +366,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                             { inlineData: { mimeType: file.type, data: base64Data } }
                                                         ] 
                                                     };
-                                                    
-                                                    const newHistory = [...chatMessages, { role: 'user', content: `[Archivo Adjunto: ${file.name}]` }];
-                                                    setChatMessages(newHistory);
-                                                    
-                                                    // Send directly to API
+                                                    setChatMessages(prev => [...prev, { role: 'user', content: `[Archivo Adjunto: ${file.name}]` }]);
                                                     try {
                                                         const response = await fetch('/api/chat', {
                                                             method: 'POST',
@@ -351,8 +376,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                                 propertyId
                                                             })
                                                         });
-                                                        
-                                                        // Handle streaming response (simplified for files)
                                                         if (response.ok) {
                                                             const reader = response.body?.getReader();
                                                             let aiResponse = "";
@@ -374,8 +397,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                                         }
                                                                     }
                                                                 }
-                                                                
-                                                                // 🔱 ELITE AUDIO OUTPUT: Speak with high-quality voice
                                                                 if (aiResponse) {
                                                                     const ut = new SpeechSynthesisUtterance(aiResponse);
                                                                     const voices = window.speechSynthesis.getVoices();
@@ -384,11 +405,8 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                                         (v.lang.startsWith('es') && v.name.includes('Premium')) ||
                                                                         (v.lang.startsWith('es') && v.name.includes('Monica'))
                                                                     ) || voices.find(v => v.lang.startsWith('es'));
-                                                                    
                                                                     if (preferredVoice) ut.voice = preferredVoice;
                                                                     ut.lang = 'es-ES';
-                                                                    ut.rate = 1.0;
-                                                                    ut.pitch = 0.95;
                                                                     window.speechSynthesis.speak(ut);
                                                                 }
                                                             }
@@ -399,7 +417,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                         setIsTyping(false);
                                                     }
                                                 };
-                                                reader.readAsDataURL(file);
                                             }}
                                         />
                                         <button
@@ -423,7 +440,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                             id="salty-send-btn"
                                             onClick={handleSendMessage}
                                             disabled={isTyping || !inputValue.trim()}
-                                            className="w-9 h-9 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all font-black text-xs h-9"
+                                            className="w-9 h-9 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all font-black text-xs"
                                         >
                                             <span className="material-icons text-sm">send</span>
                                         </button>
@@ -431,7 +448,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 </>
                             )}
                             
-                            {/* Indicator Triangle (Only in Toast mode) */}
                             {!isExpanded && (
                                 <div className="absolute bottom-0 right-4 w-4 h-4 bg-white/95 rotate-45 translate-y-2 border-r border-b border-black/5"></div>
                             )}
@@ -440,7 +456,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 )}
             </AnimatePresence>
 
-            {/* 🔱 The Persistent Avatar (The "Anchor") */}
             <motion.div
                 initial={{ scale: 0 }}
                 animate={{ scale: 1 }}
@@ -459,7 +474,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 }}
                 className={`pointer-events-auto cursor-pointer relative group`}
             >
-                {/* Visual "Living" Pulse & Glow */}
                 <AnimatePresence>
                     {isPulsing && (
                         <motion.div 
@@ -471,15 +485,10 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                         />
                     )}
                 </AnimatePresence>
-                
                 <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center shadow-2xl border-4 border-white transition-all duration-500 overflow-hidden ${isMinimized ? 'opacity-90 grayscale-[0.2]' : 'opacity-100 ring-4 ring-[#BBA27E]/10 scale-105'}`}>
                     <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
-                    
-                    {/* Interior Gleam */}
                     <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700"></div>
                 </div>
-
-                {/* Status Indicator */}
                 <div className="absolute bottom-1 right-1 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
             </motion.div>
         </div>
