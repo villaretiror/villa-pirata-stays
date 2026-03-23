@@ -33,7 +33,7 @@ export default async function handler(req: any, res: any) {
     // 🎙️ SOURCE: VOICE (Vapi Tool Webhook)
     if (source === 'vapi') {
       const { message } = req.body;
-      if (message?.type === 'tool-calls' || message?.type === 'function-call') {
+      if (message) {
         return await handleVapiTools(req, res, message);
       }
       return res.status(200).json({ success: true });
@@ -131,5 +131,5 @@ async function handleVapiTools(req: any, res: any, message: any) {
     }
   }));
 
-  return res.status(200).json({ results });
+  return res.status(200).json(results);
 }
