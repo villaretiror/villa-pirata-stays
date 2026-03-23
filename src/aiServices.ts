@@ -42,12 +42,21 @@ export const checkAvailabilityWithICal = async (
     const qOut = new Date(checkOut);
     const now = new Date();
 
-    // ── Step 1: Query unified bookings table (local + iCal-synced) ──────────
+    // 🛡️ REINFORCED RESOLUTION: Ensure we have the correct ID for the DB
+    let finalId = String(villaId).trim();
+    if (isNaN(Number(finalId)) || finalId.length < 5) {
+        const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
+        if (byTitle) {
+            finalId = String(byTitle.id);
+        }
+    }
+
+    // ── Step 1: Query unified bookings table
     type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
     const { data: dbBookings, error: dbError } = await supabase
         .from('bookings')
         .select('check_in, check_out, status, hold_expires_at, source')
-        .eq('property_id', villaId)
+        .eq('property_id', finalId)
         .neq('status', 'cancelled');
 
     if (dbError) {
@@ -205,10 +214,17 @@ export const findCalendarGaps = async (propertyId: string): Promise<{ start: str
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
+    // 🛡️ REINFORCED RESOLUTION
+    let finalId = String(propertyId).trim();
+    if (isNaN(Number(finalId)) || finalId.length < 5) {
+        const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
+        if (byTitle) finalId = String(byTitle.id);
+    }
+
     const { data: bookings, error } = await supabase
         .from('bookings')
         .select('check_in, check_out, source')
-        .eq('property_id', propertyId)
+        .eq('property_id', finalId)
         .neq('status', 'cancelled')
         .gte('check_out', todayStr)
         .order('check_in', { ascending: true });
