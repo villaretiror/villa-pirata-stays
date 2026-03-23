@@ -755,7 +755,14 @@ const Messages: React.FC = () => {
           type="button"
           className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all group overflow-hidden relative ${isTyping ? 'bg-gray-200 cursor-not-allowed' : 'bg-[#1a1a1a] text-[#BBA27E]'}`}
           onClick={() => {
-            const recognition = new (window as any).webkitSpeechRecognition();
+            const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+            
+            if (!SpeechRecognition) {
+              alert("Capitán, este navegador no admite el dictado por voz en el chat. Se recomienda Chrome o Safari para una experiencia de élite. 🔱🎙️");
+              return;
+            }
+
+            const recognition = new SpeechRecognition();
             recognition.lang = 'es-ES';
             recognition.continuous = false;
             recognition.interimResults = false;
@@ -767,6 +774,7 @@ const Messages: React.FC = () => {
               toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full z-[200] font-black uppercase tracking-widest text-[10px] flex items-center gap-3 animate-slide-up shadow-2xl border border-[#BBA27E]/30';
               toast.innerHTML = `<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Salty te escucha...`;
               document.body.appendChild(toast);
+              console.log("Salty: Escuchando capitán...");
             };
 
             recognition.onresult = (event: any) => {
@@ -776,10 +784,15 @@ const Messages: React.FC = () => {
               if (toast) toast.remove();
             };
 
-            recognition.onerror = () => {
+            recognition.onerror = (event: any) => {
+              console.error("Speech error in Messages:", event.error);
               setIsTyping(false);
               const toast = document.getElementById('voice-toast');
               if (toast) toast.remove();
+              
+              if (event.error === 'not-allowed') {
+                 alert("Salty no puede escucharle. Por favor, active el permiso del micrófono en el candado de su navegador. 🔱🎙️");
+              }
             };
 
             recognition.onend = () => {
@@ -788,7 +801,11 @@ const Messages: React.FC = () => {
               if (toast) toast.remove();
             };
 
-            recognition.start();
+            try {
+              recognition.start();
+            } catch (e) {
+              setIsTyping(false);
+            }
           }}
         >
           <motion.div 

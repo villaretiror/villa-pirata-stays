@@ -61,7 +61,7 @@ const SaltyVoiceButton: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-32 left-6 z-[100] flex flex-col items-center gap-4">
+        <div className="fixed bottom-28 left-6 z-[120] flex flex-col items-center gap-4">
             {/* ☎️ REAL PHONE CALL BUTTON (Direct Connection) */}
             <a
                 href="tel:+15075788506"

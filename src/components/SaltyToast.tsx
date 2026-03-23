@@ -238,19 +238,47 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                             type="button"
                                             className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isTyping ? 'bg-red-50 text-red-500' : 'bg-black text-[#BBA27E] hover:bg-gray-900'}`}
                                             onClick={() => {
-                                                const recognition = new (window as any).webkitSpeechRecognition();
+                                                const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
+                                                
+                                                if (!SpeechRecognition) {
+                                                    alert("Capitán, su navegador actual no permite el dictado por voz. Recomendamos usar Chrome o Safari para esta experiencia de élite. 🔱");
+                                                    return;
+                                                }
+
+                                                const recognition = new SpeechRecognition();
                                                 recognition.lang = 'es-ES';
-                                                recognition.onstart = () => setIsTyping(true);
+                                                recognition.continuous = false;
+                                                recognition.interimResults = false;
+
+                                                recognition.onstart = () => {
+                                                    setIsTyping(true);
+                                                };
+
                                                 recognition.onresult = (event: any) => {
-                                                    setInputValue(event.results[0][0].transcript);
+                                                    const transcript = event.results[0][0].transcript;
+                                                    setInputValue(transcript);
                                                     setIsTyping(false);
                                                 };
-                                                recognition.onerror = () => setIsTyping(false);
-                                                recognition.onend = () => setIsTyping(false);
-                                                recognition.start();
+
+                                                recognition.onerror = (event: any) => {
+                                                    setIsTyping(false);
+                                                    if (event.error === 'not-allowed') {
+                                                        alert("Vaya, parece que el micrófono está bloqueado. Por favor, actívelo en el candado de la barra de direcciones. 🔱🎙️");
+                                                    }
+                                                };
+
+                                                recognition.onend = () => {
+                                                    setIsTyping(false);
+                                                };
+
+                                                try {
+                                                    recognition.start();
+                                                } catch (e) {
+                                                    setIsTyping(false);
+                                                }
                                             }}
                                         >
-                                            <span className={`material-icons text-sm ${isTyping ? 'animate-pulse' : ''}`}>
+                                            <span className={`material-icons text-lg ${isTyping ? 'animate-pulse text-red-500' : ''}`}>
                                                 {isTyping ? 'graphic_eq' : 'mic'}
                                             </span>
                                         </button>
