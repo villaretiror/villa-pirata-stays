@@ -21,6 +21,17 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const location = useLocation();
     const [message, setMessage] = useState('');
     const [isPulsing, setIsPulsing] = useState(false);
+    const [sessionId, setSessionId] = useState<string>('');
+
+    // 🔱 PERSISTENT SESSION TRACKING
+    useEffect(() => {
+        let sid = localStorage.getItem('salty_session_id');
+        if (!sid) {
+            sid = `session_${Math.random().toString(36).substring(2, 15)}_${Date.now()}`;
+            localStorage.setItem('salty_session_id', sid);
+        }
+        setSessionId(sid);
+    }, []);
 
     // 🔱 AUDIO RECORDING STATES
     const [isRecording, setIsRecording] = useState(false);
@@ -88,7 +99,9 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         messages: [...chatMessages, userMsg],
-                        propertyId
+                        propertyId,
+                        sessionId,
+                        currentUrl: window.location.href
                     })
                 });
 
@@ -151,6 +164,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 body: JSON.stringify({
                     messages: newHistory,
                     propertyId,
+                    sessionId,
                     currentUrl: window.location.href
                 })
             });

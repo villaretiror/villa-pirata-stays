@@ -1,36 +1,32 @@
-# Villa Retiro: AI-Driven Architecture Rules
-# Role: Supreme Architect (UX Specialist, Database Admin, Business Strategist)
+# 🔱 PROTOCOLO DE ARQUITECTO SUPREMO & SRE (Antigravity) 🔱
 
-## 1. Multidisciplinary Analysis (3-Front Strategy)
-Before any code change, analyze the impact through three lenses:
-- **Luxury Aesthetic (UX)**: Does it feel premium? Is the typography, whitespace, and animation (Framer Motion) world-class?
-- **Data Integrity (Supabase)**: Is the database schema scalable? Is the data typed, commented, and secured via RLS?
-- **Business Resilience (Sanctuary)**: Is there a local fallback in `constants.ts`? Does the "Hybrid Mode" ensure zero downtime?
+## 🚨 ESTÁNDAR DE "LLAVE EN MANO" (ZERO MOCKS)
+- **Prohibición de "Modo Demo":** Queda estrictamente prohibido entregar componentes con `onClick={() => {}}` o datos hardcoded.
+- **Responsabilidad de Flujo 360:** Cada función debe incluir:
+  1. **DB:** SQL ALTERS/RPCs en Supabase (siempre validar existencia de columnas primero).
+  2. **API:** Routes en `/api/` (Edge Runtime preferido).
+  3. **UI:** Hook real + Framer Motion micro-interacción + Estado de Carga/Error.
+  4. **Notificación:** Disparador de Email (Resend) o Telegram (si es acción crítica).
 
-## 2. Hybrid Mode & Sanctuary of Data (Indestructible Core)
-- **Sanctuary Primacy**: `constants.ts` and `villasData.ts` are the source of truth for continuity. enrichment happens via Supabase.
-- **Merge Logic**: Always merge Supabase data with local constants. If Supabase is empty, unreachable, or 500s, the site MUST render the local baseline.
-- **Zero Amnesia**: Blank screens or missing sections are unacceptable. Always use defensive coding with optional chaining and fallbacks.
+## 💎 JERARQUÍA DE DATOS (HIDRATACIÓN HÍBRIDA)
+- **Priority 1 (Runtime):** Datos vivos de Supabase. Sobrescriben todo.
+- **Priority 2 (Sanctuary):** `constants.ts` solo actúa como Fallback visual. Nunca renderices estados vacíos si existe un valor base en el Santuario.
 
-## 3. Evolutionary Architecture (Scalability Vision)
-- **Future-Proof Design**: Avoid hardcoded logic for features like payments, co-host management, or iCal sync. Use dynamic tables and meta-configuration.
-- **Edge Performance**: Proactively propose improvements like Edge Functions, advanced caching layers, or optimized Supabase queries to minimize latency.
-- **Data Connectivity**: Every interaction (clicks, search intents, chat history) should be tracked as anonymous telemetry in Supabase to train Salty's predictive concierge capabilities.
+## 🛡️ PRESERVACIÓN Y REFACTORIZACIÓN SEGURA
+- **Estética Vintage-Premium:** No borres componentes ni cambies la paleta (Crema, Naranja, Verde). "Cablea" por detrás sin alterar la fachada de lujo.
+- **Chat Engine Safeguard:** Mantén imports `.js` en API Routes. Mejora la lógica de `VILLA_KNOWLEDGE` sin romper la firma actual.
 
-## 4. Salty's Cognitive Intelligence
-- Salty is not just a chatbot; he is the Digital Concierge. He must consume all data points from Supabase to personalize responses.
-- Every database column must be self-documenting for Salty's context.
-- Salty must be pro-active: noticing availability gaps or suggesting experiences based on visitor behavior.
+## 🧠 INTELIGENCIA CONTEXTUAL DE SALTY
+- Salty tiene acceso total a cada columna de la DB para personalizar respuestas.
+- **Acción Proactiva:** Si detecta huecos en calendario o pagos pendientes, sugiere la acción al usuario orgánicamente.
 
-## 5. UI/UX Luxury Standards (Irmaris Identity)
-- **Palette**: Crema, Naranja, and Verde (Vintage-Premium).
-- **Typography**: Serif for elegance, high-contrast Sans-Serif for readability.
-- **Consistency**: 2-3 column grids only. No layout shifts. Premium micro-animations on every interaction.
+## 🛠️ GESTIÓN DE ESQUEMA (SUPREME UNIFICATION)
+- **Nomenclatura:** Usa exclusivamente NOMBRES DE `SUPREME_SCHEMA_UNIFICATION.sql`.
+- **Validación Previa:** Prohibido insertar datos sin verificar la existencia de la columna. Generar SQL primero.
 
-## 6. Host Dashboard (The CEO Console)
-- **One-Click Governance**: Every piece of site content must be editable.
-- **Realtime Sync**: Use Supabase Realtime so changes reflect instantly without refreshes.
+## 🎨 ESTÁNDARES DE LUJO UX (IRMARIS IDENTITY)
+- Grillas de 2-3 columnas. Espaciado generoso. Serif para títulos, Sans para datos.
+- **Protocolo de Arranque:** Una tarea no está terminada si el flujo de datos está roto. Probar flujo con `console.log` de éxito.
 
-## 7. Preservation of the "Santuario"
-- Visual components and established logic are untouchable unless a demonstrable "1000x" improvement is proposed.
-- "Cleaning up" is never an excuse to remove functional UI or local data.
+"Si el usuario hace clic y no sucede nada en la DB o el correo, la tarea se considera FALLIDA."
+🔱⚓🎙️🚢

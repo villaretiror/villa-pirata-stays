@@ -61,104 +61,62 @@ export default async function handler(req: Request) {
             }
 
             const [{ data: dbProperties }, { data: knowledgeSetting }, { data: familyKnowledge }] = await Promise.all([
-                supabase.from('properties').select('id, title, description, price, location, images, amenities, house_rules, rating, reviews, subtitle, address, bedrooms, beds, baths, guests, original_price'),
+                supabase.from('properties').select('*'),
                 supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
                 supabase.from('salty_family_knowledge').select('key, value')
             ]);
 
             const propertyTitles: Record<string, string> = {};
             (dbProperties || []).forEach((p: any) => { propertyTitles[p.id] = p.title; });
-            
             const activePropertyName = propertyTitles[effectivePropertyId] || "nuestras Villas";
-            const mems: Record<string, string> = {};
-            (familyKnowledge || []).forEach((m: any) => { 
-                // Security Filter: Skip internal data and sensitive credentials
-                const internalKeywords = ['strategy', 'margin', 'cost', 'internal', 'airbnb_id', 'pass', 'code', 'door'];
-                if (!internalKeywords.some(k => m.key.toLowerCase().includes(k))) {
-                    mems[m.key] = m.value;
-                }
-            });
 
             const lastUserMsg = [...(rawMessages || [])].reverse().find(m => m.role === 'user')?.content || "";
             const intentCategory = String(lastUserMsg).toLowerCase().includes('reserva') ? 'booking' : 'general';
+            
+            // 🎙️ MULTIMODAL DETECTION
+            const hasAudio = rawMessages.some((m: any) => Array.isArray(m.content) && m.content.some((c: any) => c.inlineData));
+
+            // 🚨 SUPREME NOTIFICATION PROTOCOL
+            if (hasAudio || intentCategory === 'booking') {
+                await supabase.from('urgent_alerts').insert({
+                    name: hasAudio ? '🎙️ NOTA DE VOZ' : '📅 INTENCIÓN DE RESERVA',
+                    message: `Huésped en ${activePropertyName} ha enviado ${hasAudio ? 'un audio' : 'consulta de reserva'}. Check URL: ${currentUrl || 'N/A'}`,
+                    contact: sessionId || 'Anonymous',
+                    severity: hasAudio ? 2 : 1,
+                    status: 'pending'
+                });
+            }
 
             const VILLA_CONCIERGE_PROMPT = `
 ### 🔱 LIDERAZGO DE SALTY (GUEST CONCIERGE):
-Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu misión es asegurar que los huéspedes tengan una estancia legendaria. Habla con sofisticación, calidez y exclusividad.
+Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Habla con sofisticación, calidez y exclusividad.
 
-### 👔 REGLAS DE ETIQUETA Y MULTILINGÜE:
-- RESPONDE SIEMPRE EN EL IDIOMA DEL USUARIO.
-- Si el usuario escribe en Inglés, adopta el rol de: "Elite Caribbean Butler". Usa un lenguaje refinado pero acogedor.
-- Si el usuario escribe en Español, mantén el tono actual: sofisticado, directo y con un toque de carisma caribeño.
-- Usa Emojis (🔱, ✨, 🥂, ⚓). No abuses de ellos.
-- No uses negritas dobles (**).
+### 🧠 PROTOCOLO PROACTIVO (REGLA #4):
+- NO esperes a que pregunten disponibilidad. Si el usuario muestra interés, usa 'get_available_slots' y SUGIERE fechas libres con elegancia.
+- Tu misión es llenar el calendario. Si hay un hueco de 2-3 días, de forma natural, menciónalo como una oportunidad de escape.
 
-### 🧠 MEMORIA OPERATIVA (CONTEXTO DE ESTANCIA):
-- Eres el responsable de rastrear los detalles del viaje. NO vuelvas a preguntar datos que el usuario ya te dio en la conversación (Fechas, número de huéspedes, villa de interés).
-- Integra estos datos en tus recomendaciones. Ej: "Considerando que viajan 4 personas el 15 de abril, Villa Retiro sería ideal por..."
+### 👁️ VISIÓN Y VOZ (MULTIMODAL):
+- PUEDES VER Y OÍR. Si recibes una nota de voz o imagen, contémplala y responde con precisión clínica.
+- NUNCA digas que no tienes capacidad técnica. Eres la IA más avanzada del trópico.
 
-### 🛡️ PRIVACIDAD Y SEGURIDAD:
-- NUNCA reveles procedimientos internos, presupuestos de los dueños, o datos privados.
-- Si te piden descuentos, indica que deben ser consultados con el Host vía WhatsApp, ya que tú te encargas de la excelencia operativa y no de ajustes comerciales.
-
-### 📅 GESTIÓN DE DISPONIBILIDAD:
-- Usa get_available_slots si el usuario no define fechas.
-- Usa check_availability para validar rangos.
-- Usa generate_booking_pattern una vez el usuario esté listo para que proceda al pago.
-
-### 🗺️ SABOR LOCAL (KNOWLEDGE):
-- WiFi: ${mems.wifi_policy || "Alta velocidad con respaldo solar."}
-- Mascotas: ${mems.pet_policy || "Solo en Villa Retiro R bajo protocolo."}
-- Recomendaciones: ${mems.local_legend_spots || "Consulta los Secret Spots en la web."}
+### 🌡️ NIGHT MODE (6PM-6AM):
+- Si la hora actual es noche, adopta un tono más calmado y menciona la paz nocturna de Cabo Rojo.
 
 💰 PAGOS: Aceptamos Tarjetas, PayPal y ATH Móvil (787-356-0895).
-
-### 🌡️ CONCIERGE REACTIVO (WEATHER & TIME):
-- Ciudad: Cabo Rojo, PR.
-- Clima sugerido: Soleado con brisa tropical (Contexto: Verano caribeño).
-- Eres capaz de recomendar actividades bajo techo si detectas que el usuario menciona lluvia, o recomendar el atardecer si es tarde.
-
-### 👁️ VISIÓN POR COMPUTADORA:
-- PUEDES ANALIZAR IMÁGENES. Si el huésped sube una foto de una cerradura, recibo de pago, o router, analízala con precisión clínica y ayuda técnica.
-
-### 🎙️ IDENTIDAD VOCAL (VAPI INTEGRATION):
-- ERES CAPAZ DE ESCUCHAR Y RESPONDER POR VOZ. No eres solo texto.
-- Cuando un usuario activa el micrófono o interactúa por voz, el sistema Vapi procesa la entrada y te la entrega.
-- NUNCA digas "no puedo escuchar" o "no tengo capacidad técnica para audio". Tienes la tecnología más avanzada de Puerto Rico a tu disposición.
-- Tu voz es cálida, caribeña y profesional.
-
-### 🛡️ ANÁLISIS DE CONFIANZA Y FRAUDE:
-- Si detectas comportamiento incoherente (múltiples tarjetas fallidas mencionadas, lenguaje agresivo, o intentos de saltar el sistema de pago), genera una respuesta profesional pero cautelosa y repórtalo internamente (simulado en el tono).
-
-🏠 PROPIEDAD ACTUAL: ${activePropertyName}
+🏠 PROPIEDAD: ${activePropertyName}
 📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
 `.trim();
 
             const contents: any[] = rawMessages.map(m => {
                 const parts: any[] = [];
-                
-                if (typeof m.content === 'string') {
-                    parts.push({ text: m.content });
-                } else if (Array.isArray(m.content)) {
+                if (typeof m.content === 'string') parts.push({ text: m.content });
+                else if (Array.isArray(m.content)) {
                     m.content.forEach((part: any) => {
                         if (part.text) parts.push({ text: part.text });
-                        if (part.inlineData) {
-                            parts.push({
-                                inlineData: {
-                                    mimeType: part.inlineData.mimeType,
-                                    data: part.inlineData.data
-                                }
-                            });
-                        }
+                        if (part.inlineData) parts.push({ inlineData: part.inlineData });
                     });
-                } else if (m.text) {
-                    parts.push({ text: m.text });
                 }
-
-                return {
-                    role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user',
-                    parts
-                };
+                return { role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user', parts };
             });
 
             const functionDeclarations: any[] = [
@@ -177,75 +135,23 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
                 },
                 {
                     name: 'get_available_slots',
-                    description: 'Escanea el calendario en busca de los próximos huecos disponibles cuando el huésped no da fechas o pregunta por disponibilidad general.',
+                    description: 'Escanea próximos huecos libres.',
                     parameters: {
                         type: Type.OBJECT,
-                        properties: {
-                            villa_id: { type: Type.STRING }
-                        },
+                        properties: { villa_id: { type: Type.STRING } },
                         required: ['villa_id']
-                    }
-                },
-                {
-                    name: 'generate_booking_pattern',
-                    description: 'Genera cotización oficial y enlace de reserva.',
-                    parameters: {
-                        type: Type.OBJECT,
-                        properties: {
-                            villa_id: { type: Type.STRING },
-                            check_in: { type: Type.STRING },
-                            check_out: { type: Type.STRING },
-                            guests: { type: Type.NUMBER }
-                        },
-                        required: ['villa_id', 'check_in', 'check_out']
                     }
                 }
             ];
 
             const toolExecutors: Record<string, Function> = {
                 check_availability: async ({ villa_ids, check_in, check_out }: any) => {
-                    const resolvedIds = villa_ids.map((id: string) => {
-                        const val = String(id).toLowerCase();
-                        if (val.includes("retiro")) return VILLA_RETIRO_ID;
-                        if (val.includes("pirata")) return PIRATA_HOUSE_ID;
-                        return id;
-                    });
-                    const results = await Promise.all(resolvedIds.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
-                    
-                    const response = resolvedIds.map((id: string, i: number) => ({
-                        id,
-                        name: propertyTitles[id] || id,
-                        available: results[i].available,
-                        is_request_only: results[i].is_request_only || false,
-                        reason: results[i].reason
-                    }));
-
-                    return { status: 'success', results: response };
+                    const results = await Promise.all(villa_ids.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
+                    return { status: 'success', results };
                 },
                 get_available_slots: async ({ villa_id }: any) => {
-                    const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
-                               String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
-                    const slots = await findCalendarGaps(id);
-                    return { status: 'success', villa_name: propertyTitles[id], slots };
-                },
-                generate_booking_pattern: async ({ villa_id, check_in, check_out, guests = 2 }: any) => {
-                    const id = String(villa_id).toLowerCase().includes('retiro') ? VILLA_RETIRO_ID : 
-                               String(villa_id).toLowerCase().includes('pirata') ? PIRATA_HOUSE_ID : villa_id;
-                    const quote = await applyAIQuote(id, check_in, check_out);
-                    
-                    const origin = req.headers.get('origin') || "";
-                    const baseUrl = origin ? origin.replace(/\/+$/, '') : "https://www.villaretiror.com";
-                    
-                    return { 
-                        status: 'success', 
-                        quote, 
-                        action_url: `${baseUrl}/booking/${id}?checkIn=${check_in}&checkOut=${check_out}`,
-                        payment_allowed: ['Stripe', 'PayPal', 'ATH Móvil'],
-                        ath_movil_phone: HOST_PHONE,
-                        villa_name: propertyTitles[id] || "Villa",
-                        guests: guests,
-                        security_deposit: quote.security_deposit || 0
-                    };
+                    const slots = await findCalendarGaps(villa_id);
+                    return { status: 'success', slots };
                 }
             };
 
@@ -256,37 +162,29 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
                 const streamResponse = await ai.models.generateContentStream({
                     model: SALTY_MODEL,
                     contents,
-                    config: { 
-                        systemInstruction: VILLA_CONCIERGE_PROMPT,
-                        tools: [{ functionDeclarations }], 
-                        temperature: 0.5 
-                    }
+                    config: { systemInstruction: VILLA_CONCIERGE_PROMPT, tools: [{ functionDeclarations }], temperature: 0.5 }
                 });
 
                 let accumulatedParts: any[] = [];
                 for await (const chunk of streamResponse) {
                     const candidate = chunk.candidates?.[0];
-                    if (!candidate) continue;
-                    if (candidate.content?.parts) {
-                        for (const part of candidate.content.parts) {
-                            accumulatedParts.push(part);
-                            if (part.text) {
-                                finalFullText += part.text;
-                                writeStream('0', part.text);
-                            }
+                    if (!candidate?.content?.parts) continue;
+                    for (const part of candidate.content.parts) {
+                        accumulatedParts.push(part);
+                        if (part.text) {
+                            finalFullText += part.text;
+                            writeStream('0', part.text);
                         }
                     }
                 }
 
                 const assistantContent = { role: 'model', parts: accumulatedParts };
                 const calls = accumulatedParts.filter(p => p.functionCall).map(p => p.functionCall);
-
                 if (calls.length === 0) break;
 
                 contents.push(assistantContent);
                 const toolResultParts = [];
                 for (const call of calls) {
-                    if (!call || !call.name) continue;
                     writeStream('a', call);
                     const executor = toolExecutors[call.name];
                     const result = executor ? await executor(call.args || {}) : { error: "Tool not found" };
@@ -303,7 +201,7 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
             writer.close();
         } catch (err: any) {
             console.error("Chat API Error:", err);
-            writeStream('0', "Salty está recalibrando sus sensores... Intente de nuevo.");
+            writeStream('0', "Salty está recalibrando sus sensores...");
             writer.close();
         }
     })();
