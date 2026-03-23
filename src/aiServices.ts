@@ -2,6 +2,39 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase.js';
 import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
+
+// 🔱 MASTER PROPERTY RESOLVER: Converts human names/IDs to confirmed DB IDs
+export const resolvePropertyId = async (input: string, client: SupabaseClient): Promise<string> => {
+    let cleanInput = String(input).trim();
+    
+    // 1. Direct check (If it's a valid ID)
+    if (!isNaN(Number(cleanInput)) && cleanInput.length >= 8) return cleanInput;
+    if (cleanInput.length > 20) return cleanInput; // UUID-like
+
+    // 2. Fuzzy Clean (Remove fillers)
+    const fillers = ['para', 'en', 'villa', 'retiro', 'retiro r', 'la', 'house', 'family'];
+    let fuzzy = cleanInput.toLowerCase();
+    fillers.forEach(f => fuzzy = fuzzy.replace(f, ''));
+    fuzzy = fuzzy.trim();
+
+    // 3. Search by title
+    const { data: byTitle } = await client.from('properties')
+        .select('id')
+        .ilike('title', `%${fuzzy || cleanInput}%`)
+        .limit(1)
+        .maybeSingle();
+
+    if (byTitle) return String(byTitle.id);
+
+    // 4. Fallback search (Original input)
+    const { data: secondTry } = await client.from('properties')
+        .select('id')
+        .ilike('title', `%${cleanInput}%`)
+        .limit(1)
+        .maybeSingle();
+
+    return secondTry ? String(secondTry.id) : cleanInput;
+};
 import type { Tables } from './supabase_types.js';
 
 type ProfileRow = Tables<'profiles'>;
@@ -50,14 +83,8 @@ export const checkAvailabilityWithICal = async (
         return { available: false, reason: 'Lo lamento, Capitán, pero mis brújulas no reconocen esas fechas. ¿Podría ser más específico con el día y el mes?' };
     }
 
-    // 🛡️ REINFORCED RESOLUTION: Ensure we have the correct ID for the DB
-    let finalId = String(villaId).trim();
-    if (isNaN(Number(finalId)) || finalId.length < 5) {
-        const { data: byTitle } = await client.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
-        if (byTitle) {
-            finalId = String(byTitle.id);
-        }
-    }
+    // 🛡️ REINFORCED RESOLUTION: Centralized Power
+    const finalId = await resolvePropertyId(villaId, client);
 
     // ── Step 1: Query unified bookings table
     type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
@@ -165,12 +192,8 @@ export const createTemporaryHold = async (
     phone_number?: string | null,
     special_requests?: string | null
 ) => {
-    // 🛡️ REINFORCED RESOLUTION
-    let finalId = String(propertyId).trim();
-    const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
-    if (byTitle) {
-        finalId = String(byTitle.id);
-    }
+    // 🛡️ REINFORCED RESOLUTION: Centralized Power
+    const finalId = await resolvePropertyId(propertyId, supabase);
 
     const holdExpiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
     const status = 'pending_ai_validation';
@@ -223,12 +246,8 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
-    // 🛡️ REINFORCED RESOLUTION
-    let finalId = String(propertyId).trim();
-    if (isNaN(Number(finalId)) || finalId.length < 5) {
-        const { data: byTitle } = await client.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
-        if (byTitle) finalId = String(byTitle.id);
-    }
+    // 🛡️ REINFORCED RESOLUTION: Centralized Power
+    const finalId = await resolvePropertyId(propertyId, client);
 
     const { data: bookings, error } = await client
         .from('bookings')
@@ -328,24 +347,16 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
 export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string, customSupabase?: SupabaseClient) => {
     const client = customSupabase || supabase;
     
-    // 🛡️ REINFORCED RESOLUTION: Try direct ID lookup first
-    let { data: property, error: fetchError } = await client.from('properties')
+    // 🛡️ REINFORCED RESOLUTION: Centralized Power
+    const finalId = await resolvePropertyId(propertyId, client);
+
+    const { data: property, error: fetchError } = await client.from('properties')
         .select('*')
-        .eq('id', String(propertyId).trim())
+        .eq('id', finalId)
         .maybeSingle();
 
-    // If ID fails, or it looks like a title/name, try title search
-    if (!property || isNaN(Number(propertyId)) || propertyId.length < 5) {
-        const { data: byTitle } = await client.from('properties')
-            .select('*')
-            .ilike('title', `%${propertyId.trim()}%`)
-            .limit(1)
-            .maybeSingle();
-        if (byTitle) property = byTitle;
-    }
-
     if (!property) {
-        console.error(`[applyAIQuote] Critical Failure: Property not found. Input: "${propertyId}"`, fetchError);
+        console.error(`[applyAIQuote] Critical Failure: Property not found. Input: "${propertyId}" (resolved to: ${finalId})`, fetchError);
         throw new Error(`Propiedad no encontrada [${propertyId}].`);
     }
 
