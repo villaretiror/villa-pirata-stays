@@ -1,33 +1,33 @@
 # 🔱 PROTOCOLO DE ARQUITECTO SUPREMO & SRE (Antigravity) 🔱
 
 ## 🚨 ESTÁNDAR DE "LLAVE EN MANO" (ZERO MOCKS)
-- **Prohibición de "Modo Demo":** Queda estrictamente prohibido entregar componentes con `onClick={() => {}}` o datos hardcoded.
+- **Zero Latency Experience (Hidratación Híbrida):** Supabase es la Fuente de Verdad Absoluta para datos dinámicos. Las constantes (`constants.ts`) solo definen la estructura inicial para evitar pantallas blancas (SSR/Hydration). El sitio debe cargar instantáneamente y luego actualizarse con la realidad de la DB.
+- **Prohibición de Datos de "Relleno":** Si Supabase no responde y no hay fallback en constantes, se muestra estado de carga, NUNCA datos de relleno inventados por la IA.
 - **Responsabilidad de Flujo 360:** Cada función debe incluir:
-  1. **DB:** SQL ALTERS/RPCs en Supabase (siempre validar existencia de columnas primero).
+  1. **DB:** SQL ALTERS/RPCs en Supabase (validar existencia primero).
   2. **API:** Routes en `/api/` (Edge Runtime preferido).
   3. **UI:** Hook real + Framer Motion micro-interacción + Estado de Carga/Error.
-  4. **Notificación:** Disparador de Email (Resend) o Telegram (si es acción crítica).
+  4. **Notificación:** Alerta en `urgent_alerts` (Supabase) o Telegram si es acción crítica.
 
-## 💎 JERARQUÍA DE DATOS (HIDRATACIÓN HÍBRIDA)
-- **Priority 1 (Runtime):** Datos vivos de Supabase. Sobrescriben todo.
-- **Priority 2 (Sanctuary):** `constants.ts` solo actúa como Fallback visual. Nunca renderices estados vacíos si existe un valor base en el Santuario.
+## 💎 JERARQUÍA DE DATOS Y ESCALABILIDAD
+- **Identidad Blindada (Airbnb IDs):** Las propiedades usan IDs de Airbnb (ej: 1081171030449673920) como **TEXT (not integer)**. Es VITAL mantener este tipo para la sincronía iCal.
+- **Preservación Estética (Fotos Scrapped):** Se prohíbe reemplazar fotos originales del scrapping por imágenes de stock. Solo el Host puede cambiarlas manualmente.
+- **Soberanía del Host (Control Manual):** El sistema sincroniza vía iCal (Airbnb/Booking), pero el Host mantiene el control manual total desde el Dashboard para bloquear fechas o modificar precios por encima de la sincronización automática.
 
-## 🛡️ PRESERVACIÓN Y REFACTORIZACIÓN SEGURA
-- **Estética Vintage-Premium:** No borres componentes ni cambies la paleta (Crema, Naranja, Verde). "Cablea" por detrás sin alterar la fachada de lujo.
-- **Chat Engine Safeguard:** Mantén imports `.js` en API Routes. Mejora la lógica de `VILLA_KNOWLEDGE` sin romper la firma actual.
+## 🛡️ GESTIÓN DE ESQUEMA (SQL FIRST & SYNCHRONIZED)
+- **SQL-First:** Antes de programar cualquier función, el motor (Base de Datos) debe estar instalado. Generar SQL ALTER primero.
+- **Sincronía de Tipos:** Cada vez que generes un SQL ALTER, estás obligado a actualizar las Interfaces o Types de TypeScript en el frontend. El código debe reconocer cada columna nueva (ej: `piscina_climatizada`) inmediatamente.
+- **Nomenclatura:** Usa exclusivamente NOMBRES DE `SUPREME_SCHEMA_UNIFICATION.sql`.
 
 ## 🧠 INTELIGENCIA CONTEXTUAL DE SALTY
-- Salty tiene acceso total a cada columna de la DB para personalizar respuestas.
-- **Acción Proactiva:** Si detecta huecos en calendario o pagos pendientes, sugiere la acción al usuario orgánicamente.
-
-## 🛠️ GESTIÓN DE ESQUEMA (SUPREME UNIFICATION)
-- **Nomenclatura:** Usa exclusivamente NOMBRES DE `SUPREME_SCHEMA_UNIFICATION.sql`.
-- **Validación Previa:** Prohibido insertar datos sin verificar la existencia de la columna. Generar SQL primero.
-- **Sincronía de Tipos:** Cada vez que generes un SQL ALTER, estás obligado a actualizar las Interfaces o Types de TypeScript en el frontend. Si añades la columna 'piscina_climatizada', el objeto Villa en el código debe reconocerla inmediatamente para evitar errores de compilación.
+- **Salty Proactivo (Regla #4):** NO esperes a que pregunten disponibilidad. Si Salty detecta interés, usa `get_available_slots` y sugiere fechas libres u ofertas de "Escapes de Élite".
+- **Memoria de Sesión:** Usa `sessionId` persistente para evitar amnesia entre páginas y refrescos.
+- **Seguridad de Chat:** Nunca alteres la lógica de flujo de datos de `VILLA_KNOWLEDGE`. Las mejoras deben ser ADITIVAS.
 
 ## 🎨 ESTÁNDARES DE LUJO UX (IRMARIS IDENTITY)
-- Grillas de 2-3 columnas. Espaciado generoso. Serif para títulos, Sans para datos.
-- **Protocolo de Arranque:** Una tarea no está terminada si el flujo de datos está roto. Probar flujo con `console.log` de éxito.
+- **Estética Vintage-Premium:** No borres componentes ni cambies la paleta (Crema, Naranja, Verde). "Cablea" por detrás sin alterar la fachada de lujo.
+- **UX de Élite:** Grillas de 2-3 columnas. Serif para títulos, Sans para datos. Uso de micro-animaciones (Framer Motion).
+- **Seguridad de Acceso:** Administración exclusiva para `villaretiror@gmail.com`.
 
 "Si el usuario hace clic y no sucede nada en la DB o el correo, la tarea se considera FALLIDA."
 🔱⚓🎙️🚢
