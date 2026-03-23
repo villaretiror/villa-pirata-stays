@@ -106,14 +106,17 @@ async function handleVapiTools(req: any, res: any, message: any) {
       }
 
       if (name === 'check_availability') {
-        const { propertyId = '1081171030449673920', startDate, endDate } = args;
+        // 🛡️ PARAMETER NORMALIZATION: Accept multiple naming conventions from AI
+        const propId = args.propertyId || args.property_id || '1081171030449673920';
+        const sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
+        const eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
         
         // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
-        console.log(`[Vapi] Checking availability for ${propertyId} from ${startDate} to ${endDate}`);
-        const availability = await checkAvailabilityWithICal(propertyId, startDate, endDate, supabase);
+        console.log(`[Vapi] Checking availability for ${propId} from ${sDate} to ${eDate}`);
+        const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
         
         if (availability.available) {
-          const quote = await applyAIQuote(propertyId, startDate, endDate, undefined, supabase);
+          const quote = await applyAIQuote(propId, sDate, eDate, undefined, supabase);
           return { 
             toolCallId: toolCall.id, 
             result: `¡Excelente noticia! Estas fechas están disponibles para crear memorias inolvidables. El total por ${quote.nights} noches, incluyendo impuestos del paraíso, es de ${quote.total} dólares. ¿Le gustaría proceder con la reserva ahora mismo? ⚓` 
@@ -121,7 +124,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
         }
 
         // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
-        const gaps = await findCalendarGaps(propertyId, supabase);
+        const gaps = await findCalendarGaps(propId, supabase);
         const nextGap = gaps[0];
         const gapMsg = nextGap 
           ? `. Sin embargo, veo que tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end} (${nextGap.nights} noches). ¿Le funcionaría esa travesía?`
