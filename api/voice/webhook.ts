@@ -26,6 +26,8 @@ export default async function handler(req: any, res: any) {
     const messageType = message.type;
     const call = message.call || {};
 
+    console.log(`[🔱 Salty/Webhook] Message Type: ${messageType}`);
+
     // 👁️ GUEST RECOGNITION (Reconocer al Capitán por su número)
     const customerPhone = call.customer?.number?.replace(/\D/g, '') || '';
     let guestIdentification = { name: '', isReturning: false, email: '' };
@@ -47,8 +49,8 @@ export default async function handler(req: any, res: any) {
       }
     }
 
-    if (messageType === 'tool-calls') {
-      const toolCallList = message?.toolCallList || message?.toolCalls || [];
+    if (messageType === 'tool-calls' || messageType === 'function-call') {
+      const toolCallList = message?.toolCallList || message?.toolCalls || (message.functionCall ? [message.functionCall] : []);
       
       const results = await Promise.all(toolCallList.map(async (toolCall: any) => {
         const name = toolCall?.function?.name;
@@ -141,7 +143,8 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ results });
     }
 
-    return res.status(200).json({ success: true });
+    // Default response for other Vapi triggers
+    return res.status(200).json({ success: true, message: "Salty listening..." });
 
   } catch (err: any) {
     console.error("[🔱 Elite Error]", err.message);
