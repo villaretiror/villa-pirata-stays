@@ -39,6 +39,27 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
     const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
     const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 🔱 TIMER ENGINE
+    useEffect(() => {
+        if (isRecording) {
+            setRecordingTime(0);
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }, [isRecording]);
+
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
 
     const startRecording = async () => {
         setRecordedAudioUrl(null);
@@ -70,6 +91,14 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const stopRecording = () => {
         if (mediaRecorder && isRecording) {
             mediaRecorder.stop();
+        }
+    };
+
+    const playPreview = () => {
+        if (audioPreviewRef.current) {
+            audioPreviewRef.current.currentTime = 0;
+            audioPreviewRef.current.load();
+            audioPreviewRef.current.play().catch(e => console.error("Playback failed:", e));
         }
     };
 
@@ -286,16 +315,16 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <button 
-                                                        onClick={() => audioPreviewRef.current?.play()}
+                                                        onClick={playPreview}
                                                         className="w-10 h-10 bg-[#BBA27E] text-[#1a1a1a] rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
                                                     >
                                                         <span className="material-icons">play_arrow</span>
                                                     </button>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-black uppercase text-[#BBA27E]/60 tracking-widest">Vista Previa</span>
-                                                        <span className="text-[10px] text-white/80">Nota de Voz Lista</span>
+                                                        <span className="text-[9px] font-black uppercase text-[#BBA27E]/60 tracking-widest">Escuchar Grabación</span>
+                                                        <span className="text-[10px] text-white/80 font-mono tracking-tighter">Duración: {formatTime(recordingTime)}</span>
                                                     </div>
-                                                    <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" />
+                                                    <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" preload="auto" />
                                                 </div>
                                                 <div className="flex gap-2">
                                                     <button 
@@ -323,18 +352,28 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     onMouseUp={stopRecording}
                                                     onTouchStart={startRecording}
                                                     onTouchEnd={stopRecording}
-                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-black text-[#BBA27E] hover:bg-gray-900'}`}
+                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-black text-[#BBA27E] hover:bg-gray-900'}`}
                                                 >
-                                                    <span className="material-icons text-lg">{isRecording ? 'graphic_eq' : 'mic'}</span>
+                                                    <span className="material-icons text-lg">{isRecording ? 'stop' : 'mic'}</span>
                                                 </button>
-                                                <input 
-                                                    type="text"
-                                                    placeholder="Escribe o pulsa el micro..."
-                                                    value={inputValue}
-                                                    onChange={(e) => setInputValue(e.target.value)}
-                                                    onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                                    className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs outline-none h-10"
-                                                />
+                                                {isRecording ? (
+                                                    <div className="flex-1 bg-red-50/50 border border-red-200 rounded-xl px-4 flex items-center justify-between h-10 animate-pulse">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Grabando</span>
+                                                        </div>
+                                                        <span className="text-xs font-mono font-bold text-red-600">{formatTime(recordingTime)}</span>
+                                                    </div>
+                                                ) : (
+                                                    <input 
+                                                        type="text"
+                                                        placeholder="Escribe o pulsa el micro..."
+                                                        value={inputValue}
+                                                        onChange={(e) => setInputValue(e.target.value)}
+                                                        onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                                        className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs outline-none h-10"
+                                                    />
+                                                )}
                                                 <button 
                                                     onClick={handleSendMessage}
                                                     disabled={isTyping || !inputValue.trim()}
