@@ -1,0 +1,118 @@
+import { createClient } from '@supabase/supabase-js';
+import OpenAI from 'openai';
+import { differenceInDays, parseISO } from 'date-fns';
+import { MessagingService } from '../src/services/MessagingService.js';
+import { NotificationService } from '../src/services/NotificationService.js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL || "",
+  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+);
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+/**
+ * 🔱 UNIVERSAL WEBHOOK & VOICE DISPATCHER
+ * Este endpoint centraliza Vapi, TTS, Resend y Reviews para optimizar el plan Hobby de Vercel.
+ */
+export default async function handler(req: any, res: any) {
+  const { source } = req.query;
+
+  // CORS Master Bypass
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-api-key');
+
+  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  try {
+    // 🎙️ SOURCE: VOICE (Vapi Tool Webhook)
+    if (source === 'vapi') {
+      const { message } = req.body;
+      if (message?.type === 'tool-calls' || message?.type === 'function-call') {
+        return await handleVapiTools(req, res, message);
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    // 🔊 SOURCE: TTS (OpenAI Onyx)
+    if (source === 'tts') {
+      const { text } = req.body;
+      if (!text) return res.status(400).json({ error: 'Text required' });
+      
+      const cleanText = text.replace(/\*\*/g, '').replace(/\*/g, '').replace(/__/g, '').replace(/_/g, '').replace(/#/g, '').replace(/`/g, '');
+      const mp3 = await openai.audio.speech.create({ model: "tts-1", voice: "onyx", input: cleanText });
+      const buffer = Buffer.from(await mp3.arrayBuffer());
+      res.setHeader('Content-Type', 'audio/mpeg');
+      return res.send(buffer);
+    }
+
+    // 📧 SOURCE: RESEND (Email Opened/Bounced)
+    if (source === 'resend') {
+      const { type, data } = req.body;
+      if (type === 'email.opened' || type === 'email.bounced') {
+        const { data: logEntry } = await supabase.from('email_logs').select('guest_email, subject').eq('resend_id', data.email_id).single();
+        if (logEntry) {
+          await supabase.from('email_logs').update({ status: type === 'email.opened' ? 'opened' : 'bounced', opened_at: type === 'email.opened' ? new Date().toISOString() : null }).eq('resend_id', data.email_id);
+          if (type === 'email.bounced') await NotificationService.notifyEmailBounce(logEntry.guest_email || "N/A", logEntry.subject || "N/A", data.bounce_message || "Bounce");
+        }
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    // ⭐ SOURCE: REVIEW (External Review Notification)
+    if (source === 'review') {
+      if (req.headers['x-api-key'] !== process.env.WEBHOOK_SECRET) return res.status(401).json({ error: 'Unauthorized' });
+      const body = req.body;
+      await NotificationService.notifyNewReview(body.guestName || 'Anónimo', body.propertyTitle || 'Villa Retiro', Number(body.rating) || 5, body.platform || 'Airbnb');
+      return res.status(200).json({ success: true });
+    }
+
+    return res.status(400).json({ error: 'Invalid source signature. ⚓' });
+
+  } catch (err: any) {
+    console.error(`[🔱 Universal Webhook Error - ${source}]:`, err.message);
+    return res.status(500).json({ error: err.message });
+  }
+}
+
+/**
+ * ⚓ VAPI TOOL HANDLER (High Intensity Logic)
+ */
+async function handleVapiTools(req: any, res: any, message: any) {
+  const toolCallList = message?.toolCallList || message?.toolCalls || (message.functionCall ? [message.functionCall] : []);
+  const customerPhone = message.call?.customer?.number?.replace(/\D/g, '') || '';
+  
+  const results = await Promise.all(toolCallList.map(async (toolCall: any) => {
+    const name = toolCall?.function?.name || toolCall?.name;
+    const args = typeof toolCall?.function?.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall?.function?.arguments || toolCall?.arguments || {};
+
+    if (name === 'get_property_info') {
+      const { data } = await supabase.from('properties').select('*').eq('id', args.propertyId).single();
+      return { toolCallId: toolCall.id, result: JSON.stringify(data) };
+    }
+
+    if (name === 'check_availability') {
+      const { propertyId = '1081171030449673920', startDate, endDate } = args;
+      const { data: properties } = await supabase.from('properties').select('id, title, price, blockeddates').in('id', [propertyId, '42839458']);
+      const mainProp = properties?.find((p: any) => p.id === propertyId);
+      
+      const { data: conflicts } = await supabase.from('bookings').select('id').eq('property_id', propertyId)
+        .or(`and(check_in.lte.${startDate},check_out.gt.${startDate}),and(check_in.lt.${endDate},check_out.gte.${endDate}),and(check_in.gte.${startDate},check_out.lte.${endDate})`);
+      
+      const isBlocked = conflicts && conflicts.length > 0;
+      if (!isBlocked && mainProp) {
+        const nights = differenceInDays(parseISO(endDate), parseISO(startDate));
+        return { toolCallId: toolCall.id, result: `¡Excelente! ${mainProp.title} está disponible. El total por ${nights} noches es de ${nights * (mainProp.price || 0)} dólares. ¿Desean reservar ahora? ⚓` };
+      }
+      return { toolCallId: toolCall.id, result: "Lo lamento, esas fechas ya están ocupadas en el paraíso. ¿Tienen flexibilidad para otros días? ⚓" };
+    }
+
+    return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta." };
+  }));
+
+  return res.status(200).json({ results });
+}

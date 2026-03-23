@@ -54,7 +54,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 .replace(/#/g, '')
                 .replace(/`/g, '');
 
-            const response = await fetch('/api/voice', {
+            const response = await fetch('/api/webhooks?source=tts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: cleanText })
