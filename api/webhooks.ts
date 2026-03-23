@@ -5,13 +5,17 @@ import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
 import { checkAvailabilityWithICal, findCalendarGaps, applyAIQuote } from '../src/aiServices.js';
 
+const getEnvVar = (key: string): string => {
+  return process.env[key] || process.env[`VITE_${key}`] || "";
+};
+
 const supabase = createClient(
-  process.env.SUPABASE_URL || "",
-  process.env.SUPABASE_SERVICE_ROLE_KEY || ""
+  getEnvVar('SUPABASE_URL'),
+  getEnvVar('SUPABASE_SERVICE_ROLE_KEY')
 );
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+  apiKey: getEnvVar('OPENAI_API_KEY'),
 });
 
 /**
