@@ -6,13 +6,6 @@
             "memory": 1024,
             "maxDuration": 60
         },
-        "api/voice/webhook.ts": {
-            "memory": 512,
-            "maxDuration": 15
-        },
-        "api/health-check.ts": {
-            "memory": 256
-        },
         "api/**/*.ts": {
             "memory": 512,
             "maxDuration": 30
@@ -30,15 +23,6 @@
                 {
                     "key": "x-salty-sre-status",
                     "value": "Pooler-Optimized"
-                }
-            ]
-        },
-        {
-            "source": "/api/health-check",
-            "headers": [
-                {
-                    "key": "Cache-Control",
-                    "value": "s-maxage=60, stale-while-revalidate"
                 }
             ]
         },
