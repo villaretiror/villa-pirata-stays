@@ -1,34 +1,58 @@
 import React, { useState, useEffect } from 'react';
-// @ts-ignore
-import Vapi from '@vapi-ai/web';
 
-const vapi = new Vapi('816607fa-e7f9-4fdf-879c-f00a5d1c8b1c');
+// 🔱 ELITE BYPASS: Usamos el SDK desde el CDN cargado en index.html
+// Esto evita que Rollup falle en Vercel.
 const SALTY_ASSISTANT_ID = '280fb186-f436-4b9b-ac30-48badafd3a0d';
+const PUBLIC_KEY = '816607fa-e7f9-4fdf-879c-f00a5d1c8b1c';
 
 const SaltyVoiceButton: React.FC = () => {
     const [callStatus, setCallStatus] = useState<'inactive' | 'loading' | 'active'>('inactive');
-    const [isMorsed, setIsMorsed] = useState(false);
+    const [vapiInstance, setVapiInstance] = useState<any>(null);
 
     useEffect(() => {
-        vapi.on('call-start', () => setCallStatus('active'));
-        vapi.on('call-end', () => setCallStatus('inactive'));
-        vapi.on('error', (err: any) => {
-            console.error('Vapi Error:', err);
-            setCallStatus('inactive');
-        });
+        // Intentar inicializar Vapi desde el objeto global
+        const initVapi = () => {
+            const VapiConstructor = (window as any).Vapi;
+            if (VapiConstructor && !vapiInstance) {
+                const instance = new VapiConstructor(PUBLIC_KEY);
+                
+                instance.on('call-start', () => setCallStatus('active'));
+                instance.on('call-end', () => setCallStatus('inactive'));
+                instance.on('error', (err: any) => {
+                    console.error('Vapi Error:', err);
+                    setCallStatus('inactive');
+                });
+
+                setVapiInstance(instance);
+            }
+        };
+
+        // Re-intentar si el script no ha cargado aún
+        const timer = setInterval(() => {
+            if ((window as any).Vapi) {
+                initVapi();
+                clearInterval(timer);
+            }
+        }, 500);
 
         return () => {
-            vapi.stop();
+            clearInterval(timer);
+            if (vapiInstance) vapiInstance.stop();
         };
-    }, []);
+    }, [vapiInstance]);
 
     const toggleCall = async () => {
+        if (!vapiInstance) {
+            console.warn('Vapi no está listo todavía.');
+            return;
+        }
+
         if (callStatus === 'active') {
-            vapi.stop();
+            vapiInstance.stop();
         } else {
             setCallStatus('loading');
             try {
-                await vapi.start(SALTY_ASSISTANT_ID);
+                await vapiInstance.start(SALTY_ASSISTANT_ID);
             } catch (err: any) {
                 console.error('Failed to start call:', err);
                 setCallStatus('inactive');

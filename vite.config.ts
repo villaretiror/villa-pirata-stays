@@ -24,20 +24,13 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-framer': ['framer-motion'],
           'vendor-utils': ['recharts', 'jspdf', '@supabase/supabase-js'],
-          'vendor-vapi': ['@vapi-ai/web'],
         },
       },
     },
-    commonjsOptions: {
-      include: [/node_modules/],
-    },
-  },
-  optimizeDeps: {
-    include: ['@vapi-ai/web'],
   },
   server: {
     port: 5173,
     host: '0.0.0.0',
   },
 });
-// Build trigger: 2026-03-12T13:58
+// Build trigger: 2026-03-22T22:15-DEPLOY-FIX-VAPI
