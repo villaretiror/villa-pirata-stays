@@ -73,11 +73,11 @@ export default async function handler(req: any, res: any) {
 
             if (error || !properties?.length) return { toolCallId: toolCall.id, result: "Capitán, denme un segundo que la señal del muelle está inestable. ¿Podría repetirme las fechas?" };
 
-            const mainProp = properties.find(p => p.id === propertyId);
-            const altProp = properties.find(p => p.id !== propertyId);
+            const mainProp = properties.find((p: any) => p.id === propertyId);
+            const altProp = properties.find((p: any) => p.id !== propertyId);
 
             // Step 1: Check Main Property
-            const mainBlocked = Array.isArray(mainProp?.blockeddates) && mainProp.blockeddates.some(d => d >= startDate && d <= endDate);
+            const mainBlocked = Array.isArray(mainProp?.blockeddates) && mainProp.blockeddates.some((d: string) => d >= startDate && d <= endDate);
             
             if (!mainBlocked && mainProp) {
               const nights = differenceInDays(parseISO(endDate), parseISO(startDate));
@@ -94,7 +94,7 @@ export default async function handler(req: any, res: any) {
 
             // Step 2: Fallback to Alternative Property
             if (altProp) {
-              const altBlocked = Array.isArray(altProp.blockeddates) && altProp.blockeddates.some(d => d >= startDate && d <= endDate);
+              const altBlocked = Array.isArray(altProp.blockeddates) && altProp.blockeddates.some((d: string) => d >= startDate && d <= endDate);
               if (!altBlocked) {
                 const altNights = differenceInDays(parseISO(endDate), parseISO(startDate));
                 return {

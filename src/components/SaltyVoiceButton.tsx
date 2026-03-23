@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+// @ts-ignore
 import Vapi from '@vapi-ai/web';
 
 const vapi = new Vapi('816607fa-e7f9-4fdf-879c-f00a5d1c8b1c');
@@ -11,7 +12,7 @@ const SaltyVoiceButton: React.FC = () => {
     useEffect(() => {
         vapi.on('call-start', () => setCallStatus('active'));
         vapi.on('call-end', () => setCallStatus('inactive'));
-        vapi.on('error', (err) => {
+        vapi.on('error', (err: any) => {
             console.error('Vapi Error:', err);
             setCallStatus('inactive');
         });
@@ -28,7 +29,7 @@ const SaltyVoiceButton: React.FC = () => {
             setCallStatus('loading');
             try {
                 await vapi.start(SALTY_ASSISTANT_ID);
-            } catch (err) {
+            } catch (err: any) {
                 console.error('Failed to start call:', err);
                 setCallStatus('inactive');
             }
