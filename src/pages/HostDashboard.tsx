@@ -1908,17 +1908,46 @@ const HostDashboard: React.FC = () => {
       <div className="bg-white p-5 rounded-[2rem] border border-gray-100 shadow-soft">
         <h3 className="text-sm font-bold text-text-main mb-4">Rendimiento por Propiedad</h3>
         <div className="space-y-3">
-          {Object.entries(propertyPerformance.performance || {}).map(([title, amount], idx) => (
-            <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
-              <span className="text-xs font-bold text-text-main flex items-center gap-2">
-                <span className="material-icons text-primary text-sm">home</span>
-                {title}
-              </span>
-              <span className="text-sm font-black text-green-600">${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
-            </div>
-          ))}
-          {Object.keys(propertyPerformance.performance || {}).length === 0 && (
-            <p className="text-xs text-gray-400 text-center uppercase tracking-widest font-bold py-2">No hay datos suficientes</p>
+          {(() => {
+            const metricLabels: Record<string, string> = {
+              'revenue': 'Ingresos de Reserva',
+              'occupancy': 'Tasa de Ocupación',
+              'avg_price': 'Precio Promedio',
+              'avg_nightly': 'Rifa Promedio Diaria',
+              'property_features': 'Características Extra',
+              'conversion': 'Conversión de Chat',
+              'cancellation_policy_type': 'Política de Cancelación',
+              'exact_lat_long': 'Ubicación GPS',
+              'general_area_map_url': 'Mapa Regional',
+              'min_price_floor': 'Precio Piso Mínimo',
+              'max_discount_allowed': 'Descuento Máximo Salty %',
+              'bookings_count': 'Volumen de Reservas'
+            };
+
+            return Object.entries(propertyPerformance.performance || {})
+              .filter(([key]) => Object.keys(metricLabels).includes(key))
+              .map(([rawTitle, amount], idx) => {
+                const title = metricLabels[rawTitle];
+                
+                return (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-gray-50 rounded-xl border border-gray-100 group hover:border-primary/20 transition-all">
+                    <span className="text-xs font-bold text-text-main flex items-center gap-2">
+                      <span className="material-icons text-primary text-sm opacity-50">analytics</span>
+                      {title}
+                    </span>
+                    <span className="text-sm font-black text-green-600">
+                      {rawTitle.includes('occupancy') || rawTitle.includes('discount') || rawTitle.includes('conversion')
+                        ? `${Number(amount).toFixed(1)}%`
+                        : `$${Number(amount).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                      }
+                    </span>
+                  </div>
+                );
+              });
+          })()}
+
+          {(!propertyPerformance.performance || Object.keys(propertyPerformance.performance).length === 0) && (
+            <p className="text-xs text-gray-400 text-center uppercase tracking-widest font-bold py-4">No hay métricas disponibles en este ciclo</p>
           )}
         </div>
       </div>

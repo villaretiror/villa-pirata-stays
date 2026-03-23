@@ -154,7 +154,26 @@ const Booking: React.FC = () => {
   const isTooShort = nights > 0 && nights < min_nights_req;
 
   // Extract Pricing from Hook
-  const { total, subtotal, ivuAmount, taxRate, discountAmount, baseTotal } = pricing || { total: 0, subtotal: 0, ivuAmount: 0, taxRate: 7, discountAmount: 0, baseTotal: 0 };
+  // Extract Pricing from Hook (Elite Standard)
+  const { 
+    total, 
+    subtotal, 
+    ivuAmount, 
+    taxRate, 
+    discountAmount, 
+    nightsTotal, 
+    cleaningFee, 
+    serviceFee 
+  } = pricing || { 
+    total: 0, 
+    subtotal: 0, 
+    ivuAmount: 0, 
+    taxRate: 7, 
+    discountAmount: 0, 
+    nightsTotal: 0,
+    cleaningFee: 0,
+    serviceFee: 0
+  };
 
   const handleApplyPromo = () => applyPromo(promoCode);
 
@@ -382,23 +401,40 @@ const Booking: React.FC = () => {
 
             {promoError && <p className="text-[10px] text-red-500 font-black tracking-widest uppercase ml-2">{promoError}</p>}
 
-            <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/60 shadow-lg space-y-4">
-               <div className="flex justify-between items-center text-sm font-bold">
-                 <span className="text-text-main font-serif">Estancia ({nights || 0} noches)</span>
-                 <span className="text-text-main font-serif font-black text-lg">${baseTotal}</span>
-               </div>
-               
-              {appliedPromo && (
-                <div className="flex justify-between items-center text-sm text-green-700 font-bold">
-                  <span>Descuento ({appliedPromo.discount_percent}%)</span>
-                  <span className="font-serif font-black text-lg">-${discountAmount.toFixed(2)}</span>
+               <div className="bg-white/40 backdrop-blur-md p-8 rounded-[2.5rem] border border-white/60 shadow-lg space-y-4">
+                 <div className="flex justify-between items-center text-sm font-bold">
+                   <span className="text-text-main font-serif italic">Estancia ({nights || 0} noches)</span>
+                   <span className="text-text-main font-serif font-black text-lg">${nightsTotal.toFixed(2)}</span>
+                 </div>
+
+                {cleaningFee > 0 && (
+                  <div className="flex justify-between items-center text-xs font-bold text-text-light opacity-80">
+                    <span>Cargo por Limpieza</span>
+                    <span className="font-serif italic">${cleaningFee.toFixed(2)}</span>
+                  </div>
+                )}
+
+                {serviceFee > 0 && (
+                  <div className="flex justify-between items-center text-xs font-bold text-text-light opacity-80">
+                    <span>Cargo por Servicio (VRR)</span>
+                    <span className="font-serif italic">${serviceFee.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {appliedPromo && (
+                  <div className="flex justify-between items-center text-sm text-green-700 font-bold bg-green-50/50 p-2 rounded-xl border border-green-100/50">
+                    <span className="flex items-center gap-1">
+                      <span className="material-icons text-xs">confirmation_number</span>
+                      Descuento ({appliedPromo.discount_percent}%)
+                    </span>
+                    <span className="font-serif font-black text-lg">-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center text-sm font-medium pt-2">
+                   <span className="text-gray-400">Impuestos (IVU/Sales Tax {taxRate}%)</span>
+                   <span className="text-gray-400 font-serif font-bold text-base">${ivuAmount.toFixed(2)}</span>
                 </div>
-              )}
-              
-              <div className="flex justify-between items-center text-sm font-medium">
-                 <span className="text-gray-400">Impuestos (IVU {taxRate}%)</span>
-                 <span className="text-gray-400 font-serif font-bold text-base">${ivuAmount.toFixed(2)}</span>
-              </div>
               
               <div className="pt-6 border-t border-dashed border-gray-200 mt-2 flex justify-between items-end">
                 <div className="flex flex-col gap-1.5">

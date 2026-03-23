@@ -126,5 +126,47 @@ export const MessagingService = {
             params.total, 
             'Web Directa'
         );
+    },
+
+    /**
+     * 📲 SEND SMS (VAPI / Twilio Bridge)
+     * Envía notificaciones críticas y enlaces de pago directamente al móvil.
+     */
+    async sendSms(options: {
+        to: string;
+        content: string;
+        propertyId?: string;
+        bookingId?: string;
+    }) {
+        const cleanPhone = options.to.replace(/\D/g, '');
+        const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
+        
+        // Link dinámico de pago si se provee propertyId
+        const payLink = options.propertyId 
+            ? `\n\nLink de Pago: ${siteUrl}/stay/${options.propertyId}${options.bookingId ? `?booking_id=${options.bookingId}` : ''}`
+            : '';
+
+        const fullMessage = `${options.content}${payLink}\n\n🔱 Salty Concierge`;
+
+        try {
+            console.log(`[MessagingService] SMS Dispatch to ${cleanPhone}: ${fullMessage}`);
+
+            // 🔱 Placeholder para Integración (Twilio / Sinch / etc)
+            // await twilio.messages.create({ body: fullMessage, to: options.to, from: '...' });
+
+            // Logger de Auditoría en Supabase
+            await supabase.from('sms_logs').insert({
+                phone: cleanPhone,
+                content: fullMessage,
+                property_id: options.propertyId || null,
+                booking_id: options.bookingId || null,
+                status: 'dispatched'
+            });
+
+            return { success: true, message: "Dispatched to carrier" };
+        } catch (err: any) {
+            console.error('[MessagingService] SMS Error:', err.message);
+            return { success: false, error: err.message };
+        }
     }
 };

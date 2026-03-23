@@ -84,6 +84,14 @@ const App: React.FC = () => {
   const propertyTitle = currentProperty?.title;
 
   useEffect(() => {
+    // 🔱 SHADOW MODE: Validación de contraste nocturno activa
+    import('./utils/ShadowModeValidator').then(({ checkSaltyContrast }) => {
+      const result = checkSaltyContrast();
+      if (result.isHealthy) {
+        console.log(`[Shadow Mode] 🔱 Legibilidad nocturna validada: ${result.mainContrast.toFixed(2)}:1`);
+      }
+    });
+
     console.log(`[App] Navigating to: ${location.pathname}`);
     window.scrollTo(0, 0);
 

@@ -5,12 +5,16 @@
 @layer base {
   :root {
     --sand: #F9F6F2;
+    --bunker: #050A18;
+    --gold: #D4AF37;
+    --glass-blur: 15px;
   }
 
   body {
     -webkit-tap-highlight-color: transparent;
     background-color: var(--sand);
     overscroll-behavior-y: none;
+    color: var(--bunker);
   }
 
   h1, h2, h3, h4, h5, h6 {
@@ -31,8 +35,8 @@
 
   .glass {
     background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
     border: 1px solid rgba(255, 255, 255, 0.3);
   }
 
@@ -63,24 +67,24 @@
 
   /* 🔱🔱🔱🔱 SALTY MODE (NIGHT THEME) 🔱🔱🔱🔱 */
   .salty-mode {
-    --sand: #050A18;
-    background-color: var(--sand) !important;
+    background-color: var(--bunker) !important;
     color: #F3F4F6 !important;
     transition: background-color 1s ease, color 1s ease;
   }
 
-  .salty-mode .bg-sand { background-color: #050A18 !important; }
-  .salty-mode .bg-white { background-color: rgba(255, 255, 255, 0.05) !important; }
+  .salty-mode .bg-sand { background-color: var(--bunker) !important; }
+  .salty-mode .bg-white { background-color: rgba(255, 255, 255, 0.04) !important; }
   .salty-mode .text-text-main { color: #F3F4F6 !important; }
-  .salty-mode .text-primary { color: #D4AF37 !important; }
-  .salty-mode .bg-primary { background-color: #D4AF37 !important; }
+  .salty-mode .text-primary { color: var(--gold) !important; }
+  .salty-mode .bg-primary { background-color: var(--gold) !important; }
   .salty-mode .border-white\/40, 
   .salty-mode .border-gray-100 { 
     border-color: rgba(255, 255, 255, 0.1) !important; 
   }
   .salty-mode .glass {
-    background: rgba(10, 20, 40, 0.7) !important;
+    background: rgba(10, 20, 40, 0.75) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
+    backdrop-filter: blur(20px) !important;
   }
   .salty-mode .text-text-light { color: #9CA3AF !important; }
   .salty-mode .bg-white\/60 { background-color: rgba(255, 255, 255, 0.05) !important; }

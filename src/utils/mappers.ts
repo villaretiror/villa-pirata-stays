@@ -14,32 +14,39 @@ export const mapSupabaseProperty = (
   const rawPolicies = (p.policies as any) || {};
   const isAdmin = options.isAdmin || false;
 
+  // 🔱 ULTIMATE CLEANUP: Extract only what the UI needs
   return {
-    ...p,
     id: String(p.id),
-    title: p.title || 'Villa',
+    title: p.title || 'Villa Boutique',
     subtitle: p.subtitle || '',
+    description: p.description || '',
+    location: p.location || 'Cabo Rojo, PR',
+    address: p.address || '',
     price: Number(p.price) || 0,
+    original_price: p.original_price ? Number(p.original_price) : null,
     cleaning_fee: Number(p.cleaning_fee) || 0,
     service_fee: Number(p.service_fee) || 0,
     security_deposit: Number(p.security_deposit) || 0,
     rating: Number(p.rating) || 5,
-    reviews_count: Number(p.reviews || (p as any).reviews_count) || 0,
-    images: p.images || [],
-    amenities: p.amenities || [],
-    guests: p.guests || 2,
-    bedrooms: p.bedrooms || 1,
-    beds: p.beds || 1,
-    baths: p.baths || 1,
+    reviews: Number(p.reviews) || 0,
+    images: Array.isArray(p.images) ? p.images : [],
+    amenities: Array.isArray(p.amenities) ? p.amenities : [],
+    guests: Number(p.guests) || 2,
+    bedrooms: Number(p.bedrooms) || 1,
+    beds: Number(p.beds) || 1,
+    baths: Number(p.baths) || 1,
+    is_offline: p.is_offline || false,
+    google_maps_url: p.google_maps_url || '',
+    
+    // Complex Objects
     fees: (p.fees as any) || {},
     policies: {
-      cancellationPolicy: rawPolicies.cancellationPolicy || 'moderate',
+      cancellationPolicy: rawPolicies.cancellationPolicy || p.cancellation_policy_type || 'moderate',
       checkInTime: rawPolicies.checkInTime || '3:00 PM',
       checkOutTime: rawPolicies.checkOutTime || '11:00 AM',
-      guests: p.guests || 2,
+      guests: Number(p.guests) || 2,
       houseRules: p.house_rules || rawPolicies.houseRules || [],
       wifiName: rawPolicies.wifiName || p.wifi_name || '',
-      // 🛡️ SECURITY: Mask sensitive data based on admin status
       wifiPass: isAdmin ? (rawPolicies.wifiPass || p.wifi_pass || '') : '********',
       accessCode: isAdmin ? (rawPolicies.accessCode || p.access_code || '') : 'CONFIDENCIAL'
     },
@@ -51,7 +58,7 @@ export const mapSupabaseProperty = (
     offers: (p.offers as any) || [],
     reviews_list: (p.reviews_list as any) || [],
     host: (p.host as any) || {
-      name: user?.name || 'Anfitrión',
+      name: user?.name || 'Anfitrión VRR',
       image: user?.avatar || '',
       yearsHosting: 1,
       badges: user?.role === 'host' ? ['Pro Host'] : []
