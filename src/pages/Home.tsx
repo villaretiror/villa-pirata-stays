@@ -150,10 +150,10 @@ const Home: React.FC = () => {
   const getSectionTitle = () => {
     if (pets > 0) return 'Alojamientos Pet Friendly';
     switch (activeCategory) {
-      case 'piscina': return 'Modern Tropical Retreats';
-      case 'playa': return 'Strategic Beach Access';
-      case 'mascotas': return 'Pet Friendly Collections';
-      default: return 'Exclusive Boutique Stays';
+      case 'piscina': return 'Oasis con Piscina Privada';
+      case 'playa': return 'The Soul of Cabo Rojo';
+      case 'mascotas': return 'Pet Friendly Elite Collection';
+      default: return 'Designer Villas - Exclusive Stays';
     }
   };
 
@@ -166,9 +166,9 @@ const Home: React.FC = () => {
   };
 
   const categories: { id: Category; label: string; icon: any }[] = [
-    { id: 'todo', label: 'Designer Villas', icon: LayoutGrid },
-    { id: 'piscina', label: 'Pool Retreats', icon: Droplets },
-    { id: 'playa', label: 'Coastal Stays', icon: Palmtree },
+    { id: 'todo', label: 'Elite Villas', icon: LayoutGrid },
+    { id: 'piscina', label: 'Pool & Oasis', icon: Droplets },
+    { id: 'playa', label: 'Tropical Gems', icon: Palmtree },
   ];
 
   // Helper Component for the Search Modal
