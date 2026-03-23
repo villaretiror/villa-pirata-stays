@@ -43,7 +43,7 @@ const SaltyVoiceButton: React.FC = () => {
 
     const toggleCall = async () => {
         if (!vapiInstance) {
-            console.warn('Vapi no está listo todavía.');
+            alert('Capitán, los motores de voz (Vapi) se están calentando. Intente en 2 segundos. 🔱⚓');
             return;
         }
 
@@ -52,16 +52,25 @@ const SaltyVoiceButton: React.FC = () => {
         } else {
             setCallStatus('loading');
             try {
+                // 🔱 ELITE MANEUVER: Simple browser check
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    alert('Navegador no compatible con voz. Use Chrome o Safari. ⚓');
+                    setCallStatus('inactive');
+                    return;
+                }
+
                 await vapiInstance.start(SALTY_ASSISTANT_ID);
+                console.log('Salty Call Started! 🔱');
             } catch (err: any) {
                 console.error('Failed to start call:', err);
+                alert(`Error al iniciar llamada: ${err.message || 'Verifique el micro'}. 🎙️`);
                 setCallStatus('inactive');
             }
         }
     };
 
     return (
-        <div className="fixed bottom-28 left-6 z-[120] flex flex-col items-center gap-4">
+        <div className="fixed bottom-28 left-6 z-[99999] flex flex-col items-center gap-4 pointer-events-auto">
             {/* ☎️ REAL PHONE CALL BUTTON (Direct Connection) */}
             <a
                 href="tel:+15075788506"

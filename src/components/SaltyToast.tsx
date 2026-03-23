@@ -77,6 +77,16 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 // 🔱 ELITE AUDIO OUTPUT: Speak the response after it finishes streaming
                 if (aiResponse) {
                     const utterance = new SpeechSynthesisUtterance(aiResponse);
+                    const voices = window.speechSynthesis.getVoices();
+                    
+                    // 🔱 ELITE CHOICE: Search for sophisticated Spanish voices
+                    const preferredVoice = voices.find(v => 
+                        (v.lang.startsWith('es') && v.name.includes('Google')) || 
+                        (v.lang.startsWith('es') && v.name.includes('Premium')) ||
+                        (v.lang.startsWith('es') && v.name.includes('Monica'))
+                    ) || voices.find(v => v.lang.startsWith('es'));
+
+                    if (preferredVoice) utterance.voice = preferredVoice;
                     utterance.lang = 'es-ES';
                     utterance.rate = 1.0;
                     utterance.pitch = 0.95; // Slightly deeper for authority
@@ -254,6 +264,8 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     return;
                                                 }
 
+                                                alert("Salty está activando sus oídos... 🎙️🔱");
+
                                                 // 🛡️ REINFORCED: Immediate cleanup of any existing instance
                                                 if ((window as any)._saltyRecognition) {
                                                     try { (window as any)._saltyRecognition.abort(); } catch(e){}
@@ -363,10 +375,20 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                                     }
                                                                 }
                                                                 
-                                                                // Speak result
+                                                                // 🔱 ELITE AUDIO OUTPUT: Speak with high-quality voice
                                                                 if (aiResponse) {
                                                                     const ut = new SpeechSynthesisUtterance(aiResponse);
+                                                                    const voices = window.speechSynthesis.getVoices();
+                                                                    const preferredVoice = voices.find(v => 
+                                                                        (v.lang.startsWith('es') && v.name.includes('Google')) || 
+                                                                        (v.lang.startsWith('es') && v.name.includes('Premium')) ||
+                                                                        (v.lang.startsWith('es') && v.name.includes('Monica'))
+                                                                    ) || voices.find(v => v.lang.startsWith('es'));
+                                                                    
+                                                                    if (preferredVoice) ut.voice = preferredVoice;
                                                                     ut.lang = 'es-ES';
+                                                                    ut.rate = 1.0;
+                                                                    ut.pitch = 0.95;
                                                                     window.speechSynthesis.speak(ut);
                                                                 }
                                                             }
