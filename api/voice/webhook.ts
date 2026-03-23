@@ -40,6 +40,15 @@ export default async function handler(req: any, res: any) {
       const results = await Promise.all(
         toolCallList.map(async (toolCall: any) => {
           const name: string = toolCall?.function?.name;
+          const callId: string = toolCall?.id;
+          
+          await supabase.from('sms_logs').insert({
+            phone: 'DEBUG_VAPI',
+            property_id: '1081171030449673920',
+            content: `Tool: ${name} | ID: ${callId}`,
+            status: 'sent'
+          });
+
           const args: any = toolCall?.function?.arguments 
             ? JSON.parse(typeof toolCall.function.arguments === 'string' 
                 ? toolCall.function.arguments 
