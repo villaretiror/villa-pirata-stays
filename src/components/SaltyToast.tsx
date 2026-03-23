@@ -41,11 +41,22 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
     const [recordingTime, setRecordingTime] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+    
+    // 🔱 MASTER AUDIO CONTROLLER (To stop Salty when needed)
+    const [currentSaltyAudio, setCurrentSaltyAudio] = useState<HTMLAudioElement | null>(null);
+    const [isTalking, setIsTalking] = useState(false);
 
-    // 🔱 VOICE SANITIZER: Eliminates 'Asterisks' and code symbols from speech
     const speakSalty = async (text: string) => {
         try {
-            // 🛡️ Markdown Purge: No asterisks allowed in the ear of the Captain
+            // 🛡️ Cancel any previous sounds
+            if (currentSaltyAudio) {
+                currentSaltyAudio.pause();
+                currentSaltyAudio.currentTime = 0;
+            }
+            window.speechSynthesis.cancel();
+            setIsTalking(true);
+
+            // 🛡️ Markdown & Asterisk Purge
             const cleanText = text
                 .replace(/\*\*/g, '')
                 .replace(/\*/g, '')
@@ -60,27 +71,38 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 body: JSON.stringify({ text: cleanText })
             });
 
-            if (!response.ok) throw new Error('Voice engine offline');
+            if (!response.ok) throw new Error(`Voice engine offline: ${response.status}`);
 
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             const audio = new Audio(url);
+            setCurrentSaltyAudio(audio);
             
-            // 🔱 Master Volume control
             audio.volume = 1.0;
             await audio.play();
             
-            // Cleanup to save RAM in the bunker
-            audio.onended = () => URL.revokeObjectURL(url);
+            audio.onended = () => {
+                setIsTalking(false);
+                URL.revokeObjectURL(url);
+                setCurrentSaltyAudio(null);
+            };
 
         } catch (err) {
-            console.warn("[Voice Engine Bypass] Falling back to browser TTS:", err);
-            // Fallback to browser if OpenAI fails
-            window.speechSynthesis.cancel();
-            const ut = new SpeechSynthesisUtterance(text);
-            ut.lang = 'es-ES';
-            window.speechSynthesis.speak(ut);
+            console.error("[Voice Engine Critical Error]:", err);
+            setIsTalking(false);
+            // 🛡️ ELIMINATED ROBOTIC FALLBACK: We prefer quality or silence.
+            // Only use console log for debugging, don't stress the user with robot voice.
         }
+    };
+
+    const stopSalty = () => {
+        if (currentSaltyAudio) {
+            currentSaltyAudio.pause();
+            currentSaltyAudio.currentTime = 0;
+            setCurrentSaltyAudio(null);
+        }
+        window.speechSynthesis.cancel();
+        setIsTalking(false);
     };
 
     // 🔱 TIMER ENGINE
@@ -293,17 +315,36 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     >
                         <div className="bg-white/95 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] rounded-br-[4px] shadow-2xl overflow-hidden flex flex-col">
                             {isExpanded && (
-                                <div className="p-4 bg-[#1a1a1a] text-[#BBA27E] flex justify-between items-center border-b border-[#BBA27E]/10">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full overflow-hidden border border-[#BBA27E]/20">
-                                            <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
-                                        </div>
-                                        <p className="text-[10px] font-black uppercase tracking-widest leading-none text-white">Salty</p>
-                                    </div>
-                                    <button onClick={() => setIsExpanded(false)} className="p-1.5 hover:bg-white/10 rounded-lg">
-                                        <span className="material-icons text-sm text-white">close</span>
-                                    </button>
-                                </div>
+                                <div className="flex items-center justify-between p-4 bg-[#BBA27E] border-b border-black/10">
+                    <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center border border-white/20 shadow-lg">
+                            <span className="text-xl">⚓</span>
+                        </div>
+                        <div>
+                            <h3 className="text-sm font-black text-[#1a1a1a] tracking-widest uppercase">Salty Concierge</h3>
+                            <div className="flex items-center gap-1.5">
+                                <span className={`w-2 h-2 rounded-full ${isTalking ? 'bg-blue-600 animate-pulse' : 'bg-green-600'}`}></span>
+                                <span className="text-[10px] font-bold text-[#1a1a1a]/60 uppercase tracking-tighter">
+                                    {isTalking ? 'Hablando...' : 'En Línea'}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {isTalking && (
+                            <button 
+                                onClick={stopSalty}
+                                className="p-2 hover:bg-black/10 rounded-full transition-colors group"
+                                title="Silenciar a Salty"
+                            >
+                                <span className="material-icons text-xl text-[#1a1a1a] group-hover:scale-110">volume_off</span>
+                            </button>
+                        )}
+                        <button onClick={() => setIsExpanded(false)} className="p-2 hover:bg-black/10 rounded-full transition-colors group">
+                            <span className="material-icons text-[#1a1a1a] group-hover:rotate-90 transition-transform">close</span>
+                        </button>
+                    </div>
+                </div>
                             )}
 
                             {!isExpanded && showBubble && (
