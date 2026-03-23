@@ -78,8 +78,14 @@ export default async function handler(req: any, res: any) {
             const mainProp = properties.find((p: any) => p.id === propertyId);
             const altProp = properties.find((p: any) => p.id !== propertyId);
 
-            // Step 1: Check Main Property
-            const mainBlocked = Array.isArray(mainProp?.blockeddates) && mainProp.blockeddates.some((d: string) => d >= startDate && d <= endDate);
+            // 🔱 ELITE AVAILABILITY ENGINE: Query Real-Time Bookings for Reason Detection
+            const { data: mainConflicts } = await supabase
+              .from('bookings')
+              .select('id, check_in, check_out, status, is_manual_block, customer_name')
+              .eq('property_id', propertyId)
+              .or(`and(check_in.lte.${startDate},check_out.gt.${startDate}),and(check_in.lt.${endDate},check_out.gte.${endDate}),and(check_in.gte.${startDate},check_out.lte.${endDate})`);
+            
+            const mainBlocked = mainConflicts && mainConflicts.length > 0;
             
             if (!mainBlocked && mainProp) {
               const nights = differenceInDays(parseISO(endDate), parseISO(startDate));
@@ -94,19 +100,43 @@ export default async function handler(req: any, res: any) {
               };
             }
 
-            // Step 2: Fallback to Alternative Property
-            if (altProp) {
-              const altBlocked = Array.isArray(altProp.blockeddates) && altProp.blockeddates.some((d: string) => d >= startDate && d <= endDate);
-              if (!altBlocked) {
-                const altNights = differenceInDays(parseISO(endDate), parseISO(startDate));
-                return {
-                  toolCallId: toolCall.id,
-                  result: `Lamento decirle que ${mainProp?.title} ya está reservada para esas fechas, PERO como concierge de élite le tengo una solución: Nuestra propiedad hermana ${altProp.title} está libre y es espectacular. ¿Le gustaría que le verifique el precio de esa opción ahora mismo?`
-                };
+            // If blocked, find the reason
+            if (mainBlocked && mainProp) {
+              const isHost = guestIdentification.email === 'villaretiror@gmail.com';
+              
+              // 🔱 DUAL IDENTITY LOGIC: Full transparency for Host, Discrepancy for Guests
+              const reasonForGuest = "ya tenemos una reserva confirmada para esas fechas";
+              const reasonForHost = mainConflicts?.[0]?.is_manual_block 
+                ? `usted tiene bloqueadas estas fechas por: ${mainConflicts[0].customer_name || 'Mantenimiento Administrativo'}`
+                : `hay una reserva confirmada desde otra plataforma para esas fechas`;
+              
+              const finalReason = isHost ? reasonForHost : reasonForGuest;
+
+              // Step 2: Fallback to Alternative Property
+              if (altProp) {
+                const { data: altConflicts } = await supabase
+                  .from('bookings')
+                  .select('id')
+                  .eq('property_id', altProp.id)
+                  .or(`and(check_in.lte.${startDate},check_out.gt.${startDate}),and(check_in.lt.${endDate},check_out.gte.${endDate}),and(check_in.gte.${startDate},check_out.lte.${endDate})`);
+                
+                const altBlocked = altConflicts && altConflicts.length > 0;
+                
+                if (!altBlocked) {
+                  return {
+                    toolCallId: toolCall.id,
+                    result: `Lamento decirle que ${mainProp?.title} no está disponible porque ${finalReason}. PERO como concierge de élite le tengo una solución: Nuestra propiedad hermana ${altProp.title} está libre y es espectacular. ¿Le gustaría que le verifique el precio de esa opción ahora mismo?`
+                  };
+                }
               }
+
+              return { 
+                toolCallId: toolCall.id, 
+                result: `Lo lamento mucho ${isHost ? 'Capitán' : 'Invitado'}, para esas fechas ${mainProp.title} está ocupada (${finalReason}) y nuestras otras opciones también están llenas. ¿Tiene alguna flexibilidad para otros días?` 
+              };
             }
 
-            return { toolCallId: toolCall.id, result: "Lo lamento mucho Capitán, para esas fechas ambas villas están en su máxima capacidad. ¿Tiene alguna flexibilidad para otros días?" };
+            return { toolCallId: toolCall.id, result: "No pude verificar la disponibilidad exacta, denme un segundo para recalibrar." };
           }
 
           case 'send_payment_sms': {

@@ -125,6 +125,18 @@ export const CalendarSyncService = {
             const key = `${block.start}_${block.end}`;
             const match = existingMap.get(key);
 
+            // 🔱 ELITE HEURISTIC: Detect if it's a real booking or just a block
+            const summary = (block.summary || '').trim();
+            const lowerSummary = summary.toLowerCase();
+            
+            // Standard AirBnB/Booking.com reserved markers
+            const isRealBooking = lowerSummary.includes('reserved') || 
+                                  lowerSummary.includes('hm') || 
+                                  lowerSummary.includes('reservation');
+            
+            const isManual = !isRealBooking;
+            const displayLabel = isRealBooking ? 'Reserva Externa' : (summary || 'Bloqueo Administrativo');
+
             if (!match) {
                 toInsert.push({
                     property_id: propertyId,
@@ -134,11 +146,15 @@ export const CalendarSyncService = {
                     source: platform,
                     sync_last_hash: block.hash,
                     guests_count: 1,
-                    total_price: 0
+                    total_price: 0,
+                    is_manual_block: isManual,
+                    customer_name: displayLabel
                 });
             } else if (match.sync_last_hash !== block.hash) {
                 await supabase.from('bookings').update({ 
                     sync_last_hash: block.hash, 
+                    is_manual_block: isManual,
+                    customer_name: displayLabel,
                     updated_at: new Date().toISOString() 
                 }).eq('id', match.id);
                 updatedCount++;

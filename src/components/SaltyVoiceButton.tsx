@@ -61,7 +61,7 @@ const SaltyVoiceButton: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-44 left-6 z-[60] flex flex-col items-center">
+        <div className="fixed bottom-44 left-6 z-[100] flex flex-col items-center">
             <button
                 onClick={toggleCall}
                 className={`group relative p-4 rounded-full shadow-2xl transition-all duration-500 transform hover:scale-110 active:scale-95 ${

@@ -126,18 +126,26 @@ const Home: React.FC = () => {
     });
   }, [properties, bookings, adults, children, pets, activeCategory, startDate, endDate]);
 
-  // Combined Blocks for the Global Search Calendar (Dates where NO property is available)
+  // Combined Blocks for the Global Search Calendar (Dates where ALL villas are occupied)
   const globalBlockedDates = React.useMemo(() => {
-    // This is computationally expensive but necessary for "Elite" accuracy
-    // For now, let's just show dates where ALL villas are occupied.
     if (properties.length === 0) return [];
     
-    // Simple heuristic: if we have few properties, we can show common blocks.
-    // However, usually a search calendar should be wide open to encourage engagement.
-    // For now, let's just return empty [] to restore functionality without lag, 
-    // BUT we'll show blocks if the host specifically requested it elsewhere.
-    return []; 
-  }, [properties, bookings]);
+    // 🔱 ELITE LOGIC: We merge all dates from ALL properties. 
+    // If a guest searches globally, we only block a date if EVERY property is blocked on that date.
+    // However, to encourage booking, we'll show dates where at least one property is available.
+    // But for "Tu Viaje" (Foto 2), we want to show dates where ALL is blocked.
+    
+    const allBlockedSets = properties.map(p => new Set((p.blockeddates as string[]) || []));
+
+    // Find dates present in ALL properties' blocked lists
+    const commonBlocks = allBlockedSets.length > 0 
+      ? [...allBlockedSets[0]].filter(date => 
+          allBlockedSets.every((set: Set<string>) => set.has(date))
+        )
+      : [];
+
+    return (commonBlocks as string[]).map(d => new Date(d + 'T12:00:00')); // T12 to avoid timezone shifts
+  }, [properties]);
 
   const getSectionTitle = () => {
     if (pets > 0) return 'Alojamientos Pet Friendly';
@@ -201,8 +209,8 @@ const Home: React.FC = () => {
 
       {/* Search Overlay */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-50 bg-sand/90 backdrop-blur-xl flex items-start justify-center pt-24 px-4 animate-fade-in">
-          <div className="w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-slide-up relative bg-white border border-white/50">
+        <div className="fixed inset-0 z-[100] bg-sand/90 backdrop-blur-xl flex items-start justify-center pt-24 pb-12 px-4 animate-fade-in overflow-y-auto">
+          <div className="w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-slide-up relative bg-white border border-white/50 my-auto">
 
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold font-serif text-text-main">Tu viaje</h2>
@@ -211,8 +219,8 @@ const Home: React.FC = () => {
               </button>
             </div>
 
-            <div className="mb-8 overflow-y-auto max-h-[60vh] pr-2 no-scrollbar">
-              <div className="mb-8">
+            <div className="mb-4 pr-2">
+              <div className="mb-6">
                 <BookingCalendar 
                   startDate={startDate} 
                   endDate={endDate} 
@@ -225,8 +233,11 @@ const Home: React.FC = () => {
                 />
               </div>
 
-              <div className="space-y-1 mb-4">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-text-light mb-4">Integrantes</h3>
+              <div className="p-5 bg-sand/40 rounded-[2rem] border border-orange-100/30 mb-6">
+                <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-text-light mb-4 flex items-center gap-2">
+                   <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                   Integrantes
+                </h3>
                 <CounterRow label="Exploradores Adultos" sub="Edad 13+" val={adults} setVal={setAdults} min={1} />
                 <CounterRow label="Pequeños Capitanes" sub="Edad 2 - 12" val={children} setVal={setChildren} min={0} />
                 <CounterRow label="Mascotas" sub="Patas bienvenidas 🐾" val={pets} setVal={setPets} min={0} />
@@ -561,10 +572,12 @@ const Home: React.FC = () => {
       </div>
 
       {/* MODALS & STICKY ELEMENTS */}
-      <StickyBookingBar 
-        villaName={properties[0]?.title || "Villa Retiro R & Pirata Family"} 
-        onAction={scrollToResults} 
-      />
+      {!isSearchOpen && (
+        <StickyBookingBar 
+          villaName={properties[0]?.title || "Villa Retiro R & Pirata Family"} 
+          onAction={() => setIsSearchOpen(true)} // Cambiado para abrir el modal directamente
+        />
+      )}
 
       {selectedGuideItem && (
         <MapModal

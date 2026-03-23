@@ -753,17 +753,50 @@ const Messages: React.FC = () => {
       <form onSubmit={handleSendMessage} className="p-4 pb-[max(1rem,env(safe-area-inset-bottom,16px))] bg-white border-t border-gray-100 flex gap-2 relative shadow-[0_-8px_30px_rgba(0,0,0,0.04)] ring-1 ring-black/[0.02]">
         <button
           type="button"
-          className="bg-[#1a1a1a] text-[#BBA27E] w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all group overflow-hidden relative"
+          className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg active:scale-95 transition-all group overflow-hidden relative ${isTyping ? 'bg-gray-200 cursor-not-allowed' : 'bg-[#1a1a1a] text-[#BBA27E]'}`}
           onClick={() => {
-            alert("Próximamente: Salty te escuchará y hablará contigo en tiempo real. ¡Estamos afinando su voz de Capitán!");
+            const recognition = new (window as any).webkitSpeechRecognition();
+            recognition.lang = 'es-ES';
+            recognition.continuous = false;
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+              setIsTyping(true);
+              const toast = document.createElement('div');
+              toast.id = 'voice-toast';
+              toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full z-[200] font-black uppercase tracking-widest text-[10px] flex items-center gap-3 animate-slide-up shadow-2xl border border-[#BBA27E]/30';
+              toast.innerHTML = `<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Salty te escucha...`;
+              document.body.appendChild(toast);
+            };
+
+            recognition.onresult = (event: any) => {
+              const text = event.results[0][0].transcript;
+              setInputText(text);
+              const toast = document.getElementById('voice-toast');
+              if (toast) toast.remove();
+            };
+
+            recognition.onerror = () => {
+              setIsTyping(false);
+              const toast = document.getElementById('voice-toast');
+              if (toast) toast.remove();
+            };
+
+            recognition.onend = () => {
+              setIsTyping(false);
+              const toast = document.getElementById('voice-toast');
+              if (toast) toast.remove();
+            };
+
+            recognition.start();
           }}
         >
           <motion.div 
-            animate={{ scale: [1, 1.2, 1] }} 
-            transition={{ duration: 2, repeat: Infinity }}
-            className="material-icons opacity-80"
+            animate={isTyping ? { scale: [1, 1.3, 1], opacity: [0.5, 1, 0.5] } : { scale: 1, opacity: 1 }} 
+            transition={{ duration: 1.5, repeat: Infinity }}
+            className="material-icons"
           >
-            mic
+            {isTyping ? 'graphic_eq' : 'mic'}
           </motion.div>
         </button>
         <input

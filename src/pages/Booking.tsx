@@ -252,7 +252,7 @@ const Booking: React.FC = () => {
 
   return (
     <SectionErrorBoundary sectionName="Reserva Vivir la Experiencia">
-    <div className="fixed inset-0 z-50 bg-sand flex justify-center items-end sm:items-center p-0 sm:p-4 animate-fade-in">
+    <div className="fixed inset-0 z-[100] bg-sand flex justify-center items-end sm:items-center p-0 sm:p-4 animate-fade-in">
       <div className="absolute inset-0 overflow-hidden pointer-events-none opacity-40">
         <div className="absolute top-0 right-0 w-96 h-96 bg-primary/20 rounded-full blur-[100px]"></div>
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]"></div>
