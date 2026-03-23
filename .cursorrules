@@ -23,6 +23,7 @@
 ## 🛠️ GESTIÓN DE ESQUEMA (SUPREME UNIFICATION)
 - **Nomenclatura:** Usa exclusivamente NOMBRES DE `SUPREME_SCHEMA_UNIFICATION.sql`.
 - **Validación Previa:** Prohibido insertar datos sin verificar la existencia de la columna. Generar SQL primero.
+- **Sincronía de Tipos:** Cada vez que generes un SQL ALTER, estás obligado a actualizar las Interfaces o Types de TypeScript en el frontend. Si añades la columna 'piscina_climatizada', el objeto Villa en el código debe reconocerla inmediatamente para evitar errores de compilación.
 
 ## 🎨 ESTÁNDARES DE LUJO UX (IRMARIS IDENTITY)
 - Grillas de 2-3 columnas. Espaciado generoso. Serif para títulos, Sans para datos.
