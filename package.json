@@ -27,6 +27,7 @@
     "jspdf": "^4.2.0",
     "lucide-react": "^0.344.0",
     "node-ical": "^0.25.5",
+    "openai": "^6.32.0",
     "react": "18.2.0",
     "react-datepicker": "^9.1.0",
     "react-dom": "18.2.0",

@@ -33,7 +33,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
         setSessionId(sid);
     }, []);
 
-    // 🔱 AUDIO RECORDING STATES
+    // 🔱 AUDIO & VOICE STATES
     const [isRecording, setIsRecording] = useState(false);
     const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
     const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
@@ -41,6 +41,47 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
     const [recordingTime, setRecordingTime] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 🔱 VOICE SANITIZER: Eliminates 'Asterisks' and code symbols from speech
+    const speakSalty = async (text: string) => {
+        try {
+            // 🛡️ Markdown Purge: No asterisks allowed in the ear of the Captain
+            const cleanText = text
+                .replace(/\*\*/g, '')
+                .replace(/\*/g, '')
+                .replace(/__/g, '')
+                .replace(/_/g, '')
+                .replace(/#/g, '')
+                .replace(/`/g, '');
+
+            const response = await fetch('/api/voice', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: cleanText })
+            });
+
+            if (!response.ok) throw new Error('Voice engine offline');
+
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            
+            // 🔱 Master Volume control
+            audio.volume = 1.0;
+            await audio.play();
+            
+            // Cleanup to save RAM in the bunker
+            audio.onended = () => URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.warn("[Voice Engine Bypass] Falling back to browser TTS:", err);
+            // Fallback to browser if OpenAI fails
+            window.speechSynthesis.cancel();
+            const ut = new SpeechSynthesisUtterance(text);
+            ut.lang = 'es-ES';
+            window.speechSynthesis.speak(ut);
+        }
+    };
 
     // 🔱 TIMER ENGINE
     useEffect(() => {
@@ -157,15 +198,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                         }
                         
                         if (aiResponse) {
-                            const ut = new SpeechSynthesisUtterance(aiResponse);
-                            const voices = window.speechSynthesis.getVoices();
-                            const preferredVoice = voices.find(v => 
-                                (v.lang.startsWith('es') && v.name.includes('Google')) || 
-                                (v.lang.startsWith('es') && v.name.includes('Premium'))
-                            ) || voices.find(v => v.lang.startsWith('es'));
-                            if (preferredVoice) ut.voice = preferredVoice;
-                            ut.lang = 'es-ES';
-                            window.speechSynthesis.speak(ut);
+                            speakSalty(aiResponse);
                         }
                     }
                 }
@@ -221,15 +254,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     }
                 }
                 if (aiResponse) {
-                    const ut = new SpeechSynthesisUtterance(aiResponse);
-                    const voices = window.speechSynthesis.getVoices();
-                    const preferredVoice = voices.find(v => 
-                        (v.lang.startsWith('es') && v.name.includes('Google')) || 
-                        (v.lang.startsWith('es') && v.name.includes('Premium'))
-                    ) || voices.find(v => v.lang.startsWith('es'));
-                    if (preferredVoice) ut.voice = preferredVoice;
-                    ut.lang = 'es-ES';
-                    window.speechSynthesis.speak(ut);
+                    speakSalty(aiResponse);
                 }
             }
         } catch (e) {

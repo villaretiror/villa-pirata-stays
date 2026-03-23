@@ -8,6 +8,15 @@ const PUBLIC_KEY = '816607fa-e7f9-4fdf-879c-f00a5d1c8b1c';
 const SaltyVoiceButton: React.FC = () => {
     const [callStatus, setCallStatus] = useState<'inactive' | 'loading' | 'active'>('inactive');
     const [vapiInstance, setVapiInstance] = useState<any>(null);
+    const [volume, setVolume] = useState(0);
+    const [propertyId, setPropertyId] = useState<string | null>(null);
+
+    // 🔱 DETECT CONTEXT (Property ID from URL)
+    useEffect(() => {
+        const pathParts = window.location.pathname.split('/');
+        const id = pathParts.find(part => part.length > 15); // Simple ID detection
+        if (id) setPropertyId(id);
+    }, [window.location.pathname]);
 
     useEffect(() => {
         // Intentar inicializar Vapi desde el objeto global
@@ -17,10 +26,18 @@ const SaltyVoiceButton: React.FC = () => {
                 const instance = new VapiConstructor(PUBLIC_KEY);
                 
                 instance.on('call-start', () => setCallStatus('active'));
-                instance.on('call-end', () => setCallStatus('inactive'));
+                instance.on('call-end', () => {
+                    setCallStatus('inactive');
+                    setVolume(0);
+                });
+                instance.on('volume-level', (level: number) => {
+                    // level typically ranges from 0 to 1
+                    setVolume(level);
+                });
                 instance.on('error', (err: any) => {
                     console.error('Vapi Error:', err);
                     setCallStatus('inactive');
+                    setVolume(0);
                 });
 
                 setVapiInstance(instance);
@@ -52,15 +69,23 @@ const SaltyVoiceButton: React.FC = () => {
         } else {
             setCallStatus('loading');
             try {
-                // 🔱 ELITE MANEUVER: Simple browser check
                 if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
                     alert('Navegador no compatible con voz. Use Chrome o Safari. ⚓');
                     setCallStatus('inactive');
                     return;
                 }
 
-                await vapiInstance.start(SALTY_ASSISTANT_ID);
-                console.log('Salty Call Started! 🔱');
+                // 🔱 CONTEXT INJECTION: Tell Salty where we are!
+                await vapiInstance.start(SALTY_ASSISTANT_ID, {
+                    assistantOverrides: {
+                        variableValues: {
+                            propertyId: propertyId || '1081171030449673920',
+                            currentPath: window.location.pathname,
+                            currentUrl: window.location.href
+                        }
+                    }
+                });
+                console.log('Salty Voice Context Unified! 🔱');
             } catch (err: any) {
                 console.error('Failed to start call:', err);
                 alert(`Error al iniciar llamada: ${err.message || 'Verifique el micro'}. 🎙️`);
@@ -71,22 +96,53 @@ const SaltyVoiceButton: React.FC = () => {
 
     return (
         <div className="fixed bottom-48 left-6 z-[99999] flex flex-col items-center gap-6 pointer-events-auto scale-90 md:scale-100 origin-bottom-left">
-            {/* ☎️ REAL PHONE CALL BUTTON (Direct Connection) */}
-            <a
-                href="tel:+12092673503"
-                className="group relative p-4 rounded-2xl bg-[#BBA27E] shadow-[0_15px_35px_rgba(187,162,126,0.3)] border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 animate-fade-in"
-                aria-label="Llamar a Salty al +1 209 267 3503"
+            {/* ☎️ VAPI WEB CALL BUTTON (Native Experience) */}
+            <div className="relative group">
+                {/* 🔱 ELITE GLOW: Reactive to current volume! */}
+                <div 
+                    className={`absolute inset-[-15px] bg-[#BBA27E]/20 rounded-full blur-2xl transition-all duration-75 pointer-events-none ${callStatus === 'active' ? 'opacity-100 scale-125' : 'opacity-0 scale-0'}`}
+                    style={{ 
+                        transform: `scale(${1 + volume * 1.5})`,
+                        boxShadow: `0 0 ${volume * 50}px ${volume * 20}px rgba(187, 162, 126, 0.4)`
+                    }}
+                ></div>
+
+                <button
+                    onClick={toggleCall}
+                    disabled={callStatus === 'loading'}
+                    className={`group relative p-5 rounded-3xl transition-all duration-500 shadow-2xl border-2 flex items-center justify-center ${
+                        callStatus === 'active' 
+                            ? 'bg-[#1a1a1a] border-red-500 text-red-500' 
+                            : 'bg-[#BBA27E] border-white/20 text-[#1a1a1a]'
+                    } ${callStatus === 'loading' ? 'opacity-70 scale-95 cursor-wait' : 'hover:scale-110 active:scale-90 scale-100'}`}
+                    aria-label={callStatus === 'active' ? 'Terminar llamada' : 'Llamar al Concierge Voz'}
+                >
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity"></div>
+                    
+                    {callStatus === 'loading' ? (
+                        <div className="w-6 h-6 border-2 border-[#1a1a1a]/30 border-t-[#1a1a1a] rounded-full animate-spin"></div>
+                    ) : (
+                        <span className={`material-icons text-2xl transition-all ${callStatus === 'active' ? 'animate-pulse' : ''}`}>
+                            {callStatus === 'active' ? 'call_end' : 'phone_in_talk'}
+                        </span>
+                    )}
+                    
+                    {/* Status Pip */}
+                    <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transition-colors ${callStatus === 'active' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                    
+                    {/* Floating Label */}
+                    <span className="absolute left-full ml-4 bg-[#1a1a1a] text-[#BBA27E] text-[10px] font-black uppercase tracking-[0.2em] px-5 py-3 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-[#BBA27E]/20 backdrop-blur-md">
+                        {callStatus === 'active' ? 'Terminar Llamada 📡' : 'Llamar al Concierge ☎️'}
+                    </span>
+                </button>
+            </div>
+
+            {/* Direct Phone Number (Small Label) */}
+            <a 
+                href="tel:+12092673503" 
+                className="text-[9px] font-black text-[#1a1a1a]/40 uppercase tracking-widest hover:text-primary transition-colors hover:underline"
             >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity"></div>
-                <span className="material-icons text-[#1a1a1a] text-2xl">phone_in_talk</span>
-                
-                {/* Elite Badge */}
-                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
-                
-                {/* Floating Label */}
-                <span className="absolute left-full ml-4 bg-[#BBA27E] text-[#1a1a1a] text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2.5 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-white/30 backdrop-blur-md">
-                    Llamar al Concierge ☎️
-                </span>
+                Voz Directa: 209-267-3503
             </a>
         </div>
     );
