@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import { differenceInDays, parseISO } from 'date-fns';
 import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
+import { checkAvailabilityWithICal, findCalendarGaps, applyAIQuote } from '../src/aiServices.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL || "",
@@ -84,34 +85,50 @@ export default async function handler(req: any, res: any) {
  */
 async function handleVapiTools(req: any, res: any, message: any) {
   const toolCallList = message?.toolCallList || message?.toolCalls || (message.functionCall ? [message.functionCall] : []);
-  const customerPhone = message.call?.customer?.number?.replace(/\D/g, '') || '';
   
   const results = await Promise.all(toolCallList.map(async (toolCall: any) => {
     const name = toolCall?.function?.name || toolCall?.name;
     const args = typeof toolCall?.function?.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall?.function?.arguments || toolCall?.arguments || {};
 
-    if (name === 'get_property_info') {
-      const { data } = await supabase.from('properties').select('*').eq('id', args.propertyId).single();
-      return { toolCallId: toolCall.id, result: JSON.stringify(data) };
-    }
-
-    if (name === 'check_availability') {
-      const { propertyId = '1081171030449673920', startDate, endDate } = args;
-      const { data: properties } = await supabase.from('properties').select('id, title, price, blockeddates').in('id', [propertyId, '42839458']);
-      const mainProp = properties?.find((p: any) => p.id === propertyId);
-      
-      const { data: conflicts } = await supabase.from('bookings').select('id').eq('property_id', propertyId)
-        .or(`and(check_in.lte.${startDate},check_out.gt.${startDate}),and(check_in.lt.${endDate},check_out.gte.${endDate}),and(check_in.gte.${startDate},check_out.lte.${endDate})`);
-      
-      const isBlocked = conflicts && conflicts.length > 0;
-      if (!isBlocked && mainProp) {
-        const nights = differenceInDays(parseISO(endDate), parseISO(startDate));
-        return { toolCallId: toolCall.id, result: `¡Excelente! ${mainProp.title} está disponible. El total por ${nights} noches es de ${nights * (mainProp.price || 0)} dólares. ¿Desean reservar ahora? ⚓` };
+    try {
+      if (name === 'get_property_info') {
+        const { data } = await supabase.from('properties').select('*').eq('id', args.propertyId).single();
+        return { toolCallId: toolCall.id, result: JSON.stringify(data) };
       }
-      return { toolCallId: toolCall.id, result: "Lo lamento, esas fechas ya están ocupadas en el paraíso. ¿Tienen flexibilidad para otros días? ⚓" };
-    }
 
-    return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta." };
+      if (name === 'check_availability') {
+        const { propertyId = '1081171030449673920', startDate, endDate } = args;
+        
+        // 🔱 MASTER VALIDATION (iCal + Seasonal logic)
+        const availability = await checkAvailabilityWithICal(propertyId, startDate, endDate);
+        
+        if (availability.available) {
+          const quote = await applyAIQuote(propertyId, startDate, endDate);
+          return { 
+            toolCallId: toolCall.id, 
+            result: `¡Excelente noticia! Estas fechas están disponibles para crear memorias inolvidables. El total por ${quote.nights} noches, incluyendo impuestos del paraíso, es de ${quote.total} dólares. ¿Le gustaría proceder con la reserva ahora mismo? ⚓` 
+          };
+        }
+
+        // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
+        const gaps = await findCalendarGaps(propertyId);
+        const nextGap = gaps[0];
+        const gapMsg = nextGap 
+          ? `. Sin embargo, veo que tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end} (${nextGap.nights} noches). ¿Le funcionaría esa travesía?`
+          : ". Por el momento esas fechas están reservadas y no veo huecos cercanos.";
+
+        return { 
+          toolCallId: toolCall.id, 
+          result: `Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio${gapMsg} ⚓` 
+        };
+      }
+
+      return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta." };
+
+    } catch (err: any) {
+      console.error(`[Vapi Tool Error - ${name}]:`, err.message);
+      return { toolCallId: toolCall.id, result: "Hubo un pequeño contratiempo en la comunicación con mi sistema de navegación, pero ya estoy recuperando los datos. ¿En qué más puedo asistirle?" };
+    }
   }));
 
   return res.status(200).json({ results });
