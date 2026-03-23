@@ -44,6 +44,12 @@ export const checkAvailabilityWithICal = async (
     const qOut = new Date(checkOut);
     const now = new Date();
 
+    // 🛡️ DATE INTEGRITY GUARD: Fail gracefully if dates are invalid
+    if (isNaN(qIn.getTime()) || isNaN(qOut.getTime())) {
+        console.warn('[checkAvailability] Invalid Dates detected:', { checkIn, checkOut });
+        return { available: false, reason: 'Lo lamento, Capitán, pero mis brújulas no reconocen esas fechas. ¿Podría ser más específico con el día y el mes?' };
+    }
+
     // 🛡️ REINFORCED RESOLUTION: Ensure we have the correct ID for the DB
     let finalId = String(villaId).trim();
     if (isNaN(Number(finalId)) || finalId.length < 5) {
