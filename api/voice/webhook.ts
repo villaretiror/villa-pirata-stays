@@ -2,16 +2,14 @@ import { supabase } from '../../src/lib/supabase.js';
 import { differenceInDays, parseISO } from 'date-fns';
 
 /**
- * 🎙️ SALTY VOICE WEBHOOK (VAPI BRIDGE v2)
+ * 🔱 SALTY VOICE WEBHOOK v3 (ELITE EDITION)
  * 
- * Handles all VAPI server-url calls including:
- * - tool-calls (check_availability, send_payment_sms)
- * - status-update (call lifecycle)
- * - end-of-call-report (logging)
+ * Powered by @vapi-ai/server-sdk logic.
+ * This is the central hub for Salty's voice intelligence.
  */
 
 export default async function handler(req: any, res: any) {
-  // ── CORS Headers (VAPI requires these) ──────────────────────────────────
+  // CORS Standards (Required for VAPI global distribution)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -20,49 +18,31 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const body = req.body || {};
-    const messageType = body?.message?.type;
+    const { message } = req.body || {};
+    const messageType = message?.type;
 
-    console.log('[Salty Voice] Incoming message type:', messageType);
-    console.log('[Salty Voice] Body snapshot:', JSON.stringify(body).slice(0, 500));
+    console.log(`[🔱 Salty Voice] Incoming Event: ${messageType}`);
 
-    // ── Handle Tool Calls ──────────────────────────────────────────────────
+    // logic for handling tool calls
     if (messageType === 'tool-calls') {
-      // VAPI sends toolCallList (array)
-      const toolCallList: any[] = body.message?.toolCallList || body.message?.toolCalls || [];
-
-      if (!toolCallList.length) {
-        console.error('[Salty Voice] No tool calls found in payload');
-        return res.status(200).json({ results: [] });
-      }
-
-      // Process all tool calls in parallel
+      const toolCallList = message?.toolCallList || message?.toolCalls || [];
+      
       const results = await Promise.all(
         toolCallList.map(async (toolCall: any) => {
-          const name: string = toolCall?.function?.name;
-          const callId: string = toolCall?.id;
-          
-          await supabase.from('sms_logs').insert({
-            phone: 'DEBUG_VAPI',
-            property_id: '1081171030449673920',
-            content: `Tool: ${name} | ID: ${callId}`,
-            status: 'sent'
-          });
+          const name = toolCall?.function?.name;
+          // Robust parsing of arguments from VAPI
+          const args = typeof toolCall?.function?.arguments === 'string' 
+            ? JSON.parse(toolCall.function.arguments) 
+            : toolCall?.function?.arguments || {};
 
-          const args: any = toolCall?.function?.arguments 
-            ? JSON.parse(typeof toolCall.function.arguments === 'string' 
-                ? toolCall.function.arguments 
-                : JSON.stringify(toolCall.function.arguments))
-            : {};
-
-          console.log(`[Salty Voice] Executing Tool: ${name}`, args);
+          console.log(`[🔱 Salty/Tool] Executing: ${name}`, args);
 
           switch (name) {
             case 'check_availability': {
               const { propertyId = '1081171030449673920', startDate, endDate } = args;
 
               if (!startDate || !endDate) {
-                return { toolCallId: toolCall.id, result: "Necesito las fechas de entrada y salida para verificar disponibilidad." };
+                return { toolCallId: toolCall.id, result: "Capitán, necesito que me diga las fechas de entrada y salida para verificar el calendario." };
               }
 
               const { data: p, error } = await supabase
@@ -72,10 +52,10 @@ export default async function handler(req: any, res: any) {
                 .single();
 
               if (error || !p) {
-                console.error('[Salty Voice] Property fetch error:', error?.message);
-                return { toolCallId: toolCall.id, result: "Permíteme verificar la disponibilidad de forma manual. Dame un momento." };
+                return { toolCallId: toolCall.id, result: "Hubo un pequeño retraso en la conexión con la bitácora. Permítame verificarlo manualmente o intente con otras fechas." };
               }
 
+              // Availability Logic
               const isBlocked = Array.isArray(p.blockeddates) && p.blockeddates.some(
                 (d: string) => d >= startDate && d <= endDate
               );
@@ -83,7 +63,7 @@ export default async function handler(req: any, res: any) {
               if (isBlocked) {
                 return {
                   toolCallId: toolCall.id,
-                  result: `Lo lamento, ${p.title} no está disponible en esas fechas. ¿Te puedo ayudar con otras fechas?`
+                  result: `Lamento informarle que ${p.title} ya está ocupada para esas fechas. ¿Le gustaría que verifiquemos otro rango o la otra propiedad en Cabo Rojo?`
                 };
               }
 
@@ -92,7 +72,7 @@ export default async function handler(req: any, res: any) {
 
               return {
                 toolCallId: toolCall.id,
-                result: `Excelente noticia. ${p.title} está disponible. Son ${nights} noches a ${p.price} dólares por noche, para un total de ${total} dólares. ¿Deseas que te envíe el enlace de pago directamente a tu teléfono?`
+                result: `¡Excelentes noticias! ${p.title} está disponible para esas ${nights} noches. El total de su estancia sería de ${total} dólares. ¿Desea que le envíe el enlace oficial a su móvil para asegurar su reserva ahora mismo?`
               };
             }
 
@@ -100,27 +80,25 @@ export default async function handler(req: any, res: any) {
               const { phone, guestName, propertyId = '1081171030449673920' } = args;
 
               if (!phone) {
-                return { toolCallId: toolCall.id, result: "Necesito tu número de teléfono para enviarte el enlace." };
+                return { toolCallId: toolCall.id, result: "Disculpe, ¿podría repetirme su número de teléfono para enviarle el mensaje?" };
               }
 
-              // Log to Supabase sms_logs
+              // Audit logging to Supabase
               await supabase.from('sms_logs').insert({
                 phone,
-                content: `Enlace de pago para reserva en Villa Retiro R`,
+                content: `Reserva Villa Retiro R - Link de Pago Enviado p/ ${guestName || 'Invitado'}`,
                 property_id: propertyId,
-                status: 'sent'
+                status: 'vapi_voice_dispatched'
               });
-
-              console.log(`[Salty Voice] SMS dispatched to ${phone}`);
 
               return {
                 toolCallId: toolCall.id,
-                result: `Perfecto, ${guestName || 'viajero'}. Acabo de enviarte el enlace seguro de reserva a tu móvil. Avísame cuando lo recibas y con gusto te ayudo con cualquier pregunta.`
+                result: `Perfecto. Acabo de disparar el mensaje con el enlace seguro a su celular. Avísame cuando lo recibas. ¿Hay algo más que el santuario le pueda ofrecer hoy?`
               };
             }
 
             default:
-              return { toolCallId: toolCall.id, result: "No reconozco esa función. ¿En qué más puedo ayudarte?" };
+              return { toolCallId: toolCall.id, result: "Esa función no está disponible en mis protocolos actuales, ¿puedo ayudarle con la reserva o precios?" };
           }
         })
       );
@@ -128,20 +106,15 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ results });
     }
 
-    // ── Other VAPI event types (status-update, end-of-call-report, etc.) ──
-    if (messageType === 'end-of-call-report') {
-      const { call } = body?.message || {};
-      console.log('[Salty Voice] Call ended. Duration:', call?.duration, 'Cost:', call?.cost);
-    }
-
-    return res.status(200).json({ received: true });
+    // Default VAPI success response
+    return res.status(200).json({ success: true, processed: true });
 
   } catch (err: any) {
-    console.error('[Voice Webhook] Fatal Error:', err.message);
+    console.error("[🔱 Salty Error]", err.message);
     return res.status(200).json({ 
       results: [{
-        toolCallId: 'error',
-        result: "Estoy experimentando dificultades técnicas. Por favor comunícate con nosotros directamente."
+        toolCallId: 'error_recovery',
+        result: "Capitán, mi conexión con la central está inestable. ¿Podría repetirme su solicitud o llamarnos en un momento?"
       }]
     });
   }
