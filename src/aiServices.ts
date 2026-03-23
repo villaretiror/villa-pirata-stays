@@ -1,3 +1,4 @@
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase.js';
 import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
@@ -35,9 +36,10 @@ const SALTY_MODEL = 'gemini-3-flash-preview'; // ⚡ Gemini 3 Flash (Mar 2026 - 
 export const checkAvailabilityWithICal = async (
     villaId: string,
     checkIn: string,
-    checkOut: string
+    checkOut: string,
+    customSupabase?: SupabaseClient
 ): Promise<{ available: boolean; reason?: string; is_request_only?: boolean }> => {
-
+    const client = customSupabase || supabase;
     const qIn = new Date(checkIn);
     const qOut = new Date(checkOut);
     const now = new Date();
@@ -45,7 +47,7 @@ export const checkAvailabilityWithICal = async (
     // 🛡️ REINFORCED RESOLUTION: Ensure we have the correct ID for the DB
     let finalId = String(villaId).trim();
     if (isNaN(Number(finalId)) || finalId.length < 5) {
-        const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
+        const { data: byTitle } = await client.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
         if (byTitle) {
             finalId = String(byTitle.id);
         }
@@ -53,7 +55,7 @@ export const checkAvailabilityWithICal = async (
 
     // ── Step 1: Query unified bookings table
     type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
-    const { data: dbBookings, error: dbError } = await supabase
+    const { data: dbBookings, error: dbError } = await client
         .from('bookings')
         .select('check_in, check_out, status, hold_expires_at, source')
         .eq('property_id', finalId)
@@ -210,18 +212,19 @@ export const getPaymentVerificationStatus = async (bookingId: string): Promise<s
 };
 
 // 4. Gap Automation (Revenue Optimization & Sentinel Vision)
-export const findCalendarGaps = async (propertyId: string): Promise<{ start: string; end: string; nights: number }[]> => {
+export const findCalendarGaps = async (propertyId: string, customSupabase?: SupabaseClient): Promise<{ start: string; end: string; nights: number }[]> => {
+    const client = customSupabase || supabase;
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
     // 🛡️ REINFORCED RESOLUTION
     let finalId = String(propertyId).trim();
     if (isNaN(Number(finalId)) || finalId.length < 5) {
-        const { data: byTitle } = await supabase.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
+        const { data: byTitle } = await client.from('properties').select('id').ilike('title', `%${finalId}%`).limit(1).maybeSingle();
         if (byTitle) finalId = String(byTitle.id);
     }
 
-    const { data: bookings, error } = await supabase
+    const { data: bookings, error } = await client
         .from('bookings')
         .select('check_in, check_out, source')
         .eq('property_id', finalId)
@@ -316,16 +319,18 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
     return { allowed: true };
 };
 
-export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string) => {
+export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string, customSupabase?: SupabaseClient) => {
+    const client = customSupabase || supabase;
+    
     // 🛡️ REINFORCED RESOLUTION: Try direct ID lookup first
-    let { data: property, error: fetchError } = await supabase.from('properties')
+    let { data: property, error: fetchError } = await client.from('properties')
         .select('*')
         .eq('id', String(propertyId).trim())
         .maybeSingle();
 
     // If ID fails, or it looks like a title/name, try title search
     if (!property || isNaN(Number(propertyId)) || propertyId.length < 5) {
-        const { data: byTitle } = await supabase.from('properties')
+        const { data: byTitle } = await client.from('properties')
             .select('*')
             .ilike('title', `%${propertyId.trim()}%`)
             .limit(1)
@@ -356,7 +361,7 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
     let discount = 0;
 
     if (promoCode) {
-        const { data: promo } = await supabase.from('promo_codes').select('*').eq('code', promoCode.toUpperCase()).maybeSingle();
+        const { data: promo } = await client.from('promo_codes').select('*').eq('code', promoCode.toUpperCase()).maybeSingle();
         if (promo) {
             const v = validatePromoCode(promo, nights, hasSeasonal);
             if (v.valid) {

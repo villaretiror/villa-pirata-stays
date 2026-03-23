@@ -99,11 +99,11 @@ async function handleVapiTools(req: any, res: any, message: any) {
       if (name === 'check_availability') {
         const { propertyId = '1081171030449673920', startDate, endDate } = args;
         
-        // 🔱 MASTER VALIDATION (iCal + Seasonal logic)
-        const availability = await checkAvailabilityWithICal(propertyId, startDate, endDate);
+        // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
+        const availability = await checkAvailabilityWithICal(propertyId, startDate, endDate, supabase);
         
         if (availability.available) {
-          const quote = await applyAIQuote(propertyId, startDate, endDate);
+          const quote = await applyAIQuote(propertyId, startDate, endDate, undefined, supabase);
           return { 
             toolCallId: toolCall.id, 
             result: `¡Excelente noticia! Estas fechas están disponibles para crear memorias inolvidables. El total por ${quote.nights} noches, incluyendo impuestos del paraíso, es de ${quote.total} dólares. ¿Le gustaría proceder con la reserva ahora mismo? ⚓` 
@@ -111,7 +111,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
         }
 
         // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
-        const gaps = await findCalendarGaps(propertyId);
+        const gaps = await findCalendarGaps(propertyId, supabase);
         const nextGap = gaps[0];
         const gapMsg = nextGap 
           ? `. Sin embargo, veo que tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end} (${nextGap.nights} noches). ¿Le funcionaría esa travesía?`
