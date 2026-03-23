@@ -1,15 +1,18 @@
 import { supabase } from '../../src/lib/supabase.js';
 import { differenceInDays, parseISO } from 'date-fns';
+import { MessagingService } from '../../src/services/MessagingService.js';
 
 /**
- * 🔱 SALTY VOICE WEBHOOK v3 (ELITE EDITION)
+ * 🔱 SALTY VOICE WEBHOOK v5 (LEVEL 5 ELITE)
  * 
- * Powered by @vapi-ai/server-sdk logic.
- * This is the central hub for Salty's voice intelligence.
+ * High-Intensity Intelligence Context:
+ * - Guest Recognition via Supabase Profiles.
+ * - Cross-Property Yield Strategy.
+ * - Dynamic Pricing & Urgency Detection.
+ * - Resend Email Integration for Dossiers.
  */
 
 export default async function handler(req: any, res: any) {
-  // CORS Standards (Required for VAPI global distribution)
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -18,104 +21,130 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { message } = req.body || {};
-    const messageType = message?.type;
+    const body = req.body || {};
+    const message = body.message || {};
+    const messageType = message.type;
+    const call = message.call || {};
 
-    console.log(`[🔱 Salty Voice] Incoming Event: ${messageType}`);
+    // 👁️ GUEST RECOGNITION (Reconocer al Capitán por su número)
+    const customerPhone = call.customer?.number?.replace(/\D/g, '') || '';
+    let guestIdentification = { name: '', isReturning: false, email: '' };
 
-    // logic for handling tool calls
+    if (customerPhone) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('full_name, email')
+        .filter('phone', 'ilike', `%${customerPhone.slice(-10)}%`)
+        .single();
+      
+      if (profile) {
+        guestIdentification = { 
+          name: profile.full_name, 
+          isReturning: true,
+          email: profile.email || '' 
+        };
+        console.log(`[🔱 Salty/Ident] Reconocido: ${profile.full_name}`);
+      }
+    }
+
     if (messageType === 'tool-calls') {
       const toolCallList = message?.toolCallList || message?.toolCalls || [];
       
-      const results = await Promise.all(
-        toolCallList.map(async (toolCall: any) => {
-          const name = toolCall?.function?.name;
-          // Robust parsing of arguments from VAPI
-          const args = typeof toolCall?.function?.arguments === 'string' 
-            ? JSON.parse(toolCall.function.arguments) 
-            : toolCall?.function?.arguments || {};
+      const results = await Promise.all(toolCallList.map(async (toolCall: any) => {
+        const name = toolCall?.function?.name;
+        const args = typeof toolCall?.function?.arguments === 'string' 
+          ? JSON.parse(toolCall.function.arguments) 
+          : toolCall?.function?.arguments || {};
 
-          console.log(`[🔱 Salty/Tool] Executing: ${name}`, args);
+        switch (name) {
+          case 'check_availability': {
+            const { propertyId = '1081171030449673920', startDate, endDate } = args;
+            const PIRATA_ID = '42839458';
+            const RETIRO_ID = '1081171030449673920';
 
-          switch (name) {
-            case 'check_availability': {
-              const { propertyId = '1081171030449673920', startDate, endDate } = args;
+            // 🔱 CROSS-PROPERTY INTELLIGENCE (Lógica de Élite)
+            const targetIds = [propertyId];
+            if (propertyId === RETIRO_ID) targetIds.push(PIRATA_ID); // Si falla Retiro, sugiere Pirata
 
-              if (!startDate || !endDate) {
-                return { toolCallId: toolCall.id, result: "Capitán, necesito que me diga las fechas de entrada y salida para verificar el calendario." };
-              }
+            const { data: properties, error } = await supabase
+              .from('properties')
+              .select('id, title, price, original_price, blockeddates')
+              .in('id', targetIds);
 
-              const { data: p, error } = await supabase
-                .from('properties')
-                .select('title, price, blockeddates')
-                .eq('id', propertyId)
-                .single();
+            if (error || !properties?.length) return { toolCallId: toolCall.id, result: "Capitán, denme un segundo que la señal del muelle está inestable. ¿Podría repetirme las fechas?" };
 
-              if (error || !p) {
-                return { toolCallId: toolCall.id, result: "Hubo un pequeño retraso en la conexión con la bitácora. Permítame verificarlo manualmente o intente con otras fechas." };
-              }
+            const mainProp = properties.find(p => p.id === propertyId);
+            const altProp = properties.find(p => p.id !== propertyId);
 
-              // Availability Logic
-              const isBlocked = Array.isArray(p.blockeddates) && p.blockeddates.some(
-                (d: string) => d >= startDate && d <= endDate
-              );
+            // Step 1: Check Main Property
+            const mainBlocked = Array.isArray(mainProp?.blockeddates) && mainProp.blockeddates.some(d => d >= startDate && d <= endDate);
+            
+            if (!mainBlocked && mainProp) {
+              const nights = differenceInDays(parseISO(endDate), parseISO(startDate));
+              const total = nights * (mainProp.price || 0);
+              const savings = (mainProp.original_price || 0) > (mainProp.price || 0) 
+                ? `¡Y tenemos una oportunidad de oro! Está ahorrando ${mainProp.original_price - mainProp.price} dólares por noche respecto a la tarifa estándar.` 
+                : "";
 
-              if (isBlocked) {
+              return {
+                toolCallId: toolCall.id,
+                result: `¡Excelentes noticias para usted ${guestIdentification.name || 'Invitado'}! ${mainProp.title} está totalmente disponible. El total por las ${nights} noches es de ${total} dólares. ${savings} ¿Desea que le envíe el link seguro o prefiere que le mande un Dossier completo a su email?`
+              };
+            }
+
+            // Step 2: Fallback to Alternative Property
+            if (altProp) {
+              const altBlocked = Array.isArray(altProp.blockeddates) && altProp.blockeddates.some(d => d >= startDate && d <= endDate);
+              if (!altBlocked) {
+                const altNights = differenceInDays(parseISO(endDate), parseISO(startDate));
                 return {
                   toolCallId: toolCall.id,
-                  result: `Lamento informarle que ${p.title} ya está ocupada para esas fechas. ¿Le gustaría que verifiquemos otro rango o la otra propiedad en Cabo Rojo?`
+                  result: `Lamento decirle que ${mainProp?.title} ya está reservada para esas fechas, PERO como concierge de élite le tengo una solución: Nuestra propiedad hermana ${altProp.title} está libre y es espectacular. ¿Le gustaría que le verifique el precio de esa opción ahora mismo?`
                 };
               }
-
-              const nights = differenceInDays(parseISO(endDate), parseISO(startDate));
-              const total = nights * (p.price || 0);
-
-              return {
-                toolCallId: toolCall.id,
-                result: `¡Excelentes noticias! ${p.title} está disponible para esas ${nights} noches. El total de su estancia sería de ${total} dólares. ¿Desea que le envíe el enlace oficial a su móvil para asegurar su reserva ahora mismo?`
-              };
             }
 
-            case 'send_payment_sms': {
-              const { phone, guestName, propertyId = '1081171030449673920' } = args;
-
-              if (!phone) {
-                return { toolCallId: toolCall.id, result: "Disculpe, ¿podría repetirme su número de teléfono para enviarle el mensaje?" };
-              }
-
-              // Audit logging to Supabase
-              await supabase.from('sms_logs').insert({
-                phone,
-                content: `Reserva Villa Retiro R - Link de Pago Enviado p/ ${guestName || 'Invitado'}`,
-                property_id: propertyId,
-                status: 'vapi_voice_dispatched'
-              });
-
-              return {
-                toolCallId: toolCall.id,
-                result: `Perfecto. Acabo de disparar el mensaje con el enlace seguro a su celular. Avísame cuando lo recibas. ¿Hay algo más que el santuario le pueda ofrecer hoy?`
-              };
-            }
-
-            default:
-              return { toolCallId: toolCall.id, result: "Esa función no está disponible en mis protocolos actuales, ¿puedo ayudarle con la reserva o precios?" };
+            return { toolCallId: toolCall.id, result: "Lo lamento mucho Capitán, para esas fechas ambas villas están en su máxima capacidad. ¿Tiene alguna flexibilidad para otros días?" };
           }
-        })
-      );
+
+          case 'send_payment_sms': {
+            const { phone = customerPhone, guestName = guestIdentification.name, propertyId = '1081171030449673920' } = args;
+            
+            // 🔱 DUAL DISPATCH (SMS + Resend Alert)
+            await MessagingService.sendSms({
+              to: phone,
+              content: `Hola ${guestName || 'Capitán'}, aquí tienes tu acceso al paraíso.`,
+              propertyId: propertyId
+            });
+
+            // Si tenemos email del perfil, enviamos Dossier
+            if (guestIdentification.email) {
+              await MessagingService.sendEmail({
+                to: guestIdentification.email,
+                subject: `🔱 Dossier de Estancia - Villa Retiro R`,
+                html: `<h1>¡Hola ${guestName}!</h1><p>Acabamos de hablar por voz. Aquí tienes tu enlace de reserva prioritaria...</p>`,
+                guestName: guestName
+              });
+            }
+
+            return {
+              toolCallId: toolCall.id,
+              result: `Perfecto ${guestName || ''}. Acabo de enviarle el link a su móvil. Si el sistema reconoce su email ${guestIdentification.email ? 'también le llegará un mensaje de confirmación allí' : 'puedo enviarle un dossier si gusta'}. ¿En qué más puedo servirle?`
+            };
+          }
+
+          default:
+            return { toolCallId: toolCall.id, result: "Protocolo no reconocido." };
+        }
+      }));
 
       return res.status(200).json({ results });
     }
 
-    // Default VAPI success response
-    return res.status(200).json({ success: true, processed: true });
+    return res.status(200).json({ success: true });
 
   } catch (err: any) {
-    console.error("[🔱 Salty Error]", err.message);
-    return res.status(200).json({ 
-      results: [{
-        toolCallId: 'error_recovery',
-        result: "Capitán, mi conexión con la central está inestable. ¿Podría repetirme su solicitud o llamarnos en un momento?"
-      }]
-    });
+    console.error("[🔱 Elite Error]", err.message);
+    return res.status(200).json({ results: [{ toolCallId: 'error', result: "Capitán, estamos recalibrando los sensores de Salty. Un momento." }]});
   }
 }
