@@ -1,33 +1,33 @@
-# 🔱 PROTOCOLO DE ARQUITECTO SUPREMO & SRE (Antigravity) 🔱
+# 🔱 PROTOCOLO DE ARQUITECTO SUPREMO & SRE (Antigravity v6.0) 🔱
 
 ## 🚨 ESTÁNDAR DE "LLAVE EN MANO" (ZERO MOCKS)
-- **Zero Latency Experience (Hidratación Híbrida):** Supabase es la Fuente de Verdad Absoluta para datos dinámicos. Las constantes (`constants.ts`) solo definen la estructura inicial para evitar pantallas blancas (SSR/Hydration). El sitio debe cargar instantáneamente y luego actualizarse con la realidad de la DB.
-- **Prohibición de Datos de "Relleno":** Si Supabase no responde y no hay fallback en constantes, se muestra estado de carga, NUNCA datos de relleno inventados por la IA.
+- **Zero Latency Experience (Hidratación Híbrida):** Supabase es la Fuente de Verdad Absoluta para datos dinámicos. Las constantes (`constants.ts`) solo definen la estructura inicial para evitar pantallas blancas (SSR/Hydration).
+- **Prohibición de Datos de "Relleno":** Si Supabase no responde y no hay fallback en constantes, se muestra estado de carga, NUNCA datos inventados.
 - **Responsabilidad de Flujo 360:** Cada función debe incluir:
   1. **DB:** SQL ALTERS/RPCs en Supabase (validar existencia primero).
-  2. **API:** Routes en `/api/` (Edge Runtime preferido).
-  3. **UI:** Hook real + Framer Motion micro-interacción + Estado de Carga/Error.
+  2. **API:** Routes en `/api/` (Edge Runtime preferido). Mantener imports `.js` para compatibilidad con Vercel.
+  3. **UI:** Hook real + Framer Motion + Estado de Carga/Error.
   4. **Notificación:** Alerta en `urgent_alerts` (Supabase) o Telegram si es acción crítica.
 
 ## 💎 JERARQUÍA DE DATOS Y ESCALABILIDAD
-- **Identidad Blindada (Airbnb IDs):** Las propiedades usan IDs de Airbnb (ej: 1081171030449673920) como **TEXT (not integer)**. Es VITAL mantener este tipo para la sincronía iCal.
-- **Preservación Estética (Fotos Scrapped):** Se prohíbe reemplazar fotos originales del scrapping por imágenes de stock. Solo el Host puede cambiarlas manualmente.
-- **Soberanía del Host (Control Manual):** El sistema sincroniza vía iCal (Airbnb/Booking), pero el Host mantiene el control manual total desde el Dashboard para bloquear fechas o modificar precios por encima de la sincronización automática.
+- **Identidad Blindada (Airbnb IDs):** Las propiedades usan IDs de Airbnb (ej: 1081171030449673920) como **TEXT (not integer)**. Es VITAL para la sincronía iCal.
+- **Escalabilidad de Flota:** El sistema debe permitir la creación de nuevas propiedades. Cualquier nueva villa debe seguir el esquema dinámico de Supabase; evita el hardcoding que limite el crecimiento.
+- **Preservación Estética:** Se prohíbe reemplazar fotos originales del scrapping por imágenes de stock.
+- **Soberanía del Host:** El sistema sincroniza vía iCal, pero el Host mantiene el control manual total desde el Dashboard para bloquear fechas o modificar precios.
 
-## 🛡️ GESTIÓN DE ESQUEMA (SQL FIRST & SYNCHRONIZED)
-- **SQL-First:** Antes de programar cualquier función, el motor (Base de Datos) debe estar instalado. Generar SQL ALTER primero.
-- **Sincronía de Tipos:** Cada vez que generes un SQL ALTER, estás obligado a actualizar las Interfaces o Types de TypeScript en el frontend. El código debe reconocer cada columna nueva (ej: `piscina_climatizada`) inmediatamente.
+## 🛡️ GESTIÓN DE ESQUEMA Y RUNTIME SAFEGUARDS
+- **SQL-First:** Antes de programar, el motor (DB) debe estar instalado. Generar SQL ALTER primero.
+- **Sincronía de Tipos:** Cada SQL ALTER obliga a actualizar Interfaces/Types en el frontend. El código debe reconocer cada columna nueva (ej: `piscina_climatizada`) inmediatamente.
+- **Chat Operations Integrity:** La estructura de core files (`/api/chat.ts`, `/api/send.ts`, `/constants/`) es SAGRADA. Las mejoras deben ser ADITIVAS y respetar la lógica de `VILLA_KNOWLEDGE`.
 - **Nomenclatura:** Usa exclusivamente NOMBRES DE `SUPREME_SCHEMA_UNIFICATION.sql`.
 
 ## 🧠 INTELIGENCIA CONTEXTUAL DE SALTY
-- **Salty Proactivo (Regla #4):** NO esperes a que pregunten disponibilidad. Si Salty detecta interés, usa `get_available_slots` y sugiere fechas libres u ofertas de "Escapes de Élite".
+- **Salty Proactivo:** NO esperes a que pregunten. Si detecta interés, usa `get_available_slots` y sugiere fechas libres u ofertas de "Escapes de Élite".
 - **Memoria de Sesión:** Usa `sessionId` persistente para evitar amnesia entre páginas y refrescos.
-- **Seguridad de Chat:** Nunca alteres la lógica de flujo de datos de `VILLA_KNOWLEDGE`. Las mejoras deben ser ADITIVAS.
 
 ## 🎨 ESTÁNDARES DE LUJO UX (IRMARIS IDENTITY)
 - **Estética Vintage-Premium:** No borres componentes ni cambies la paleta (Crema, Naranja, Verde). "Cablea" por detrás sin alterar la fachada de lujo.
-- **UX de Élite:** Grillas de 2-3 columnas. Serif para títulos, Sans para datos. Uso de micro-animaciones (Framer Motion).
-- **Seguridad de Acceso:** Administración exclusiva para `villaretiror@gmail.com`.
+- **Acceso Administrativo:** Gestión exclusiva para `villaretiror@gmail.com`.
 
 "Si el usuario hace clic y no sucede nada en la DB o el correo, la tarea se considera FALLIDA."
 🔱⚓🎙️🚢
