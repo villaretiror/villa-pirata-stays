@@ -6,6 +6,10 @@
             "memory": 1024,
             "maxDuration": 60
         },
+        "api/voice/webhook.ts": {
+            "memory": 512,
+            "maxDuration": 15
+        },
         "api/health-check.ts": {
             "memory": 256
         },
