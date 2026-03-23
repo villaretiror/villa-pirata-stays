@@ -73,6 +73,15 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                         }
                     }
                 }
+
+                // 🔱 ELITE AUDIO OUTPUT: Speak the response after it finishes streaming
+                if (aiResponse) {
+                    const utterance = new SpeechSynthesisUtterance(aiResponse);
+                    utterance.lang = 'es-ES';
+                    utterance.rate = 1.0;
+                    utterance.pitch = 0.95; // Slightly deeper for authority
+                    window.speechSynthesis.speak(utterance);
+                }
             }
         } catch (e) {
             setChatMessages(prev => [...prev, { role: 'model', content: "Lo siento, mis sensores de comunicación fallaron brevemente. ¿Podrías repetir?" }]);
@@ -268,7 +277,6 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     setIsTyping(false);
                                                     
                                                     // 🔱 ELITE MANEUVER: Auto-send the message once speech is recognized
-                                                    // Use a small timeout to ensure the state update for inputValue is reflected
                                                     setTimeout(() => {
                                                         const sendBtn = document.getElementById('salty-send-btn');
                                                         if (sendBtn) sendBtn.click();
@@ -279,38 +287,111 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                 recognition.onerror = (event: any) => {
                                                     setIsTyping(false);
                                                     console.error("[Salty Audio Error]:", event.error);
-                                                    
-                                                    // Detailed Elite Feedback
                                                     if (event.error === 'not-allowed') {
-                                                        alert("Micrófono detectado como 'Bloqueado' (not-allowed). 🔱 Verifique que no tenga Salty abierta en otra pestaña o que los permisos del sitio villaretiror.com estén en 'Permitir'.");
-                                                    } else if (event.error === 'network') {
-                                                        alert("Falla de red. Verifique su conexión al puerto. 🔱⚓");
-                                                    } else if (event.error === 'no-speech') {
-                                                        // Silence is fine, just stop
-                                                    } else {
-                                                        alert(`Error acústico: ${event.error}. Reintente, capitán. 🎙️`);
+                                                        alert("Micrófono bloqueado. 🔱 Verifique los permisos.");
+                                                    } else if (event.error !== 'no-speech') {
+                                                        alert(`Error acústico: ${event.error}. 🎙️`);
                                                     }
                                                 };
 
-                                                recognition.onend = () => {
-                                                    setIsTyping(false);
-                                                };
+                                                recognition.onend = () => setIsTyping(false);
 
-                                                try {
-                                                    recognition.start();
-                                                } catch (e) {
-                                                    console.error("Init failure:", e);
-                                                    setIsTyping(false);
-                                                }
+                                                try { recognition.start(); } catch (e) { setIsTyping(false); }
                                             }}
                                         >
                                             <span className={`material-icons text-lg ${isTyping ? 'animate-pulse text-red-500' : ''}`}>
                                                 {isTyping ? 'graphic_eq' : 'mic'}
                                             </span>
                                         </button>
+
+                                        {/* 🔱 MULTI-MODAL ATTACHMENT PORT */}
+                                        <input 
+                                            type="file" 
+                                            id="salty-file-input" 
+                                            className="hidden" 
+                                            accept="audio/*,image/*"
+                                            onChange={async (e) => {
+                                                const file = e.target.files?.[0];
+                                                if (!file) return;
+
+                                                setIsTyping(true);
+                                                const reader = new FileReader();
+                                                reader.onloadend = async () => {
+                                                    const base64Data = (reader.result as string).split(',')[1];
+                                                    const userMsg = { 
+                                                        role: 'user', 
+                                                        content: [
+                                                            { text: `Capitán, he adjuntado este archivo (${file.type}). ¿Puedes analizarlo?` },
+                                                            { inlineData: { mimeType: file.type, data: base64Data } }
+                                                        ] 
+                                                    };
+                                                    
+                                                    const newHistory = [...chatMessages, { role: 'user', content: `[Archivo Adjunto: ${file.name}]` }];
+                                                    setChatMessages(newHistory);
+                                                    
+                                                    // Send directly to API
+                                                    try {
+                                                        const response = await fetch('/api/chat', {
+                                                            method: 'POST',
+                                                            headers: { 'Content-Type': 'application/json' },
+                                                            body: JSON.stringify({
+                                                                messages: [...chatMessages, userMsg],
+                                                                propertyId
+                                                            })
+                                                        });
+                                                        
+                                                        // Handle streaming response (simplified for files)
+                                                        if (response.ok) {
+                                                            const reader = response.body?.getReader();
+                                                            let aiResponse = "";
+                                                            if (reader) {
+                                                                while (true) {
+                                                                    const { done, value } = await reader.read();
+                                                                    if (done) break;
+                                                                    const chunk = new TextDecoder().decode(value);
+                                                                    const lines = chunk.split('\n');
+                                                                    for (const line of lines) {
+                                                                        if (line.startsWith('0:')) {
+                                                                            const text = JSON.parse(line.substring(2));
+                                                                            aiResponse += text;
+                                                                            setChatMessages(prev => {
+                                                                                const last = prev[prev.length - 1];
+                                                                                if (last?.role === 'model') return [...prev.slice(0, -1), { ...last, content: aiResponse }];
+                                                                                return [...prev, { role: 'model', content: aiResponse }];
+                                                                            });
+                                                                        }
+                                                                    }
+                                                                }
+                                                                
+                                                                // Speak result
+                                                                if (aiResponse) {
+                                                                    const ut = new SpeechSynthesisUtterance(aiResponse);
+                                                                    ut.lang = 'es-ES';
+                                                                    window.speechSynthesis.speak(ut);
+                                                                }
+                                                            }
+                                                        }
+                                                    } catch (err) {
+                                                        console.error("File processing error:", err);
+                                                    } finally {
+                                                        setIsTyping(false);
+                                                    }
+                                                };
+                                                reader.readAsDataURL(file);
+                                            }}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => document.getElementById('salty-file-input')?.click()}
+                                            className="w-9 h-9 rounded-xl flex items-center justify-center bg-sand/20 text-[#1a1a1a] hover:bg-sand/40 transition-all shadow-sm"
+                                            title="Adjuntar Nota de Voz o Imagen"
+                                        >
+                                            <span className="material-icons text-lg">attach_file</span>
+                                        </button>
+
                                         <input 
                                             type="text"
-                                            placeholder="Habla con Salty..."
+                                            placeholder="Escribe o pulsa el micro..."
                                             value={inputValue}
                                             onChange={(e) => setInputValue(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}

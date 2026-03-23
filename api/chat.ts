@@ -135,13 +135,29 @@ Eres Salty, el Concierge de Élite de Villa Retiro R & Pirata Family House. Tu m
 `.trim();
 
             const contents: any[] = rawMessages.map(m => {
-                let text = "";
-                if (typeof m.content === 'string') text = m.content;
-                else if (Array.isArray(m.content)) text = m.content.map((p: any) => p.text || "").join("");
-                else text = m.text || "";
+                const parts: any[] = [];
+                
+                if (typeof m.content === 'string') {
+                    parts.push({ text: m.content });
+                } else if (Array.isArray(m.content)) {
+                    m.content.forEach((part: any) => {
+                        if (part.text) parts.push({ text: part.text });
+                        if (part.inlineData) {
+                            parts.push({
+                                inlineData: {
+                                    mimeType: part.inlineData.mimeType,
+                                    data: part.inlineData.data
+                                }
+                            });
+                        }
+                    });
+                } else if (m.text) {
+                    parts.push({ text: m.text });
+                }
+
                 return {
                     role: (m.role === 'assistant' || m.sender === 'ai' || m.role === 'model') ? 'model' : 'user',
-                    parts: [{ text }]
+                    parts
                 };
             });
 
