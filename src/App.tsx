@@ -130,6 +130,8 @@ const App: React.FC = () => {
           <Suspense fallback={<PageLoader />}>
             <Routes location={location}>
               <Route path="/" element={<Home />} />
+              <Route path="/ES" element={<Home />} />
+              <Route path="/EN" element={<Home />} />
               <Route path="/property/:id" element={<PropertyDetails />} />
               <Route path="/booking/:id" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
               <Route path="/success" element={<Success />} />
@@ -143,6 +145,8 @@ const App: React.FC = () => {
               <Route path="/host" element={<ProtectedRoute role="host"><HostDashboard /></ProtectedRoute>} />
               <Route path="/contrato" element={<ContractView />} />
               <Route path="/secret-spots" element={<SecretSpots />} />
+              {/* 🔱 ELITE RESCUE PROTOCOL: Redirect to Home if path is not found */}
+              <Route path="*" element={<Home />} />
             </Routes>
           </Suspense>
         </motion.main>

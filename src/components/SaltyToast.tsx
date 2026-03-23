@@ -241,17 +241,25 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                 const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
                                                 
                                                 if (!SpeechRecognition) {
-                                                    alert("Capitán, su navegador actual no permite el dictado por voz. Recomendamos usar Chrome o Safari para esta experiencia de élite. 🔱");
+                                                    alert("Capitán, este navegador no admite voz. Use Chrome/Safari para la experiencia total. 🔱");
                                                     return;
                                                 }
 
+                                                // 🛡️ REINFORCED: Pre-cleanup of any existing instance
+                                                if ((window as any)._saltyRecognition) {
+                                                    try { (window as any)._saltyRecognition.stop(); } catch(e){}
+                                                }
+
                                                 const recognition = new SpeechRecognition();
+                                                (window as any)._saltyRecognition = recognition;
+                                                
                                                 recognition.lang = 'es-ES';
                                                 recognition.continuous = false;
                                                 recognition.interimResults = false;
 
                                                 recognition.onstart = () => {
                                                     setIsTyping(true);
+                                                    console.log("[Salty Audio] Listening...");
                                                 };
 
                                                 recognition.onresult = (event: any) => {
@@ -262,8 +270,17 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
 
                                                 recognition.onerror = (event: any) => {
                                                     setIsTyping(false);
+                                                    console.error("[Salty Audio Error]:", event.error);
+                                                    
+                                                    // Detailed Elite Feedback
                                                     if (event.error === 'not-allowed') {
-                                                        alert("Vaya, parece que el micrófono está bloqueado. Por favor, actívelo en el candado de la barra de direcciones. 🔱🎙️");
+                                                        alert("Micrófono detectado como 'Bloqueado' (not-allowed). 🔱 Verifique que no tenga Salty abierta en otra pestaña o que los permisos del sitio villaretiror.com estén en 'Permitir'.");
+                                                    } else if (event.error === 'network') {
+                                                        alert("Falla de red. Verifique su conexión al puerto. 🔱⚓");
+                                                    } else if (event.error === 'no-speech') {
+                                                        // Silence is fine, just stop
+                                                    } else {
+                                                        alert(`Error acústico: ${event.error}. Reintente, capitán. 🎙️`);
                                                     }
                                                 };
 
@@ -274,6 +291,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                 try {
                                                     recognition.start();
                                                 } catch (e) {
+                                                    console.error("Init failure:", e);
                                                     setIsTyping(false);
                                                 }
                                             }}

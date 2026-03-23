@@ -758,11 +758,18 @@ const Messages: React.FC = () => {
             const SpeechRecognition = (window as any).webkitSpeechRecognition || (window as any).SpeechRecognition;
             
             if (!SpeechRecognition) {
-              alert("Capitán, este navegador no admite el dictado por voz en el chat. Se recomienda Chrome o Safari para una experiencia de élite. 🔱🎙️");
+              alert("Capitán, este navegador no admite voz. Use Chrome/Safari para la experiencia total. 🔱");
               return;
             }
 
+            // 🛡️ REINFORCED: Pre-cleanup of any existing instance
+            if ((window as any)._saltyRecognition) {
+              try { (window as any)._saltyRecognition.stop(); } catch(e){}
+            }
+
             const recognition = new SpeechRecognition();
+            (window as any)._saltyRecognition = recognition;
+            
             recognition.lang = 'es-ES';
             recognition.continuous = false;
             recognition.interimResults = false;
@@ -774,7 +781,7 @@ const Messages: React.FC = () => {
               toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full z-[200] font-black uppercase tracking-widest text-[10px] flex items-center gap-3 animate-slide-up shadow-2xl border border-[#BBA27E]/30';
               toast.innerHTML = `<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Salty te escucha...`;
               document.body.appendChild(toast);
-              console.log("Salty: Escuchando capitán...");
+              console.log("[Salty Chat Audio] Listening...");
             };
 
             recognition.onresult = (event: any) => {
@@ -785,13 +792,19 @@ const Messages: React.FC = () => {
             };
 
             recognition.onerror = (event: any) => {
-              console.error("Speech error in Messages:", event.error);
+              console.error("[Salty Chat Audio Error]:", event.error);
               setIsTyping(false);
               const toast = document.getElementById('voice-toast');
               if (toast) toast.remove();
               
               if (event.error === 'not-allowed') {
-                 alert("Salty no puede escucharle. Por favor, active el permiso del micrófono en el candado de su navegador. 🔱🎙️");
+                 alert("Micrófono detectado como 'Bloqueado' (not-allowed). 🔱 Verifique que no tenga Salty abierta en otra pestaña o que los permisos del sitio villaretiror.com estén en 'Permitir'.");
+              } else if (event.error === 'network') {
+                 alert("Falla de red en el puerto. 🔱⚓");
+              } else if (event.error === 'no-speech') {
+                 // Silence
+              } else {
+                 alert(`Error acústico: ${event.error}. Reintente, capitán. 🎙️`);
               }
             };
 
@@ -804,6 +817,7 @@ const Messages: React.FC = () => {
             try {
               recognition.start();
             } catch (e) {
+              console.error("Init failure:", e);
               setIsTyping(false);
             }
           }}
