@@ -74,51 +74,20 @@ const SaltyVoiceButton: React.FC = () => {
             {/* ☎️ REAL PHONE CALL BUTTON (Direct Connection) */}
             <a
                 href="tel:+12092673503"
-                className="group relative p-3.5 rounded-2xl bg-[#BBA27E] shadow-[0_10px_25px_rgba(187,162,126,0.4)] border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 animate-fade-in"
+                className="group relative p-4 rounded-2xl bg-[#BBA27E] shadow-[0_15px_35px_rgba(187,162,126,0.3)] border border-white/20 transition-all duration-300 hover:scale-110 active:scale-95 animate-fade-in"
                 aria-label="Llamar a Salty al +1 209 267 3503"
             >
-                <span className="material-icons text-[#1a1a1a] text-xl">phone_in_talk</span>
+                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity"></div>
+                <span className="material-icons text-[#1a1a1a] text-2xl">phone_in_talk</span>
+                
+                {/* Elite Badge */}
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 border-2 border-white rounded-full"></div>
                 
                 {/* Floating Label */}
-                <span className="absolute left-full ml-3 bg-[#BBA27E] text-[#1a1a1a] text-[9px] font-black uppercase tracking-[0.2em] px-3 py-2 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap">
+                <span className="absolute left-full ml-4 bg-[#BBA27E] text-[#1a1a1a] text-[10px] font-black uppercase tracking-[0.2em] px-4 py-2.5 rounded-xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-white/30 backdrop-blur-md">
                     Llamar al Concierge ☎️
                 </span>
             </a>
-
-            {/* 🎙️ AI VOICE (WEB) BUTTON */}
-            <button
-                onClick={toggleCall}
-                className={`group relative p-4 rounded-full shadow-2xl transition-all duration-500 transform hover:scale-110 active:scale-95 ${
-                    callStatus === 'active' 
-                        ? 'bg-red-500 ring-4 ring-red-500/30' 
-                        : 'bg-[#1a1a1a] border border-[#BBA27E]/50'
-                }`}
-                aria-label="Hablar con Salty por la Web"
-            >
-                {/* Elite Audio Waves (Only active when in call) */}
-                {callStatus === 'active' && (
-                    <div className="absolute inset-0 rounded-full">
-                        <div className="absolute inset-0 animate-ping rounded-full bg-red-400 opacity-20"></div>
-                        <div className="absolute inset-0 animate-pulse rounded-full bg-red-400 opacity-10 scale-150"></div>
-                    </div>
-                )}
-
-                {/* Icon Logic */}
-                <div className="relative z-10 flex items-center justify-center">
-                    {callStatus === 'loading' ? (
-                        <div className="w-7 h-7 border-2 border-[#BBA27E] border-t-transparent rounded-full animate-spin"></div>
-                    ) : callStatus === 'active' ? (
-                        <span className="material-icons text-white text-2xl">call_end</span>
-                    ) : (
-                        <span className="material-icons text-[#BBA27E] text-2xl group-hover:text-white transition-colors">mic</span>
-                    )}
-                </div>
-
-                {/* Floating Label */}
-                <span className="absolute left-full ml-3 bg-[#1a1a1a] text-white text-[9px] font-black uppercase tracking-[0.2em] px-3 py-2 rounded-lg shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none border border-[#BBA27E]/80 whitespace-nowrap">
-                    {callStatus === 'active' ? 'SALTY ESCUCHANDO...' : 'Hablar con Salty AI VIP 🎙️'}
-                </span>
-            </button>
         </div>
     );
 };
