@@ -97,7 +97,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
         if (path.includes('/property')) {
             const title = propertyTitle || "esta villa";
             if (title.includes('Retiro')) return `En Villa Retiro R la seguridad y el confort son absolutos. Contamos con respaldo solar completo para que nada interrumpa tu paz. 🔱`;
-            if (title.includes('Pirata')) return `Pirata House es el refugio familiar por excelencia. Estaré encantado de explicarte las facilidades para niños y mascotas. ✨`;
+            if (title.includes('Pirata')) return `Pirata House es el refugio familiar por excelencia en Cabo Rojo. Estaré encantado de asistirte en cada detalle de tu próxima estancia. ✨`;
             return `Te asisto para que vivas la experiencia en ${title}. Calidad garantizada por VRR Stays.`;
         }
         
@@ -201,9 +201,9 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                     <div className="flex-1 max-h-[300px] overflow-y-auto p-4 space-y-4 no-scrollbar scroll-smooth">
                                         {/* Welcome Message if no chat yet */}
                                         {chatMessages.length === 0 && (
-                                            <div className="bg-sand/30 p-3 rounded-2xl border border-primary/5">
-                                                <p className="text-xs text-text-main font-medium italic opacity-80">
-                                                    "Salty está recalibrando sus sensores... ¿En qué puedo asistirte, Capitán?"
+                                            <div className="bg-[#BBA27E]/10 p-4 rounded-2xl border border-[#BBA27E]/20">
+                                                <p className="text-xs text-[#1a1a1a] font-medium italic leading-relaxed">
+                                                    "¡Bienvenidos a Villa Retiro R! Soy Salty, su concierge personal de élite. Estoy aquí para asistirles en cada detalle de su estancia. ¿En qué puedo servirles hoy?"
                                                 </p>
                                             </div>
                                         )}
@@ -245,9 +245,9 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     return;
                                                 }
 
-                                                // 🛡️ REINFORCED: Pre-cleanup of any existing instance
+                                                // 🛡️ REINFORCED: Immediate cleanup of any existing instance
                                                 if ((window as any)._saltyRecognition) {
-                                                    try { (window as any)._saltyRecognition.stop(); } catch(e){}
+                                                    try { (window as any)._saltyRecognition.abort(); } catch(e){}
                                                 }
 
                                                 const recognition = new SpeechRecognition();

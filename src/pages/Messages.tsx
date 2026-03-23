@@ -762,9 +762,9 @@ const Messages: React.FC = () => {
               return;
             }
 
-            // 🛡️ REINFORCED: Pre-cleanup of any existing instance
+            // 🛡️ REINFORCED: Immediate cleanup of any existing instance
             if ((window as any)._saltyRecognition) {
-              try { (window as any)._saltyRecognition.stop(); } catch(e){}
+              try { (window as any)._saltyRecognition.abort(); } catch(e){}
             }
 
             const recognition = new SpeechRecognition();
