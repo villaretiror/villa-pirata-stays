@@ -266,6 +266,14 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     const transcript = event.results[0][0].transcript;
                                                     setInputValue(transcript);
                                                     setIsTyping(false);
+                                                    
+                                                    // 🔱 ELITE MANEUVER: Auto-send the message once speech is recognized
+                                                    // Use a small timeout to ensure the state update for inputValue is reflected
+                                                    setTimeout(() => {
+                                                        const sendBtn = document.getElementById('salty-send-btn');
+                                                        if (sendBtn) sendBtn.click();
+                                                        else handleSendMessage();
+                                                    }, 500);
                                                 };
 
                                                 recognition.onerror = (event: any) => {
@@ -309,6 +317,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                             className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs focus:ring-2 ring-primary/20 outline-none shadow-inner h-9"
                                         />
                                         <button 
+                                            id="salty-send-btn"
                                             onClick={handleSendMessage}
                                             disabled={isTyping || !inputValue.trim()}
                                             className="w-9 h-9 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all font-black text-xs h-9"
