@@ -54,43 +54,49 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
 
             <style>{`
         .luxury-calendar { border: none !important; font-family: inherit !important; width: 100% !important; background: white !important; }
-        .react-datepicker { display: block !important; border: none !important; }
-        .react-datepicker__header { background-color: white !important; border: none !important; padding-top: 20px !important; }
-        .react-datepicker__current-month { font-family: 'serif' !important; font-weight: 800 !important; font-size: 1.1rem !important; margin-bottom: 10px !important; color: #1a1a1a !important; }
-        .react-datepicker__day-name { text-transform: uppercase !important; font-size: 10px !important; font-weight: 900 !important; color: #4B5563 !important; }
-        .react-datepicker__month-container { width: 100% !important; }
-        
-        /* Ocupado / Disabled (Airbnb/Booking Sync) */
-        .react-datepicker__day--disabled { 
-            background-color: #FAFAFA !important;
-            background-image: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.03) 4px, rgba(0,0,0,0.03) 8px) !important;
-            color: #D1D5DB !important; 
-            text-decoration: none !important; 
-            cursor: not-allowed !important; 
-            border-radius: 8px !important;
+        .react-datepicker { display: block !important; border: none !important; width: 100% !important; }
+        .react-datepicker__header { background-color: white !important; border: none !important; padding-top: 20px !important; width: 100% !important; }
+        .react-datepicker__current-month { font-family: 'serif' !important; font-weight: 800 !important; font-size: 1rem !important; margin-bottom: 10px !important; color: #1a1a1a !important; }
+        .react-datepicker__day-name { text-transform: uppercase !important; font-size: 9px !important; font-weight: 900 !important; color: #888 !important; width: 2.5rem !important; margin: 0.2rem !important; }
+        .react-datepicker__month { margin: 0.5rem !important; }
+        .react-datepicker__day { 
+            width: 2.5rem !important; 
+            line-height: 2.5rem !important; 
+            margin: 0.2rem !important; 
+            font-size: 0.85rem !important; 
+            font-weight: 600 !important;
+            border-radius: 12px !important;
+            transition: all 0.2s ease !important;
         }
-
-        /* 🏨 SMART COLOR CUES: Check-out dates (Industry standard) */
-        /* Note: react-datepicker doesn't naturally provide a "check-out-only" class, but we can style the range */
+        .react-datepicker__month-container { width: 100% !important; float: none !important; }
+        
+        /* Ocupado / Disabled */
+        .react-datepicker__day--disabled { 
+            background-color: #f9f9f9 !important;
+            color: #ccc !important; 
+            opacity: 0.5;
+        }
         
         .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { 
             background-color: #FF7F3F !important; 
-            border-radius: 12px !important; 
             color: white !important; 
-            font-weight: bold !important; 
-            box-shadow: 0 4px 10px rgba(255, 127, 63, 0.3) !important;
+            box-shadow: 0 4px 12px rgba(255, 127, 63, 0.4) !important;
         }
         
         .react-datepicker__day--in-range { 
-            background-color: rgba(255, 127, 63, 0.08) !important; 
+            background-color: rgba(255, 127, 63, 0.1) !important; 
             color: #FF7F3F !important; 
+            border-radius: 0 !important;
         }
 
-        .react-datepicker__day:hover { border-radius: 12px !important; background-color: #f3f4f6 !important; }
+        .react-datepicker__day:hover:not(.react-datepicker__day--disabled) { 
+            background-color: #ffe8db !important; 
+            color: #FF7F3F !important;
+        }
         
-        /* Adjusting for 2 months desktop view */
         @media (min-width: 768px) {
-            .react-datepicker__month-container { width: 50% !important; float: left; }
+            .react-datepicker__month-container { width: 50% !important; float: left !important; }
+            .react-datepicker__day { width: 2.2rem !important; line-height: 2.2rem !important; }
         }
       `}</style>
         </div>

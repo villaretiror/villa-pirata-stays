@@ -233,19 +233,39 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                     </div>
 
                                     {/* Input Area */}
-                                    <div className="p-3 bg-gray-50/50 border-t border-black/5 flex gap-2">
+                                    <div className="p-3 bg-gray-50/50 border-t border-black/5 flex gap-2 items-center">
+                                        <button
+                                            type="button"
+                                            className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isTyping ? 'bg-red-50 text-red-500' : 'bg-black text-[#BBA27E] hover:bg-gray-900'}`}
+                                            onClick={() => {
+                                                const recognition = new (window as any).webkitSpeechRecognition();
+                                                recognition.lang = 'es-ES';
+                                                recognition.onstart = () => setIsTyping(true);
+                                                recognition.onresult = (event: any) => {
+                                                    setInputValue(event.results[0][0].transcript);
+                                                    setIsTyping(false);
+                                                };
+                                                recognition.onerror = () => setIsTyping(false);
+                                                recognition.onend = () => setIsTyping(false);
+                                                recognition.start();
+                                            }}
+                                        >
+                                            <span className={`material-icons text-sm ${isTyping ? 'animate-pulse' : ''}`}>
+                                                {isTyping ? 'graphic_eq' : 'mic'}
+                                            </span>
+                                        </button>
                                         <input 
                                             type="text"
-                                            placeholder="Escribe aquí..."
+                                            placeholder="Habla con Salty..."
                                             value={inputValue}
                                             onChange={(e) => setInputValue(e.target.value)}
                                             onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                                            className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs focus:ring-2 ring-primary/20 outline-none shadow-inner"
+                                            className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs focus:ring-2 ring-primary/20 outline-none shadow-inner h-9"
                                         />
                                         <button 
                                             onClick={handleSendMessage}
                                             disabled={isTyping || !inputValue.trim()}
-                                            className="w-10 h-10 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all font-black text-xs"
+                                            className="w-9 h-9 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all font-black text-xs h-9"
                                         >
                                             <span className="material-icons text-sm">send</span>
                                         </button>
