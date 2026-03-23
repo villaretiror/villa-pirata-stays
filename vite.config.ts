@@ -24,9 +24,16 @@ export default defineConfig({
           'vendor-react': ['react', 'react-dom', 'react-router-dom'],
           'vendor-framer': ['framer-motion'],
           'vendor-utils': ['recharts', 'jspdf', '@supabase/supabase-js'],
+          'vendor-vapi': ['@vapi-ai/web'],
         },
       },
     },
+    commonjsOptions: {
+      include: [/node_modules/],
+    },
+  },
+  optimizeDeps: {
+    include: ['@vapi-ai/web'],
   },
   server: {
     port: 5173,
