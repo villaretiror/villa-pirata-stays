@@ -27,6 +27,7 @@ import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
 import { supabase } from './lib/supabase';
+import SaltyVoiceButton from './components/SaltyVoiceButton';
 import CustomCursor from './components/CustomCursor';
 
 // ⏳ Shell Loading Component for Suspense (Elite Branding)
@@ -147,6 +148,7 @@ const App: React.FC = () => {
         </motion.main>
       </AnimatePresence>
 
+      {showWhatsApp && <SaltyVoiceButton />}
       {showWhatsApp && <FloatingWhatsApp propertyTitle={propertyTitle} />}
       {showWhatsApp && <SaltyToast propertyId={currentProperty?.id} propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
       <Footer />
