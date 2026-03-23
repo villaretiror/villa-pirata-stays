@@ -99,10 +99,10 @@ export const checkAvailabilityWithICal = async (
     }
 
     // ── Step 1.5: Query pending leads (short-term locks) ──────────
-    const { data: dbPending } = await supabase
+    const { data: dbPending } = await client
         .from('pending_bookings')
         .select('check_in, check_out, expires_at')
-        .eq('property_id', villaId)
+        .eq('property_id', finalId)
         .eq('status', 'pending_payment');
 
     const hasPendingOverlap = (dbPending || []).some((p: { check_in: string; check_out: string; expires_at: string | null }) => {
@@ -115,10 +115,10 @@ export const checkAvailabilityWithICal = async (
     }
 
     // ── Step 2: Check availability_rules for Hard Blocks ─
-    const { data: rules } = await supabase
+    const { data: rules } = await client
         .from('availability_rules')
         .select('*')
-        .eq('property_id', String(villaId))
+        .eq('property_id', finalId)
         .eq('is_blocked', true);
 
     if (rules && rules.length > 0) {

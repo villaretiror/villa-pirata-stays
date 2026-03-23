@@ -30,12 +30,16 @@ export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    // 🎙️ SOURCE: VOICE (Vapi Tool Webhook)
+    // 🎙️ SOURCE: VOICE (Vapi Webhook)
     if (source === 'vapi') {
       const { message } = req.body;
-      if (message) {
+      const type = message?.type;
+
+      if (type === 'tool-calls' || type === 'function-call') {
         return await handleVapiTools(req, res, message);
       }
+
+      // For other Vapi messages (conversation-update, etc.), just acknowledge
       return res.status(200).json({ success: true });
     }
 
@@ -92,7 +96,8 @@ async function handleVapiTools(req: any, res: any, message: any) {
 
     try {
       if (name === 'get_property_info') {
-        const { data } = await supabase.from('properties').select('*').eq('id', args.propertyId).single();
+        const { data, error } = await supabase.from('properties').select('*').eq('id', args.propertyId).single();
+        if (error) throw new Error(`Permission Denied or Property Not Found: ${error.message}`);
         return { toolCallId: toolCall.id, result: JSON.stringify(data) };
       }
 
@@ -100,6 +105,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
         const { propertyId = '1081171030449673920', startDate, endDate } = args;
         
         // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
+        console.log(`[Vapi] Checking availability for ${propertyId} from ${startDate} to ${endDate}`);
         const availability = await checkAvailabilityWithICal(propertyId, startDate, endDate, supabase);
         
         if (availability.available) {
@@ -123,11 +129,12 @@ async function handleVapiTools(req: any, res: any, message: any) {
         };
       }
 
-      return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta." };
+      return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta especificada." };
 
     } catch (err: any) {
-      console.error(`[Vapi Tool Error - ${name}]:`, err.message);
-      return { toolCallId: toolCall.id, result: "Hubo un pequeño contratiempo en la comunicación con mi sistema de navegación, pero ya estoy recuperando los datos. ¿En qué más puedo asistirle?" };
+      const errMsg = err.message || "Unknown Failure";
+      console.error(`[Vapi Tool Critical Error - ${name}]:`, errMsg);
+      return { toolCallId: toolCall.id, result: `Contratiempo Técnico: ${errMsg}. Por favor, disculpe al Concierge.` };
     }
   }));
 
