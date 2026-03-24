@@ -6,6 +6,7 @@ import {
     checkAvailabilityWithICal,
     findCalendarGaps,
     applyAIQuote,
+    resolvePropertyId,
     } from '../src/aiServices.js';
 
 export const config = {
@@ -51,14 +52,7 @@ export default async function handler(req: Request) {
             const parsedBody = chatRequestSchema.parse(body);
             const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl } = parsedBody;
 
-            const VILLA_RETIRO_ID = "1081171030449673920";
-            const PIRATA_HOUSE_ID = "42839458";
-            let effectivePropertyId = VILLA_RETIRO_ID;
-            if (propertyId) {
-                if (propertyId.length > 10 && !isNaN(Number(propertyId))) effectivePropertyId = propertyId;
-                else if (propertyId.toLowerCase().includes('retiro')) effectivePropertyId = VILLA_RETIRO_ID;
-                else if (propertyId.toLowerCase().includes('pirata')) effectivePropertyId = PIRATA_HOUSE_ID;
-            }
+            const effectivePropertyId = await resolvePropertyId(propertyId || "1081171030449673920", supabase);
 
             const [{ data: dbProperties }, { data: knowledgeSetting }, { data: familyKnowledge }] = await Promise.all([
                 supabase.from('properties').select('*'),
@@ -147,12 +141,16 @@ Eres Salty, el **Concierge de Élite y Alma de Villa Retiro R & Pirata Family Ho
             ];
 
             const toolExecutors: Record<string, Function> = {
-                check_availability: async ({ villa_ids, check_in, check_out }: any) => {
-                    const results = await Promise.all(villa_ids.map((id: string) => checkAvailabilityWithICal(id, check_in, check_out)));
+                check_availability: async (args: any) => {
+                    const villa_ids = args.villa_ids || [args.villa_id] || [args.propertyId];
+                    const cin = args.check_in || args.startDate || args.start_date;
+                    const cout = args.check_out || args.endDate || args.end_date;
+                    const results = await Promise.all(villa_ids.map((id: string) => checkAvailabilityWithICal(id, cin, cout, supabase)));
                     return { status: 'success', results };
                 },
-                get_available_slots: async ({ villa_id }: any) => {
-                    const slots = await findCalendarGaps(villa_id);
+                get_available_slots: async (args: any) => {
+                    const id = args.villa_id || args.propertyId;
+                    const slots = await findCalendarGaps(id, supabase);
                     return { status: 'success', slots };
                 }
             };
