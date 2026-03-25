@@ -83,7 +83,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               <div className="w-4 h-4 text-[#BBA27E]">
                  <svg viewBox="0 0 100 100" fill="currentColor"><text y="70" x="50" text-anchor="middle" font-family="serif" font-weight="black" font-style="italic" font-size="50">VRR</text></svg>
               </div>
-              <span className="text-[8px] font-black text-white uppercase tracking-[0.2em] leading-none">Elite Stay</span>
+              <span className="text-[8px] font-black text-white uppercase tracking-[0.2em] leading-none">Signature Stay</span>
             </motion.div>
             {getBadges()}
         </div>

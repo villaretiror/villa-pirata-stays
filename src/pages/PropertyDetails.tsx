@@ -548,7 +548,7 @@ export const PropertyDetails: React.FC = () => {
                 <p className={TAG_STYLE + " text-gray-400 mb-1"}>Inversión Preferencial</p>
                 <span className="material-icons text-white text-sm">pool</span>
                 <span className="text-[10px] font-black uppercase text-white/90">
-                  {(property.amenities || []).length} amenidades elite
+                  {(property.amenities || []).length} amenidades exclusivas
                 </span>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-5xl font-serif font-black text-text-main">

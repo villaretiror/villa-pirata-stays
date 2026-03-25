@@ -650,7 +650,7 @@ const Messages: React.FC = () => {
                             }
                             
                             // Auto-confirmación de lead silenciosa
-                            const finalName = leadData.name || "Huésped Elite";
+                            const finalName = leadData.name || "Huésped Signature";
                             
                             try {
                               await supabase.from('pending_bookings').insert({
@@ -701,7 +701,7 @@ const Messages: React.FC = () => {
                                     }
                                   }}
                                   isProcessing={false}
-                                  user={{ id: sessionId, full_name: leadData.name || "Huésped Elite", email: leadData.email || 'elite@stays.com' }}
+                                  user={{ id: sessionId, full_name: leadData.name || "Huésped Signature", email: leadData.email || 'guest@stays.com' }}
                               />
                            </div>
                         </div>
