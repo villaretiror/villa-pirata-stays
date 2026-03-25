@@ -4,15 +4,16 @@
 
 @layer base {
   :root {
-    --sand: #F9F6F2;
-    --bunker: #050A18;
+    --sand: #FDFBF7;
+    --bunker: #0A192F;
     --gold: #D4AF37;
     --glass-blur: 15px;
   }
 
   body {
     -webkit-tap-highlight-color: transparent;
-    background-color: var(--sand);
+    background: radial-gradient(circle at center, #FDFBF7 0%, #F5F7FA 100%);
+    background-attachment: fixed;
     overscroll-behavior-y: none;
     color: var(--bunker);
   }

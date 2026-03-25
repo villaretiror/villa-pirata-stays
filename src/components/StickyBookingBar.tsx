@@ -34,7 +34,7 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="fixed bottom-6 left-6 right-6 z-[100] md:left-auto md:right-12 md:bottom-12 md:w-[400px]"
         >
-          <div className="bg-black/95 backdrop-blur-xl rounded-[2.5rem] p-4 shadow-2xl border border-white/10 flex items-center justify-between gap-4">
+          <div className="bg-secondary/95 backdrop-blur-xl rounded-[2.5rem] p-4 shadow-2xl border border-white/10 flex items-center justify-between gap-4">
             <div className="pl-6 py-2 overflow-hidden">
               <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1 leading-none">Villa Retiro LLC</p>
               <h4 className="text-white font-serif font-bold text-lg truncate leading-tight">{villaName}</h4>
@@ -42,7 +42,7 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
             
             <button
               onClick={onAction}
-              className="bg-[#FF7F3F] text-white px-8 py-5 rounded-[1.75rem] font-black uppercase tracking-widest text-[11px] flex items-center gap-3 shadow-lg shadow-[#FF7F3F]/30 hover:scale-[1.05] active:scale-95 transition-all outline outline-4 outline-white/5"
+              className="bg-primary text-secondary px-8 py-5 rounded-[1.75rem] font-black uppercase tracking-widest text-[11px] flex items-center gap-3 shadow-lg shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all outline outline-4 outline-white/5"
             >
               <span className="hidden sm:inline">Reservar Ahora</span>
               <span className="sm:hidden">Reservar</span>
@@ -51,7 +51,7 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
           </div>
           
           {/* Subtle Glow */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-[#FF7F3F]/20 to-primary/20 rounded-[3rem] blur-xl -z-10 opacity-50"></div>
+          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/40 rounded-[3rem] blur-xl -z-10 opacity-50"></div>
         </motion.div>
       )}
     </AnimatePresence>

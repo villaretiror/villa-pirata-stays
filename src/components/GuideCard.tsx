@@ -54,7 +54,7 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, onMapCl
       </div>
 
       <div className="flex justify-between items-center mb-3">
-        <div className="bg-sand/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-secondary border border-orange-100/50 flex items-center gap-1.5 shadow-sm">
+        <div className="bg-sand/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-secondary border border-primary/20 flex items-center gap-1.5 shadow-sm">
           <span className="material-icons text-[12px]">directions_car</span> {item.distance}
         </div>
         {item.mapUrl && (

@@ -3,13 +3,13 @@
   "name": "Villa Retiro R · Retreats",
   "icons": [
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%231a1a1a'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='45' fill='%23BBA27E'>VRR</text><rect y='68' x='20' width='60' height='1' fill='%23BBA27E'/></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%230A192F'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='45' fill='%23D4AF37'>VRR</text><rect y='68' x='20' width='60' height='1' fill='%23D4AF37'/></svg>",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23BBA27E'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='45' fill='%23ffffff'>VRR</text></svg>",
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' fill='%23D4AF37'/><text y='65' x='50' text-anchor='middle' font-family='serif' font-weight='black' font-style='italic' font-size='45' fill='%23ffffff'>VRR</text></svg>",
       "type": "image/svg+xml",
       "sizes": "512x512",
       "purpose": "maskable"
@@ -17,8 +17,8 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#1a1a1a",
-  "background_color": "#EFEBE3",
+  "theme_color": "#0A192F",
+  "background_color": "#FDFBF7",
   "orientation": "portrait-primary",
   "description": "Retreats en Cabo Rojo, PR. Villa Retiro R.",
   "lang": "es-PR",

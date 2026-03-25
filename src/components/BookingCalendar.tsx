@@ -81,7 +81,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
     return (
         <div className="w-full flex flex-col items-center">
             <header className="text-center mb-10">
-                <h3 className="font-serif font-black text-3xl text-text-main mb-3 tracking-tight italic">Disponibilidad Real 🔱</h3>
+                <h3 className="font-serif font-black text-3xl text-secondary mb-3 tracking-tight italic">Disponibilidad Real 🔱</h3>
                 <div className="flex items-center justify-center gap-2 mb-1">
                     <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
                     <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600/70">Sincronía AST (Puerto Rico Time)</span>
@@ -118,7 +118,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                 {/* 🔱 CONCIERGE GUIDANCE: Informing the captain about stay constraints */}
                 {startDate && !endDate && minNights > 1 && (
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-fade-in w-max pointer-events-none">
-                        <div className="bg-[#FF7F3F] border border-white/30 px-6 py-2.5 rounded-full flex items-center gap-3 shadow-[0_20px_40px_rgba(255,127,63,0.3)]">
+                        <div className="bg-primary border border-white/30 px-6 py-2.5 rounded-full flex items-center gap-3 shadow-[0_20px_40px_rgba(212,175,55,0.3)]">
                             <span className="material-icons text-white text-sm animate-bounce">auto_awesome</span>
                             <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Noches mínimas requeridas: {minNights}</span>
                         </div>
@@ -128,8 +128,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
 
             <div className="flex justify-center gap-16 py-10 mt-6 border-t border-black/5 w-full max-w-xl">
                 <div className="flex items-center gap-4">
-                    <div className="w-3.5 h-3.5 rounded-full bg-primary shadow-[0_0_20px_rgba(255,127,63,0.6)]"></div>
-                    <span className="text-[11px] font-black text-text-main uppercase tracking-widest">Su Selección Signature</span>
+                    <div className="w-3.5 h-3.5 rounded-full bg-primary shadow-[0_0_20px_rgba(212,175,55,0.6)]"></div>
+                    <span className="text-[11px] font-black text-secondary uppercase tracking-widest">Su Selección Signature</span>
                 </div>
                 <div className="flex items-center gap-4">
                     <div className="w-3.5 h-3.5 rounded-full border border-black/10 bg-white" style={{ 
@@ -144,15 +144,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .vintage-premium-calendar { border: none !important; font-family: 'Outfit', sans-serif !important; background: white !important; }
         
         @keyframes pulse-gold {
-            0% { box-shadow: 0 0 0 0 rgba(255, 127, 63, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 127, 63, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 127, 63, 0); }
+            0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(212, 175, 55, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
         }
 
         .react-datepicker__day--suggested-range {
-            background-color: rgba(255, 127, 63, 0.05) !important;
-            border: 2px dashed rgba(255, 127, 63, 0.3) !important;
-            color: #FF7F3F !important;
+            background-color: rgba(212, 175, 55, 0.05) !important;
+            border: 2px dashed rgba(212, 175, 55, 0.3) !important;
+            color: #D4AF37 !important;
             animation: pulse-gold 2s infinite !important;
         }
 
@@ -185,7 +185,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             font-weight: 900 !important; 
             font-size: 2.4rem !important; 
             margin-bottom: 3rem !important;
-            color: #1a1a1a !important; 
+            color: #0A192F !important; 
             text-transform: capitalize !important;
             letter-spacing: -0.05em !important;
         }
@@ -232,7 +232,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             border-radius: 50% !important;
             transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1) !important;
             cursor: pointer !important;
-            color: #1a1a1a !important;
+            color: #0A192F !important;
             border: 3px solid transparent !important;
         }
 
@@ -242,7 +242,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         
         /* 🔱 DÍAS DISPONIBLES (PROACTIVOS) */
         .react-datepicker__day:not(.react-datepicker__day--disabled):not(.react-datepicker__day--excluded) {
-            color: #1a1a1a !important;
+            color: #0A192F !important;
             background: white !important;
             cursor: pointer !important;
             font-weight: 800 !important;
@@ -271,21 +271,21 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker__day--selected, 
         .react-datepicker__day--range-start, 
         .react-datepicker__day--range-end { 
-            background-color: #FF7F3F !important; 
-            color: white !important; 
-            box-shadow: 0 15px 35px rgba(255, 127, 63, 0.5) !important;
+            background-color: #D4AF37 !important; 
+            color: #0A192F !important; 
+            box-shadow: 0 15px 35px rgba(212, 175, 55, 0.5) !important;
             z-index: 5 !important;
             transform: scale(1.1);
         }
         
         .react-datepicker__day--in-range { 
-            background-color: rgba(255, 127, 63, 0.12) !important; 
-            color: #FF7F3F !important; 
+            background-color: rgba(212, 175, 55, 0.12) !important; 
+            color: #D4AF37 !important; 
             border-radius: 50% !important;
         }
 
         .react-datepicker__day:hover:not(.react-datepicker__day--disabled) { 
-            background-color: #1a1a1a !important; 
+            background-color: #0A192F !important; 
             color: white !important;
             transform: translateY(-5px) scale(1.1);
             box-shadow: 0 15px 30px rgba(0,0,0,0.1) !important;

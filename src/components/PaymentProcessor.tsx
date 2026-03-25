@@ -95,7 +95,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                 <div className="grid grid-cols-2 gap-3">
                     <button
                         onClick={() => setPaymentMethod('paypal')}
-                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-orange-50 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
+                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-primary/5 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
                     >
                         <div className="w-12 h-8 flex items-center justify-center">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-5" alt="PayPal" />
@@ -104,7 +104,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                     </button>
                     <button
                         onClick={() => setPaymentMethod('ath_movil')}
-                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-orange-500 bg-orange-50 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
+                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-primary bg-primary/5 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
                     >
                         <div className="w-12 h-8 flex items-center justify-center">
                             <span className="bg-[#FF6B35] text-white px-2 py-0.5 rounded-md font-black text-[10px] italic">ATH</span>
@@ -115,29 +115,29 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
             </div>
 
             {paymentMethod === 'ath_movil' ? (
-                <div className="bg-orange-50/50 p-5 rounded-[1.5rem] border border-orange-100 animate-slide-up">
+                <div className="bg-primary/5 p-5 rounded-[1.5rem] border border-primary/10 animate-slide-up">
                     <div className="flex items-center gap-2 mb-3">
-                        <div className="w-8 h-8 bg-[#FF6B35] rounded-full flex items-center justify-center">
-                            <span className="material-icons text-white text-xs">account_balance_wallet</span>
+                        <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
+                            <span className="material-icons text-primary text-xs">account_balance_wallet</span>
                         </div>
-                        <p className="text-xs font-bold text-orange-900 leading-tight">Transferencia ATH Móvil</p>
+                        <p className="text-xs font-bold text-secondary leading-tight">Transferencia ATH Móvil</p>
                     </div>
 
                     <div className="space-y-4 mb-5">
                         {/* Information Card */}
-                        <div className="bg-white p-5 rounded-3xl border border-orange-100 shadow-float relative overflow-hidden group">
+                        <div className="bg-white p-5 rounded-3xl border border-primary/10 shadow-soft relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
-                                <span className="material-icons text-6xl">qr_code_2</span>
+                                <span className="material-icons text-6xl text-secondary">qr_code_2</span>
                             </div>
 
                             <div className="space-y-4 relative z-10">
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-orange-400 mb-1 leading-none">Número de Transferencia</p>
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1 leading-none">Número de Transferencia</p>
                                     <div className="flex items-center justify-between">
-                                        <p className="text-xl font-black text-slate-800 tracking-tighter">787-356-0895</p>
+                                        <p className="text-xl font-black text-secondary tracking-tighter">787-356-0895</p>
                                         <button
                                             onClick={handleCopyPhone}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${copied ? 'bg-green-500 text-white' : 'bg-orange-100 text-orange-600 hover:bg-orange-200'}`}
+                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black transition-all ${copied ? 'bg-green-500 text-white' : 'bg-primary/10 text-primary hover:bg-primary/20'}`}
                                         >
                                             <span className="material-icons text-xs">{copied ? 'done' : 'content_copy'}</span>
                                             {copied ? '¡COPIADO!' : 'COPIAR'}
@@ -153,30 +153,30 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                         </div>
 
                         {/* Amount Card */}
-                        <div className="bg-black text-white p-5 rounded-3xl shadow-xl relative overflow-hidden">
+                        <div className="bg-secondary text-white p-5 rounded-3xl shadow-xl relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent p-5"></div>
                             <div className="relative z-10 flex justify-between items-center">
                                 <div>
                                     <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Inversión Total</p>
-                                    <p className="text-2xl font-black tracking-tight">${total}</p>
+                                    <p className="text-2xl font-black tracking-tight text-primary">${total}</p>
                                 </div>
                                 <div className="text-right">
-                                    <p className="text-[8px] font-black text-orange-400 uppercase tracking-widest leading-none mb-1">Instrucción</p>
-                                    <p className="text-[10px] font-medium text-white/80 leading-tight">Usa la opción <span className="text-orange-300 font-bold">Transferir</span></p>
+                                    <p className="text-[8px] font-black text-primary uppercase tracking-widest leading-none mb-1">Instrucción</p>
+                                    <p className="text-[10px] font-medium text-white/80 leading-tight">Usa la opción <span className="text-primary font-bold">Transferir</span></p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     <label className="block w-full cursor-pointer group">
-                        <div className="w-full py-5 px-4 bg-white border-2 border-dashed border-orange-200 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-orange-400 group-hover:bg-orange-50 transition-all duration-300">
-                            <div className="w-10 h-10 rounded-full bg-orange-50 flex items-center justify-center group-hover:scale-110 transition-transform">
-                                <span className="material-icons text-orange-500">photo_library</span>
+                        <div className="w-full py-5 px-4 bg-white border-2 border-dashed border-primary/20 rounded-2xl flex flex-col items-center justify-center gap-2 group-hover:border-primary group-hover:bg-primary/5 transition-all duration-300">
+                            <div className="w-10 h-10 rounded-full bg-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <span className="material-icons text-primary">photo_library</span>
                             </div>
-                            <p className="text-[10px] font-black text-orange-600 uppercase tracking-[0.2em]">
+                            <p className="text-[10px] font-black text-primary uppercase tracking-[0.2em]">
                                 {screenshot ? screenshot.name : "Subir Captura del Recibo"}
                             </p>
-                            <p className="text-[9px] text-orange-400">PDF, JPG o PNG (máx. 5MB)</p>
+                            <p className="text-[9px] text-primary/40">PDF, JPG o PNG (máx. 5MB)</p>
                         </div>
                         <input
                             type="file"
@@ -203,13 +203,13 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                 <button
                     onClick={handleManualConfirm}
                     disabled={isProcessing || isUploading || !screenshot}
-                    className={`w-full text-white font-black text-xs tracking-widest py-5 rounded-2xl shadow-lg transition-all flex items-center justify-center gap-3 ${isProcessing || isUploading || !screenshot ? 'bg-gray-300 cursor-not-allowed' : 'bg-black hover:bg-gray-900 active:scale-95'}`}
+                    className={`w-full font-black text-xs tracking-widest py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 ${isProcessing || isUploading || !screenshot ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20'}`}
                 >
                     {isProcessing || isUploading ? (
-                        <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
                     ) : (
                         <>
-                            FINALIZAR RESERVA
+                            FINALIZAR RESERVA 🔱
                             <span className="material-icons text-sm">check_circle</span>
                         </>
                     )}

@@ -98,7 +98,7 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ propertyId, limit = 8 }
             <span
               key={i}
               className={`material-icons text-xl ${
-                i < Math.round(current.rating || 0) ? 'text-primary' : 'text-gray-200'
+                i < Math.round(current.rating || 0) ? 'text-primary' : 'text-secondary/10'
               }`}
             >
               star
@@ -158,7 +158,7 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ propertyId, limit = 8 }
               onClick={() => setCurrentIndex(i)}
               aria-label={`Ver reseña ${i + 1}`}
               className={`h-1.5 rounded-full transition-all ${
-                i === currentIndex ? 'w-8 bg-primary' : 'w-2 bg-gray-200'
+                i === currentIndex ? 'w-8 bg-primary' : 'w-2 bg-secondary/10'
               }`}
             />
           ))}

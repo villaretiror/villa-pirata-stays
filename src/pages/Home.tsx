@@ -233,7 +233,7 @@ const Home: React.FC = () => {
                 />
               </div>
 
-              <div className="p-5 bg-sand/40 rounded-[2rem] border border-orange-100/30 mb-6">
+              <div className="p-5 bg-sand/60 rounded-[2rem] border border-primary/10 mb-6">
                 <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-text-light mb-4 flex items-center gap-2">
                    <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
                    Integrantes
@@ -244,7 +244,7 @@ const Home: React.FC = () => {
               </div>
             </div>
 
-            <div className="mb-6 min-h-[65px] flex items-center justify-center text-center px-6 bg-sand/50 rounded-3xl border border-orange-100/30">
+            <div className="mb-6 min-h-[65px] flex items-center justify-center text-center px-6 bg-sand/80 rounded-3xl border border-primary/10">
               <AnimatePresence mode="wait">
                 <motion.p
                    key={`${adults}-${children}-${pets}-${startDate?.getTime()}`}
@@ -264,7 +264,7 @@ const Home: React.FC = () => {
 
             <button 
           onClick={handleSearch}
-          className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:shadow-[#BBA27E]/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-[#BBA27E]/20"
+          className="w-full bg-secondary text-primary font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:shadow-primary/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-primary/20"
         >
           <Search size={16} className="group-hover:scale-110 transition-transform" />
           Ver Disponibilidad
@@ -277,16 +277,16 @@ const Home: React.FC = () => {
       <div className="relative z-10 px-6 pt-12 pb-6">
         <div className="flex justify-between items-end mb-1">
           <div>
-            <h1 className="text-4xl md:text-5xl font-serif italic font-black text-[#1a1a1a] leading-tight tracking-tighter">
+            <h1 className="text-4xl md:text-5xl font-serif italic font-black text-secondary leading-tight tracking-tighter">
               Villa Retiro R
             </h1>
-            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-[#BBA27E] mt-1">Cabo Rojo · Puerto Rico</p>
+            <p className="text-[10px] uppercase font-black tracking-[0.3em] text-primary mt-1">Cabo Rojo · Puerto Rico</p>
           </div>
           <div className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group overflow-hidden relative">
-            <Bell size={24} className="text-[#1a1a1a] group-hover:scale-110 transition-transform" />
+            <Bell size={24} className="text-secondary group-hover:scale-110 transition-transform" />
           </div>
         </div>
-        <p className="text-[#BBA27E]/60 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+        <p className="text-primary/60 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
           Salty · Concierge Oficial VRR 🌟
         </p>
       </div>
@@ -316,8 +316,8 @@ const Home: React.FC = () => {
             key={cat.id}
             onClick={() => handleCategorySelect(cat.id)}
             className={`flex items-center gap-2 px-6 py-3.5 rounded-full border whitespace-nowrap transition-all duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] ${activeCategory === cat.id
-              ? 'bg-[#1a1a1a] text-[#BBA27E] border-[#BBA27E]/30 shadow-2xl scale-105'
-              : 'bg-white/80 backdrop-blur-sm border-white/50 text-gray-500 shadow-soft hover:bg-white hover:text-[#1a1a1a] hover:-translate-y-0.5'
+              ? 'bg-secondary text-primary border-primary/30 shadow-2xl scale-105'
+              : 'bg-white/80 backdrop-blur-sm border-white/50 text-text-light shadow-soft hover:bg-white hover:text-secondary hover:-translate-y-0.5'
               }`}
           >
             <cat.icon size={14} />
@@ -447,23 +447,23 @@ const Home: React.FC = () => {
           ) : (
             /* 🐆 LUXURY EMPTY STATE */
             <div className="col-span-full flex flex-col items-center justify-center py-20 px-10 text-center bg-white/40 border border-white/50 rounded-[3rem] backdrop-blur-md">
-              <div className="w-24 h-24 bg-[#BBA27E]/10 rounded-full flex items-center justify-center mb-6 text-[#BBA27E] shadow-inner border border-[#BBA27E]/20">
+              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-inner border border-primary/20">
                  <Search size={48} className="animate-pulse" />
               </div>
-              <p className="text-text-main font-serif italic text-2xl font-bold mb-2">No encontramos coincidencias hoy</p>
+              <p className="text-secondary font-serif italic text-2xl font-bold mb-2">No encontramos coincidencias hoy</p>
               <p className="text-sm text-text-light mb-8 max-w-[300px] leading-relaxed">
                 Sin embargo, Salty sugiere que pruebes con menos personas o cambies de categoría para ver nuestros tesoros disponibles.
               </p>
               <div className="flex flex-col gap-3 w-full max-w-xs">
                  <button
                    onClick={() => { setAdults(1); setChildren(0); setPets(0); setActiveCategory('todo'); }}
-                   className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black py-4 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest border border-[#BBA27E]/20"
+                   className="w-full bg-secondary text-primary font-black py-4 rounded-2xl shadow-xl hover:scale-105 active:scale-95 transition-all text-[10px] uppercase tracking-widest border border-primary/20"
                  >
                    Zarpar de Nuevo (Limpiar Todo)
                  </button>
                  <button 
                   onClick={() => setIsSearchOpen(false)}
-                  className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black py-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-[0.2em] border border-[#BBA27E]/20"
+                  className="w-full bg-secondary text-primary font-black py-5 rounded-[2rem] shadow-2xl hover:scale-105 active:scale-95 transition-all text-sm uppercase tracking-[0.2em] border border-primary/20"
                 >
                   Confirmar Selección
                 </button>
@@ -480,7 +480,7 @@ const Home: React.FC = () => {
 
         {/* Contact / Leads Form Section */}
         <div className="mt-20 mb-10 bg-white rounded-[3rem] p-8 lg:p-12 shadow-float border border-gray-100/50 relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-[#BBA27E]"></div>
+          <div className="absolute top-0 left-0 right-0 h-1.5 bg-primary"></div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -488,7 +488,7 @@ const Home: React.FC = () => {
                 {siteContent?.contact?.title?.includes('Salty') ? (
                   <>
                     {siteContent.contact.title.replace('Salty', '').replace('.', '')}
-                    <span className="text-[#BBA27E] italic"> Salty · VRR.</span>
+                    <span className="text-primary italic"> Salty · VRR.</span>
                   </>
                 ) : (
                   siteContent?.contact?.title

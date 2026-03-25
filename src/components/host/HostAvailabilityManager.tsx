@@ -140,7 +140,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
             <button 
               onClick={fetchGlobalSync}
               disabled={isSyncingGlobal}
-              className={`px-6 py-4 bg-black text-white rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl ${isSyncingGlobal ? 'opacity-50' : ''}`}
+              className={`px-6 py-4 bg-secondary text-primary rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl border border-primary/20 ${isSyncingGlobal ? 'opacity-50' : ''}`}
             >
                <RefreshCcw className={`w-4 h-4 ${isSyncingGlobal ? 'animate-spin' : ''}`} />
                <span className="text-[10px] font-black uppercase tracking-widest">
@@ -182,12 +182,12 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
 
            {/* Stats / Quick Insights */}
            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-black/95 p-8 rounded-[3rem] text-white flex items-center gap-6 shadow-2xl relative overflow-hidden">
+              <div className="bg-secondary/95 p-8 rounded-[3rem] text-white flex items-center gap-6 shadow-2xl relative overflow-hidden">
                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center backdrop-blur-md">
                     <Zap className="w-8 h-8 text-primary" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Eficiencia Local</h4>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50">Eficiencia Local</h4>
                     <p className="text-3xl font-serif font-black italic mt-1">94% <span className="text-xs font-sans text-green-400">↑2%</span></p>
                  </div>
                  <Radio className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10 rotate-12" />
@@ -207,8 +207,8 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
               </div>
 
               <div className="bg-white p-8 rounded-[3rem] border border-gray-100 flex items-center gap-6 shadow-soft">
-                 <div className="w-16 h-16 bg-orange-50 rounded-full flex items-center justify-center">
-                    <Tag className="w-8 h-8 text-orange-600" />
+                 <div className="w-16 h-16 bg-primary/5 rounded-full flex items-center justify-center">
+                    <Tag className="w-8 h-8 text-primary" />
                  </div>
                  <div>
                     <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Antelación</h4>
@@ -249,7 +249,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
            {/* 🛡️ REGLAS DE ORO (Golden Rules) - INSPIRADO EN FOTO #1 */}
            <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-xl space-y-4">
               <div className="flex items-center gap-3 mb-2">
-                 <div className="w-8 h-8 bg-black text-white rounded-lg flex items-center justify-center shadow-lg">
+                 <div className="w-8 h-8 bg-secondary text-primary rounded-lg flex items-center justify-center shadow-lg">
                     <Zap className="w-4 h-4" />
                  </div>
                  <div>
@@ -402,7 +402,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                  </div>
                  <button 
                     onClick={() => isEditingChannels ? saveChannels() : setIsEditingChannels(true)}
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isEditingChannels ? 'bg-black text-white shadow-xl' : 'bg-gray-50 text-gray-400 hover:bg-black hover:text-white'}`}
+                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isEditingChannels ? 'bg-secondary text-primary shadow-xl border border-primary/20' : 'bg-gray-50 text-gray-400 hover:bg-secondary hover:text-primary'}`}
                  >
                     {isEditingChannels ? <ShieldCheck className="w-5 h-5" /> : <RefreshCcw className="w-5 h-5 flex-shrink-0" />}
                  </button>
@@ -452,11 +452,11 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
            </div>
 
            {/* ⚡ TACTICAL FEED (COMPACT) */}
-           <div className="bg-black p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
+           <div className="bg-secondary p-6 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden group">
               <div className="flex justify-between items-start mb-4 relative z-10">
                  <div>
                     <h3 className="font-serif font-black italic text-lg text-white tracking-tight leading-none">Bitácora</h3>
-                    <p className="text-[8px] font-bold text-gray-500 uppercase tracking-widest mt-1">Salty Guardian 🔱</p>
+                    <p className="text-[8px] font-bold text-white/40 uppercase tracking-widest mt-1">Salty Guardian 🔱</p>
                  </div>
                  <Radio className="w-4 h-4 text-primary animate-pulse" />
               </div>

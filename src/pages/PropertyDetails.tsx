@@ -137,7 +137,7 @@ export const PropertyDetails: React.FC = () => {
       updateMeta('og:url', window.location.href, true);
       updateMeta('og:image:width', '1200', true);
       updateMeta('og:image:height', '630', true);
-      updateMeta('theme-color', '#CBB28A');
+      updateMeta('theme-color', '#D4AF37');
 
       // 3. Privacy Protection (SEO/Robots)
       if (property.isOffline) {
@@ -154,15 +154,15 @@ export const PropertyDetails: React.FC = () => {
 
   if (!property) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-[#FDFCFB] p-6 text-center animate-fade-in">
-        <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mb-6 text-gray-300">
+      <div className="flex flex-col items-center justify-center min-h-screen bg-sand p-6 text-center animate-fade-in">
+        <div className="w-20 h-20 bg-sand rounded-full flex items-center justify-center mb-6 text-gray-300">
           <ChevronRight size={40} />
         </div>
         <h2 className="text-2xl font-serif font-bold text-text-main mb-2">Estancia No Encontrada</h2>
         <p className="text-sm text-text-light mb-8 max-w-xs">Lo sentimos, esta propiedad no está disponible en este momento.</p>
         <button
           onClick={() => navigate('/')}
-          className="bg-primary hover:bg-primary-dark text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
+          className="bg-primary hover:opacity-90 text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-primary/20 transition-all active:scale-95"
         >
           Explorar Collections
         </button>
@@ -312,7 +312,7 @@ export const PropertyDetails: React.FC = () => {
               <button
                 key={curr}
                 onClick={() => setCurrency(curr)}
-                className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${currency === curr ? 'bg-white text-black shadow-lg' : 'text-white hover:bg-white/10'}`}
+                className={`px-3 py-1.5 rounded-full text-[10px] font-black tracking-widest transition-all ${currency === curr ? 'bg-secondary text-white shadow-lg' : 'text-secondary/60 hover:bg-secondary/5'}`}
               >
                 {curr}
               </button>
@@ -330,7 +330,7 @@ export const PropertyDetails: React.FC = () => {
             style={{ backgroundColor: headerIconBg, color: isFavorite ? '#EF4444' : headerIconColor }}
             className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
           >
-            <Heart size={20} fill={isFavorite ? '#EF4444' : 'none'} />
+            <Heart size={20} fill={isFavorite ? '#EF4444' : 'none'} stroke={isFavorite ? '#EF4444' : 'currentColor'} />
           </motion.button>
         </div>
       </motion.div>
@@ -351,7 +351,7 @@ export const PropertyDetails: React.FC = () => {
               alt={property.title}
               className="w-full h-full object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20"></div>
+            <div className="absolute inset-0 bg-gradient-to-t from-secondary/40 via-transparent to-secondary/20"></div>
           </motion.div>
         </AnimatePresence>
 
@@ -374,7 +374,7 @@ export const PropertyDetails: React.FC = () => {
         )}
 
         <div className="absolute bottom-8 left-8 flex gap-2">
-          <div className="bg-black/40 text-white font-bold px-4 py-2 rounded-2xl backdrop-blur-xl border border-white/10 flex items-center gap-2 shadow-2xl">
+          <div className="bg-secondary/40 text-white font-bold px-4 py-2 rounded-2xl backdrop-blur-xl border border-white/10 flex items-center gap-2 shadow-2xl">
             <Compass size={14} />
             <span className={TAG_STYLE}>{currentImageIndex + 1} / {property.images.length}</span>
           </div>
@@ -391,21 +391,21 @@ export const PropertyDetails: React.FC = () => {
             <h1 className="text-4xl md:text-6xl font-serif font-black text-text-main leading-none tracking-tighter mb-4">
               {property.title}
             </h1>
-            <div className="flex items-center gap-2 text-[#BBA27E] font-black uppercase tracking-[0.2em] text-xs">
-              <MapPin size={18} className="text-[#BBA27E]" />
-              <span className="underline underline-offset-8 decoration-[#BBA27E]/30">{property.location}</span>
+            <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-xs">
+              <MapPin size={18} className="text-primary" />
+              <span className="underline underline-offset-8 decoration-primary/30">{property.location}</span>
             </div>
           </div>
 
           {/* Luxury Stats Bar */}
-          <div className="grid grid-cols-4 gap-0.5 bg-white rounded-[2.5rem] overflow-hidden p-1 shadow-card border border-black/5">
+          <div className="grid grid-cols-4 gap-0.5 bg-white rounded-[2.5rem] overflow-hidden p-1 shadow-card border border-secondary/5">
             {[
-              { val: property.rating, label: 'Valoración', icon: Star, color: 'text-orange-400' },
+              { val: property.rating, label: 'Valoración', icon: Star, color: 'text-primary' },
               { val: property.guests, label: 'Huéspedes', icon: Users, color: 'text-text-main' },
               { val: property.bedrooms, label: 'Alcobas', icon: Bed, color: 'text-text-main' },
               { val: property.baths, label: 'Baños', icon: Bath, color: 'text-text-main' }
             ].map((stat, i) => (
-              <div key={i} className={`flex flex-col items-center justify-center p-6 ${i !== 3 ? 'border-r border-black/5' : ''}`}>
+              <div key={i} className={`flex flex-col items-center justify-center p-6 ${i !== 3 ? 'border-r border-secondary/5' : ''}`}>
                 <div className="flex items-center gap-1 mb-1">
                   <stat.icon size={16} className={stat.color} />
                   <span className="font-serif font-black text-2xl text-text-main">{stat.val}</span>
@@ -464,7 +464,7 @@ export const PropertyDetails: React.FC = () => {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {(property.amenities || []).slice(0, 8).map((am, i) => (
-                <div key={i} className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-black/5 shadow-soft group hover:border-primary/20 hover:translate-y-[-4px] transition-all">
+                <div key={i} className="flex flex-col items-center justify-center p-6 bg-white rounded-[2rem] border border-secondary/5 shadow-soft group hover:border-primary/20 hover:translate-y-[-4px] transition-all">
                   <div className="w-12 h-12 rounded-2xl bg-sand flex items-center justify-center text-primary mb-3 group-hover:scale-110 transition-transform">
                     {getAmenityIcon(am)}
                   </div>
@@ -504,14 +504,14 @@ export const PropertyDetails: React.FC = () => {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-black/5">
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-secondary/5">
                 <div className="flex items-center gap-2 mb-2 text-green-600">
                   <LogIn size={14} />
                   <span className={TAG_STYLE}>Check-in</span>
                 </div>
                 <p className="text-2xl font-serif font-black">{property.policies.checkInTime}</p>
               </div>
-              <div className="bg-white p-6 rounded-3xl shadow-sm border border-black/5">
+              <div className="bg-white p-6 rounded-3xl shadow-sm border border-secondary/5">
                 <div className="flex items-center gap-2 mb-2 text-red-500">
                   <LogOut size={14} />
                   <span className={TAG_STYLE}>Check-out</span>
@@ -534,7 +534,7 @@ export const PropertyDetails: React.FC = () => {
         {/* Desktop Sticky Widget */}
         <aside className="lg:col-span-4 space-y-6 hidden lg:block">
           <div className="sticky top-28 space-y-6">
-            <div className="bg-white p-8 rounded-[3.5rem] border border-black/10 shadow-2xl space-y-8 ring-1 ring-black/5">
+            <div className="bg-white p-8 rounded-[3.5rem] border border-secondary/10 shadow-2xl space-y-8 ring-1 ring-secondary/5">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="relative flex h-2 w-2">
@@ -576,7 +576,7 @@ export const PropertyDetails: React.FC = () => {
 
                 <Link
                   to={`/booking/${property.id}`}
-                  className="w-full bg-[#1a1a1a] text-[#BBA27E] py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border border-[#BBA27E]/20"
+                  className="w-full bg-secondary text-primary py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border border-primary/20"
                 >
                   Vivir la Experiencia
                   <Compass size={20} />
@@ -595,8 +595,8 @@ export const PropertyDetails: React.FC = () => {
             </div>
 
             {/* Secure Map Widget */}
-            <div className="bg-white p-6 rounded-[3rem] border border-black/5 shadow-soft space-y-4">
-              <h4 className={TAG_STYLE + " text-[#BBA27E] opacity-70"}>Ubicación Estratégica</h4>
+            <div className="bg-white p-6 rounded-[3rem] border border-secondary/5 shadow-soft space-y-4">
+              <h4 className={TAG_STYLE + " text-primary opacity-70"}>Ubicación Estratégica</h4>
               <div 
                 className="relative h-48 rounded-2xl overflow-hidden group cursor-pointer shadow-inner border border-black/5" 
                 onClick={() => window.open(p.google_maps_url || `https://www.google.com/maps/search/?api=1&query=${p.exact_lat_long || p.location}`, '_blank')}
@@ -606,7 +606,7 @@ export const PropertyDetails: React.FC = () => {
                   className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
                   alt="Mapa del área general" 
                 />
-                <div className="absolute inset-0 bg-black/5 flex items-center justify-center">
+                <div className="absolute inset-0 bg-secondary/5 flex items-center justify-center">
                   <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
                     <Compass size={16} className="text-primary" />
                     <span className="text-[10px] font-black uppercase tracking-tighter">Explorar Zona</span>
@@ -631,9 +631,9 @@ export const PropertyDetails: React.FC = () => {
           
           <div className="flex gap-6 overflow-x-auto pb-8 no-scrollbar -mx-6 px-6">
             {p.reviews_list.map((rev, i) => (
-              <div key={i} className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3rem] shadow-soft border border-black/5 flex flex-col justify-between">
+              <div key={i} className="min-w-[320px] md:min-w-[400px] bg-white p-8 rounded-[3rem] shadow-soft border border-secondary/5 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center gap-1 text-orange-400 mb-4">
+                  <div className="flex items-center gap-1 text-primary mb-4">
                     {Array(5).fill(0).map((_, j) => (
                       <Star key={j} size={14} fill={j < rev.rating ? 'currentColor' : 'none'} />
                     ))}
@@ -643,20 +643,20 @@ export const PropertyDetails: React.FC = () => {
                   </p>
                   <button 
                     onClick={() => toggleTranslation(i)}
-                    className="text-[10px] font-black uppercase tracking-[0.2em] text-[#BBA27E] mb-6 flex items-center gap-2 hover:opacity-70 transition-opacity"
+                    className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2 hover:opacity-70 transition-opacity"
                   >
                     <span className="material-icons text-[14px]">translate</span>
                     {translatedReviews[i] ? 'Ver Original' : 'Salty: Traducir al Español'}
                   </button>
                 </div>
-                <div className="flex items-center justify-between pt-6 border-t border-black/5">
+                <div className="flex items-center justify-between pt-6 border-t border-secondary/5">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-[#1a1a1a] rounded-full flex items-center justify-center font-black text-[#BBA27E] text-xs">
+                    <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center font-black text-primary text-xs">
                       {rev.author.charAt(0)}
                     </div>
                     <div>
-                      <p className="font-bold text-sm text-[#1a1a1a]">{rev.author}</p>
-                      <p className="text-[10px] text-[#BBA27E] font-black uppercase tracking-[0.2em]">{rev.date}</p>
+                      <p className="font-bold text-sm text-secondary">{rev.author}</p>
+                      <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">{rev.date}</p>
                     </div>
                   </div>
                   {getSourceLabel(rev.source)}
@@ -685,14 +685,14 @@ export const PropertyDetails: React.FC = () => {
                 className="group relative h-[400px] rounded-[3.5rem] overflow-hidden shadow-2xl transition-all hover:-translate-y-2"
               >
                 <img src={other.images[0]} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" alt={other.title} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-secondary/80 via-secondary/20 to-transparent"></div>
                 <div className="absolute bottom-10 left-10 right-10 flex justify-between items-end">
                   <div>
                     <h3 className="text-3xl font-serif font-black text-white leading-tight">{other.title}</h3>
                     <p className="text-white/60 text-sm font-medium mt-2">{other.subtitle}</p>
                     <div className="flex items-center gap-3 mt-4">
                       <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
-                        <Star size={12} className="text-orange-400 fill-orange-400" />
+                        <Star size={12} className="text-primary fill-primary" />
                         <span className="text-[10px] font-black text-white">{other.rating}</span>
                       </div>
                       <div className="flex items-center gap-1 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/20">
@@ -701,7 +701,7 @@ export const PropertyDetails: React.FC = () => {
                       </div>
                     </div>
                   </div>
-                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-black group-hover:bg-primary group-hover:text-white transition-all shadow-2xl">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center text-secondary group-hover:bg-primary group-hover:text-white transition-all shadow-2xl">
                     <ChevronRight size={24} />
                   </div>
                 </div>
@@ -766,8 +766,8 @@ export const PropertyDetails: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="space-y-4 pt-8 border-t border-black/5">
-                  <button onClick={() => window.open(`tel:${HOST_PHONE}`)} className="w-full bg-black text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                <div className="space-y-4 pt-8 border-t border-secondary/5">
+                  <button onClick={() => window.open(`tel:${HOST_PHONE}`)} className="w-full bg-secondary text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
                     <Phone size={14} />
                     Llamada Directa
                   </button>
@@ -795,7 +795,7 @@ export const PropertyDetails: React.FC = () => {
               onPointerDown={e => e.stopPropagation()}
             >
               {/* Header */}
-              <div className="flex justify-between items-center px-8 py-8 border-b border-black/5 sticky top-0 bg-white z-10">
+              <div className="flex justify-between items-center px-8 py-8 border-b border-secondary/5 sticky top-0 bg-white z-10">
                 <h3 className="text-2xl font-serif font-bold text-text-main">Catálogo de Amenidades</h3>
                 <button
                   onClick={() => setShowAmenities(false)}

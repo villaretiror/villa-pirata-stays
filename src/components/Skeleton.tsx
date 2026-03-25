@@ -6,7 +6,7 @@ interface SkeletonProps {
 }
 
 const Skeleton: React.FC<SkeletonProps> = ({ className = '', variant = 'rect' }) => {
-    const baseClass = "shimmer-sweep bg-[#EFE9E1]";
+    const baseClass = "shimmer-sweep bg-sand/80";
     const variantClass = {
         text: "h-4 w-full rounded",
         rect: "rounded-2xl",
@@ -41,7 +41,7 @@ export const PropertyCardSkeleton = () => (
 );
 
 export const PropertyDetailsSkeleton = () => (
-    <div className="bg-[#FDFCFB] min-h-screen">
+    <div className="bg-sand min-h-screen">
         <Skeleton className="w-full h-[60vh] md:h-[75vh] rounded-b-[3.5rem]" />
         <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
             <div className="lg:col-span-2 space-y-12">

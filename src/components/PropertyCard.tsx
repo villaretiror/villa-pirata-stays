@@ -44,8 +44,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     return (
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
         {(property.rating || 0) >= 4.9 && (
-          <div className="bg-[#BBA27E] px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-[#1a1a1a] shadow-lg flex items-center gap-1.5 ring-1 ring-black/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
-            <Flame size={10} className="fill-[#1a1a1a]" />
+          <div className="bg-primary px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-secondary shadow-lg flex items-center gap-1.5 ring-1 ring-secondary/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
+            <Flame size={10} className="fill-secondary" />
             Colección Élite
           </div>
         )}
@@ -68,7 +68,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         if (onClick) onClick(property.id);
         else navigate(`/property/${property.id}`);
       }}
-      className="group cursor-pointer relative bg-white rounded-[2.5rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-700 flex flex-col border border-black/5"
+      className="group cursor-pointer relative bg-white rounded-[2.5rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-700 flex flex-col border border-secondary/5"
     >
       {/* Visual Header / Media */}
       <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden m-2 rounded-[2rem]">
@@ -78,9 +78,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                initial={{ opacity: 0, x: -10 }}
                animate={{ opacity: 1, x: 0 }}
                transition={{ delay: delay / 1000 + 0.3 }}
-               className="bg-[#1a1a1a]/80 backdrop-blur-md border border-[#BBA27E]/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg"
+               className="bg-secondary/80 backdrop-blur-md border border-primary/30 px-3 py-1.5 rounded-xl flex items-center gap-1.5 shadow-lg"
             >
-              <div className="w-4 h-4 text-[#BBA27E]">
+              <div className="w-4 h-4 text-primary">
                  <svg viewBox="0 0 100 100" fill="currentColor"><text y="70" x="50" text-anchor="middle" font-family="serif" font-weight="black" font-style="italic" font-size="50">VRR</text></svg>
               </div>
               <span className="text-[8px] font-black text-white uppercase tracking-[0.2em] leading-none">Signature Stay</span>
@@ -93,7 +93,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             onClick={(e) => { e.stopPropagation(); onToggleFavorite && onToggleFavorite(property.id); }}
             className={`w-11 h-11 rounded-full flex items-center justify-center transition-all shadow-lg backdrop-blur-md border ${
               isFavorite 
-                ? 'bg-[#BBA27E] border-[#BBA27E] text-white' 
+                ? 'bg-primary border-primary text-white' 
                 : 'bg-white/10 border-white/20 text-white hover:bg-white/20'
             }`}
           >
@@ -139,7 +139,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               e.stopPropagation();
               setCurrentImageIndex((prev) => (prev > 0 ? prev - 1 : property.images.length - 1));
             }}
-            className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all active:scale-90"
+            className="w-10 h-10 rounded-full bg-secondary/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-secondary transition-all active:scale-90"
           >
             <ChevronLeft size={20} />
           </button>
@@ -148,7 +148,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               e.stopPropagation();
               setCurrentImageIndex((prev) => (prev < property.images.length - 1 ? prev + 1 : 0));
             }}
-            className="w-10 h-10 rounded-full bg-black/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-black transition-all active:scale-90"
+            className="w-10 h-10 rounded-full bg-secondary/20 backdrop-blur-md border border-white/20 flex items-center justify-center text-white hover:bg-white hover:text-secondary transition-all active:scale-90"
           >
             <ChevronRight size={20} />
           </button>
@@ -199,9 +199,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 ${property.original_price}
               </span>
             )}
-            <div className="flex items-baseline gap-1.5 bg-[#BBA27E] px-4 py-2 rounded-2xl border border-[#BBA27E]/20 shadow-lg">
-              <span className="font-black text-2xl text-[#1a1a1a]">${property.price || 0}</span>
-              <span className="text-[10px] font-black uppercase text-[#1a1a1a]/70 tracking-widest">/noche</span>
+            <div className="flex items-baseline gap-1.5 bg-primary px-4 py-2 rounded-2xl border border-primary/20 shadow-lg">
+              <span className="font-black text-2xl text-secondary">${property.price || 0}</span>
+              <span className="text-[10px] font-black uppercase text-secondary/70 tracking-widest">/noche</span>
             </div>
           </div>
         </div>

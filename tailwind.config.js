@@ -8,16 +8,16 @@ module.exports = {
     theme: {
         extend: {
             colors: {
-                // 🔱 SALTY BUNKER PREMIUM PALETTE
-                primary: "#D4AF37",    // Deep Gold
-                secondary: "#050A18",  // Bunker Black
-                sand: "#F9F6F2",       // Pirata Sand
-                surface: "#FFFFFF",    // Pure Milk
-                "text-main": "#050A18",
-                "text-light": "#6B7280",
-                accent: "#D4AF37",
+                // 🔱 ATLANTIC SIGNATURE PALETTE
+                primary: "#D4AF37",    // Sovereign Gold
+                secondary: "#0A192F",  // Deep Atlantic Navy (Sustituye al negro)
+                sand: "#FDFBF7",       // Champagne Mist (Fondo más limpio)
+                surface: "#FFFFFF",
+                "text-main": "#0A192F", // Texto principal en Navy para suavidad
+                "text-light": "#4B5563",
+                accent: "#1B3B5F",     // Navy medio para detalles
                 "gold-dark": "#B8860B",
-                "bunker-deep": "#02050D",
+                "navy-deep": "#050D1A", // El tono más oscuro para sombras
             },
             fontFamily: {
                 sans: ["Outfit", "sans-serif"],
@@ -33,11 +33,11 @@ module.exports = {
                 "5xl": "64px",
             },
             boxShadow: {
-                'soft': '0 10px 40px -10px rgba(5, 10, 24, 0.05)',
-                'card': '0 20px 40px -15px rgba(5, 10, 24, 0.08)',
+                'soft': '0 10px 40px -10px rgba(10, 25, 47, 0.05)',
+                'card': '0 20px 40px -15px rgba(10, 25, 47, 0.08)',
                 'float': '0 25px 50px -12px rgba(212, 175, 55, 0.2)',
                 'glass': '0 8px 32px 0 rgba(31, 38, 135, 0.07)',
-                'bunker': '0 30px 60px -10px rgba(0, 0, 0, 0.4)',
+                'bunker': '0 30px 60px -10px rgba(10, 25, 47, 0.4)',
             },
             animation: {
                 'fade-in': 'fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1)',

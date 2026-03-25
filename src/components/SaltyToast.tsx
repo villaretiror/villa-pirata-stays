@@ -347,16 +347,16 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                     >
                         <div className="bg-white/95 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] rounded-br-[4px] shadow-2xl overflow-hidden flex flex-col">
                             {isExpanded && (
-                                <div className="flex items-center justify-between p-4 bg-[#BBA27E] border-b border-black/10">
+                                <div className="flex items-center justify-between p-4 bg-primary border-b border-secondary/10">
                     <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-[#1a1a1a] flex items-center justify-center border border-white/20 shadow-lg">
+                        <div className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center border border-white/20 shadow-lg">
                             <span className="text-xl">⚓</span>
                         </div>
                         <div>
-                            <h3 className="text-sm font-black text-[#1a1a1a] tracking-widest uppercase">Salty Concierge</h3>
+                            <h3 className="text-sm font-black text-secondary tracking-widest uppercase">Salty Concierge</h3>
                             <div className="flex items-center gap-1.5">
                                 <span className={`w-2 h-2 rounded-full ${isTalking ? 'bg-blue-600 animate-pulse' : 'bg-green-600'}`}></span>
-                                <span className="text-[10px] font-bold text-[#1a1a1a]/60 uppercase tracking-tighter">
+                                <span className="text-[10px] font-bold text-secondary/60 uppercase tracking-tighter">
                                     {isTalking ? 'Hablando...' : 'En Línea'}
                                 </span>
                             </div>
@@ -369,11 +369,11 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 className="p-2 hover:bg-black/10 rounded-full transition-colors group"
                                 title="Silenciar a Salty"
                             >
-                                <span className="material-icons text-xl text-[#1a1a1a] group-hover:scale-110">volume_off</span>
+                                <span className="material-icons text-xl text-secondary group-hover:scale-110">volume_off</span>
                             </button>
                         )}
                         <button onClick={() => setIsExpanded(false)} className="p-2 hover:bg-black/10 rounded-full transition-colors group">
-                            <span className="material-icons text-[#1a1a1a] group-hover:rotate-90 transition-transform">close</span>
+                            <span className="material-icons text-secondary group-hover:rotate-90 transition-transform">close</span>
                         </button>
                     </div>
                 </div>
@@ -389,13 +389,13 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 <>
                                     <div className="flex-1 max-h-[300px] overflow-y-auto p-4 space-y-4 no-scrollbar">
                                         {chatMessages.length === 0 && (
-                                            <div className="bg-[#BBA27E]/10 p-4 rounded-2xl">
-                                                <p className="text-xs text-[#1a1a1a]">"Soy Salty, su concierge. ¿En qué puedo servirles hoy?"</p>
+                                            <div className="bg-primary/10 p-4 rounded-2xl">
+                                                <p className="text-xs text-secondary">"Soy Salty, su concierge. ¿En qué puedo servirles hoy?"</p>
                                             </div>
                                         )}
                                         {chatMessages.map((msg, idx) => (
                                             <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                                <div className={`max-w-[85%] p-3 rounded-2xl text-[12px] ${msg.role === 'user' ? 'bg-black text-white' : 'bg-sand/40 border border-black/5'}`}>
+                                                <div className={`max-w-[85%] p-3 rounded-2xl text-[12px] ${msg.role === 'user' ? 'bg-secondary text-white shadow-lg shadow-black/10' : 'bg-sand/40 border border-secondary/5 text-text-main'}`}>
                                                     {msg.content}
                                                 </div>
                                             </div>
@@ -409,17 +409,17 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                             <motion.div 
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                className="bg-[#1a1a1a] p-2 rounded-2xl flex items-center justify-between shadow-lg border border-[#BBA27E]/20"
+                                                className="bg-secondary p-2 rounded-2xl flex items-center justify-between shadow-lg border border-primary/20"
                                             >
                                                 <div className="flex items-center gap-2">
                                                     <button 
                                                         onClick={playPreview}
-                                                        className="w-10 h-10 bg-[#BBA27E] text-[#1a1a1a] rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                                                        className="w-10 h-10 bg-primary text-secondary rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
                                                     >
                                                         <span className="material-icons">play_arrow</span>
                                                     </button>
                                                     <div className="flex flex-col">
-                                                        <span className="text-[9px] font-black uppercase text-[#BBA27E]/60 tracking-widest">Escuchar Grabación</span>
+                                                        <span className="text-[9px] font-black uppercase text-primary/60 tracking-widest">Escuchar Grabación</span>
                                                         <span className="text-[10px] text-white/80 font-mono tracking-tighter">Duración: {formatTime(recordingTime)}</span>
                                                     </div>
                                                     <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" preload="auto" />
@@ -434,7 +434,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     </button>
                                                     <button 
                                                         onClick={sendRecordedAudio}
-                                                        className="px-4 py-2 bg-[#BBA27E] text-[#1a1a1a] rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all"
+                                                        className="px-4 py-2 bg-primary text-secondary rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all"
                                                     >
                                                         Enviar 📤
                                                     </button>
@@ -450,7 +450,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     onMouseUp={stopRecording}
                                                     onTouchStart={startRecording}
                                                     onTouchEnd={stopRecording}
-                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-black text-[#BBA27E] hover:bg-gray-900'}`}
+                                                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-secondary text-primary hover:opacity-90'}`}
                                                 >
                                                     <span className="material-icons text-lg">{isRecording ? 'stop' : 'mic'}</span>
                                                 </button>
@@ -475,7 +475,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                 <button 
                                                     onClick={handleSendMessage}
                                                     disabled={isTyping || !inputValue.trim()}
-                                                    className="w-10 h-10 bg-[#BBA27E] text-[#1a1a1a] rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all h-10"
+                                                    className="w-10 h-10 bg-primary text-secondary rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all h-10"
                                                 >
                                                     <span className="material-icons text-sm">send</span>
                                                 </button>
@@ -504,20 +504,20 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 animate={{ scale: 1.5, opacity: 0 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
-                                className="absolute inset-0 rounded-full bg-[#BBA27E]/40 z-0"
+                                className="absolute inset-0 rounded-full bg-primary/40 z-0"
                             />
                             <motion.div 
                                 initial={{ scale: 0.8, opacity: 0.3 }}
                                 animate={{ scale: 1.8, opacity: 0 }}
                                 exit={{ opacity: 0 }}
                                 transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0.5 }}
-                                className="absolute inset-0 rounded-full bg-[#BBA27E]/20 z-0"
+                                className="absolute inset-0 rounded-full bg-primary/20 z-0"
                             />
                         </>
                     )}
                 </AnimatePresence>
 
-                <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center shadow-2xl border-4 border-white transition-all overflow-hidden relative z-10`}>
+                <div className={`w-14 h-14 rounded-full bg-secondary flex items-center justify-center shadow-2xl border-4 border-white transition-all overflow-hidden relative z-10`}>
                     <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
                 </div>
             </motion.div>
