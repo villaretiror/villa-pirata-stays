@@ -118,17 +118,6 @@ export const checkAvailabilityWithICal = async (
         const diffDays = (bOut.getTime() - bIn.getTime()) / (1000 * 3600 * 24);
         const isExternal = overlapBooking.source && overlapBooking.source !== 'Direct Web';
 
-        // 🌟 ARCHITECTURE UPGRADE: The "Gold Window" Logic (Mar 2026)
-        // If it's a very long block (> 90 days) from an external source, it's likely a window setting.
-        // We don't block the AI; we flag it as "Request Only" to capture the lead.
-        if (isExternal && diffDays > 90) {
-            return { 
-                available: true, 
-                is_request_only: true, 
-                reason: 'Fuera de la ventana de reserva instantánea. Se permite solicitud manual.' 
-            };
-        }
-
         const reason = isExternal
             ? `Fechas no disponibles — reservado vía ${overlapBooking.source}.`
             : 'Fechas no disponibles — reserva directa existente.';
@@ -296,14 +285,8 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
         return [];
     }
 
-    // 🌟 FILTER: Technical Windows ( > 90 days ) should not block the gap scanner
-    const realBookings = (bookings || []).filter((b: { check_in: string; check_out: string; source: string | null }) => {
-        const bIn = new Date(b.check_in);
-        const bOut = new Date(b.check_out);
-        const diff = (bOut.getTime() - bIn.getTime()) / (1000 * 3600 * 24);
-        const isExternal = b.source && b.source !== 'Direct Web';
-        return !(isExternal && diff > 90);
-    });
+    // 🌟 INTEGRITY GUARD: All bookings (including long-term iCal blocks) MUST be respected
+    const realBookings = bookings || [];
 
     const gaps: { start: string; end: string; nights: number }[] = [];
     let lastCheckout = new Date(todayStr + 'T12:00:00');

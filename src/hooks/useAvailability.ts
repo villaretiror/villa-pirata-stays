@@ -45,10 +45,14 @@ export const useAvailability = (propertyId: string | undefined) => {
 
             const allBlocked: Date[] = [];
 
-            // Helper to fill date ranges
+            // 📅 RECALIBRATED DATE ENGINE: Use 00:00:00 for strict calendar matching
             const addRange = (start: string, end: string) => {
-                let curr = new Date(start + 'T12:00:00');
-                const last = new Date(end + 'T12:00:00');
+                const [yearS, monthS, dayS] = start.split('-').map(Number);
+                const [yearE, monthE, dayE] = end.split('-').map(Number);
+                
+                let curr = new Date(yearS, monthS - 1, dayS, 0, 0, 0);
+                const last = new Date(yearE, monthE - 1, dayE, 0, 0, 0);
+                
                 while (curr < last) {
                     allBlocked.push(new Date(curr));
                     curr.setDate(curr.getDate() + 1);
@@ -59,7 +63,8 @@ export const useAvailability = (propertyId: string | undefined) => {
             const legacyBlocked = propData.blockeddates || propData.blockedDates || [];
             if (Array.isArray(legacyBlocked)) {
                 legacyBlocked.forEach((dStr: string) => {
-                    allBlocked.push(new Date(dStr + 'T12:00:00'));
+                    const [y, m, d] = dStr.split('-').map(Number);
+                    allBlocked.push(new Date(y, m - 1, d, 0, 0, 0));
                 });
             }
 
@@ -73,7 +78,7 @@ export const useAvailability = (propertyId: string | undefined) => {
             }
             
             // Advance Notice Engine
-            let globalAdvanceNotice = 2; // default
+            let globalAdvanceNotice = 1; // standard
             if (rules && rules.length > 0) {
                 const todayStr = now.toISOString().split('T')[0];
                 const activeRule = rules.find((r: any) => todayStr >= r.start_date && todayStr <= r.end_date);
@@ -83,13 +88,10 @@ export const useAvailability = (propertyId: string | undefined) => {
             }
             if (globalAdvanceNotice > 0) {
                 for (let i = 0; i < globalAdvanceNotice; i++) {
-                    const d = new Date(now);
-                    d.setDate(d.getDate() + i);
-                    allBlocked.push(new Date(d.toISOString().split('T')[0] + 'T12:00:00'));
+                    const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i, 0, 0, 0);
+                    allBlocked.push(d);
                 }
             }
-
-
 
             // Process Bookings
             (activeBookings || []).forEach((b: { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null }) => {
@@ -104,9 +106,9 @@ export const useAvailability = (propertyId: string | undefined) => {
                 addRange(p.check_in, p.check_out);
             });
 
-            // Deduplicate
-            const uniqueStrings = Array.from(new Set(allBlocked.map(d => d.toISOString().split('T')[0])));
-            const finalDates = uniqueStrings.map(s => new Date(s + 'T12:00:00'));
+            // Deduplicate accurately
+            const uniqueTimestamps = Array.from(new Set(allBlocked.map(d => d.getTime())));
+            const finalDates = uniqueTimestamps.map(ts => new Date(ts));
 
             setBlockedDates(finalDates);
 
