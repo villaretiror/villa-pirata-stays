@@ -299,7 +299,7 @@ export const PropertyDetails: React.FC = () => {
         className="fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 py-3 pb-safe"
       >
         <motion.button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/')}
           style={{ backgroundColor: headerIconBg, color: headerIconColor }}
           className="p-2.5 rounded-full backdrop-blur-md transition-transform active:scale-95 flex items-center justify-center"
         >

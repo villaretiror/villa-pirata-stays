@@ -208,7 +208,9 @@ const Booking: React.FC = () => {
       : await supabase.from('bookings').insert(bookingPayload).select().single();
 
     if (bookingError || !bookingData) {
-      alert("Error en la reserva: " + (bookingError?.message || "Internal error"));
+      window.dispatchEvent(new CustomEvent('salty-push', {
+        detail: { message: "⚠️ Salty: Hemos detectado una turbulencia en la conexión. Por favor, verifica tus datos e intenta de nuevo." }
+      }));
       setIsProcessing(false);
       return;
     }
@@ -263,7 +265,7 @@ const Booking: React.FC = () => {
         <header className="px-8 py-6 flex flex-col gap-4 sticky top-0 bg-white sm:bg-white/80 backdrop-blur-xl z-20 border-b border-black/5">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate(`/property/${id}`)}
               className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-all active:scale-95"
             >
               <span className="material-icons text-text-main">close</span>

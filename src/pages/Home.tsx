@@ -159,9 +159,9 @@ const Home: React.FC = () => {
 
   const getGuestSummary = () => {
     const parts = [];
-    if (adults > 0) parts.push(`${adults}${adults > 1 ? ' ad' : ' ad'}`);
-    if (children > 0) parts.push(`${children}${children > 1 ? ' ni' : ' ni'}`);
-    if (pets > 0) parts.push(`${pets}🐾`);
+    if (adults > 0) parts.push(`${adults} ${adults > 1 ? 'Adultos' : 'Adulto'}`);
+    if (children > 0) parts.push(`${children} ${children > 1 ? 'Niños' : 'Niño'}`);
+    if (pets > 0) parts.push(`${pets} 🐾`);
     return parts.join(', ');
   };
 

@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { differenceInDays, parseISO } from 'date-fns';
 import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
-import { checkAvailabilityWithICal, findCalendarGaps, applyAIQuote, resolvePropertyId } from '../src/aiServices.js';
+import { checkAvailabilityWithICal, findCalendarGaps, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable } from '../src/aiServices.js';
 
 const getEnvVar = (key: string): string => {
   return process.env[key] || process.env[`VITE_${key}`] || "";
@@ -127,13 +127,37 @@ async function handleVapiTools(req: any, res: any, message: any) {
         // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
         const gaps = await findCalendarGaps(propId, supabase);
         const nextGap = gaps[0];
-        const gapMsg = nextGap 
-          ? `. Sin embargo, veo que tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end} (${nextGap.nights} noches). ¿Le funcionaría esa travesía?`
-          : ". Por el momento esas fechas están reservadas y no veo huecos cercanos.";
+        
+        // 🔱 UPSELLING: Check other properties too
+        const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
+        const altMsg = alternate 
+          ? `. Sin embargo, Capitán, veo que *${alternate.title}* está totalmente disponible para esas fechas. ¿Le gustaría que le hable un poco más de esta opción? ⚓`
+          : nextGap 
+            ? `. Pero tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end}. ¿Le funcionaría esa travesía?`
+            : ". Por el momento esas fechas están reservadas en toda la flota.";
 
         return { 
           toolCallId: toolCall.id, 
-          result: `Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio${gapMsg} ⚓` 
+          result: `Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio${altMsg} ⚓` 
+        };
+      }
+
+      if (name === 'send_payment_sms') {
+        const phone = args.phone || args.telefono;
+        const guestName = args.guestName || args.nombre || 'Viajero';
+        const rawPropId = args.propertyId || args.property_id || '1081171030449673920';
+        const finalId = await resolvePropertyId(rawPropId, supabase);
+        const propertyTitle = (await supabase.from('properties').select('title').eq('id', finalId).single()).data?.title || 'Villa Retiro';
+        
+        const bookingLink = `https://villa-pirata-stays.vercel.app/booking/${finalId}`;
+        const content = `¡Hola ${guestName}! Soy Salty. Aquí tienes el link oficial para asegurar tu estancia en ${propertyTitle}: ${bookingLink}. ¡Te esperamos en el paraíso! 🏝️`;
+        
+        const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
+        return { 
+          toolCallId: toolCall.id, 
+          result: sent 
+            ? `¡Listo! He disparado un mensaje de texto con el link de reserva directa a su móvil. ¿Desea que lo esperemos para confirmar su recepción o tiene alguna otra duda técnica? ⚓`
+            : `Hubo una turbulencia al enviar el mensaje, pero no se preocupe, puedo intentar de nuevo o dictar el link si prefiere.`
         };
       }
 

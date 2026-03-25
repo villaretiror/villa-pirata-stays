@@ -294,14 +294,37 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     };
 
     useEffect(() => {
+        const handlePush = (e: any) => {
+            const detail = e.detail;
+            if (detail && detail.message) {
+                setMessage(detail.message);
+                setShowBubble(true);
+                setIsMinimized(false);
+                setIsPulsing(true);
+                
+                // 🎧 Proactive Voice (Optional/Subtle)
+                if (detail.speak) {
+                    speakSalty(detail.message);
+                }
+            }
+        };
+
+        window.addEventListener('salty-push', handlePush);
+        
         const timer = setTimeout(() => {
-            setMessage(getContextualPill());
-            setShowBubble(true);
-            setIsMinimized(false);
-            setIsPulsing(true);
-        }, 3000);
-        return () => clearTimeout(timer);
-    }, [location.pathname]);
+            if (!showBubble) {
+                setMessage(getContextualPill());
+                setShowBubble(true);
+                setIsMinimized(false);
+                setIsPulsing(true);
+            }
+        }, 5000);
+
+        return () => {
+            window.removeEventListener('salty-push', handlePush);
+            clearTimeout(timer);
+        };
+    }, [location.pathname, showBubble]);
 
     return (
         <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none">

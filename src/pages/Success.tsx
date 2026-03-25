@@ -13,7 +13,7 @@ const Success: React.FC = () => {
   // Real contact number for the host (can be env var)
 
   const handleWhatsAppContact = () => {
-    let msg = "¡Hola! Quisiera información sobre mi reserva en Villa Retiro R.";
+    let msg = "¡Hola! Quisiera información sobre mi estancia Signature en Villa Retiro R.";
     if (bookingData) {
       msg = getBookingWAMessage(bookingData);
     }

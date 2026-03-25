@@ -174,6 +174,35 @@ export const checkAvailabilityWithICal = async (
     return { available: true };
 };
 
+/**
+ * 🔍 PROACTIVE UPSELLING: Find another property that is OR ISN'T occupied for these dates.
+ * Salty never says "No". He offers the next best thing.
+ */
+export const findAlternatePropertyAvailable = async (
+    excludedVillaId: string,
+    checkIn: string,
+    checkOut: string,
+    customSupabase?: SupabaseClient
+): Promise<{ id: string, title: string } | null> => {
+    const client = customSupabase || supabase;
+    
+    // 1. Fetch all other properties
+    const { data: others } = await client.from('properties')
+        .select('id, title')
+        .neq('id', excludedVillaId);
+
+    if (!others || others.length === 0) return null;
+
+    // 2. Check each one for availability (Parallel for speed)
+    const availabilityChecks = await Promise.all(others.map(async (p: { id: any, title: string }) => {
+        const avail = await checkAvailabilityWithICal(String(p.id), checkIn, checkOut, client);
+        return { ...p, available: avail.available };
+    }));
+
+    const firstAvailable = availabilityChecks.find(p => p.available);
+    return firstAvailable ? { id: String(firstAvailable.id), title: firstAvailable.title } : null;
+};
+
 // 2. Lead & Abandonment Manager
 export const logAbandonmentLead = async (data: { name: string; email?: string; phone?: string; interest: string }) => {
     const { error } = await supabase.from('leads').insert({
