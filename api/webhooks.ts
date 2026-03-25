@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { differenceInDays, parseISO } from 'date-fns';
 import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
-import { checkAvailabilityWithICal, findCalendarGaps, applyAIQuote } from '../src/aiServices.js';
+import { checkAvailabilityWithICal, findCalendarGaps, applyAIQuote, resolvePropertyId } from '../src/aiServices.js';
 
 const getEnvVar = (key: string): string => {
   return process.env[key] || process.env[`VITE_${key}`] || "";
@@ -100,19 +100,20 @@ async function handleVapiTools(req: any, res: any, message: any) {
 
     try {
       if (name === 'get_property_info') {
-        const { data, error } = await supabase.from('properties').select('*').eq('id', args.propertyId).single();
+        const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
+        const { data, error } = await supabase.from('properties').select('*').eq('id', propId).single();
         if (error) throw new Error(`Permission Denied or Property Not Found: ${error.message}`);
         return { toolCallId: toolCall.id, result: JSON.stringify(data) };
       }
 
       if (name === 'check_availability') {
         // 🛡️ PARAMETER NORMALIZATION: Accept multiple naming conventions from AI
-        const propId = args.propertyId || args.property_id || '1081171030449673920';
+        const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
         const sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
         const eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
         
         // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
-        console.log(`[Vapi] Checking availability for ${propId} from ${sDate} to ${eDate}`);
+        console.log(`[Vapi] Checking availability for ${propId} (input: ${args.propertyId}) from ${sDate} to ${eDate}`);
         const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
         
         if (availability.available) {
