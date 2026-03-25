@@ -498,7 +498,7 @@ const Booking: React.FC = () => {
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
-                className="bg-white w-full max-w-xl rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl relative"
+                className="bg-white w-full max-w-4xl rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl relative"
               >
                 <div className="flex justify-between items-center mb-8">
                   <h3 className="font-serif font-black text-2xl">Disponibilidad Real</h3>

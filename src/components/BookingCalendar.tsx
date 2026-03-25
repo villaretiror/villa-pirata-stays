@@ -54,54 +54,105 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
 
             <style>{`
         .luxury-calendar { border: none !important; font-family: inherit !important; width: 100% !important; background: white !important; }
+        
+        /* 🔱 THE GRID MASTER: Standardizing the container */
         .react-datepicker { 
-            display: flex !important; 
+            display: flex !important;
             flex-direction: column !important;
             border: none !important; 
             width: 100% !important; 
             background: white !important;
             padding: 1rem !important;
+            gap: 2rem !important;
         }
+
         .react-datepicker__month-container { 
-            width: 100% !important; 
-            float: none !important; 
-            padding: 0 10px !important;
+            float: none !important;
+            display: block !important;
+            width: 100% !important;
+            margin-bottom: 2rem !important;
         }
-        .react-datepicker__header { background-color: white !important; border: none !important; padding-top: 10px !important; width: 100% !important; }
+
+        .react-datepicker__header { 
+            background-color: white !important; 
+            border: none !important; 
+            padding: 0 !important;
+            width: 100% !important; 
+            position: relative !important;
+        }
+
         .react-datepicker__current-month { 
             font-family: 'serif' !important; 
             font-weight: 800 !important; 
-            font-size: 1.1rem !important; 
-            margin-bottom: 20px !important; 
+            font-size: 1.25rem !important; 
+            text-align: center !important;
+            margin: 1.5rem 0 !important;
             color: #1a1a1a !important; 
             text-transform: capitalize !important;
+            display: block !important;
+            width: 100% !important;
         }
-        .react-datepicker__day-name { text-transform: uppercase !important; font-size: 10px !important; font-weight: 900 !important; color: #888 !important; width: 2.5rem !important; margin: 0.2rem !important; }
-        .react-datepicker__month { margin: 0.5rem 0 !important; }
+
+        /* 🔱 DAY NAMES GRID */
+        .react-datepicker__day-names {
+            display: grid !important;
+            grid-template-columns: repeat(7, 1fr) !important;
+            text-align: center !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        .react-datepicker__day-name { 
+            text-transform: uppercase !important; 
+            font-size: 10px !important; 
+            font-weight: 800 !important; 
+            color: #999 !important; 
+            width: auto !important;
+            margin: 0 !important;
+            line-height: normal !important;
+        }
+
+        /* 🔱 THE DATES GRID: Rebuilt from scratch */
+        .react-datepicker__month { 
+            display: grid !important;
+            grid-template-columns: repeat(7, 1fr) !important;
+            gap: 2px !important;
+            margin: 0 !important;
+        }
+
         .react-datepicker__day { 
-            width: 2.5rem !important; 
-            line-height: 2.5rem !important; 
-            margin: 0.2rem !important; 
+            width: 100% !important;
+            aspect-ratio: 1/1 !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 !important; 
             font-size: 0.9rem !important; 
             font-weight: 600 !important;
-            border-radius: 14px !important;
+            border-radius: 50% !important;
             transition: all 0.2s ease !important;
+            cursor: pointer !important;
             position: relative !important;
-            display: inline-block !important;
+        }
+
+        .react-datepicker__day--outside-month {
+            visibility: hidden !important;
         }
         
-        /* Ocupado / Disabled */
+        /* 🔱 STATUS STYLES */
         .react-datepicker__day--disabled { 
-            background-color: #f5f5f5 !important;
-            color: #d1d1d1 !important; 
-            text-decoration: none !important;
+            background-color: transparent !important;
+            color: #ddd !important; 
+            cursor: not-allowed !important;
         }
         
-        .react-datepicker__day--selected, .react-datepicker__day--range-start, .react-datepicker__day--range-end { 
+        .react-datepicker__day--selected, 
+        .react-datepicker__day--range-start, 
+        .react-datepicker__day--range-end { 
             background-color: #FF7F3F !important; 
             color: white !important; 
-            box-shadow: 0 4px 12px rgba(255, 127, 63, 0.4) !important;
-            z-index: 10;
+            box-shadow: 0 4px 10px rgba(255, 127, 63, 0.3) !important;
+            z-index: 5 !important;
+            border-radius: 50% !important;
         }
         
         .react-datepicker__day--in-range { 
@@ -119,14 +170,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             .react-datepicker { 
                 flex-direction: row !important; 
                 justify-content: center !important;
-                gap: 2rem !important;
+                gap: 4rem !important;
+                padding: 2rem !important;
             }
             .react-datepicker__month-container { 
-                width: auto !important; 
-            }
-            .react-datepicker__day { 
-                width: 2.2rem !important; 
-                line-height: 2.2rem !important; 
+                width: 320px !important; 
+                margin-bottom: 0 !important;
             }
         }
       `}</style>
