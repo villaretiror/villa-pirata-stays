@@ -89,14 +89,25 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
 
   const fetchGlobalSync = async () => {
     setIsSyncingGlobal(true);
+    showToast("Salty está conectando con los satélites de Airbnb... 🛰️");
+    
     try {
-      await fetch('/api/calendar/import', { method: 'POST' });
-      showToast("Sincronización Global Completada 🛰️");
-      if (onRefresh) onRefresh();
+      const response = await fetch('/api/calendar/import', { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        showToast("Sincronización Global Completada. Travesías Aseguradas 🔱");
+        if (onRefresh) onRefresh();
+      } else {
+        showToast("Airbnb está tardando en responder. Salty seguirá intentando en segundo plano. 🛡️");
+      }
     } catch (e) {
-      showToast("Error en sincronización global");
+      showToast("Error en conexión satelital. Reintentando... 🛰️");
+    } finally {
+      setIsSyncingGlobal(false);
     }
-    setIsSyncingGlobal(false);
   };
 
   const getRelativeTime = (isoString?: string) => {
@@ -126,14 +137,16 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
         </div>
 
         <div className="flex items-center gap-4">
-           <button 
-             onClick={fetchGlobalSync}
-             disabled={isSyncingGlobal}
-             className={`px-6 py-4 bg-black text-white rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl ${isSyncingGlobal ? 'opacity-50' : ''}`}
-           >
-              <RefreshCcw className={`w-4 h-4 ${isSyncingGlobal ? 'animate-spin' : ''}`} />
-              <span className="text-[10px] font-black uppercase tracking-widest">Sincronización Forzada 🔱</span>
-           </button>
+            <button 
+              onClick={fetchGlobalSync}
+              disabled={isSyncingGlobal}
+              className={`px-6 py-4 bg-black text-white rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl ${isSyncingGlobal ? 'opacity-50' : ''}`}
+            >
+               <RefreshCcw className={`w-4 h-4 ${isSyncingGlobal ? 'animate-spin' : ''}`} />
+               <span className="text-[10px] font-black uppercase tracking-widest">
+                {isSyncingGlobal ? 'Conectando Satélites... 🛰️' : 'Sincronización Forzada 🔱'}
+               </span>
+            </button>
 
            <div className="flex items-center gap-4 bg-white p-2 rounded-3xl border border-gray-100 shadow-soft">
               <div className="pl-4 pr-2 text-gray-300">

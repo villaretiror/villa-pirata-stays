@@ -7,9 +7,11 @@ interface SaltyToastProps {
     propertyId?: string;
     propertyTitle?: string;
     amenities?: string[];
+    startDate?: Date | null;
+    endDate?: Date | null;
 }
 
-const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amenities }) => {
+const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amenities, startDate, endDate }) => {
     const [showBubble, setShowBubble] = useState(false);
     const [isMinimized, setIsMinimized] = useState(true);
     const [isExpanded, setIsExpanded] = useState(false);
@@ -43,21 +45,22 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     
     // 🔱 MASTER AUDIO CONTROLLER (To stop Salty when needed)
-    const [currentSaltyAudio, setCurrentSaltyAudio] = useState<HTMLAudioElement | null>(null);
+    const saltyAudioRef = useRef<HTMLAudioElement | null>(null);
     const [isTalking, setIsTalking] = useState(false);
 
     const speakSalty = async (text: string) => {
         try {
             // 🛡️ Cancel any previous sounds
-            if (currentSaltyAudio) {
-                currentSaltyAudio.pause();
-                currentSaltyAudio.currentTime = 0;
+            if (saltyAudioRef.current) {
+                saltyAudioRef.current.pause();
+                saltyAudioRef.current.currentTime = 0;
             }
             window.speechSynthesis.cancel();
             setIsTalking(true);
 
-            // 🛡️ Markdown & Asterisk Purge
+            // 🛡️ Markdown & Emoji Purge (Preventing 'trident' or robot artifacts)
             const cleanText = text
+                .replace(/[\u{1F000}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '') // Comprehensive Emoji Purge
                 .replace(/\*\*/g, '')
                 .replace(/\*/g, '')
                 .replace(/__/g, '')
@@ -76,7 +79,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             const blob = await response.blob();
             const url = URL.createObjectURL(blob);
             const audio = new Audio(url);
-            setCurrentSaltyAudio(audio);
+            saltyAudioRef.current = audio;
             
             audio.volume = 1.0;
             await audio.play();
@@ -84,22 +87,20 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             audio.onended = () => {
                 setIsTalking(false);
                 URL.revokeObjectURL(url);
-                setCurrentSaltyAudio(null);
+                saltyAudioRef.current = null;
             };
 
         } catch (err) {
             console.error("[Voice Engine Critical Error]:", err);
             setIsTalking(false);
-            // 🛡️ ELIMINATED ROBOTIC FALLBACK: We prefer quality or silence.
-            // Only use console log for debugging, don't stress the user with robot voice.
         }
     };
 
     const stopSalty = () => {
-        if (currentSaltyAudio) {
-            currentSaltyAudio.pause();
-            currentSaltyAudio.currentTime = 0;
-            setCurrentSaltyAudio(null);
+        if (saltyAudioRef.current) {
+            saltyAudioRef.current.pause();
+            saltyAudioRef.current.currentTime = 0;
+            saltyAudioRef.current = null;
         }
         window.speechSynthesis.cancel();
         setIsTalking(false);
@@ -147,7 +148,11 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             setIsRecording(true);
         } catch (err) {
             console.error("Mic access denied:", err);
-            alert("No pude acceder al micrófono. Verifique los permisos en su navegador. 🔱");
+            setChatMessages(prev => [...prev, { 
+                role: 'model', 
+                content: "Lo lamento, Capitán, no logro sentir el micrófono. ¿Podría verificar los permisos de su dispositivo para que pueda escucharle? 🔱" 
+            }]);
+            setIsExpanded(true);
         }
     };
 
@@ -288,6 +293,10 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
 
     const getContextualPill = () => {
         const path = location.pathname;
+        if (startDate && propertyTitle) {
+            const dateStr = startDate.toLocaleDateString('es-PR', { day: 'numeric', month: 'short' });
+            return `Capitán, veo que tiene la mira en el ${dateStr}. ¿Desea que aseguremos su estancia en ${propertyTitle}? 🔱`;
+        }
         if (user?.is_returning_guest && path === '/') return `¡Qué alegría volver a verte, Capitán! 🔱`;
         if (path === '/') return "¿Buscando la exclusividad al mejor precio? 🔱";
         return "¡Hola! Soy Salty. ¿Alguna duda?";
@@ -324,7 +333,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             window.removeEventListener('salty-push', handlePush);
             clearTimeout(timer);
         };
-    }, [location.pathname, showBubble]);
+    }, [location.pathname, showBubble, startDate, propertyTitle]);
 
     return (
         <div className="fixed bottom-6 right-6 z-[9999] flex flex-col items-end gap-3 pointer-events-none">
@@ -486,7 +495,29 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="pointer-events-auto cursor-pointer relative group"
             >
-                <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center shadow-2xl border-4 border-white transition-all overflow-hidden`}>
+                {/* 🌊 WAVEFORM ANIMATION: Pulses only while Salty is talking */}
+                <AnimatePresence>
+                    {isTalking && (
+                        <>
+                            <motion.div 
+                                initial={{ scale: 0.8, opacity: 0.5 }}
+                                animate={{ scale: 1.5, opacity: 0 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "easeOut" }}
+                                className="absolute inset-0 rounded-full bg-[#BBA27E]/40 z-0"
+                            />
+                            <motion.div 
+                                initial={{ scale: 0.8, opacity: 0.3 }}
+                                animate={{ scale: 1.8, opacity: 0 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ repeat: Infinity, duration: 2, ease: "easeOut", delay: 0.5 }}
+                                className="absolute inset-0 rounded-full bg-[#BBA27E]/20 z-0"
+                            />
+                        </>
+                    )}
+                </AnimatePresence>
+
+                <div className={`w-14 h-14 rounded-full bg-[#1a1a1a] flex items-center justify-center shadow-2xl border-4 border-white transition-all overflow-hidden relative z-10`}>
                     <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
                 </div>
             </motion.div>

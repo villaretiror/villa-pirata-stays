@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Property, LocalGuideCategory, SiteContent, VillaKnowledge } from '../types';
 import { INITIAL_LOCAL_GUIDE, DEFAULT_SITE_CONTENT, DEFAULT_VILLA_KNOWLEDGE, PROPERTIES } from '../constants';
 import { supabase, isConfigured } from '../lib/supabase';
@@ -30,6 +30,7 @@ interface PropertyContextType {
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
 
 export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Use local storage for initial state to avoid layout shifts
   const [properties, setProperties] = useState<Property[]>(() => {
     try {
       const saved = localStorage.getItem('vp_properties');
@@ -37,14 +38,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch { return PROPERTIES; }
   });
 
-  const [isLoading, setIsLoading] = useState(properties.length === 0);
-
+  const [isLoading, setIsLoading] = useState(properties.length === PROPERTIES.length);
   const [localGuideData, setLocalGuideData] = useState<LocalGuideCategory[]>(INITIAL_LOCAL_GUIDE);
   const [secretSpots, setSecretSpots] = useState<any[]>([]);
   const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
   const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
   const [bookings, setBookings] = useState<any[]>([]);
-
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('favorites');
@@ -52,91 +51,103 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch { return []; }
   });
 
-  // 1. Initial Fresh Fetch & Realtime Subscription
+  // Track the active AbortController to cleanup previous requests
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Stable dependency key for site content sections to avoid fetch loops
+  const sectionsHash = useMemo(() => 
+    JSON.stringify(siteContent?.sections || {}), 
+    [siteContent?.sections]
+  );
+
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
-    // Only show global loading if we don't have any properties yet
-    if (properties.length === 0) {
-      setIsLoading(true);
-    }
+    if (properties.length === 0) setIsLoading(true);
+    
+    // Safety Fallbacks Setup
+    let finalProperties = [...PROPERTIES];
+    let finalGuide = [...INITIAL_LOCAL_GUIDE];
+    let finalBookings = [];
     
     try {
-      const controller = new AbortController();
-      const currentSignal = signal || controller.signal;
+      const { data: { user } } = await supabase.auth.getUser();
 
-      // Parallel Fetch Strategy: Minimize RTT wait time
-      const [
-        { data: propData, error: propError },
-        { data: bookingData, error: bookingError },
-        { data: guideRows, error: guideError },
-        { data: settingsData, error: settingsError },
-        { data: { user } }
-      ] = await Promise.all([
-        supabase.from('properties')
-          .select('*')
-          .or('is_offline.eq.false,is_offline.is.null')
-          .abortSignal(currentSignal),
-        supabase.from('bookings')
-          .select('*')
-          .neq('status', 'cancelled')
-          .abortSignal(currentSignal),
-        supabase.from('destination_guides')
-          .select('*')
-          .eq('is_active', true)
-          .order('sort_order', { ascending: true })
-          .abortSignal(currentSignal),
-        supabase.from('system_settings')
-          .select('key, value')
-          .abortSignal(currentSignal),
-        supabase.auth.getUser()
+      // Parallel Fetch with lux error handling
+      const [propRes, bookingRes, guideRes, settingsRes] = await Promise.all([
+        supabase.from('properties').select('*').or('is_offline.eq.false,is_offline.is.null').abortSignal(signal),
+        supabase.from('bookings').select('*').neq('status', 'cancelled').abortSignal(signal),
+        supabase.from('destination_guides').select('*').eq('is_active', true).order('sort_order', { ascending: true }).abortSignal(signal),
+        supabase.from('system_settings').select('key, value').abortSignal(signal)
       ]);
-      
-      if (propError) throw propError;
-      if (bookingError) console.error("Booking Fetch Error:", bookingError);
-      if (guideError) console.error("Guide Fetch Error:", guideError);
-      if (settingsError) console.error("Settings Fetch Error:", settingsError);
 
-      if (bookingData) setBookings(bookingData);
-
-      // B. Process Dynamic Destination Guides
-      if (guideRows && guideRows.length > 0) {
-        const categories = [
-          { id: 'beaches', category: siteContent?.sections.beaches || 'Playas del Paraíso', icon: 'beach_access', dbKey: 'beach' },
-          { id: 'gastronomy', category: siteContent?.sections.gastronomy || 'Ruta Gastronómica', icon: 'restaurant', dbKey: 'food' },
-          { id: 'nearby', category: siteContent?.sections.nearby || 'Cerca de Ti', icon: 'place', dbKey: 'landmark' }
-        ];
-
-        const mappedGuide: LocalGuideCategory[] = categories.map(cat => ({
-          ...cat,
-          items: (guideRows as any[])
-            .filter(r => {
-              const rowCat = (r.category || '').trim().toLowerCase();
-              const targetCat = cat.dbKey.toLowerCase();
-              if (targetCat === 'food') {
-                return ['food', 'gastronomia', 'restaurante'].includes(rowCat);
-              }
-              return rowCat === targetCat;
-            })
-            .map(r => ({
-              id: r.id,
-              name: r.title,
-              distance: r.distance || '5-10 min',
-              desc: r.description || '',
-              image: r.image_url?.startsWith('http') || r.image_url?.startsWith('/')
-                ? r.image_url 
-                : r.image_url 
-                  ? `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/${r.image_url}`
-                  : 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&q=80&w=1200',
-              mapUrl: r.map_url || '',
-              saltyTip: r.salty_tip || '',
-              sortOrder: r.sort_order || 0
-            }))
-        }));
-        setLocalGuideData(mappedGuide);
+      // Handle Properties with fallback
+      if (propRes.data && propRes.data.length > 0) {
+        const isAdmin = user?.email === 'villaretiror@gmail.com';
+        finalProperties = (propRes.data as PropertyRow[]).map(p => mapSupabaseProperty(p, undefined, { isAdmin }));
+      } else if (propRes.error) {
+        console.warn("🔱 Salty Warning: Property fetch failed, deploying safe landing data.", propRes.error);
       }
 
-      // C. Process System Settings
-      if (settingsData) {
-        const typedSettings = settingsData as SettingRow[];
+      // Handle Bookings
+      if (bookingRes.data) {
+        setBookings(bookingRes.data);
+      }
+
+      // 🔱 DYNAMIC CATEGORY DISCOVERY MOTOR
+      if (guideRes.data && guideRes.data.length > 0) {
+        const rows = guideRes.data as any[];
+        // Group by category from DB
+        const categoryMap = new Map<string, any[]>();
+        rows.forEach((r) => {
+          const cat = (r.category || 'otros').trim().toLowerCase();
+          if (!categoryMap.has(cat)) categoryMap.set(cat, []);
+          categoryMap.get(cat)!.push(r);
+        });
+
+        // Map categories dynamically
+        const iconMap: Record<string, string> = {
+          beach: 'beach_access',
+          playa: 'beach_access',
+          food: 'restaurant',
+          gastronomia: 'restaurant',
+          landmark: 'place',
+          nearby: 'place',
+          aventura: 'explore',
+          compras: 'shopping_bag',
+          nightlife: 'nightlife'
+        };
+
+        const displayLabelMap: Record<string, string> = {
+          beach: siteContent?.sections.beaches || 'Playas del Paraíso',
+          playa: siteContent?.sections.beaches || 'Playas del Paraíso',
+          food: siteContent?.sections.gastronomy || 'Ruta Gastronómica',
+          gastronomia: siteContent?.sections.gastronomy || 'Ruta Gastronómica',
+          landmark: siteContent?.sections.nearby || 'Cerca de Ti',
+          nearby: siteContent?.sections.nearby || 'Cerca de Ti'
+        };
+
+        finalGuide = Array.from(categoryMap.entries()).map(([dbKey, items]) => ({
+          id: dbKey,
+          dbKey,
+          category: displayLabelMap[dbKey] || dbKey.charAt(0).toUpperCase() + dbKey.slice(1),
+          icon: iconMap[dbKey] || 'explore',
+          items: items.map(r => ({
+            id: r.id,
+            name: r.title,
+            distance: r.distance || '5-10 min',
+            desc: r.description || '',
+            image: r.image_url?.startsWith('http') || r.image_url?.startsWith('/')
+              ? r.image_url 
+              : `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/${r.image_url}`,
+            mapUrl: r.map_url || '',
+            saltyTip: r.salty_tip || '',
+            sortOrder: r.sort_order || 0
+          }))
+        }));
+      }
+
+      // Handle Settings
+      if (settingsRes.data) {
+        const typedSettings = settingsRes.data as SettingRow[];
         const secrets = typedSettings.find(s => s.key === 'secret_spots')?.value;
         if (secrets) setSecretSpots(secrets as any[]);
 
@@ -145,69 +156,65 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
         const content = typedSettings.find(s => s.key === 'site_content')?.value;
         if (content) {
-          setSiteContent(prev => ({ 
-            ...prev, 
-            ...(content as any),
-            contact: { ...(prev.contact), ...((content as any).contact || {}) },
-            hero: { ...(prev.hero), ...((content as any).hero || {}) },
-            sections: { ...(prev.sections), ...((content as any).sections || {}) }
-          }));
+          const fetchedContent = content as any;
+          setSiteContent(prev => {
+            const next = { 
+              ...prev, 
+              ...fetchedContent,
+              contact: { ...prev.contact, ...(fetchedContent.contact || {}) },
+              hero: { ...prev.hero, ...(fetchedContent.hero || {}) },
+              sections: { ...prev.sections, ...(fetchedContent.sections || {}) }
+            };
+            return JSON.stringify(prev) === JSON.stringify(next) ? prev : next;
+          });
         }
       }
 
-      // D. Process Properties
-      if (propData && propData.length > 0) {
-        const isAdmin = user?.email === 'villaretiror@gmail.com';
-        const mapped: Property[] = (propData as PropertyRow[]).map(p => 
-          mapSupabaseProperty(p, undefined, { isAdmin })
-        );
-        setProperties(prev => JSON.stringify(prev) === JSON.stringify(mapped) ? prev : mapped);
-      }
     } catch (err: any) {
       if (err.name !== 'AbortError') {
-        console.error("fetchPropertiesFromDB Error:", err);
+        console.error("🔱 Salty Critical: Engine failure in fetchPropertiesFromDB. Switching to backup manual controls.", err);
       }
     } finally {
+      // Commit final data (either from DB or Fallbacks)
+      setProperties(prev => JSON.stringify(prev) === JSON.stringify(finalProperties) ? prev : finalProperties);
+      setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(finalGuide) ? prev : finalGuide);
       setIsLoading(false);
     }
-  }, [siteContent?.sections]); // Stable dependencies to prevent loop
+  }, [sectionsHash, properties.length]);
 
-
+  // Main Effect with enhanced AbortController cleanup
   useEffect(() => {
     const controller = new AbortController();
+    abortControllerRef.current = controller;
+    
     fetchPropertiesFromDB(controller.signal);
 
-    let channel: any = null;
-    if (isConfigured) {
-      channel = supabase
-        .channel('schema-db-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'properties' },
-          (payload: any) => {
-            if (payload.eventType === 'UPDATE') {
-              const updated = payload.new as any;
-              setProperties(prev => prev.map(p => p.id === String(updated.id) ? { ...p, ...updated } : p));
-            } else {
-              fetchPropertiesFromDB();
-            }
-          }
-        )
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'system_settings' },
-          () => fetchPropertiesFromDB()
-        )
+    const setupSubscription = async () => {
+      if (!isConfigured) return;
+      
+      const channel = supabase.channel('schema-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, 
+          () => fetchPropertiesFromDB())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, 
+          () => fetchPropertiesFromDB())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'destination_guides' }, 
+          () => fetchPropertiesFromDB())
         .subscribe();
-    }
+
+      return channel;
+    };
+
+    const channelPromise = setupSubscription();
 
     return () => {
       controller.abort();
-      if (channel) supabase.removeChannel(channel);
+      channelPromise.then(channel => {
+        if (channel) supabase.removeChannel(channel);
+      });
     };
-  }, []); // Run ONLY once on mount
+  }, [fetchPropertiesFromDB]);
 
-
+  // Persistence Effects
   useEffect(() => {
     localStorage.setItem('favorites', JSON.stringify(favorites));
   }, [favorites]);
@@ -224,7 +231,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     setProperties(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
   }, []);
 
-  const updateGuide = useCallback(async (updated: LocalGuideCategory[]) => {
+  const updateGuide = useCallback((updated: LocalGuideCategory[]) => {
     setLocalGuideData(prev => JSON.stringify(prev) === JSON.stringify(updated) ? prev : updated);
   }, []);
 
@@ -286,7 +293,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     saveSiteContent,
     saveVillaKnowledge,
     refreshProperties: fetchPropertiesFromDB
-  }), [properties, localGuideData, secretSpots, villaKnowledge, siteContent, bookings, favorites, isLoading, toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge, fetchPropertiesFromDB]);
+  }), [
+    properties, localGuideData, secretSpots, villaKnowledge, siteContent, 
+    bookings, favorites, isLoading, toggleFavorite, updateProperties, 
+    updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, 
+    saveVillaKnowledge, fetchPropertiesFromDB
+  ]);
 
   return (
     <PropertyContext.Provider value={value}>

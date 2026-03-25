@@ -44,16 +44,36 @@ export const PropertyDetailsSkeleton = () => (
     <div className="bg-[#FDFCFB] min-h-screen">
         <Skeleton className="w-full h-[60vh] md:h-[75vh] rounded-b-[3.5rem]" />
         <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
-            <div className="lg:col-span-2 space-y-8">
-                <Skeleton className="h-12 w-3/4" />
-                <Skeleton className="h-6 w-1/2" />
-                <div className="grid grid-cols-4 gap-4">
-                    {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-20 rounded-2xl" />)}
+            <div className="lg:col-span-2 space-y-12">
+                <div className="space-y-4">
+                    <Skeleton className="h-12 w-3/4" />
+                    <Skeleton className="h-6 w-1/2" />
                 </div>
-                <Skeleton className="h-40 w-full rounded-3xl" />
+                
+                {/* 🔱 AMENITIES GRID SKELETON */}
+                <div className="space-y-4">
+                    <Skeleton className="h-6 w-32" />
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                            <div key={i} className="flex items-center gap-3">
+                                <Skeleton variant="circle" className="w-8 h-8" />
+                                <Skeleton className="h-4 w-20" />
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                <Skeleton className="h-64 w-full rounded-3xl" />
+
+                <div className="space-y-6 pt-8 border-t border-black/5">
+                    <Skeleton className="h-8 w-48" />
+                    <div className="space-y-4">
+                        {[1, 2, 3].map(i => <Skeleton key={i} className="h-4 w-full" />)}
+                    </div>
+                </div>
             </div>
             <div className="space-y-6">
-                <Skeleton className="h-[400px] w-full rounded-[2.5rem]" />
+                <Skeleton className="h-[500px] w-full rounded-[3.5rem]" />
             </div>
         </div>
     </div>
@@ -61,7 +81,7 @@ export const PropertyDetailsSkeleton = () => (
 
 export const BookingSkeleton = () => (
     <div className="fixed inset-0 bg-sand flex justify-center items-end sm:items-center p-0 sm:p-4">
-        <div className="bg-white/80 backdrop-blur-xl w-full max-w-2xl h-full sm:h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl">
+        <div className="bg-white/80 backdrop-blur-xl w-full max-w-2xl h-full sm:h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl relative">
             <div className="px-8 py-6 flex items-center justify-between border-b border-black/5">
                 <Skeleton className="w-12 h-12 rounded-full" />
                 <div className="flex flex-col items-center gap-2">
@@ -70,7 +90,7 @@ export const BookingSkeleton = () => (
                 </div>
                 <div className="w-12"></div>
             </div>
-            <div className="flex-1 p-8 space-y-10">
+            <div className="flex-1 p-8 space-y-10 overflow-y-auto no-scrollbar">
                 <div className="flex gap-6 p-6 bg-white rounded-[2.5rem]">
                     <Skeleton className="w-24 h-24 rounded-[1.8rem]" />
                     <div className="flex-1 space-y-3">
@@ -81,13 +101,17 @@ export const BookingSkeleton = () => (
                 </div>
                 <div className="space-y-4">
                     <Skeleton className="h-4 w-24" />
-                    <Skeleton className="h-32 w-full rounded-[2.5rem]" />
+                    <Skeleton className="h-[500px] w-full rounded-[3.5rem]" />
                 </div>
-                <div className="space-y-4">
+                <div className="space-y-4 pb-20">
                     <Skeleton className="h-4 w-24" />
                     <Skeleton className="h-14 w-full rounded-[2rem]" />
                     <Skeleton className="h-24 w-full rounded-[2.5rem]" />
                 </div>
+            </div>
+
+            <div className="absolute bottom-10 right-10 z-10">
+                <Skeleton variant="circle" className="w-16 h-16 shadow-lg border-4 border-white" />
             </div>
         </div>
     </div>

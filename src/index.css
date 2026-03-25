@@ -53,16 +53,15 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(255, 255, 255, 0.4) 50%,
+      rgba(255, 255, 255, 0.5) 50%,
       transparent 100%
     );
-    animation: shimmer-effect 2s infinite ease-in-out;
+    animation: shimmer-effect 1.5s linear infinite;
   }
 
   @keyframes shimmer-effect {
-    100% {
-      transform: translateX(100%);
-    }
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
   }
 
   /* 🔱🔱🔱🔱 SALTY MODE (NIGHT THEME) 🔱🔱🔱🔱 */

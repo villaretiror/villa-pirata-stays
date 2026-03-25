@@ -67,10 +67,18 @@ const Booking: React.FC = () => {
     refreshProperties();
     
     const loadRecovery = async () => {
+        // Recovery from unfinished booking
         if (recoverData?.booking_id && recoverData?.recover) {
             const { data } = await supabase.from('bookings').select('check_in, check_out').eq('id', recoverData.booking_id).single();
             if (data) {
                 setDateRange([parseISO(data.check_in + 'T12:00:00'), parseISO(data.check_out + 'T12:00:00')]);
+            }
+        } 
+        // 🔱 CONTINUITY RECOVERY (Home -> Villa)
+        else if (location.state) {
+            const { startDate: s, endDate: e } = location.state as any;
+            if (s && e) {
+                setDateRange([new Date(s), new Date(e)]);
             }
         }
     };
@@ -78,16 +86,7 @@ const Booking: React.FC = () => {
   }, [id, recoverData?.booking_id, recoverData?.recover]);
 
   const handleDateChange = (update: [Date | null, Date | null]) => {
-    const [start, end] = update;
-    if (start && end) {
-      if (!isRangeAvailable(start, end)) {
-        setDateRange([null, null]);
-        window.dispatchEvent(new CustomEvent('salty-push', {
-          detail: { message: "¡Ups! Hay una reserva entre esas fechas. Prueba un rango diferente. 🏝️" }
-        }));
-        return;
-      }
-    }
+    // 🛡️ ARCHITECTURE REFINED: Validation is now the slave's responsibility (moved to BookingCalendar)
     setDateRange(update);
   };
 
@@ -368,6 +367,25 @@ const Booking: React.FC = () => {
             )}
           </section>
 
+          {/* 🔱 PROACTIVE SALTY ASSISTANCE */}
+          <div className="bg-white/40 backdrop-blur-md rounded-[2.5rem] p-6 border border-white/60 shadow-sm mb-8 flex items-center justify-between group hover:shadow-lg transition-all animate-fade-in">
+            <div className="flex items-center gap-4">
+               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+                  <span className="material-icons text-2xl">chat</span>
+               </div>
+               <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 tracking-[0.2em]">Asistencia Signature 🔱</p>
+                  <p className="text-sm font-serif font-black italic">"Dudas en {property?.title || 'la Villa'}? Pregunta a Salty"</p>
+               </div>
+            </div>
+            <button 
+              onClick={() => navigate('/messages', { state: { initialPlace: property?.title } })}
+              className="bg-primary text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-[0_10px_20px_rgba(255,127,63,0.3)] transition-all shadow-lg shadow-primary/20"
+            >
+              Consultar
+            </button>
+          </div>
+
           <section className="space-y-4">
             <h3 className={TAG_STYLE + " text-gray-400"}>2. Detalles del Viaje</h3>
             <div className="space-y-4">
@@ -453,15 +471,6 @@ const Booking: React.FC = () => {
             </div>
           </section>
 
-          {isTooShort && (
-            <div className="flex gap-4 p-5 bg-red-50 rounded-3xl border border-red-100 animate-shake">
-              <span className="material-icons text-red-500">warning</span>
-              <p className="text-xs font-bold text-red-700 leading-relaxed">
-                Se requiere un mínimo de {min_nights_req} noches ({blockReason}).
-              </p>
-            </div>
-          )}
-
           {startDate && endDate && !isTooShort && (
             <section className="space-y-4 pt-6 border-t border-black/5">
               <h3 className={TAG_STYLE + " text-gray-400"}>3. Estatus Legal</h3>
@@ -486,13 +495,14 @@ const Booking: React.FC = () => {
           {isTooShort && (
             <div className="p-6 bg-[#FFF4ED] border border-primary/20 rounded-[2.5rem] flex items-start gap-5 shadow-sm animate-fade-in mb-8">
               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <span className="material-icons text-primary text-2xl">error_outline</span>
+                <span className="material-icons text-primary text-2xl animate-pulse">hotel_class</span>
               </div>
               <div>
-                <h4 className="font-serif font-black italic text-[#FF7F3F] text-lg mb-1 leading-none">Aviso de Salty 🔱</h4>
+                <h4 className="font-serif font-black italic text-[#FF7F3F] text-lg mb-1 leading-none">Concierge Signature 🔱</h4>
                 <p className="text-xs font-bold text-text-light opacity-80 leading-relaxed">
-                  Capitán, esta estancia requiere un mínimo de <span className="text-primary font-black underline decoration-primary/30 decoration-2 underline-offset-4">{min_nights_req} noches</span> para estas fechas. 
-                  Por favor, ajuste su itinerario para asegurar su lugar en el paraiso.
+                  Capitán, para estas fechas <span className="text-primary font-black underline decoration-primary/30 decoration-2 underline-offset-4">{property?.title || 'Villa Retiro'}</span> requiere un mínimo de <span className="text-primary font-black underline decoration-primary/30 decoration-2 underline-offset-4">{min_nights_req} noches</span> para garantizar la excelencia del paraíso.
+                  <br />
+                  <span className="text-primary mt-2 block italic">"¿Le gustaría extender su estancia para disfrutar del horizonte?"</span>
                 </p>
               </div>
             </div>
@@ -537,6 +547,7 @@ const Booking: React.FC = () => {
                   onChange={handleDateChange}
                   blockedDates={blockedDates}
                   minNights={min_nights_req}
+                  isRangeAvailable={isRangeAvailable}
                 />
                 <button
                   onClick={() => setShowCalendarModal(false)}

@@ -12,9 +12,10 @@ interface BookingCalendarProps {
     onChange: (update: [Date | null, Date | null]) => void;
     blockedDates: Date[];
     minNights?: number; // 🔱 DYNAMIC ANCHOR
+    isRangeAvailable?: (start: Date, end: Date) => boolean;
 }
 
-const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, onChange, blockedDates, minNights = 2 }) => {
+const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, onChange, blockedDates, minNights = 2, isRangeAvailable }) => {
     // 🔱 UX GUIDANCE: Dynamically highlight suggested minimum stay days
     const getDayClassName = (date: Date) => {
         if (startDate && !endDate && minNights > 1) {
@@ -27,10 +28,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         }
         return "";
     };
-    // 🛡️ AST SHIELD: Min Date calculation based on Puerto Rico Time
+    // 🛡️ AST SHIELD: Min Date calculation anchored to Puerto Rico Time (UTC-4)
     const minDate = useMemo(() => {
+        // Get UTC time and adjust to PR (-4)
         const d = new Date();
-        return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+        const utc = d.getTime() + (d.getTimezoneOffset() * 60000);
+        const prTime = new Date(utc + (3600000 * -4));
+        return new Date(prTime.getFullYear(), prTime.getMonth(), prTime.getDate(), 0, 0, 0);
     }, []);
 
     // 📱 MOBILE OPTIMIZATION: Safety check for window width to prevent overlap
@@ -43,10 +47,45 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // 🛡️ BLOCK THE PATH: Dynamic Max Date search after selecting check-in
+    const maxDate = useMemo(() => {
+        if (!startDate || blockedDates.length === 0) return undefined;
+        
+        // Find the first blocked date AFTER the startDate
+        const laterBlocks = blockedDates
+            .filter(d => d.getTime() > startDate.getTime())
+            .sort((a, b) => a.getTime() - b.getTime());
+            
+        return laterBlocks.length > 0 ? laterBlocks[0] : undefined;
+    }, [startDate, blockedDates]);
+
+    // 🔱 INTERNAL VALIDATOR: Catch invalid ranges BEFORE they hit the parent state
+    const handleInternalChange = (update: [Date | null, Date | null]) => {
+        const [start, end] = update;
+        
+        if (start && end && isRangeAvailable) {
+            if (!isRangeAvailable(start, end)) {
+                onChange([start, null]); // Force valid selection start point
+                window.dispatchEvent(new CustomEvent('salty-push', {
+                    detail: { 
+                        message: "¡Ups! Hay una travesía confirmada entre esas fechas. Por favor, selecciona un Check-out libre antes del bloqueo. 🏝️",
+                        type: 'warning'
+                    }
+                }));
+                return;
+            }
+        }
+        onChange(update);
+    };
+
     return (
         <div className="w-full flex flex-col items-center">
             <header className="text-center mb-10">
-                <h3 className="font-serif font-black text-3xl text-text-main mb-3 tracking-tight italic">Disponibilidad Signature 🔱</h3>
+                <h3 className="font-serif font-black text-3xl text-text-main mb-3 tracking-tight italic">Disponibilidad Real 🔱</h3>
+                <div className="flex items-center justify-center gap-2 mb-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-600/70">Sincronía AST (Puerto Rico Time)</span>
+                </div>
                 <p className="text-[11px] uppercase font-black tracking-[0.5em] text-primary/70">Seleccione su cronograma de estancia</p>
             </header>
             
@@ -55,15 +94,36 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                     selectsRange={true}
                     startDate={startDate}
                     endDate={endDate}
-                    onChange={onChange}
+                    onChange={handleInternalChange}
                     excludeDates={blockedDates}
                     minDate={minDate}
+                    maxDate={maxDate}
                     monthsShown={monthsShown}
                     dayClassName={getDayClassName}
                     inline
                     locale="es"
                     calendarClassName="vintage-premium-calendar"
                 />
+                
+                {/* 🔱 EXCLUSIVITY BADGE: Transforming 'No Available' into 'Premium Demand' */}
+                {blockedDates.length > 25 && (
+                    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 animate-fade-in pointer-events-none">
+                        <div className="bg-black/80 backdrop-blur-xl border border-white/20 px-6 py-2.5 rounded-full flex items-center gap-3 shadow-2xl">
+                            <span className="material-icons text-primary text-sm animate-pulse">hotel_class</span>
+                            <span className="text-[9px] font-black uppercase tracking-[0.3em] text-white">Exclusividad Signature Agotada para este ciclo</span>
+                        </div>
+                    </div>
+                )}
+                
+                {/* 🔱 CONCIERGE GUIDANCE: Informing the captain about stay constraints */}
+                {startDate && !endDate && minNights > 1 && (
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 animate-fade-in w-max pointer-events-none">
+                        <div className="bg-[#FF7F3F] border border-white/30 px-6 py-2.5 rounded-full flex items-center gap-3 shadow-[0_20px_40px_rgba(255,127,63,0.3)]">
+                            <span className="material-icons text-white text-sm animate-bounce">auto_awesome</span>
+                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Noches mínimas requeridas: {minNights}</span>
+                        </div>
+                    </div>
+                )}
             </div>
 
             <div className="flex justify-center gap-16 py-10 mt-6 border-t border-black/5 w-full max-w-xl">

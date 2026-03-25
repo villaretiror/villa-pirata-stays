@@ -435,7 +435,9 @@ const Home: React.FC = () => {
                   <PropertyCard
                     property={property}
                     index={index}
-                    onClick={(id) => navigate(`/property/${id}`)}
+                    onClick={(id) => navigate(`/property/${id}`, { 
+                      state: { startDate, endDate, adults, children, pets } 
+                    })}
                     isFavorite={favorites.includes(property.id)}
                     onToggleFavorite={toggleFavorite}
                   />

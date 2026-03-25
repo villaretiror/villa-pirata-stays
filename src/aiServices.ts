@@ -91,6 +91,19 @@ export const checkAvailabilityWithICal = async (
     // 🛡️ REINFORCED RESOLUTION: Centralized Power
     const finalId = await resolvePropertyId(villaId, client);
 
+    // ── Step 0: Gold Rules Validation (Dashboard Rules)
+    const { data: propSettings } = await client.from('properties').select('sync_settings').eq('id', finalId).single();
+    const minNights = propSettings?.sync_settings?.min_nights || 2;
+    const diffTime = qOut.getTime() - qIn.getTime();
+    const nights = Math.ceil(diffTime / (1000 * 3600 * 24));
+
+    if (nights < minNights) {
+        return { 
+            available: false, 
+            reason: `Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.` 
+        };
+    }
+
     // ── Step 1: Query unified bookings table
     type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
     const { data: dbBookings, error: dbError } = await client
@@ -304,7 +317,7 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
             const diffTime = bIn.getTime() - lastCheckout.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             
-            if (diffDays > 0) {
+            if (diffDays >= minNights) {
                 gaps.push({
                     start: lastCheckout.toISOString().split('T')[0],
                     end: b.check_in,
@@ -328,11 +341,13 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
         if (lastCheckout < finalLimit) {
             const diffTime = finalLimit.getTime() - lastCheckout.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            gaps.push({
-                start: lastCheckout.toISOString().split('T')[0],
-                end: finalLimit.toISOString().split('T')[0],
-                nights: diffDays
-            });
+            if (diffDays >= minNights) {
+                gaps.push({
+                    start: lastCheckout.toISOString().split('T')[0],
+                    end: finalLimit.toISOString().split('T')[0],
+                    nights: diffDays
+                });
+            }
         }
     }
 
@@ -391,6 +406,12 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
     const end = new Date(checkOut);
     const nights = Math.ceil((end.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24));
 
+    // 🛡️ GOLD RULES VALIDATION: Prevent quoting invalid stays
+    const minNights = property?.sync_settings?.min_nights || 2;
+    if (nights < minNights) {
+        throw new Error(`Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`);
+    }
+
     while (curr < end) {
         const dStr = curr.toISOString().split('T')[0];
         if (isSeasonalDate(dStr, property.seasonal_prices || [])) hasSeasonal = true;
@@ -434,23 +455,23 @@ export const generateOnboardingDraft = async (
 ): Promise<string> => {
     let mission = "";
     if (stage === 'check_in') {
-        mission = `Escribe un mensaje de 'Bienvenida e Instrucciones de Acceso'.
+        mission = `Escribe un mensaje de 'Bienvenida e Instrucciones de Acceso' para una Estancia Signature.
         - Saluda con entusiasmo por su llegada mañana a la villa.
         - Indica que el check-in es a las 3:00 PM.
         - Dile que para Salty es un placer asistirles con cualquier duda sobre el funcionamiento de la casa (WiFi, Agua caliente, Equipos).
         - Deséales un viaje seguro.`;
     } else if (stage === 'check_in_followup') {
-        mission = `Escribe un mensaje de 'Confirmación de Bienestar' (24h después de la llegada).
+        mission = `Escribe un mensaje de 'Confirmación de Bienestar' (24h después de la llegada) para su Estancia Signature.
         - Pregunta si la primera noche fue perfecta y si todo está según lo prometido.
         - Recuérdales que el Manual de la Casa completo está disponible en la web para cualquier duda técnica.
         - Reitera que eres su Concierge Informativo para temas de la propiedad.`;
     } else if (stage === 'mid_stay') {
-        mission = `Escribe un mensaje de 'Hospitality Check' Informativo.
+        mission = `Escribe un mensaje de 'Hospitality Check' Informativo durante su Estancia Signature.
         - Saluda y pregunta si el WiFi y los servicios de la villa están funcionando a su gusto.
         - Invítales a revisar el Manual si tienen dudas sobre el uso de la piscina o equipos.
         - Sé cordial y servicial sin ofrecer servicios externos.`;
     } else {
-        mission = `Escribe un mensaje de 'Logística de Salida'.
+        mission = `Escribe un mensaje de 'Logística de Salida' para su Estancia Signature.
         - Agradece que hayan cuidado la villa.
         - Recordatorios: Check-out 11:00 AM, basura en zafacones exteriores, apagar A/Cs y luces, llaves en lockbox.
         - Deséales un regreso seguro.`;
