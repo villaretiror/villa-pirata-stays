@@ -125,8 +125,8 @@ async function handleVapiTools(req: any, res: any, message: any) {
         }
 
         // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
-        const gaps = await findCalendarGaps(propId, supabase);
-        const nextGap = gaps[0];
+        const gapResult: any = await findCalendarGaps(propId, supabase);
+        const nextGap = gapResult?.slots?.[0];
         
         // 🔱 UPSELLING: Check other properties too
         const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
