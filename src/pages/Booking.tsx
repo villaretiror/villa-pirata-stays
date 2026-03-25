@@ -47,7 +47,13 @@ const Booking: React.FC = () => {
     nights
   } = useBooking(property);
 
-  const { blockedDates, availabilityRules, isLoading: isAvailabilityLoading, isRangeAvailable } = useAvailability(id);
+  const { 
+    blockedDates, 
+    availabilityRules, 
+    minNights, 
+    isLoading: isAvailabilityLoading, 
+    isRangeAvailable 
+  } = useAvailability(id);
 
   const [phone, setPhone] = useState(user?.phone || '');
   const [guestMessage, setGuestMessage] = useState('');
@@ -141,7 +147,7 @@ const Booking: React.FC = () => {
   }
 
   // Availability Rules Logic
-  let min_nights_req = 2;
+  let min_nights_req = minNights || 2;
   let blockReason = 'Estancia de nivel SuperHost';
   if (startDate) {
     const sStr = format(startDate, 'yyyy-MM-dd');
@@ -477,6 +483,22 @@ const Booking: React.FC = () => {
             </section>
           )}
 
+          {isTooShort && (
+            <div className="p-6 bg-[#FFF4ED] border border-primary/20 rounded-[2.5rem] flex items-start gap-5 shadow-sm animate-fade-in mb-8">
+              <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                <span className="material-icons text-primary text-2xl">error_outline</span>
+              </div>
+              <div>
+                <h4 className="font-serif font-black italic text-[#FF7F3F] text-lg mb-1 leading-none">Aviso de Salty 🔱</h4>
+                <p className="text-xs font-bold text-text-light opacity-80 leading-relaxed">
+                  Capitán, esta estancia requiere un mínimo de <span className="text-primary font-black underline decoration-primary/30 decoration-2 underline-offset-4">{min_nights_req} noches</span> para estas fechas. 
+                  Por favor, ajuste su itinerario para asegurar su lugar en el paraiso.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {!isTooShort && (
             <div className="animate-slide-up">
               <PaymentProcessor 
                 total={total}
@@ -486,6 +508,7 @@ const Booking: React.FC = () => {
                 user={user}
               />
             </div>
+          )}
         </div>
 
         <AnimatePresence>
@@ -513,6 +536,7 @@ const Booking: React.FC = () => {
                   endDate={endDate}
                   onChange={handleDateChange}
                   blockedDates={blockedDates}
+                  minNights={min_nights_req}
                 />
                 <button
                   onClick={() => setShowCalendarModal(false)}

@@ -13,6 +13,7 @@ import { supabase } from '../lib/supabase';
 export const useAvailability = (propertyId: string | undefined) => {
     const [blockedDates, setBlockedDates] = useState<Date[]>([]);
     const [availabilityRules, setAvailabilityRules] = useState<any[]>([]);
+    const [minNights, setMinNights] = useState(2); // 🔱 DYNAMIC ANCHOR
     const [allBookings, setAllBookings] = useState<any[]>([]);
     const [pendingLeads, setPendingLeads] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -26,8 +27,7 @@ export const useAvailability = (propertyId: string | undefined) => {
         try {
             const now = new Date();
 
-            // 🔱 BUNDLE FETCHING: Database-Level Consolidation for Maximum Velocity
-            // We move logic to Postgres to minimize network roundtrips and RTT
+            // 🔱 BUNDLE FETCHING: Database-Level Consolidation
             const { data: bundle } = await supabase.rpc('get_property_availability_bundle', { 
                 target_property_id: propertyId 
             });
@@ -39,9 +39,13 @@ export const useAvailability = (propertyId: string | undefined) => {
             const pending = bundle.leads || [];
             const propData = bundle.property || {};
             
-            if (rules) setAvailabilityRules(rules);
             if (activeBookings) setAllBookings(activeBookings);
             if (pending) setPendingLeads(pending);
+            if (rules) setAvailabilityRules(rules);
+
+            // 📏 DYNAMIC MIN NIGHTS RESOLUTION
+            const defaultMin = propData.sync_settings?.min_nights || 2;
+            setMinNights(defaultMin);
 
             const allBlocked: Date[] = [];
 
@@ -127,6 +131,7 @@ export const useAvailability = (propertyId: string | undefined) => {
     return {
         blockedDates,
         availabilityRules,
+        minNights, // 🔱 RETURNED DYNAMIC ANCHOR
         allBookings,
         pendingLeads,
         isLoading,

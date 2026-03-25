@@ -264,13 +264,17 @@ export const getPaymentVerificationStatus = async (bookingId: string): Promise<s
 };
 
 // 4. Gap Automation (Revenue Optimization & Sentinel Vision)
-export const findCalendarGaps = async (propertyId: string, customSupabase?: SupabaseClient): Promise<{ start: string; end: string; nights: number }[]> => {
+export const findCalendarGaps = async (propertyId: string, customSupabase?: SupabaseClient) => {
     const client = customSupabase || supabase;
     const now = new Date();
     const todayStr = now.toISOString().split('T')[0];
 
     // 🛡️ REINFORCED RESOLUTION: Centralized Power
     const finalId = await resolvePropertyId(propertyId, client);
+
+    // 📏 DYNAMIC MIN NIGHTS RESOLUTION (Master Dashboard)
+    const { data: prop } = await client.from('properties').select('sync_settings').eq('id', finalId).single();
+    const minNights = prop?.sync_settings?.min_nights || 2;
 
     const { data: bookings, error } = await client
         .from('bookings')
@@ -332,7 +336,11 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
         }
     }
 
-    return gaps;
+    return { 
+        slots: gaps, 
+        min_nights: minNights,
+        property_id: finalId
+    };
 };
 
 // 5. Sentinel Middleware (Sentiment & Guardrail)

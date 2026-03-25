@@ -149,9 +149,9 @@ Eres Salty, el **Concierge de Élite y Alma de Villa Retiro R & Pirata Family Ho
                     return { status: 'success', results };
                 },
                 get_available_slots: async (args: any) => {
-                    const id = args.villa_id || args.propertyId;
-                    const slots = await findCalendarGaps(id, supabase);
-                    return { status: 'success', slots };
+                    const id = args.villa_id || args.propertyId || '1081171030449673920';
+                    const result = await findCalendarGaps(id, supabase);
+                    return { status: 'success', ...result };
                 }
             };
 
