@@ -93,54 +93,53 @@ const SaltyVoiceButton: React.FC = () => {
             }
         }
     };
-
     return (
-        <div className="fixed bottom-48 left-6 z-[99999] flex flex-col items-center gap-6 pointer-events-auto scale-90 md:scale-100 origin-bottom-left">
+        <div className="fixed bottom-32 right-6 z-[99999] flex flex-col items-center gap-6 pointer-events-auto scale-90 md:scale-100 origin-bottom-right">
             {/* ☎️ VAPI WEB CALL BUTTON (Native Experience) */}
             <div className="relative group">
                 {/* 🔱 ELITE GLOW: Reactive to current volume! */}
                 <div 
-                    className={`absolute inset-[-15px] bg-[#BBA27E]/20 rounded-full blur-2xl transition-all duration-75 pointer-events-none ${callStatus === 'active' ? 'opacity-100 scale-125' : 'opacity-0 scale-0'}`}
+                    className={`absolute inset-[-15px] bg-primary/20 rounded-full blur-2xl transition-all duration-75 pointer-events-none ${callStatus === 'active' ? 'opacity-100 scale-125' : 'opacity-0 scale-0'}`}
                     style={{ 
                         transform: `scale(${1 + volume * 1.5})`,
-                        boxShadow: `0 0 ${volume * 50}px ${volume * 20}px rgba(187, 162, 126, 0.4)`
+                        boxShadow: `0 0 ${volume * 50}px ${volume * 20}px rgba(212, 175, 55, 0.4)`
                     }}
                 ></div>
 
                 <button
                     onClick={toggleCall}
                     disabled={callStatus === 'loading'}
-                    className={`group relative p-5 rounded-3xl transition-all duration-500 shadow-2xl border-2 flex items-center justify-center ${
+                    className={`group relative p-6 rounded-full transition-all duration-500 shadow-2xl border-2 flex items-center justify-center ${
                         callStatus === 'active' 
-                            ? 'bg-[#1a1a1a] border-red-500 text-red-500' 
-                            : 'bg-[#BBA27E] border-white/20 text-[#1a1a1a]'
+                            ? 'bg-secondary border-red-500 text-red-500' 
+                            : 'bg-primary border-white/20 text-secondary'
                     } ${callStatus === 'loading' ? 'opacity-70 scale-95 cursor-wait' : 'hover:scale-110 active:scale-90 scale-100'}`}
                     aria-label={callStatus === 'active' ? 'Terminar llamada' : 'Llamar al Concierge Voz'}
                 >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-2xl transition-opacity"></div>
+                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
                     
                     {callStatus === 'loading' ? (
-                        <div className="w-6 h-6 border-2 border-[#1a1a1a]/30 border-t-[#1a1a1a] rounded-full animate-spin"></div>
+                        <div className="w-6 h-6 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin"></div>
                     ) : (
-                        <span className={`material-icons text-2xl transition-all ${callStatus === 'active' ? 'animate-pulse' : ''}`}>
+                        <span className={`material-icons text-3xl transition-all ${callStatus === 'active' ? 'animate-pulse' : ''}`}>
                             {callStatus === 'active' ? 'call_end' : 'phone_in_talk'}
                         </span>
                     )}
                     
-                    {/* Status Pip */}
-                    <div className={`absolute -top-1 -right-1 w-4 h-4 rounded-full border-2 border-white shadow-sm transition-colors ${callStatus === 'active' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                    {/* Status Pip - REPOSITIONED & ANCHORED */}
+                    <div className={`absolute top-0 right-1 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-colors z-20 ${callStatus === 'active' ? 'bg-red-500' : 'bg-green-500'}`}></div>
                     
-                    {/* Floating Label */}
-                    <span className="absolute left-full ml-4 bg-[#1a1a1a] text-[#BBA27E] text-[10px] font-black uppercase tracking-[0.2em] px-5 py-3 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-[#BBA27E]/20 backdrop-blur-md">
-                        {callStatus === 'active' ? 'Terminar Llamada 📡' : 'Llamar al Concierge ☎️'}
+                    {/* Floating Label - ALIGNED TO RIGHT FLANK */}
+                    <span className="absolute right-full mr-6 bg-secondary text-primary text-[10px] font-black uppercase tracking-[0.2em] px-5 py-3 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-primary/20 backdrop-blur-md">
+                        {callStatus === 'active' ? 'Terminar Llamada 📡' : 'Llamar al Concierge Voz ☎️'}
                     </span>
                 </button>
             </div>
 
-            {/* Direct Phone Number (Small Label) */}
+            {/* Direct Phone Number (Small Label) - AJUSTED SPACING */}
             <a 
                 href="tel:+12092673503" 
-                className="text-[9px] font-black text-[#1a1a1a]/40 uppercase tracking-widest hover:text-primary transition-colors hover:underline"
+                className="text-[10px] font-black text-secondary/40 uppercase tracking-widest hover:text-primary transition-colors hover:underline mt-4"
             >
                 Voz Directa: 209-267-3503
             </a>

@@ -67,7 +67,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
     // 3. Lead (Pending)
     if (!status.blocked) {
         const lead = pendingLeads.find(l => dateStr >= l.check_in && dateStr < l.check_out);
-        if (lead) status = { blocked: true, type: 'lead', label: 'HLD', color: 'bg-amber-100 text-amber-700' };
+        if (lead) status = { blocked: true, type: 'lead', label: 'HLD', color: 'bg-primary/20 text-amber-700' };
     }
 
     // 4. Strategic Rule (Strategy)
@@ -274,7 +274,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
           {[
             { color: 'bg-blue-600', label: 'Externo', desc: 'Airbnb / Sync' },
             { color: 'bg-primary', label: 'Directo', desc: 'Reserva Local' },
-            { color: 'bg-amber-100', label: 'Hold', desc: 'Lead Activo' },
+            { color: 'bg-primary/20', label: 'Hold', desc: 'Lead Activo' },
             { color: 'border-primary/40 border-2', label: 'Tarifa $$', desc: 'Precio Especial' },
             { color: 'bg-green-50', label: 'Regla', desc: 'Restricción' },
             { color: 'bg-black', label: 'Manual', desc: 'Bloqueo Host' },
@@ -362,7 +362,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
       </AnimatePresence>
 
       {/* Sync Control Section */}
-      <div className="bg-sand/30 p-10 rounded-[3.5rem] border border-orange-100/50 flex flex-col md:flex-row gap-8 items-center justify-between">
+      <div className="bg-sand/30 p-10 rounded-[3.5rem] border border-primary/20/50 flex flex-col md:flex-row gap-8 items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center gap-3 mb-2">
             <RefreshCcw className={`w-5 h-5 text-secondary ${isSyncing ? 'animate-spin' : ''}`} />
@@ -375,7 +375,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
         <button 
           onClick={syncExternalCalendars} 
           disabled={isSyncing} 
-          className="w-full md:w-auto px-10 py-5 bg-white border border-orange-100 rounded-3xl shadow-soft font-black text-[10px] uppercase tracking-[0.2em] text-primary flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-50"
+          className="w-full md:w-auto px-10 py-5 bg-white border border-primary/20 rounded-3xl shadow-soft font-black text-[10px] uppercase tracking-[0.2em] text-primary flex items-center justify-center gap-3 hover:scale-[1.02] active:scale-98 transition-all disabled:opacity-50"
         >
           {isSyncing ? "Sincronizando..." : "Sincronizar Ahora 🔱"}
         </button>

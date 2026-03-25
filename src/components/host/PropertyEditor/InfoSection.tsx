@@ -89,7 +89,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
               { label: 'Habitaciones', key: 'bedrooms', icon: 'bed' },
               { label: 'Baños', key: 'baths', icon: 'bathtub' },
             ].map((stat) => (
-              <div key={stat.key} className="bg-sand/20 p-3 rounded-2xl border border-orange-100 flex flex-col items-center">
+              <div key={stat.key} className="bg-sand/20 p-3 rounded-2xl border border-primary/20 flex flex-col items-center">
                 <span className="material-icons text-primary/60 text-xs mb-1">{stat.icon}</span>
                 <p className="text-[7px] font-black uppercase tracking-widest text-text-light mb-1">{stat.label}</p>
                 <input

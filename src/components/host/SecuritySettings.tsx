@@ -145,8 +145,8 @@ const SecuritySettings: React.FC = () => {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="bg-white p-6 rounded-3xl border border-gray-100 flex items-start gap-4">
-                    <div className="w-10 h-10 bg-orange-50 rounded-2xl flex items-center justify-center">
-                        <AlertCircle className="text-orange-400 w-5 h-5" />
+                    <div className="w-10 h-10 bg-sand rounded-2xl flex items-center justify-center">
+                        <AlertCircle className="text-primary w-5 h-5" />
                     </div>
                     <div>
                         <h5 className="text-[10px] font-black uppercase tracking-widest mb-1">Copia de Seguridad</h5>

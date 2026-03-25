@@ -68,10 +68,10 @@ const SystemHealthIndicator: React.FC = () => {
                 <div
                     onClick={() => fetchHealth(true)}
                     className={`flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm transition-all cursor-pointer active:scale-95 ${isAllHealthy ? 'bg-green-50/50 border-green-100 text-green-600' :
-                        hasError ? 'bg-red-50/50 border-red-100 text-red-600' : 'bg-orange-50/50 border-orange-100 text-orange-600'
+                        hasError ? 'bg-red-50/50 border-red-100 text-red-600' : 'bg-sand/50 border-primary/20 text-primary'
                         }`}>
                     <div className={`w-2 h-2 rounded-full ${isAllHealthy ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' :
-                        hasError ? 'bg-red-500 animate-pulse' : 'bg-orange-500'
+                        hasError ? 'bg-red-500 animate-pulse' : 'bg-primary'
                         }`}></div>
                     <span className="text-[9px] font-black uppercase tracking-[0.15em]">
                         {isAllHealthy ? 'Cables Operativos' : hasError ? 'Error de Enlace' : 'Sincronizando'}
@@ -83,7 +83,7 @@ const SystemHealthIndicator: React.FC = () => {
                     {health.map(h => (
                         <div key={h.service_name} className="relative group/icon">
                             <span className={`material-icons text-sm transition-all ${h.status === 'healthy' ? 'text-gray-300 hover:text-primary' :
-                                h.status === 'error' ? 'text-red-400' : 'text-orange-400'
+                                h.status === 'error' ? 'text-red-400' : 'text-primary'
                                 }`}>
                                 {h.service_name.includes('Airbnb') ? 'flight_takeoff' :
                                     h.service_name.includes('Booking') ? 'bed' :

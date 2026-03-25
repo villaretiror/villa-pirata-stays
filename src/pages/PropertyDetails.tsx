@@ -497,7 +497,7 @@ export const PropertyDetails: React.FC = () => {
           </section>
 
           {/* Reglas & Políticas */}
-          <section className="space-y-6 bg-sand/20 p-8 rounded-[3.5rem] border border-orange-100">
+          <section className="space-y-6 bg-sand/20 p-8 rounded-[3.5rem] border border-primary/20">
             <h2 className="text-3xl font-serif font-bold text-text-main flex items-center gap-3">
               <Gavel size={32} className="text-primary" />
               Reglas y Políticas
@@ -814,7 +814,7 @@ export const PropertyDetails: React.FC = () => {
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {items.map((amenity, i) => (
-                        <div key={i} className="flex items-center gap-5 p-5 rounded-[2rem] bg-sand/30 border border-orange-50/50 group hover:bg-white transition-all">
+                        <div key={i} className="flex items-center gap-5 p-5 rounded-[2rem] bg-sand/30 border border-primary/20/50 group hover:bg-white transition-all">
                           <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
                             {getAmenityIcon(amenity)}
                           </div>
@@ -915,7 +915,7 @@ export const PropertyDetails: React.FC = () => {
 
                 <button
                   onClick={copyLink}
-                  className="flex items-center gap-6 p-6 rounded-[2rem] bg-sand border border-orange-100 hover:bg-orange-50 transition-all text-left group"
+                  className="flex items-center gap-6 p-6 rounded-[2rem] bg-sand border border-primary/20 hover:bg-sand transition-all text-left group"
                 >
                   <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
                     <Compass size={24} />

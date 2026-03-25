@@ -81,7 +81,7 @@ const ContractView = () => {
                     className="bg-white border border-gray-100 rounded-3xl p-8 md:p-12 shadow-sm"
                 >
                     <div className="text-center mb-12">
-                        <span className="inline-block px-4 py-1.5 bg-orange-50 text-[#FF6633] rounded-full text-xs font-bold uppercase tracking-widest mb-4">
+                        <span className="inline-block px-4 py-1.5 bg-sand text-[#FF6633] rounded-full text-xs font-bold uppercase tracking-widest mb-4">
                             Contrato Digital
                         </span>
                         <h1 className="text-3xl md:text-4xl font-black mb-4">
@@ -144,7 +144,7 @@ const ContractView = () => {
                         </section>
 
                         <section className="pt-8 border-t border-gray-100">
-                            <div className="bg-orange-600 text-white p-8 rounded-3xl text-center shadow-xl shadow-orange-200">
+                            <div className="bg-primary text-white p-8 rounded-3xl text-center shadow-xl shadow-primary/20">
                                 <h3 className="text-xl font-bold mb-4">5. ACEPTACIÓN DIGITAL</h3>
                                 <p className="text-sm opacity-90 leading-relaxed">
                                     Al proceder con el pago de esta reserva, el Huésped declara que ha leído, entendido y aceptado los términos aquí expuestos para la propiedad <strong>{property.title}</strong>.

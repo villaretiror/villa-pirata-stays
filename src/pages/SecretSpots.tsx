@@ -89,7 +89,7 @@ const SecretSpots: React.FC = () => {
                                         <h3 className="text-2xl font-serif font-bold text-text-main">{spot.title}</h3>
                                     </div>
                                     <p className="text-text-light leading-relaxed">{spot.desc}</p>
-                                    <div className="bg-sand/30 p-4 rounded-2xl border border-orange-100 flex gap-3">
+                                    <div className="bg-sand/30 p-4 rounded-2xl border border-primary/20 flex gap-3">
                                         <span className="material-icons text-primary text-sm">lightbulb</span>
                                         <p className="text-[11px] font-bold text-primary/80 uppercase tracking-wider leading-tight">
                                             TIP DE SALTY: <span className="text-text-main normal-case">{spot.tip}</span>

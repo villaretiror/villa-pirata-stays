@@ -114,7 +114,7 @@ const FinancialsSection: React.FC<FinancialsSectionProps> = ({ property, booking
         <h4 className="font-bold text-sm mb-6 flex items-center gap-2"><span className="material-icons text-primary/40 text-sm">list_alt</span> Registro de Gastos</h4>
         
         {/* Add Expense Form */}
-        <div className="flex flex-col md:flex-row gap-4 mb-8 p-6 bg-sand/20 rounded-[2rem] border border-orange-100/30">
+        <div className="flex flex-col md:flex-row gap-4 mb-8 p-6 bg-sand/20 rounded-[2rem] border border-primary/20/30">
           <div className="flex-1">
             <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Descripción</label>
             <input value={newExpDesc} onChange={e => setNewExpDesc(e.target.value)} placeholder="Ej: Reparación A/C Master" className="w-full p-3 rounded-xl border-none bg-white text-xs font-bold outline-none" />

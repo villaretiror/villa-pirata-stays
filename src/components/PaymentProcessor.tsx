@@ -145,8 +145,8 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                                     </div>
                                 </div>
 
-                                <div className="pt-3 border-t border-orange-50">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-orange-400 mb-1 leading-none">A nombre de</p>
+                                <div className="pt-3 border-t border-primary/20">
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1 leading-none">A nombre de</p>
                                     <p className="text-sm font-bold text-slate-700">Villa Retiro R</p>
                                 </div>
                             </div>

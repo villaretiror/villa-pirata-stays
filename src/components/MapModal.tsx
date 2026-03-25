@@ -90,7 +90,7 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, placeName, villaNa
 
             {/* Summary / Action */}
             <div className="p-8 space-y-6">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-sand/30 rounded-[2rem] border border-orange-100/50">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 bg-sand/30 rounded-[2rem] border border-primary/20/50">
                     <div className="flex items-center gap-4">
                         <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-secondary shadow-soft">
                             <Navigation size={24} />

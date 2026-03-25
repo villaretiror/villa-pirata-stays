@@ -513,7 +513,7 @@ const Messages: React.FC = () => {
               if (part.includes('/contrato')) {
                 const finalId = pId || propertyId || '1081171030449673920';
                 return (
-                  <Link key={index} to={`/contrato?id=${finalId}`} className="text-orange-600 font-bold underline hover:text-orange-700">
+                  <Link key={index} to={`/contrato?id=${finalId}`} className="text-primary font-bold underline hover:text-primary">
                     Contrato de Alquiler
                   </Link>
                 );
@@ -565,7 +565,7 @@ const Messages: React.FC = () => {
                                 <p className="font-serif font-black text-black leading-tight mb-1">{property?.title}</p>
                                 <p className="text-[10px] text-black/60 font-bold uppercase tracking-widest">{property?.subtitle || 'Private Oasis'}</p>
                                 <div className="flex items-center gap-1 mt-2">
-                                  <span className="material-icons text-orange-400 text-xs">star</span>
+                                  <span className="material-icons text-primary text-xs">star</span>
                                   <span className="text-[10px] font-black italic">4.95 (Expert Host)</span>
                                 </div>
                                 <div className="mt-2 inline-flex items-center gap-1 bg-black/5 px-2 py-1 rounded-md">
@@ -624,12 +624,12 @@ const Messages: React.FC = () => {
                       </div>
 
                       {/* Dynamic Cancellation Policy */}
-                      <div className="p-4 bg-orange-50/50 rounded-2xl border border-orange-100">
+                      <div className="p-4 bg-sand/50 rounded-2xl border border-primary/20">
                         <div className="flex items-center gap-2 mb-2">
-                          <span className="material-icons text-orange-400 text-sm">event_busy</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-orange-900">Política de Cancelación</span>
+                          <span className="material-icons text-primary text-sm">event_busy</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Política de Cancelación</span>
                         </div>
-                        <p className="text-[11px] text-orange-900/70 leading-relaxed italic">
+                        <p className="text-[11px] text-secondary/70 leading-relaxed italic">
                           {properties.find(p => p.id === paymentData.propertyId)?.policies?.cancellationPolicy || "Paga ahora para confirmar. Reembolso total si cancelas con 7 días de antelación."}
                         </p>
                       </div>

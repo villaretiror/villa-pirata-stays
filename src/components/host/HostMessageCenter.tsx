@@ -505,7 +505,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                                     <CreditCard className="w-4 h-4 text-green-500 opacity-40" />
                                     <span className="text-[9px] font-black uppercase tracking-widest text-text-light">Estado</span>
                                  </div>
-                                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeThread.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' : 'bg-orange-100 text-orange-600'}`}>
+                                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeThread.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' : 'bg-sand text-primary'}`}>
                                     {activeThread.paymentStatus === 'paid' ? 'Confirmado' : 'Pendiente'}
                                  </span>
                               </div>

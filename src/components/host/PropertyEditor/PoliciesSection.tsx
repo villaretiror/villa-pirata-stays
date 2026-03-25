@@ -65,21 +65,21 @@ const PoliciesSection: React.FC<PoliciesSectionProps> = ({ form, setForm }) => {
         </div>
 
         {/* WiFi & Access (Admin level) */}
-        <div className="space-y-6 bg-sand/30 p-6 rounded-[2.5rem] border border-orange-100/30">
-          <p className="text-[9px] font-black uppercase tracking-widest text-orange-900 mb-4 flex items-center gap-2 animate-pulse-subtle">
+        <div className="space-y-6 bg-sand/30 p-6 rounded-[2.5rem] border border-primary/20/30">
+          <p className="text-[9px] font-black uppercase tracking-widest text-secondary mb-4 flex items-center gap-2 animate-pulse-subtle">
             <span className="material-icons text-xs">lock</span> Credenciales del Portada (CIFRADAS)
           </p>
           <div className="space-y-4">
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-orange-700 block mb-1 ml-1">Nombre Red Wi-Fi</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-primary block mb-1 ml-1">Nombre Red Wi-Fi</label>
               <input value={form.policies.wifiName || ''} onChange={e => setForm({...form, policies: {...form.policies, wifiName: e.target.value}})} className="w-full p-3 rounded-xl border-none bg-white text-xs font-bold outline-none shadow-sm" />
             </div>
             <div>
-              <label className="text-[9px] font-black uppercase tracking-widest text-orange-700 block mb-1 ml-1">Clave Wi-Fi Huésped</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-primary block mb-1 ml-1">Clave Wi-Fi Huésped</label>
               <input value={form.policies.wifiPass || ''} onChange={e => setForm({...form, policies: {...form.policies, wifiPass: e.target.value}})} className="w-full p-3 rounded-xl border-none bg-white text-xs font-bold outline-none shadow-sm" />
             </div>
             <div className="pt-2">
-              <label className="text-[9px] font-black uppercase tracking-widest text-orange-700 block mb-1 ml-1 text-red-600">Código de Acceso (Maestro)</label>
+              <label className="text-[9px] font-black uppercase tracking-widest text-primary block mb-1 ml-1 text-red-600">Código de Acceso (Maestro)</label>
               <input value={form.policies.accessCode || ''} onChange={e => setForm({...form, policies: {...form.policies, accessCode: e.target.value}})} className="w-full p-3 rounded-xl border-none bg-white font-mono text-lg font-black tracking-[0.2em] outline-none shadow-sm text-center" placeholder="XXXX" />
             </div>
           </div>

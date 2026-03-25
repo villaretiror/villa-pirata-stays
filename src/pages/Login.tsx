@@ -149,7 +149,7 @@ const Login: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-sand flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-orange-400 to-secondary z-20"></div>
+      <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-primary via-primary to-secondary z-20"></div>
 
       <div className="w-full max-w-sm bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-float p-8 border border-white/50 relative z-10 animate-fade-in">
         <button onClick={() => navigate(-1)} className="flex items-center text-sm font-bold text-text-light hover:text-primary mb-6">
@@ -157,7 +157,7 @@ const Login: React.FC = () => {
         </button>
 
         <div className="text-center mb-8 relative">
-          <div className="w-16 h-16 bg-gradient-to-br from-primary to-orange-400 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg text-white transform -rotate-3 transition-transform hover:rotate-0">
+          <div className="w-16 h-16 bg-gradient-to-br from-primary to-primary rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg text-white transform -rotate-3 transition-transform hover:rotate-0">
             <span className="material-icons text-[32px]">{isRegistering ? 'person_add' : 'cottage'}</span>
           </div>
           <h1 className="text-2xl font-serif text-text-main mb-1 transition-all duration-300">

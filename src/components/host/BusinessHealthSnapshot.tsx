@@ -121,7 +121,7 @@ const BusinessHealthSnapshot: React.FC = () => {
         <div className="space-y-3">
           <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Balance Neto</p>
           <div className="space-y-1">
-            <span className={`text-3xl font-serif font-black tracking-tight ${profit >= 0 ? 'text-white' : 'text-orange-500'}`}>
+            <span className={`text-3xl font-serif font-black tracking-tight ${profit >= 0 ? 'text-white' : 'text-primary'}`}>
               ${profit.toLocaleString()}
             </span>
             <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">

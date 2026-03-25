@@ -141,7 +141,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
           {/* Columna 1: Urgencia y FOMO */}
           <div className="space-y-6">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center">
+              <div className="w-8 h-8 bg-sand text-primary rounded-lg flex items-center justify-center">
                 <Zap className="w-4 h-4" />
               </div>
               <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Psicología de Venta (FOMO)</h4>
@@ -361,22 +361,22 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
         </div>
 
         {isAdding && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-sand p-8 rounded-[2.5rem] border border-orange-100 shadow-inner relative overflow-hidden">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-sand p-8 rounded-[2.5rem] border border-primary/20 shadow-inner relative overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 relative z-10">
-              <input placeholder="Nombre del Huésped" className="p-4 rounded-xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, author: e.target.value })} />
-              <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, date: e.target.value })} />
+              <input placeholder="Nombre del Huésped" className="p-4 rounded-xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, author: e.target.value })} />
+              <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, date: e.target.value })} />
 
               <div className="relative">
-                <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
+                <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
                   <option value="Airbnb">Origen: Airbnb</option>
                   <option value="Booking.com">Origen: Booking.com</option>
                   <option value="Google">Origen: Google Maps</option>
                 </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-orange-400 pointer-events-none" />
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-primary pointer-events-none" />
               </div>
 
               <div className="relative text-center">
-                <select className="w-full p-4 rounded-xl border border-orange-100 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
+                <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
                   <option value={5}>Rating: ★ ★ ★ ★ ★</option>
                   <option value={4}>Rating: ★ ★ ★ ★ ☆</option>
                 </select>
@@ -384,7 +384,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
             </div>
             <textarea
               placeholder="Copia el texto del testimonio aquí..."
-              className="w-full p-6 rounded-2xl border border-orange-100 focus:ring-2 ring-primary/20 outline-none text-sm mb-5 h-32 leading-relaxed resize-none font-serif italic"
+              className="w-full p-6 rounded-2xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm mb-5 h-32 leading-relaxed resize-none font-serif italic"
               onChange={e => setNewReview({ ...newReview, text: e.target.value })}
             />
             <button onClick={saveReview} className="w-full bg-black text-white font-black text-[10px] uppercase tracking-[0.3em] py-5 rounded-2xl shadow-xl hover:bg-gray-900 transition-all active:scale-95">Publicar Testimonio en Mi Web</button>
@@ -855,7 +855,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
               initial={{ rotate: -45, scale: 0 }}
               animate={{ rotate: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.2 }}
-              className="w-24 h-24 bg-gradient-to-tr from-primary to-amber-200 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ring-4 ring-primary/20"
+              className="w-24 h-24 bg-gradient-to-tr from-primary to-primary/20 rounded-full flex items-center justify-center mx-auto mb-8 shadow-2xl ring-4 ring-primary/20"
             >
               <CheckCircle2 strokeWidth={2} className="w-12 h-12 text-black" />
             </motion.div>
@@ -905,7 +905,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             <div key={ch.id || idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
               <div>
                 <p className="text-xs font-bold text-text-main">{ch.email}</p>
-                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'}`}>
+                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-sand text-primary'}`}>
                   {ch.status === 'active' ? 'Activo' : 'Pendiente'}
                 </span>
                 {ch.status === 'pending' && <button onClick={() => handleResendInvitation(ch)} className="ml-2 text-[8px] text-gray-400 hover:text-black font-black uppercase">Reenviar</button>}
@@ -957,7 +957,7 @@ const WelcomeModal = ({ isOpen, onClose, message }: { isOpen: boolean, onClose: 
           </button>
         </div>
 
-        <div className="bg-sand/30 p-6 rounded-2xl border border-orange-100/50 mb-6 font-medium text-sm text-text-main leading-relaxed whitespace-pre-line max-h-[40vh] overflow-y-auto">
+        <div className="bg-sand/30 p-6 rounded-2xl border border-primary/20/50 mb-6 font-medium text-sm text-text-main leading-relaxed whitespace-pre-line max-h-[40vh] overflow-y-auto">
           {message}
         </div>
 
@@ -981,7 +981,7 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
   const allNotifications = [
     ...leads.map(l => ({ ...l, type: 'lead', icon: UserIcon, color: 'text-blue-500', created_at: l.created_at || new Date().toISOString() })),
     ...alerts.map(a => ({ ...a, type: 'alert', icon: AlertTriangle, color: 'text-red-500', created_at: a.created_at || new Date().toISOString() })),
-    ...pendingPayments.map(p => ({ ...p, type: 'payment', icon: CreditCard, color: 'text-orange-500', name: p.profiles?.full_name || 'Huésped', created_at: p.created_at || new Date().toISOString() }))
+    ...pendingPayments.map(p => ({ ...p, type: 'payment', icon: CreditCard, color: 'text-primary', name: p.profiles?.full_name || 'Huésped', created_at: p.created_at || new Date().toISOString() }))
   ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   if (allNotifications.length === 0) return null;
@@ -1045,7 +1045,7 @@ const SmartValidationModal = ({ data, onConfirm, onClose }: { data: any, onConfi
           </button>
         </div>
 
-        <div className="bg-sand/10 p-6 rounded-2xl border border-orange-100/30 mb-6 font-medium text-xs text-text-main leading-relaxed max-h-[40vh] overflow-y-auto">
+        <div className="bg-sand/10 p-6 rounded-2xl border border-primary/20/30 mb-6 font-medium text-xs text-text-main leading-relaxed max-h-[40vh] overflow-y-auto">
           <pre className="whitespace-pre-wrap font-mono uppercase tracking-tighter">{JSON.stringify(data, null, 2)}</pre>
         </div>
 
@@ -1803,7 +1803,7 @@ const HostDashboard: React.FC = () => {
                       <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.status === 'Paid' || booking.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                         {booking.status === 'Paid' || booking.status === 'confirmed' ? 'PAGADO' : 'PENDIENTE'}
                       </span>
-                      <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.contract_signed ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
+                      <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.contract_signed ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-sand text-primary border-primary/20'}`}>
                         {booking.contract_signed ? 'FIRMANTE ✓' : 'SIN FIRMA'}
                       </span>
                     </div>
@@ -1861,19 +1861,19 @@ const HostDashboard: React.FC = () => {
             variants={itemVariants}
             whileHover={{ scale: 1.01 }}
             whileTap={{ scale: 0.99 }}
-            className="bg-orange-50 p-6 rounded-[2rem] border border-orange-100 flex items-center justify-between cursor-pointer shadow-sm shadow-orange-100/50"
+            className="bg-sand p-6 rounded-[2rem] border border-primary/20 flex items-center justify-between cursor-pointer shadow-sm shadow-primary/20/50"
             onClick={() => setShowSmartValidation(pendingPayments.filter((p: any) => p.payment_method === 'ath_movil')[0])}
           >
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                <Sparkles className="w-6 h-6 text-orange-600 animate-pulse" />
+              <div className="w-12 h-12 bg-sand rounded-full flex items-center justify-center">
+                <Sparkles className="w-6 h-6 text-primary animate-pulse" />
               </div>
               <div>
-                <p className="text-sm font-bold text-orange-900 leading-tight">Tienes {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length} pago(s) ATH Móvil por confirmar</p>
-                <p className="text-[11px] font-medium text-orange-600/80 mt-0.5">Valida el recibo para liberar el calendario automático.</p>
+                <p className="text-sm font-bold text-secondary leading-tight">Tienes {pendingPayments.filter((p: any) => p.payment_method === 'ath_movil').length} pago(s) ATH Móvil por confirmar</p>
+                <p className="text-[11px] font-medium text-primary/80 mt-0.5">Valida el recibo para liberar el calendario automático.</p>
               </div>
             </div>
-            <ChevronRight className="w-5 h-5 text-orange-400" />
+            <ChevronRight className="w-5 h-5 text-primary" />
           </motion.div>
         )
       }
@@ -2348,15 +2348,15 @@ const HostDashboard: React.FC = () => {
       <div className="space-y-10 animate-fade-in pb-32">
         {/* Header Específico de Pagos (Payment Hub) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="bg-orange-50/80 p-6 rounded-[2.5rem] border border-orange-100 relative overflow-hidden group">
+          <div className="bg-sand/80 p-6 rounded-[2.5rem] border border-primary/20 relative overflow-hidden group">
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-              <CreditCard className="w-16 h-16 text-orange-600" />
+              <CreditCard className="w-16 h-16 text-primary" />
             </div>
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-orange-700/60 mb-2">Conciliación Manual</p>
-            <h3 className="text-xl font-serif font-black italic text-orange-900 tracking-tighter mb-1">ATH Móvil</h3>
+            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary/60 mb-2">Conciliación Manual</p>
+            <h3 className="text-xl font-serif font-black italic text-secondary tracking-tighter mb-1">ATH Móvil</h3>
             <div className="flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-orange-400 animate-pulse" />
-              <p className="text-[10px] font-bold text-orange-900/60 uppercase">{pendingPayments.filter(p => p.payment_method === 'ath_movil').length} Pendientes</p>
+              <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+              <p className="text-[10px] font-bold text-secondary/60 uppercase">{pendingPayments.filter(p => p.payment_method === 'ath_movil').length} Pendientes</p>
             </div>
           </div>
 
@@ -2399,8 +2399,8 @@ const HostDashboard: React.FC = () => {
         {pendingPayments.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {pendingPayments.map((payment: any) => (
-              <div key={payment.id} className="bg-white rounded-[3rem] p-8 shadow-soft border border-gray-100 group hover:border-orange-100 transition-all relative overflow-hidden">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-orange-100 opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div key={payment.id} className="bg-white rounded-[3rem] p-8 shadow-soft border border-gray-100 group hover:border-primary/20 transition-all relative overflow-hidden">
+                <div className="absolute top-0 left-0 w-1.5 h-full bg-sand opacity-0 group-hover:opacity-100 transition-opacity" />
 
                 <div className="flex items-center gap-5 mb-8">
                   <div className="w-16 h-16 rounded-full border-4 border-white shadow-float overflow-hidden flex-shrink-0">
@@ -2413,7 +2413,7 @@ const HostDashboard: React.FC = () => {
                       <span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-light opacity-40">• {payment.properties?.title}</span>
                     </div>
                   </div>
-                  <div className="bg-orange-50 text-orange-600 px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border border-orange-100 shadow-sm">Audit</div>
+                  <div className="bg-sand text-primary px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border border-primary/20 shadow-sm">Audit</div>
                 </div>
 
                 <div className="mb-8">
@@ -2765,7 +2765,7 @@ const HostDashboard: React.FC = () => {
             <div className="relative z-10">
               <CreditCard strokeWidth={1.5} className={`w-5 h-5 ${activeTab === 'payments' ? 'scale-110' : ''}`} />
               {pendingPayments.length > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 bg-orange-500 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black animate-pulse">
+                <span className="absolute -top-1.5 -right-1.5 bg-primary text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-black animate-pulse">
                   {pendingPayments.length}
                 </span>
               )}

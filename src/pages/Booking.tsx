@@ -340,7 +340,7 @@ const Booking: React.FC = () => {
             {(!startDate || !endDate) ? (
               <button
                 onClick={() => setShowCalendarModal(true)}
-                className="w-full p-8 bg-sand/30 border-2 border-dashed border-orange-200 rounded-[2.5rem] flex flex-col items-center gap-4 group hover:bg-sand/50 transition-all"
+                className="w-full p-8 bg-sand/30 border-2 border-dashed border-primary/20 rounded-[2.5rem] flex flex-col items-center gap-4 group hover:bg-sand/50 transition-all"
               >
                 <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
                   <span className="material-icons text-2xl">calendar_month</span>

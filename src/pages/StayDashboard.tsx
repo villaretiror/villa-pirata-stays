@@ -203,9 +203,9 @@ const StayDashboard: React.FC = () => {
                         </div>
 
                         {accessLevel < 3 && (
-                            <div className="bg-orange-950/30 border border-orange-500/20 p-4 rounded-2xl flex gap-3 items-center">
-                                <Info size={16} className="text-orange-500" />
-                                <p className="text-[10px] text-orange-200/80 leading-snug">
+                            <div className="bg-secondary/40/30 border border-primary/20 p-4 rounded-2xl flex gap-3 items-center">
+                                <Info size={16} className="text-primary" />
+                                <p className="text-[10px] text-primary/60/80 leading-snug">
                                     Complete el pago y firme su contrato para revelar el código {diffDays > 0 ? `el día ${booking.check_in}` : 'hoy'}.
                                 </p>
                             </div>
