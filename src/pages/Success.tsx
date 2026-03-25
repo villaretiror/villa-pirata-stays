@@ -86,7 +86,7 @@ const Success: React.FC = () => {
             className="w-full bg-[#1a1a1a] text-[#BBA27E] font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:bg-black active:scale-95 transition-all flex items-center justify-center gap-3 group border border-[#BBA27E]/20"
           >
             <Receipt size={16} className="group-hover:rotate-12 transition-transform" />
-            Gestionar Reservación
+            Gestionar Estancia de Élite
           </button>
 
           <button

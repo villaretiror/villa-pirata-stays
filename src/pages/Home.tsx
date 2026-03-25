@@ -331,7 +331,7 @@ const Home: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 text-center md:text-left">
             <div>
               <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 opacity-80">Explora con Salty</p>
-              <h2 className="font-serif font-bold text-4xl text-text-main leading-[1.1] tracking-tight">Sabor Local & <span className="text-secondary italic font-medium">Aventura.</span></h2>
+              <h2 className="font-serif font-bold text-4xl text-text-main leading-[1.1] tracking-tight">Sabor Local & <span className="text-secondary italic font-medium">Invasión de Sentidos.</span></h2>
             </div>
             
             <div className="flex gap-2 p-1.5 bg-gray-100/50 backdrop-blur-sm rounded-[2rem] border border-white/50 w-fit mx-auto md:mx-0 shadow-inner">
