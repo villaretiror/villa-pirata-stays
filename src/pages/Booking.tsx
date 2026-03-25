@@ -260,7 +260,7 @@ const Booking: React.FC = () => {
         <div className="absolute bottom-0 left-0 w-96 h-96 bg-secondary/20 rounded-full blur-[100px]"></div>
       </div>
 
-      <div className="relative bg-white/80 backdrop-blur-xl w-full max-w-2xl h-full sm:h-[90vh] sm:rounded-[3rem] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl border border-white/40">
+      <div className="relative bg-white/80 backdrop-blur-xl w-full max-w-5xl h-full sm:h-[90vh] sm:rounded-[4rem] rounded-t-[3rem] overflow-hidden flex flex-col shadow-2xl border border-white/40">
 
         <header className="px-8 py-6 flex flex-col gap-4 sticky top-0 bg-white sm:bg-white/80 backdrop-blur-xl z-20 border-b border-black/5">
           <div className="flex items-center justify-between">

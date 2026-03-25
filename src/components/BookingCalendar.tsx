@@ -23,8 +23,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
     const monthsShown = typeof window !== 'undefined' && window.innerWidth >= 1024 ? 2 : 1;
 
     return (
-        <div className="space-y-4">
-            <h3 className="font-bold text-[10px] uppercase tracking-[0.3em] text-primary/80 mb-2 px-6">Cronograma de Estancia ⚓</h3>
+        <div className="space-y-6">
+            <h3 className="font-bold text-[11px] uppercase tracking-[0.4em] text-primary/80 mb-2 px-6 text-center">Cronograma de Estancia ⚓</h3>
             <div className="relative booking-datepicker-container animate-fade-in shadow-2xl rounded-[3rem] overflow-hidden border border-black/5 bg-white mx-auto max-w-full">
                 <DatePicker
                     selectsRange={true}
@@ -40,14 +40,14 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                 />
             </div>
 
-            <div className="flex justify-center gap-10 py-3">
-                <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-primary shadow-[0_0_12px_rgba(255,127,63,0.4)]"></div>
-                    <span className="text-[9px] font-black text-text-main uppercase tracking-widest">Seleccionado</span>
+            <div className="flex justify-center gap-12 py-4">
+                <div className="flex items-center gap-4">
+                    <div className="w-3.5 h-3.5 rounded-full bg-primary shadow-[0_0_15px_rgba(255,127,63,0.5)]"></div>
+                    <span className="text-[10px] font-black text-text-main uppercase tracking-widest">Seleccionado</span>
                 </div>
-                <div className="flex items-center gap-3">
-                    <div className="w-2.5 h-2.5 rounded-full bg-gray-100 border border-black/5"></div>
-                    <span className="text-[9px] font-black text-text-light uppercase tracking-widest opacity-60">Ocupado</span>
+                <div className="flex items-center gap-4">
+                    <div className="w-3.5 h-3.5 rounded-full bg-gray-100 border border-black/10"></div>
+                    <span className="text-[10px] font-black text-text-light uppercase tracking-widest opacity-40">Ocupado</span>
                 </div>
             </div>
 
@@ -60,8 +60,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             border: none !important; 
             width: 100% !important; 
             background: white !important;
-            padding: 2rem !important;
-            gap: 2rem !important;
+            padding: 3rem !important;
+            gap: 4rem !important;
         }
 
         .react-datepicker__month-container { 
@@ -82,12 +82,12 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker__current-month { 
             font-family: 'serif', 'Playfair Display' !important; 
             font-weight: 900 !important; 
-            font-size: 1.5rem !important; 
+            font-size: 2rem !important; 
             text-align: center !important;
-            margin: 1.5rem 0 2rem 0 !important;
+            margin: 1.5rem 0 3rem 0 !important;
             color: #1a1a1a !important; 
             text-transform: capitalize !important;
-            letter-spacing: -0.02em !important;
+            letter-spacing: -0.04em !important;
         }
 
         /* 🔱 THE GRID MASTER: Standardizing Columns */
@@ -95,26 +95,26 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             display: grid !important;
             grid-template-columns: repeat(7, 1fr) !important;
             text-align: center !important;
-            margin-bottom: 1rem !important;
-            gap: 8px !important;
+            margin-bottom: 2rem !important;
+            gap: 15px !important;
         }
         
         .react-datepicker__day-name { 
             text-transform: uppercase !important; 
-            font-size: 9px !important; 
+            font-size: 11px !important; 
             font-weight: 900 !important; 
             color: #ccc !important; 
             width: auto !important;
             margin: 0 !important;
             line-height: normal !important;
-            letter-spacing: 0.1em !important;
+            letter-spacing: 0.15em !important;
         }
 
-        /* 🔱 DATES GRID: The Secret Sauce */
+        /* 🔱 DATES GRID: The Macro Experience */
         .react-datepicker__month { 
             display: grid !important;
             grid-template-columns: repeat(7, 1fr) !important;
-            gap: 8px !important;
+            gap: 15px !important;
             margin: 0 !important;
         }
 
@@ -124,19 +124,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         }
 
         .react-datepicker__day { 
-            width: auto !important;
-            aspect-ratio: 1/1 !important;
+            width: 54px !important;
+            height: 54px !important;
             display: flex !important;
             align-items: center !important;
             justify-content: center !important;
             margin: 0 !important; 
-            font-size: 0.85rem !important; 
-            font-weight: 700 !important;
+            font-size: 1.15rem !important; 
+            font-weight: 900 !important;
             border-radius: 50% !important;
             transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1) !important;
             cursor: pointer !important;
             color: #1a1a1a !important;
-            border: 2px solid transparent !important;
+            border: 3px solid transparent !important;
         }
 
         .react-datepicker__day--outside-month {
@@ -147,8 +147,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             background-color: transparent !important;
             color: #f0f0f0 !important; 
             cursor: not-allowed !important;
-            font-weight: 400 !important;
-            text-decoration: line-through opacity-30 !important;
+            font-weight: 300 !important;
+            text-decoration: none !important;
+            opacity: 0.3 !important;
         }
         
         .react-datepicker__day--selected, 
@@ -156,17 +157,17 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker__day--range-end { 
             background-color: #FF7F3F !important; 
             color: white !important; 
-            box-shadow: 0 10px 20px rgba(255, 127, 63, 0.4) !important;
+            box-shadow: 0 15px 30px rgba(255, 127, 63, 0.5) !important;
             z-index: 5 !important;
             border-radius: 50% !important;
-            transform: scale(1.1);
+            transform: scale(1.15);
         }
         
         .react-datepicker__day--in-range { 
-            background-color: rgba(255, 127, 63, 0.08) !important; 
+            background-color: rgba(255, 127, 63, 0.1) !important; 
             color: #FF7F3F !important; 
             border-radius: 50% !important;
-            transform: scale(0.9);
+            transform: scale(0.95);
         }
 
         .react-datepicker__day--in-selecting-range {
@@ -176,20 +177,20 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         .react-datepicker__day:hover:not(.react-datepicker__day--disabled) { 
             background-color: #1a1a1a !important; 
             color: white !important;
-            transform: translateY(-4px) scale(1.1) !important;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+            transform: translateY(-6px) scale(1.15) !important;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1) !important;
         }
         
         @media (min-width: 1024px) {
             .react-datepicker { 
                 flex-direction: row !important; 
                 justify-content: center !important;
-                gap: 5rem !important;
-                padding: 3rem !important;
-                min-width: 820px !important;
+                gap: 6rem !important;
+                padding: 4rem !important;
+                min-width: 1100px !important;
             }
             .react-datepicker__month-container { 
-                width: 320px !important; 
+                width: auto !important; 
             }
         }
       `}</style>
