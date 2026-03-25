@@ -11,13 +11,13 @@ export const resolvePropertyId = async (input: string, client: SupabaseClient): 
     if (!isNaN(Number(cleanInput)) && cleanInput.length >= 8) return cleanInput;
     if (cleanInput.length > 20) return cleanInput; // UUID-like
 
-    // 🔱 PRIORITY SHORT-MAP: Instant recognition for keywords
+    // 🔱 PRIORITY SHORT-MAP: Instant recognition for keywords (Ultra-Tolerant)
     const lower = cleanInput.toLowerCase();
-    if (lower.includes('retiro') || (lower.includes('villa') && !lower.includes('pirata'))) return '1081171030449673920';
-    if (lower.includes('pirata')) return '42839458';
+    if (lower.includes('retiro') || lower.includes('villa') || lower.includes('retiro r')) return '1081171030449673920';
+    if (lower.includes('pirata') || lower.includes('family') || lower.includes('house')) return '42839458';
 
-    // 2. Fuzzy Clean (Remove fillers)
-    const fillers = ['para', 'en', 'villa', 'retiro', 'retiro r', 'la', 'house', 'family'];
+    // 2. Fuzzy Clean (Remove fillers and PR regionalisms)
+    const fillers = ['para', 'en', 'la', 'mi', 'una', 'esta', 'cerca', 'de', 'el', 'reservar'];
     let fuzzy = cleanInput.toLowerCase();
     fillers.forEach(f => fuzzy = fuzzy.replace(f, ''));
     fuzzy = fuzzy.trim();
