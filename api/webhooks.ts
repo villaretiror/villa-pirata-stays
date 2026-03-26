@@ -109,37 +109,63 @@ async function handleVapiTools(req: any, res: any, message: any) {
       if (name === 'check_availability') {
         // 🛡️ PARAMETER NORMALIZATION: Accept multiple naming conventions from AI
         const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-        const sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
-        const eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
+        let sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
+        let eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
+        
+        // 🕒 SINCRONIZACIÓN DE FORMATOS (ISO 8601)
+        try {
+            if (sDate) sDate = new Date(sDate).toISOString().split('T')[0];
+            if (eDate) eDate = new Date(eDate).toISOString().split('T')[0];
+        } catch (e) {
+            console.warn("[Vapi] Invalid dates provided by AI", { sDate, eDate });
+        }
         
         // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
         console.log(`[Vapi] Checking availability for ${propId} (input: ${args.propertyId}) from ${sDate} to ${eDate}`);
         const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
         
         if (availability.available) {
-          const quote = await applyAIQuote(propId, sDate, eDate, undefined, supabase);
-          return { 
-            toolCallId: toolCall.id, 
-            result: `¡Excelente noticia! Estas fechas están disponibles para crear memorias inolvidables. El total por ${quote.nights} noches, incluyendo impuestos del paraíso, es de ${quote.total} dólares. ¿Le gustaría proceder con la reserva ahora mismo? ⚓` 
-          };
+          try {
+            const quote = await applyAIQuote(propId, sDate, eDate, undefined, supabase);
+            return { 
+              toolCallId: toolCall.id, 
+              result: `¡Excelente noticia! Estas fechas están disponibles para crear memorias inolvidables. El total por ${quote.nights} noches, incluyendo impuestos del paraíso, es de ${quote.total} dólares. ¿Le gustaría proceder con la reserva ahora mismo? ⚓` 
+            };
+          } catch(err: any) {
+             return {
+                toolCallId: toolCall.id,
+                result: `Las fechas están disponibles, pero hubo un ligero problema al calcular el total exacto. ¿Gusta que le envíe el enlace para verificarlo directamente?`
+             };
+          }
+        }
+
+        if (availability.reason?.includes("mis brújulas no reconocen")) {
+            return { toolCallId: toolCall.id, result: availability.reason };
         }
 
         // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
-        const gapResult: any = await findCalendarGaps(propId, supabase);
-        const nextGap = gapResult?.slots?.[0];
-        
-        // 🔱 UPSELLING: Check other properties too
-        const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
-        const altMsg = alternate 
-          ? `. Sin embargo, Capitán, veo que *${alternate.title}* está totalmente disponible para esas fechas. ¿Le gustaría que le hable un poco más de esta opción? ⚓`
-          : nextGap 
-            ? `. Pero tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end}. ¿Le funcionaría esa travesía?`
-            : ". Por el momento esas fechas están reservadas en toda la flota.";
+        try {
+            const gapResult: any = await findCalendarGaps(propId, supabase);
+            const nextGap = gapResult?.slots?.[0];
+            
+            // 🔱 UPSELLING: Check other properties too
+            const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
+            const altMsg = alternate 
+              ? `. Sin embargo, Capitán, veo que *${alternate.title}* está totalmente disponible para esas fechas. ¿Le gustaría que le hable un poco más de esta opción?`
+              : nextGap 
+                ? `. Pero tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end}. ¿Le funcionaría esa travesía?`
+                : ". Por el momento esas fechas están reservadas en toda la flota.";
 
-        return { 
-          toolCallId: toolCall.id, 
-          result: `Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio${altMsg} ⚓` 
-        };
+            return { 
+              toolCallId: toolCall.id, 
+              result: `Está ocupado. Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio${altMsg}` 
+            };
+        } catch(err) {
+            return { 
+              toolCallId: toolCall.id, 
+              result: `Está ocupado. Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio.` 
+            };
+        }
       }
 
       if (name === 'send_payment_sms') {
@@ -166,7 +192,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
     } catch (err: any) {
       const errMsg = err.message || "Unknown Failure";
       console.error(`[Vapi Tool Critical Error - ${name}]:`, errMsg);
-      return { toolCallId: toolCall.id, result: `Contratiempo Técnico: ${errMsg}. Por favor, disculpe al Concierge.` };
+      return { toolCallId: toolCall.id, result: `Mis sinceras disculpas, Capitán. Un ligero inconveniente técnico me impide procesar la solicitud en este instante. Por favor, comuníquese directamente con el Capitán principal para asistirle personalmente.` };
     }
   }));
 

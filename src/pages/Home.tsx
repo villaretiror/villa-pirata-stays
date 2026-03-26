@@ -43,6 +43,7 @@ const Home: React.FC = () => {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTab, setSearchTab] = useState<'dates'|'guests'>('dates');
 
   // Advanced Guest State
   const [adults, setAdults] = useState(1);
@@ -130,22 +131,49 @@ const Home: React.FC = () => {
   const globalBlockedDates = React.useMemo(() => {
     if (properties.length === 0) return [];
     
-    // 🔱 ELITE LOGIC: We merge all dates from ALL properties. 
-    // If a guest searches globally, we only block a date if EVERY property is blocked on that date.
-    // However, to encourage booking, we'll show dates where at least one property is available.
-    // But for "Tu Viaje" (Foto 2), we want to show dates where ALL is blocked.
-    
-    const allBlockedSets = properties.map(p => new Set((p.blockeddates as string[]) || []));
+    // 🔱 ELITE LOGIC (Patched): Merge manual dates + actual active bookings for EACH property.
+    const allBlockedSets = properties.map(property => {
+      // 1. Manual blocks
+      const blocked = new Set<string>((property.blockeddates as string[]) || []);
+      
+      // 2. Verified Active Bookings
+      const propBookings = bookings.filter(b => b.property_id === String(property.id));
+      propBookings.forEach(b => {
+         let current = new Date(b.check_in + 'T12:00:00');
+         const out = new Date(b.check_out + 'T12:00:00');
+         while (current < out) {
+            blocked.add(current.toISOString().split('T')[0]);
+            current.setDate(current.getDate() + 1);
+         }
+      });
+      return blocked;
+    });
 
-    // Find dates present in ALL properties' blocked lists
+    // If a guest searches globally, we ONLY block a date visually on Home if EVERY property is rented/blocked on that date.
     const commonBlocks = allBlockedSets.length > 0 
       ? [...allBlockedSets[0]].filter(date => 
           allBlockedSets.every((set: Set<string>) => set.has(date))
         )
       : [];
 
-    return (commonBlocks as string[]).map(d => new Date(d + 'T12:00:00')); // T12 to avoid timezone shifts
-  }, [properties]);
+    return commonBlocks.map(d => new Date(d + 'T12:00:00')); // T12 to avoid timezone shifts
+  }, [properties, bookings]);
+
+  // 🛡️ RANGE VALIDATOR: Prevent users from crossing over fully booked dates
+  const isRangeAvailable = (start: Date, end: Date) => {
+    let current = new Date(start);
+    while (current <= end) {
+      if (globalBlockedDates.some(bd => 
+        bd.getFullYear() === current.getFullYear() &&
+        bd.getMonth() === current.getMonth() &&
+        bd.getDate() === current.getDate()
+      )) {
+        return false;
+      }
+      current.setDate(current.getDate() + 1);
+    }
+    return true;
+  };
 
   const getSectionTitle = () => {
     if (pets > 0) return 'Alojamientos Pet Friendly';
@@ -220,28 +248,49 @@ const Home: React.FC = () => {
             </div>
 
             <div className="mb-4 pr-2">
-              <div className="mb-6">
-                <BookingCalendar 
-                  startDate={startDate} 
-                  endDate={endDate} 
-                  onChange={(update) => {
-                    const [start, end] = update;
-                    setStartDate(start);
-                    setEndDate(end);
-                  }} 
-                  blockedDates={globalBlockedDates} 
-                />
+              <div className="flex bg-sand/60 p-1 rounded-2xl mb-6">
+                <button 
+                   onClick={() => setSearchTab('dates')} 
+                   className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${searchTab === 'dates' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                   1. Fechas
+                </button>
+                <button 
+                   onClick={() => setSearchTab('guests')} 
+                   className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${searchTab === 'guests' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                   2. Huéspedes
+                </button>
               </div>
 
-              <div className="p-5 bg-sand/60 rounded-[2rem] border border-primary/10 mb-6">
-                <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-text-light mb-4 flex items-center gap-2">
-                   <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
-                   Integrantes
-                </h3>
-                <CounterRow label="Exploradores Adultos" sub="Edad 13+" val={adults} setVal={setAdults} min={1} />
-                <CounterRow label="Pequeños Capitanes" sub="Edad 2 - 12" val={children} setVal={setChildren} min={0} />
-                <CounterRow label="Mascotas" sub="Patas bienvenidas 🐾" val={pets} setVal={setPets} min={0} />
-              </div>
+              {searchTab === 'dates' ? (
+                  <div className="mb-6 animate-fade-in">
+                    <BookingCalendar 
+                      startDate={startDate} 
+                      endDate={endDate} 
+                      onChange={(update) => {
+                        const [start, end] = update;
+                        setStartDate(start);
+                        setEndDate(end);
+                        if (start && end) {
+                            setTimeout(() => setSearchTab('guests'), 400); // Auto-jump
+                        }
+                      }} 
+                      blockedDates={globalBlockedDates} 
+                      isRangeAvailable={isRangeAvailable}
+                    />
+                  </div>
+              ) : (
+                  <div className="p-5 bg-sand/60 rounded-[2rem] border border-primary/10 mb-6 animate-fade-in">
+                    <h3 className="font-bold text-xs uppercase tracking-[0.2em] text-text-light mb-4 flex items-center gap-2">
+                       <div className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></div>
+                       Tripulación
+                    </h3>
+                    <CounterRow label="Exploradores Adultos" sub="Edad 13+" val={adults} setVal={setAdults} min={1} />
+                    <CounterRow label="Pequeños Capitanes" sub="Edad 2 - 12" val={children} setVal={setChildren} min={0} />
+                    <CounterRow label="Mascotas" sub="Patas bienvenidas 🐾" val={pets} setVal={setPets} min={0} />
+                  </div>
+              )}
             </div>
 
             <div className="mb-6 min-h-[65px] flex items-center justify-center text-center px-6 bg-sand/80 rounded-3xl border border-primary/10">
