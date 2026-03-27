@@ -18,7 +18,12 @@
     color: var(--bunker);
   }
 
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     font-family: 'Playfair Display', serif;
   }
 }
@@ -51,18 +56,21 @@
     position: absolute;
     inset: 0;
     transform: translateX(-100%);
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(255, 255, 255, 0.5) 50%,
-      transparent 100%
-    );
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.5) 50%,
+        transparent 100%);
     animation: shimmer-effect 1.5s linear infinite;
   }
 
   @keyframes shimmer-effect {
-    0% { transform: translateX(-100%); }
-    100% { transform: translateX(100%); }
+    0% {
+      transform: translateX(-100%);
+    }
+
+    100% {
+      transform: translateX(100%);
+    }
   }
 
   /* 🔱🔱🔱🔱 SALTY MODE (NIGHT THEME) 🔱🔱🔱🔱 */
@@ -72,24 +80,51 @@
     transition: background-color 1s ease, color 1s ease;
   }
 
-  .salty-mode .bg-sand { background-color: var(--bunker) !important; }
-  .salty-mode .bg-white { background-color: rgba(255, 255, 255, 0.04) !important; }
-  .salty-mode .text-text-main { color: #F3F4F6 !important; }
-  .salty-mode .text-primary { color: var(--gold) !important; }
-  .salty-mode .bg-primary { background-color: var(--gold) !important; }
-  .salty-mode .border-white\/40, 
-  .salty-mode .border-gray-100 { 
-    border-color: rgba(255, 255, 255, 0.1) !important; 
+  .salty-mode .bg-sand {
+    background-color: var(--bunker) !important;
   }
+
+  .salty-mode .bg-white {
+    background-color: rgba(255, 255, 255, 0.04) !important;
+  }
+
+  .salty-mode .text-text-main {
+    color: #F3F4F6 !important;
+  }
+
+  .salty-mode .text-primary {
+    color: var(--gold) !important;
+  }
+
+  .salty-mode .bg-primary {
+    background-color: var(--gold) !important;
+  }
+
+  .salty-mode .border-white\/40,
+  .salty-mode .border-gray-100 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+
   .salty-mode .glass {
     background: rgba(10, 20, 40, 0.75) !important;
     border-color: rgba(255, 255, 255, 0.1) !important;
     backdrop-filter: blur(20px) !important;
   }
-  .salty-mode .text-text-light { color: #9CA3AF !important; }
-  .salty-mode .bg-white\/60 { background-color: rgba(255, 255, 255, 0.05) !important; }
-  
+
+  .salty-mode .text-text-light {
+    color: #9CA3AF !important;
+  }
+
+  .salty-mode .bg-white\/60 {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+  }
+
   /* Hover overrides for gold theme */
-  .salty-mode .hover\:bg-primary:hover { background-color: #B8860B !important; }
-  .salty-mode .text-primary\/60 { color: rgba(212, 175, 55, 0.6) !important; }
+  .salty-mode .hover\:bg-primary:hover {
+    background-color: #B8860B !important;
+  }
+
+  .salty-mode .text-primary\/60 {
+    color: rgba(212, 175, 55, 0.6) !important;
+  }
 }

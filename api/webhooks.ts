@@ -196,5 +196,5 @@ async function handleVapiTools(req: any, res: any, message: any) {
     }
   }));
 
-  return res.status(200).json(results);
+  return res.status(200).json({ results });
 }
