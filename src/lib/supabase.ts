@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '../supabase_types'; // Asegúrate de que la ruta sea correcta según tu carpeta
+import { Database } from '../supabase_types.js'; // Asegúrate de que la ruta sea correcta según tu carpeta
 
 // 🛡️ Safe Environment Access
 const getEnv = (key: string): string => {
