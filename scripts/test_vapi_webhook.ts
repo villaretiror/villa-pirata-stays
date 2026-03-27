@@ -1,7 +1,7 @@
 import fetch from 'node-fetch';
 
 const WEBHOOK_URL = process.env.VAPI_WEBHOOK_URL || 'http://localhost:3000/api/webhooks?source=vapi';
-const SECRET = process.env.VAPI_WEBHOOK_SECRET || 'test_secret';
+const SECRET = process.env.VAPI_WEBHOOK_SECRET || 'salty_vapi_2026_secreto';
 
 async function testAvailabilityTool() {
   console.log('🧪 Probando Herramienta Vapi - check_availability...');

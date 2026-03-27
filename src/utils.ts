@@ -22,7 +22,7 @@ export const formatDateLong = (dateStr: string): string => {
 
 export const getDatesInRange = (startStr: string, endStr: string): string[] => {
   const dates: string[] = [];
-  const curr = new Date(`${startStr}T12:00:00`); 
+  const curr = new Date(`${startStr}T12:00:00`);
   const end = new Date(`${endStr}T12:00:00`);
   while (curr < end) {
     const y = curr.getFullYear();
@@ -67,14 +67,14 @@ export const getWhatsAppWelcomeMsg = (data: {
 };
 
 export const getBookingWAMessage = (data: {
-    guestName: string;
-    propertyName: string;
-    checkIn: string;
-    checkOut: string;
-    total: number | string;
-    method?: string;
+  guestName: string;
+  propertyName: string;
+  checkIn: string;
+  checkOut: string;
+  total: number | string;
+  method?: string;
 }) => {
-    return `¡Hola! Confirmo mi reserva en *${data.propertyName}*.\n\n👤 Huésped: ${data.guestName}\n📅 Check-in: ${data.checkIn}\n📅 Check-out: ${data.checkOut}\n💰 Total: $${data.total}\n💳 Pago: ${data.method || 'Pendiente'}\n\n¡Estamos muy emocionados! 🏝️`;
+  return `¡Hola! Confirmo mi reserva en *${data.propertyName}*.\n\n👤 Huésped: ${data.guestName}\n📅 Check-in: ${data.checkIn}\n📅 Check-out: ${data.checkOut}\n💰 Total: $${data.total}\n💳 Pago: ${data.method || 'Pendiente'}\n\n¡Estamos muy emocionados! 🏝️`;
 };
 
 export const generateWhatsAppLink = (phone: string, message: string): string => {
@@ -83,18 +83,18 @@ export const generateWhatsAppLink = (phone: string, message: string): string => 
 };
 
 export const getHostInstructionMessage = (data: {
-    guestName: string, 
-    propertyName: string, 
-    accessCode: string,
-    googleMapsLink?: string
+  guestName: string,
+  propertyName: string,
+  accessCode: string,
+  googleMapsLink?: string
 }): string => {
-    return `¡Hola ${data.guestName}! Solo quería saludarte y confirmar que ya estamos listos para recibirte en ${data.propertyName}. El código de acceso para tu llegada será: ${data.accessCode}. ¿Tienes alguna duda sobre la ubicación (${data.googleMapsLink || ''}) o el check-in?`;
+  return `¡Hola ${data.guestName}! Solo quería saludarte y confirmar que ya estamos listos para recibirte en ${data.propertyName}. El código de acceso para tu llegada será: ${data.accessCode}. ¿Tienes alguna duda sobre la ubicación (${data.googleMapsLink || ''}) o el check-in?`;
 };
 
 // 5. Ported Helpers (Internal)
 export const importPropertyFromUrl = async (url: string) => {
-    console.warn("importPropertyFromUrl no implementado en esta versión consolidada.");
-    return null;
+  console.warn("importPropertyFromUrl no implementado en esta versión consolidada.");
+  return null;
 };
 
 // 6. Finance Redirects
@@ -107,5 +107,5 @@ export const isSeasonalDate = (dateStr: string, seasonalPrices?: SeasonalPrice[]
 };
 
 export const validatePromoCode = (promo: any, nights: number, hasSeasonal: boolean) => {
-    return FinanceService.validatePromo(promo, nights, hasSeasonal);
+  return FinanceService.validatePromo(promo, nights, hasSeasonal);
 };

@@ -36,9 +36,12 @@ export default async function handler(req: any, res: any) {
   try {
     // 🎙️ SOURCE: VOICE (Vapi Webhook)
     if (source === 'vapi') {
-      const vapiSecret = req.headers['x-vapi-secret'];
-      if (!vapiSecret || vapiSecret !== getEnvVar('VAPI_WEBHOOK_SECRET')) {
-         console.warn('[Vapi Webhook] Unauthorized access attempt detected.');
+      // Secreto: Buscamos tanto en el estándar x-vapi-secret como en el nombre de la env var directa enviada como header.
+      const vapiSecret = req.headers['x-vapi-secret'] || req.headers['vapi_webhook_secret'];
+      const expectedSecret = getEnvVar('VAPI_WEBHOOK_SECRET');
+      
+      if (!vapiSecret || vapiSecret !== expectedSecret) {
+         console.warn(`[Vapi Webhook] Unauthorized access attempt: ${vapiSecret ? 'Mismatched Secret' : 'Missing Header'}. Expected: ${expectedSecret ? 'Configured' : 'NOT CONFIGURED'}.`);
          return res.status(401).json({ error: 'Unauthorized. Invalid Vapi Secret.' });
       }
 
