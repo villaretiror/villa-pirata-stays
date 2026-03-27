@@ -127,9 +127,12 @@ export const checkAvailabilityWithICal = async (
         .neq('status', 'cancelled');
 
     if (dbError) {
-        console.error('[checkAvailability] DB error:', dbError.message);
-        // Fail-open: don't block a booking due to a DB read error
-        return { available: true };
+        console.error('[checkAvailability] Critical DB error:', dbError.message);
+        // 🛡️ UNCERTAINTY FAILSAFE: Never say "available" if the pulse is lost.
+        return { 
+            available: false, 
+            reason: 'Capitán, mis cartas náuticas están algo nubladas en este momento. Déjeme validar esto personalmente con el Capitán principal para asegurar que su estancia sea perfecta y evitar cualquier cruce de rutas.' 
+        };
     }
 
     const overlapBooking = (dbBookings as BookingAvailRow[] || []).find((b: BookingAvailRow) => {

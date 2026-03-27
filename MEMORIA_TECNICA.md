@@ -44,11 +44,28 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 
 ---
 
+### [2026-03-27] - 🔱 Optimización Salty Vapi (Blindaje de Producción)
+- **Logro**: Salty alcanza el estandard de "Bunker Premium" con compatibilidad absoluta y redundancia triple.
+- **Cambios de Orquestación**:
+    - **Unificación de Identidad**: El `SaltyVoiceButton` y `aiServices.ts` ahora detectan IDs de cualquier longitud (8-char o UUID), unificando Villa Retiro y Pirata House.
+    - **Soberanía Financiera**: Toda cotización de voz consume `FinanceService.ts`. Un solo centavo, una sola verdad entre la web y la IA.
+    - **Sincronización de Producción**: Webhooks alineados al dominio oficial `villaretiror.com`. Timeout de 2.8s implementado para asegurar fluidez en Vapi.
+    - **Failsafe de Incertidumbre**: Si el pulso del calendario se pierde (error de DB/iCal), Salty falla cerrado redirigiendo a validación humana en lugar de alucinar disponibilidad.
+- **La Solución Pro (Estrategia de Sincronía)**:
+    - Se establece el estándar de **Redundancia Triple**: 
+        1. Airbnb y Booking.com sincronizados entre sí directamente (iCal-to-iCal).
+        2. Supabase sincronizado con ambas plataformas cada 15 minutos via Cron.
+        3. Salty como tercer nivel de verificación en tiempo real.
+- **Por Qué**: Minimizar el riesgo de overbooking a <1% y asegurar que la experiencia de lujo no se rompa por fallas técnicas externas.
+
+---
+
 ## 🛡️ Estatus de la Flota (Orquestación Activa)
 - [x] Implementar Shadow Mode para validación automática de contraste.
 - [x] Refactorización de Élite en `FinanceService`.
 - [x] Soberanía Visual (Bunker Premium Theme).
 - [x] Auditoría de Integridad (Amenities vs Fotos).
-- [x] **Salty Voice Go-Live** — Número `+1 (209) 267-3503` · VAPI · Cartesia · Deepgram · Tool Calling activo.
+- [x] **Salty Voice Go-Live** — Número `+1 (209) 267-3503`.
+- [x] **Blindaje Salty Vapi** — Sincronía de producción, IDs dinámicos y Soberanía Financiera alcanzada.
 
-"Estrategia de Negocio Blindada y Excelencia Operativa Alcanzada. Salty ahora tiene voz." 🔱
+"Estrategia de Negocio Blindada y Excelencia Operativa Alcanzada. Salty es el dueño del dominio y la verdad financiera." 🔱
