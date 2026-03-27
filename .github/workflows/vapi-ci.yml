@@ -1,0 +1,42 @@
+name: Vapi Master CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  vapi-security-and-sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Install Vapi CLI
+        run: curl -sSL https://vapi.ai/install.sh | bash
+
+      - name: Validate Local Vapi Configuration
+        run: vapi init --skip-install
+
+      # Correr tests unitarios del webhook para asegurar el { results: [] }
+      - name: Start Local Webhook Emulator
+        run: |
+           npx vite --port 3000 &
+           echo "Waiting for server..."
+           sleep 10
+        env:
+          VAPI_WEBHOOK_SECRET: "test_secret_ci"
+          
+      - name: Run Webhook Integrations Tests
+        run: npx ts-node scripts/test_vapi_webhook.ts
+        env:
+          VAPI_WEBHOOK_URL: 'http://localhost:3000/api/webhooks?source=vapi'
+          VAPI_WEBHOOK_SECRET: 'test_secret_ci'

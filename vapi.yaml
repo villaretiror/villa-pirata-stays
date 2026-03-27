@@ -1,0 +1,68 @@
+# Vapi Configuration (vapi.yaml)
+# Integrated with Model Context Protocol (MCP) standards for Salty
+assistant:
+  id: "280fb186-f436-4b9b-ac30-48badafd3a0d"
+  name: "Salty Concierge Signature - Villa & Pirata"
+  orgId: "6d69211b-b98a-47b5-9c4c-c78b3b3adff8"
+  
+  firstMessage: "Saludos, soy Salty, la voz ejecutiva de Villa Retiro..."
+  
+  model:
+    provider: "google"
+    model: "gemini-1.5-pro"
+    messages:
+      - role: "system"
+        content: |
+          Eres Salty, la voz ejecutiva de Villa Retiro R y Pirata Family House en Cabo Rojo. No eres un bot; eres un profesional de la hospitalidad bilingue, masculino, calido y con autoridad. Tu meta es la conversion: cerrar reservas directas y proyectar lujo. PROTOCOLO ANTI-SILENCIO (CRITICO): Esta estrictamente PROHIBIDO ejecutar herramientas en silencio. ANTES de cualquier proceso tecnico, DEBES decir obligatoriamente una frase de transicion humana. Ejemplos Obligatorios: Excelente eleccion, permitame consultar el santuario de datos para verificar esas fechas en la Villa... o Claro que si, estoy conectando con el sistema ahora mismo para enviarle ese enlace de pago seguro. REGLAS DE ORO DE COMUNICACION: 1. Idioma: Habla 100% en Espanol neutral o de Puerto Rico inteligente. 2. Formato: Prohibido usar Markdown. Usa texto plano. 3. Ritmo Humano: Usa palabras de relleno naturales. LOGICA DE NEGOCIO: 1. Venta Exclusiva: Si hay disponibilidad, vendelo como oportunidad unica. 2. Precios: Nunca des precio sin antes usar check_availability. 3. Cierre: Al aceptar, dispara send_payment_sms con frase de confirmacion calida PRIMERO. MAPA DE LA FLOTA: Villa Retiro R: ID 1081171030449673920. Pirata Family House: ID 42839458. Prioriza siempre la intencion de reserva.
+            
+  voice:
+    provider: "cartesia"
+    voiceId: "ecc8e0ab-ae48-4cb2-8d76-508b5f396ca8"
+    params:
+      language: "es-PR"
+      speed: 0.95
+
+  # MCP (Model Context Protocol) ready server implementation
+  # Herramientas convertidas de webhook tradicional a MCP Tools Standard
+  tools:
+    - type: "function"
+      server:
+        url: "https://www.villaretiror.com/api/webhooks?source=vapi"
+        # Secret authorization implementation
+        secret: "${env.VAPI_WEBHOOK_SECRET}"
+      function:
+        name: "check_availability"
+        description: "Consulta disponibilidad y precios. DEBES HABLAR antes de ejecutarla."
+        parameters:
+          type: "object"
+          properties:
+            propertyId: 
+              type: "string"
+              enum: ["1081171030449673920", "42839458"]
+            startDate: 
+              type: "string"
+              description: "Formato estricto YYYY-MM-DD"
+            endDate: 
+              type: "string"
+              description: "Formato estricto YYYY-MM-DD"
+          required: ["startDate", "endDate"]
+          
+    - type: "function"
+      server:
+        url: "https://www.villaretiror.com/api/webhooks?source=vapi"
+        # Secret authorization implementation
+        secret: "${env.VAPI_WEBHOOK_SECRET}"
+      function:
+        name: "send_payment_sms"
+        description: "Envía el enlace oficial de pago vía mensaje de texto. DEBES HABLAR antes de ejecutarla."
+        parameters:
+          type: "object"
+          properties:
+            phone: 
+              type: "string"
+            guestName: 
+              type: "string"
+            propertyId: 
+              type: "string"
+              enum: ["1081171030449673920", "42839458"]
+          required: ["phone", "propertyId"]

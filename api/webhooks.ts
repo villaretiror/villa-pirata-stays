@@ -36,6 +36,12 @@ export default async function handler(req: any, res: any) {
   try {
     // 🎙️ SOURCE: VOICE (Vapi Webhook)
     if (source === 'vapi') {
+      const vapiSecret = req.headers['x-vapi-secret'];
+      if (!vapiSecret || vapiSecret !== getEnvVar('VAPI_WEBHOOK_SECRET')) {
+         console.warn('[Vapi Webhook] Unauthorized access attempt detected.');
+         return res.status(401).json({ error: 'Unauthorized. Invalid Vapi Secret.' });
+      }
+
       const { message } = req.body;
       const type = message?.type;
 
