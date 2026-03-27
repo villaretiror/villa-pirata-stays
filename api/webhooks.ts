@@ -49,7 +49,26 @@ export default async function handler(req: any, res: any) {
         return await handleVapiTools(req, res, message);
       }
 
-      // For other Vapi messages (conversation-update, etc.), just acknowledge
+      // 📞 CAPTURA DE LLAMADAS (Fin de llamada, transcripción y grabación)
+      if (type === 'end-of-call-report') {
+        const report = message.endOfCallReport || {};
+        const call = message.call || {};
+        
+        await supabase.from('vapi_calls').insert({
+           call_id: call.id || 'unknown',
+           started_at: call.startedAt || new Date().toISOString(),
+           ended_at: call.endedAt || new Date().toISOString(),
+           duration_seconds: report.duration || 0,
+           transcript: report.transcript || 'No transcript',
+           summary: report.summary || 'No summary',
+           success_evaluation: report.successEvaluation || 'N/A',
+           recording_url: report.recordingUrl || null
+        });
+        console.log(`[Vapi Webhook] Reporte de fin de llamada guardado (${call.id}).`);
+        return res.status(200).json({ success: true });
+      }
+
+      // Para mensajes genéricos de estatus (conversation-update), solo reconocer
       return res.status(200).json({ success: true });
     }
 
