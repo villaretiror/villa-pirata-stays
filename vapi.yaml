@@ -31,7 +31,7 @@ assistant:
             
   voice:
     provider: "cartesia"
-    voiceId: "ecc8e0ab-ae48-4cb2-8d76-508b5f396ca8"
+    voiceId: "57dcab65-68ac-45a6-8480-6c4c52ec1cd1"
     params:
       language: "es-PR"
       speed: 0.95
