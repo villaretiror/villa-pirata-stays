@@ -1,4 +1,4 @@
-import { Property, SeasonalPrice, PromoCode } from '../types';
+import { Property, SeasonalPrice, PromoCode } from '../types.js';
 import { differenceInDays, addDays, format } from 'date-fns';
 
 export const FinanceService = {

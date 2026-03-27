@@ -49,10 +49,40 @@ export default async function handler(req: any, res: any) {
         return await handleVapiTools(req, res, message);
       }
 
-      // 📞 CAPTURA DE LLAMADAS (Fin de llamada, transcripción y grabación)
+      // 📞 CAPTURA DE LLAMADAS Y TRANSFERENCIA FÍSICA A SUPABASE STORAGE
       if (type === 'end-of-call-report') {
         const report = message.endOfCallReport || {};
         const call = message.call || {};
+        
+        let localRecordingUrl = report.recordingUrl || null;
+
+        if (report.recordingUrl) {
+           try {
+              // Descargar audio crudo de los servidores de Vapi
+              const audioRes = await fetch(report.recordingUrl);
+              const arrayBuffer = await audioRes.arrayBuffer();
+              const buffer = Buffer.from(arrayBuffer);
+              const fileName = `${call.id || Date.now()}.wav`;
+              
+              const { error: uploadErr } = await supabase
+                 .storage
+                 .from('vapi_recordings')
+                 .upload(fileName, buffer, {
+                    contentType: 'audio/wav',
+                    upsert: true
+                 });
+
+              if (!uploadErr) {
+                 const { data: pubData } = supabase.storage.from('vapi_recordings').getPublicUrl(fileName);
+                 if (pubData) localRecordingUrl = pubData.publicUrl;
+                 console.log(`[Storage] Audio anclado exitosamente en servidor privado: ${fileName}`);
+              } else {
+                 console.error('[Storage Error] No se pudo transferir audio:', uploadErr.message);
+              }
+           } catch (e: any) {
+              console.error('[Storage Stream Error] Fallo al importar archivo de Vapi:', e.message);
+           }
+        }
         
         await supabase.from('vapi_calls').insert({
            call_id: call.id || 'unknown',
@@ -62,7 +92,7 @@ export default async function handler(req: any, res: any) {
            transcript: report.transcript || 'No transcript',
            summary: report.summary || 'No summary',
            success_evaluation: report.successEvaluation || 'N/A',
-           recording_url: report.recordingUrl || null
+           recording_url: localRecordingUrl
         });
         console.log(`[Vapi Webhook] Reporte de fin de llamada guardado (${call.id}).`);
         return res.status(200).json({ success: true });
