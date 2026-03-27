@@ -14,8 +14,15 @@ const SaltyVoiceButton: React.FC = () => {
     // 🔱 DETECT CONTEXT (Property ID from URL)
     useEffect(() => {
         const pathParts = window.location.pathname.split('/');
-        const id = pathParts.find(part => part.length > 15); // Simple ID detection
-        if (id) setPropertyId(id);
+        // IDs are either numeric (8+ chars) or UUIDs (36 chars)
+        const id = pathParts.find(part => 
+            (!isNaN(Number(part)) && part.length >= 8) || 
+            (part.length > 30) // UUID check
+        );
+        if (id) {
+            console.log(`[Salty context] Property ID detected: ${id}`);
+            setPropertyId(id);
+        }
     }, [window.location.pathname]);
 
     useEffect(() => {

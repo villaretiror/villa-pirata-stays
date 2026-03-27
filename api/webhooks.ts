@@ -36,14 +36,27 @@ export default async function handler(req: any, res: any) {
   try {
     // 🎙️ SOURCE: VOICE (Vapi Webhook)
     if (source === 'vapi') {
-      // Secreto: Buscamos tanto en el estándar x-vapi-secret como en el nombre de la env var directa enviada como header.
-      const vapiSecret = req.headers['x-vapi-secret'] || req.headers['vapi_webhook_secret'];
+      // 🔑 SECURITY VALIDATION: Standard Vapi headers + Authorization Bearer
+      const vapiSecret = req.headers['x-vapi-secret'] || 
+                        req.headers['vapi_webhook_secret'] || 
+                        (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].split(' ')[1] : null);
+                        
       const expectedSecret = getEnvVar('VAPI_WEBHOOK_SECRET');
       
-      if (!vapiSecret || vapiSecret !== expectedSecret) {
-         console.warn(`[Vapi Webhook] Unauthorized access attempt: ${vapiSecret ? 'Mismatched Secret' : 'Missing Header'}. Expected: ${expectedSecret ? 'Configured' : 'NOT CONFIGURED'}.`);
+      if (!expectedSecret || !vapiSecret || vapiSecret !== expectedSecret) {
+         console.warn(`[Vapi Webhook] Unauthorized access attempt: ${vapiSecret ? 'Invalid Secret' : 'Missing Secret Header'}.`);
          return res.status(401).json({ error: 'Unauthorized. Invalid Vapi Secret.' });
       }
+
+      // 🕒 TIME & SPACE CONTEXT: Located in Puerto Rico - AST (UTC-4)
+      const now = new Date();
+      const prTime = new Intl.DateTimeFormat('es-PR', {
+         timeZone: 'America/Puerto_Rico',
+         dateStyle: 'medium',
+         timeStyle: 'medium'
+      }).format(now);
+      
+      console.info(`[🔱 Salty Caribe HQ] Processing request from Vapi. PR Time: ${prTime} | Space: Villa & Pirata Stays.`);
 
       const { message } = req.body;
       const type = message?.type;
@@ -152,11 +165,15 @@ export default async function handler(req: any, res: any) {
 async function handleVapiTools(req: any, res: any, message: any) {
   const toolCallList = message?.toolCallList || message?.toolCalls || (message.functionCall ? [message.functionCall] : []);
   
+  // 🕒 LATENCY GUARD: Vapi needs a response in < 3s to maintain human rhythm.
+  const TIMEOUT_MS = 2800;
+  
   const results = await Promise.all(toolCallList.map(async (toolCall: any) => {
     const name = toolCall?.function?.name || toolCall?.name;
     const args = typeof toolCall?.function?.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall?.function?.arguments || toolCall?.arguments || {};
 
-    try {
+    const toolExecution = (async () => {
+      try {
       if (name === 'get_property_info') {
         const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
         const { data, error } = await supabase.from('properties').select('*').eq('id', propId).single();
@@ -170,16 +187,27 @@ async function handleVapiTools(req: any, res: any, message: any) {
         let sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
         let eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
         
-        // 🕒 SINCRONIZACIÓN DE FORMATOS (ISO 8601)
+        // 🕒 SINCRONIZACIÓN DE FORMATOS (ISO 8601) - Robust check for Puerto Rico Today
+        const prNow = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Puerto_Rico"}));
+        const nowStr = prNow.toISOString().split('T')[0];
         try {
             if (sDate) sDate = new Date(sDate).toISOString().split('T')[0];
             if (eDate) eDate = new Date(eDate).toISOString().split('T')[0];
+            
+            // Si la IA no envía fecha, o envía algo inválido, Salty asume hoy/mañana como cortesía proactiva
+            if (!sDate) sDate = nowStr;
+            if (!eDate) {
+               const nextDay = new Date(prNow);
+               nextDay.setDate(nextDay.getDate() + 2); // Mínimo 2 noches usualmente
+               eDate = nextDay.toISOString().split('T')[0];
+            }
         } catch (e) {
             console.warn("[Vapi] Invalid dates provided by AI", { sDate, eDate });
+            sDate = nowStr;
         }
         
         // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
-        console.log(`[Vapi] Checking availability for ${propId} (input: ${args.propertyId}) from ${sDate} to ${eDate}`);
+        console.log(`[Vapi] Checking availability for ${propId} (input: ${args.propertyId}) from ${sDate} to ${eDate}. Today is ${nowStr}`);
         const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
         
         if (availability.available) {
@@ -233,7 +261,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
         const finalId = await resolvePropertyId(rawPropId, supabase);
         const propertyTitle = (await supabase.from('properties').select('title').eq('id', finalId).single()).data?.title || 'Villa Retiro';
         
-        const bookingLink = `https://villa-pirata-stays.vercel.app/booking/${finalId}`;
+        const bookingLink = `https://www.villaretiror.com/booking/${finalId}`;
         const content = `¡Hola ${guestName}! Soy Salty. Aquí tienes el link oficial para asegurar tu estancia en ${propertyTitle}: ${bookingLink}. ¡Te esperamos en el paraíso! 🏝️`;
         
         const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
@@ -245,13 +273,24 @@ async function handleVapiTools(req: any, res: any, message: any) {
         };
       }
 
-      return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta especificada." };
+        return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta especificada." };
 
-    } catch (err: any) {
-      const errMsg = err.message || "Unknown Failure";
-      console.error(`[Vapi Tool Critical Error - ${name}]:`, errMsg);
-      return { toolCallId: toolCall.id, result: `Mis sinceras disculpas, Capitán. Un ligero inconveniente técnico me impide procesar la solicitud en este instante. Por favor, comuníquese directamente con el Capitán principal para asistirle personalmente.` };
-    }
+      } catch (err: any) {
+        const errMsg = err.message || "Unknown Failure";
+        console.error(`[Vapi Tool Critical Error - ${name}]:`, errMsg);
+        return { toolCallId: toolCall.id, result: `Mis sinceras disculpas, Capitán. Un ligero inconveniente técnico me impide procesar la solicitud en este instante. Por favor, comuníquese directamente con el Capitán principal para asistirle personalmente.` };
+      }
+    })();
+
+    // 🏎️ RACE AGAINST THE VAPI CLOCK
+    const timeoutPromise = new Promise((resolve) => 
+      setTimeout(() => resolve({ 
+        toolCallId: toolCall.id, 
+        result: "Capitán, el sistema está procesando datos complejos. Por favor, pídale al cliente un segundo mientras mis brújulas terminan de girar o intente nuevamente la consulta." 
+      }), TIMEOUT_MS)
+    );
+
+    return Promise.race([toolExecution, timeoutPromise]);
   }));
 
   return res.status(200).json({ results });

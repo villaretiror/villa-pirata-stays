@@ -1,6 +1,7 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase.js';
 import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
+import { FinanceService } from './services/FinanceService.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
 
 // 🔱 MASTER PROPERTY RESOLVER: Converts human names/IDs to confirmed DB IDs
@@ -96,6 +97,19 @@ export const checkAvailabilityWithICal = async (
     const minNights = propSettings?.sync_settings?.min_nights || 2;
     const diffTime = qOut.getTime() - qIn.getTime();
     const nights = Math.ceil(diffTime / (1000 * 3600 * 24));
+
+    // ── Step -1: Past Date Validation (Space-Time Integrity) ─
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkInDate = new Date(qIn);
+    checkInDate.setHours(0, 0, 0, 0);
+
+    if (checkInDate < today) {
+        return { 
+            available: false, 
+            reason: `Capitán, el tiempo fluye hacia adelante en el Caribe. Esa fecha ya ha pasado por nuestro horizonte. ¿Podríamos buscar una estancia en el futuro?` 
+        };
+    }
 
     if (nights < minNights) {
         return { 
@@ -400,50 +414,41 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
         throw new Error(`Propiedad no encontrada [${propertyId}].`);
     }
 
-    let basePrice = 0;
-    let hasSeasonal = false;
-    let curr = new Date(checkIn);
-    const end = new Date(checkOut);
-    const nights = Math.ceil((end.getTime() - curr.getTime()) / (1000 * 60 * 60 * 24));
-
-    // 🛡️ GOLD RULES VALIDATION: Prevent quoting invalid stays
-    const minNights = property?.sync_settings?.min_nights || 2;
-    if (nights < minNights) {
-        throw new Error(`Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`);
-    }
-
-    while (curr < end) {
-        const dStr = curr.toISOString().split('T')[0];
-        if (isSeasonalDate(dStr, property.seasonal_prices || [])) hasSeasonal = true;
-        basePrice += getNightlyPrice(property.price, dStr, property.seasonal_prices || []);
-        curr.setDate(curr.getDate() + 1);
-    }
-
-    const tax = Number((basePrice * 0.07).toFixed(2));
-    let total = basePrice + tax;
-    let discount = 0;
-
-    if (promoCode) {
-        const { data: promo } = await client.from('promo_codes').select('*').eq('code', promoCode.toUpperCase()).maybeSingle();
-        if (promo) {
-            const v = validatePromoCode(promo, nights, hasSeasonal);
-            if (v.valid) {
-                const safePercent = Math.min(promo.discount_percent, 15);
-                discount = (basePrice * safePercent) / 100;
-                total -= discount;
-            }
+    // 🔱 SOVERANÍA FINANCIERA: Una sola verdad desde FinanceService
+    try {
+        const sDate = new Date(`${checkIn}T12:00:00`);
+        const eDate = new Date(`${checkOut}T12:00:00`);
+        
+        // Fetch promo if any
+        let promo = null;
+        if (promoCode) {
+            const { data } = await client.from('promo_codes').select('*').eq('code', promoCode.toUpperCase()).maybeSingle();
+            promo = data;
         }
-    }
 
-    return { 
-        basePrice, 
-        tax, 
-        discount, 
-        total: Number(total.toFixed(2)), 
-        nights, 
-        hasSeasonal, 
-        security_deposit: property.security_deposit || 0 
-    };
+        // 🧮 EXECUTE MASTER CALCULATION
+        const quote = FinanceService.calculateReservation({
+            property: property as any, // Cast to any to handle Omit types vs database types
+            startDate: sDate,
+            endDate: eDate,
+            promo: promo
+        });
+
+        return { 
+            basePrice: quote.nightsTotal, 
+            tax: quote.ivuAmount, 
+            discount: quote.discountAmount, 
+            total: quote.total, 
+            nights: quote.nights, 
+            hasSeasonal: quote.hasSeasonalNight, 
+            security_deposit: property.security_deposit || 0,
+            cleaningFee: quote.cleaningFee,
+            serviceFee: quote.serviceFee
+        };
+    } catch (err: any) {
+        console.error("[applyAIQuote] Finance Calculation Error:", err.message);
+        throw err;
+    }
 };
 
 // 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)

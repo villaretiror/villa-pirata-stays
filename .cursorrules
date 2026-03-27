@@ -29,5 +29,10 @@
 - **Estética Vintage-Premium:** No borres componentes ni cambies la paleta (Crema, Naranja, Verde). "Cablea" por detrás sin alterar la fachada de lujo.
 - **Acceso Administrativo:** Gestión exclusiva para `villaretiror@gmail.com`.
 
+## ⚖️ MODO DE EJECUCIÓN & PRIORIDAD VISUAL
+- **Prioridad Estética (UI-First):** Si una tarea implica cambios en UI y DB, el editor debe garantizar primero que la interfaz sea funcional, responsiva y estética (según Irmaris Identity) antes de proceder al blindaje de la DB. No se permiten "colapsos visuales" en nombre de la integridad de datos.
+- **Validación de Layout:** Antes de entregar código de calendario o grids, verifica que no existan superposiciones (overlapping) en viewports móviles (<640px).
+- **Consistencia iCal:** Si los bloqueos de fechas desaparecen, la tarea se considera "Bloqueada". Revisa siempre la relación entre el ID de Airbnb (TEXT) y el filtrado de Supabase.
+
 "Si el usuario hace clic y no sucede nada en la DB o el correo, la tarea se considera FALLIDA."
 🔱⚓🎙️🚢
