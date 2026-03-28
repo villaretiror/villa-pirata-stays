@@ -409,8 +409,8 @@ ${stats.syncDetails}
         const keyboard = {
             inline_keyboard: [
                 [
-                    { text: "🚀 Ver Dashboard", url: `${siteUrl}/host` },
-                    { text: "🔄 Forzar Sync", url: `${siteUrl}/api/master-cron?task=sync&secret=${stats.secret}` }
+                    { text: "🚀 Ver Dashboard", url: `${siteUrl.replace(/\/$/, '')}/host` },
+                    { text: "🔄 Forzar Sync", url: `${siteUrl.replace(/\/$/, '')}/api/master-cron?task=sync&secret=${stats.secret}` }
                 ],
                 [{ text: "✅ Recibido", callback_data: "ack_health" }]
             ]
@@ -463,12 +463,21 @@ ${stats.syncDetails}
 
 🚀 <i>Salty: "Le dije que lo contactarías por WhatsApp. Es momento de abordar."</i>`;
 
+        // 🧼 CLEAN DATA FOR TELEGRAM BUTTONS
+        const phoneDigits = params.phone.replace(/\D/g, '');
+        const hasEmail = params.email && params.email.includes('@');
+        
+        const row1 = [
+            { text: "📲 WhatsApp", url: `https://wa.me/${phoneDigits}` }
+        ];
+        
+        if (hasEmail) {
+            row1.push({ text: "📧 Email", url: `mailto:${params.email.trim()}` });
+        }
+
         return this.sendTelegramAlert(message, {
             inline_keyboard: [
-                [
-                    { text: "📲 WhatsApp", url: `https://wa.me/${params.phone.replace(/\+/g, '')}` },
-                    { text: "📧 Email", url: `mailto:${params.email}` }
-                ],
+                row1,
                 [{ text: "✅ Enterado Mi Capitán", callback_data: `ack_vapi_${params.callId || 'new'}` }]
             ]
         }, false); // Alertas del Capitán son LOUD
