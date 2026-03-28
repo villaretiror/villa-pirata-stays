@@ -79,6 +79,8 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
     *   **Seguridad**: Auditoría automática de correos via `email_logs` en Supabase.
 - **Por Qué**: Asegurar la entrega de enlaces de pago mediante un "puerto seguro" (email) si falla la mensajería móvil.
 
+---
+
 ### [2026-03-28] - 🔱 Salty 6.2: Notificación Directa al Capitán (Telegram)
 - **Logro**: Cierre de ciclo de venta automatizado. Salty ahora notifica al Capitán Brian en tiempo real vía Telegram al finalizar una llamada exitosa.
 - **Cambios Realizados**:
@@ -86,6 +88,36 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
     *   **Webhook**: Integración del tool `notify_captain_telegram` para ser llamado post-envío de link de pago.
     *   **UX del Host**: Alerta visual con Call ID y resumen ejecutivo del trato cerrado por Salty.
 - **Por Qué**: Empoderar al Capitán para que pueda realizar el follow-up humano por WhatsApp de forma instantánea.
+
+---
+
+### [2026-03-28] - 🔱 Salty 6.3: Blindaje iCal & Evidencia de Mantenimiento
+- **Logro**: Implementación de resiliencia ante fallos externos y auditoría visual de activos.
+- **Cambios Realizados**:
+    *   **Blindaje iCal**: `api/proxy-ical.ts` ahora cuenta con una **Cache de Emergencia** en Supabase. Si el servidor de iCal (Airbnb/Booking) cae, Salty usa la última versión conocida del calendario.
+    *   **Evidencia de Mantenimiento**: Todas las fotos enviadas al Bot de Telegram son capturadas y almacenadas automáticamente en el bucket `maintenance_logs` de Supabase Storage.
+    *   **Auditoría**: Registro automático en la tabla `maintenance_records` para fines legales y de seguros.
+- **Por Qué**: Evitar que el sistema quede "ciego" ante caídas de terceros y garantizar el resguardo de evidencia fotográfica del estado de las villas.
+
+---
+
+### [2026-03-28] - 🔱 Salty 6.4: Optimización Ergonómica de Interfaz (Mobile)
+- **Logro**: Limpieza radical de la UI móvil para eliminar solapamientos entre elementos flotantes.
+- **Cambios Realizados**:
+    *   **WhatsApp Rescue**: Desplazamiento del botón de WhatsApp a `bottom-32` en mobile para evitar colisión con la barra de reserva.
+    *   **Salty Dual Re-anchor**: Reajuste de posiciones para `SaltyVoiceButton` (`bottom-52`) y `SaltyToast` (`bottom-28`), creando una jerarquía visual vertical limpia en el flanco derecho.
+    *   **Espacio de Cierre**: Liberación total del área inferior de la pantalla para que la `StickyBookingBar` opere sin interferencias.
+- **Por Qué**: Garantizar que el huésped tenga una experiencia de navegación fluida y premium, donde cada botón tenga su espacio vital sin estorbar la conversión.
+
+---
+
+### [2026-03-28] - 🔱 Salty 6.5: Búsqueda Semántica de Conocimiento (Anti-Alucinación)
+- **Logro**: Sincronización total de la sabiduría de Salty entre Web y Voz. Salty ahora puede responder cualquier duda técnica o logística en vivo.
+- **Cambios Realizados**:
+    *   **Motor de Consulta AI**: Implementación de `queryPropertyKnowledge` en `src/aiServices.ts`. Utiliza Gemini 3 Flash para buscar en Supabase y `VILLA_KNOWLEDGE.ts` antes de responder.
+    *   **Vapi Integration**: Añadido el tool `query_knowledge` al despachador de webhooks.
+    *   **Protocolo de Verdad**: Salty tiene prohibido inventar datos; si no encuentra la respuesta en el búnker de datos, ofrece el contacto directo con el Capitán.
+- **Por Qué**: Eliminar alucinaciones en la voz y permitir que Salty responda como un concierge experto sobre distancias, reglas de casa y servicios específicos sin saturar el prompt del sistema.
 
 ---
 
@@ -99,5 +131,8 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 - [x] **Salty 6.0** — Sincronización total de funciones.
 - [x] **Salty 6.1** — Fallback de Pago vía Email implementado.
 - [x] **Salty 6.2** — Notificación Directa al Capitán (Telegram) activa.
+- [x] **Salty 6.3** — Blindaje iCal (Cache) y Storage de Mantenimiento activos.
+- [x] **Salty 6.4** — Optimización Ergonómica Mobile (UI Clean) aplicada.
+- [x] **Salty 6.5** — Búsqueda Semántica de Conocimiento (Anti-Alucinación) operativa.
 
-"Salty 6.2 está en el aire. La flota es ahora un organismo de respuesta inmediata." 🔱 ⚓ 🎙️
+"Salty 6.5 está en el aire. El búnker de conocimiento es ahora infinito e infalible." 🔱 ⚓ 🎙️

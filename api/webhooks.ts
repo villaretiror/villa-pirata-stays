@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { differenceInDays, parseISO } from 'date-fns';
 import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
-import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable } from '../src/aiServices.js';
+import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable, queryPropertyKnowledge } from '../src/aiServices.js';
 
 const getEnvVar = (key: string): string => {
   return process.env[key] || process.env[`VITE_${key}`] || "";
@@ -250,6 +250,17 @@ async function executeDirectTool(args: any, supabase: any) {
           data: sent.success 
             ? `Email enviado con éxito al puerto de destino. ID: ${sent.id || 'N/A'}` 
             : `Fallo Crítico al enviar Email: ${sent.error || 'Unknown Error'}.`
+      };
+
+    } else if (toolName === 'query_knowledge') {
+      const query = args.query || args.pregunta || "";
+      const propId = args.propertyId || args.property_id || args.propertyId || "";
+      
+      const result = await queryPropertyKnowledge(query, propId, supabase);
+      return { 
+          ok: result.ok, 
+          answer: result.answer, 
+          sources: result.sources || [] 
       };
 
     } else if (toolName === 'notify_captain_telegram') {

@@ -3,6 +3,83 @@ import { supabase } from './lib/supabase.js';
 import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
 import { FinanceService } from './services/FinanceService.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
+import { VILLA_KNOWLEDGE } from './constants/villa_knowledge.js';
+
+/**
+ * 🔱 KNOWLEDGE SEARCH ENGINE (ANTI-HALLUCINATION)
+ * Centralized logic to query static and dynamic knowledge for Salty Vapi and Chat.
+ */
+export const queryPropertyKnowledge = async (query: string, rawPropertyId?: string, client?: SupabaseClient): Promise<{ ok: boolean, answer: string, sources: string[] }> => {
+    const sb = client || supabase;
+    
+    // 1. Resolve Identity
+    const propertyId = rawPropertyId ? await resolvePropertyId(rawPropertyId, sb) : 'general';
+    
+    // 2. Fetch context (Supabase + Hardcoded Knowledge)
+    const [
+        { data: dbProp }, 
+        { data: sysSetting },
+        { data: knowledgeRecords }
+    ] = await Promise.all([
+        propertyId !== 'general' ? sb.from('properties').select('*').eq('id', propertyId).maybeSingle() : Promise.resolve({ data: null }),
+        sb.from('system_settings').select('value').eq('key', 'villa_knowledge').maybeSingle(),
+        sb.from('salty_family_knowledge').select('key, value').limit(20)
+    ]);
+
+    const context = {
+        current_property: dbProp || "Contexto general de Villa & Pirata",
+        core_knowledge: VILLA_KNOWLEDGE,
+        dynamic_settings: sysSetting?.value || {},
+        strategic_notes: knowledgeRecords || []
+    };
+
+    // 3. Ask Gemini for a "Salty-style" grounded answer
+    const prompt = `
+Eres Salty, el Concierge de Élite. Tu misión es responder preguntas sobre las propiedades basándote ÚNICAMENTE en el contexto proporcionado.
+
+### CONTEXTO DE CONOCIMIENTO:
+${JSON.stringify(context)}
+
+### PREGUNTA DEL HUÉSPED:
+"${query}"
+
+### REGLAS DE ORO:
+1. Responde de forma CONCISA, profesional y cálida. estilo Caribeño Chic.
+2. Si la información no está en el contexto, di: "Lo lamento, Capitán, ese detalle se escapa de mis cartas náuticas actuales. ¿Gusta que le ponga en contacto con el Capitán Brian vía WhatsApp para aclararlo?"
+3. Prohibido inventar precios, distancias o reglas.
+4. Responde en texto plano (sin asteriscos ni markdown).
+5. Idioma: Español.
+
+Responde ahora:
+`.trim();
+
+    try {
+        const result = await ai.models.generateContent({
+            model: SALTY_MODEL,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
+            config: { 
+                temperature: 0.1, 
+                maxOutputTokens: 300,
+                systemInstruction: "Eres Salty, el cerebro informativo de Villa Retiro y Pirata House. Sé preciso y sofisticado."
+            }
+        });
+
+        const answer = result.candidates?.[0]?.content?.parts?.[0]?.text || "Mis radares están fallando, favor de intentar nuevamente.";
+        
+        return { 
+            ok: true, 
+            answer: answer.trim(), 
+            sources: ['VILLA_KNOWLEDGE', 'Supabase DB'] 
+        };
+    } catch (err) {
+        console.error("[QueryKnowledge Engine Error]:", err);
+        return { 
+            ok: false, 
+            answer: "Mis sistemas de navegación están bajo mantenimiento. ¿Gusta que guarde su pregunta para el Capitán?", 
+            sources: [] 
+        };
+    }
+};
 
 // 🔱 MASTER PROPERTY RESOLVER: Converts human names/IDs to confirmed DB IDs
 export const resolvePropertyId = async (input: string, client: SupabaseClient): Promise<string> => {

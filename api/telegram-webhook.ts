@@ -81,8 +81,10 @@ export default async function handler(req: any, res: any) {
 
         // 🖼️ VISION HANDLER (Detect Photo)
         let imagePart: any = null;
+        let storageUrl: string | null = null;
+
         if (msg.photo && msg.photo.length > 0) {
-            const photo = msg.photo[msg.photo.length - 1]; // Highest resolution
+            const photo = msg.photo[msg.photo.length - 1]; // Máxima resolución
             const fileId = photo.file_id;
             
             try {
@@ -93,16 +95,48 @@ export default async function handler(req: any, res: any) {
                 if (fileData.ok) {
                     const filePath = fileData.result.file_path;
                     const imgRes = await fetch(`https://api.telegram.org/file/bot${token}/${filePath}`);
-                    const buffer = await imgRes.arrayBuffer();
+                    const arrayBuffer = await imgRes.arrayBuffer();
+                    const buffer = Buffer.from(arrayBuffer);
+
+                    // 📁 ALMACENAMIENTO DE EVIDENCIA (Bunker Premium Requirement)
+                    const fileName = `maintenance_${Date.now()}_${chatId}.jpg`;
+                    const { data: uploadData, error: uploadError } = await supabaseServiceRole.storage
+                        .from('maintenance_logs')
+                        .upload(fileName, buffer, { 
+                            contentType: 'image/jpeg', 
+                            upsert: true,
+                            cacheControl: '3600'
+                        });
+
+                    if (!uploadError && uploadData) {
+                        const { data: pubUrl } = supabaseServiceRole.storage
+                            .from('maintenance_logs')
+                            .getPublicUrl(fileName);
+                        storageUrl = pubUrl?.publicUrl;
+                        console.log("[Maintenance Storage] Evidencia guardada:", storageUrl);
+                        
+                        // Opcional: Registrar en tabla de auditoría si existe
+                        try {
+                            await supabaseServiceRole.from('maintenance_records').insert({
+                                image_url: storageUrl,
+                                chat_id: chatId,
+                                sender: msg.from?.first_name || 'Host',
+                                caption: text || ''
+                            });
+                        } catch (recErr) {
+                            console.warn("Audit record inhibited:", recErr);
+                        }
+                    }
+
                     imagePart = {
                         inlineData: {
-                            data: Buffer.from(buffer).toString('base64'),
+                            data: buffer.toString('base64'),
                             mimeType: 'image/jpeg'
                         }
                     };
                 }
             } catch (err) {
-                console.error("[Vision] Failed to fetch image:", err);
+                console.error("[Vision] Failed to fetch or upload image:", err);
             }
         }
 
