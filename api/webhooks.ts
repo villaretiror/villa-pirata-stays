@@ -178,7 +178,12 @@ async function handleVapiTools(req: any, res: any, message: any) {
     const toolExecution = (async () => {
       const startTime = Date.now();
       try {
-        console.info(`[🔱 Tool Start] Call: ${message.call?.id || 'N/A'} | Tool: ${name} | ID: ${toolCall.id}`);
+        // 🔱 SANITIZED LOGGING FOR AUDIT
+        const sanitizedArgs = { ...args };
+        if (sanitizedArgs.phone) sanitizedArgs.phone = `***-***-${sanitizedArgs.phone.slice(-4)}`;
+        if (sanitizedArgs.telefono) sanitizedArgs.telefono = `***-***-${sanitizedArgs.telefono.slice(-4)}`;
+        
+        console.info(`[🔱 Tool Start] Call: ${message.call?.id || 'N/A'} | Tool: ${name} | Args: ${JSON.stringify(sanitizedArgs)}`);
         
         let responseData = "";
 
@@ -197,7 +202,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
           if (!sDate || !eDate) {
               return { 
                 toolCallId: toolCall.id, 
-                result: { ok: false, data: "Missing startDate/endDate. Por favor, confirme con el cliente el día, mes y año exacto antes de continuar." } 
+                result: { ok: false, data: "Faltan fechas exactas. Confirme día, mes y año de entrada y salida, y número de noches, antes de consultar disponibilidad." } 
               };
           }
 
