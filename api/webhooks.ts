@@ -207,20 +207,34 @@ async function executeDirectTool(args: any, supabase: any) {
       }
 
       const quote = await applyAIQuote(propId, sDateInput, eDateInput, undefined, supabase);
-      return { ok: true, available: true, priceTotal: quote.total, nights: quote.nights, currency: "USD", message: `DISPONIBLE. Total por ${quote.nights} noches: ${quote.total} USD.` };
+      return {
+          ok: true,
+          available: true,
+          priceTotal: quote.total,
+          nights: quote.nights,
+          currency: "USD",
+          message: `DISPONIBLE. Total por ${quote.nights} noches: ${quote.total} USD.`
+      };
 
     } else if (toolName === 'send_payment_sms') {
       const phone = args.phone || args.telefono || "";
       const finalId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-      if (!phone) throw new Error("Missing phone");
+      if (!phone) throw new Error("Missing phone for SMS.");
       const link = `https://villaretiror.com/booking/${finalId}`;
       const sent = await MessagingService.sendSms({ to: phone, content: `¡Hola! Aquí tienes tu link de reserva: ${link}`, propertyId: finalId });
-      return { ok: true, data: sent ? "SMS enviado." : "Fallo al enviar SMS." };
+      
+      return { 
+          ok: true, 
+          data: sent.success 
+            ? `SMS enviado con éxito. SID: ${sent.sid || 'N/A'}` 
+            : `Fallo Crítico al enviar SMS: ${sent.error || 'Unknown Error'}. Verifique logs.`
+      };
       
     } else {
       return { ok: false, data: "Herramienta desconocida." };
     }
   } catch (err: any) {
+    console.error(`[🔱 Brain Error]:`, err.message);
     return { ok: false, data: `Error operacional: ${err.message}` };
   }
 }
