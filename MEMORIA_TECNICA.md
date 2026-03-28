@@ -60,12 +60,24 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 
 ---
 
+### [2026-03-28] - 🔱 Salty 6.0: Sincronización Total de Funciones
+- **Logro**: Alineación absoluta entre el Dashboard de Vapi y el Backend de Producción.
+- **Cambios Realizados**:
+    *   **Tool Names Hijack**: Renombramiento de funciones internas (`check_availability` y `send_payment_sms`) para que el modelo las llame de forma determinista, eliminando el fallo genérico de `api_request_tool`.
+    *   **Seguridad Reforzada**: Soporte para múltiples formatos de headers de autenticación (`x-vapi-secret`, `vapi-webhook-secret`, `vapi_webhook_secret`) garantizando el handshake bajo cualquier configuración del proxy de Vapi.
+    *   **Identidad de Propiedad**: Mapeo estricto de IDs de legado (`1081171030449673920` para Villa Retiro R y `42839458` para Pirata House) directamente en el `resolvePropertyId`.
+- **Validación Final**: Salty ahora reconoce "Salty" y "Cabo Rojo" mediante Keyword Boost en Deepgram, eliminando errores de transcripción ("Sulty").
+- **Por Qué**: Establecer una comunicación sin fricciones donde el modelo llama herramientas por su nombre funcional directo, reduciendo latencia y fallos de ejecución.
+
+---
+
 ## 🛡️ Estatus de la Flota (Orquestación Activa)
 - [x] Implementar Shadow Mode para validación automática de contraste.
 - [x] Refactorización de Élite en `FinanceService`.
 - [x] Soberanía Visual (Bunker Premium Theme).
 - [x] Auditoría de Integridad (Amenities vs Fotos).
-- [x] **Salty Voice Go-Live** — Número `+1 (209) 267-3503`.
-- [x] **Blindaje Salty Vapi** — Sincronía de producción, IDs dinámicos y Soberanía Financiera alcanzada.
+- [x] **Salty Voice Go-Live** — Número operacional activo.
+- [x] **Blindaje Salty Vapi** — Sincronía de producción alcanzada.
+- [x] **Salty 6.0** — Sincronización total de funciones y eliminación de errores de transcripción.
 
-"Estrategia de Negocio Blindada y Excelencia Operativa Alcanzada. Salty es el dueño del dominio y la verdad financiera." 🔱
+"Salty 6.0 está en el aire. La orquestación entre la nube y el búnker es perfecta." 🔱 ⚓ 🎙️

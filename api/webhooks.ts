@@ -38,8 +38,9 @@ export default async function handler(req: any, res: any) {
     if (source === 'vapi') {
       // 🔑 SECURITY VALIDATION: Standard Vapi headers + Authorization Bearer
       const vapiSecret = req.headers['x-vapi-secret'] || 
-                        req.headers['vapi_webhook_secret'] || 
-                        (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].split(' ')[1] : null);
+                         req.headers['vapi-webhook-secret'] || 
+                         req.headers['vapi_webhook_secret'] || 
+                         (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].split(' ')[1] : null);
                         
       const expectedSecret = getEnvVar('VAPI_WEBHOOK_SECRET');
       
