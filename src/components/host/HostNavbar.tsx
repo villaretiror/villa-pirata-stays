@@ -55,7 +55,7 @@ const HostNavbar: React.FC<HostNavbarProps> = ({ activeTab, onNavigateHome }) =>
                     </button>
 
                     <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden shadow-float relative cursor-pointer hover:scale-105 transition-transform active:scale-95">
-                        <SmartImage src={user?.avatar || ''} className="w-full h-full object-cover" />
+                        <SmartImage src={user?.avatar_url || ''} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-primary/5"></div>
                     </div>
                 </div>

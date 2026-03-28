@@ -138,7 +138,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
 
   // Profile Form State
   const [profileForm, setProfileForm] = useState({
-    name: user?.name || '',
+    name: user?.full_name || '',
     phone: user?.phone || '',
     bio: user?.bio || ''
   });
@@ -239,7 +239,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
     setIsSavingProfile(true);
     try {
       await updateUser({
-        name: profileForm.name,
+        full_name: profileForm.name,
         phone: profileForm.phone,
         bio: profileForm.bio
       });
@@ -465,7 +465,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
       >
         <div className="relative">
           <img
-            src={user?.avatar || "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2000"}
+            src={user?.avatar_url || "https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&q=80&w=2000"}
             alt="Host"
             className="w-20 h-20 rounded-full object-cover border-4 border-white shadow-float"
           />
@@ -475,7 +475,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
         </div>
         <div className="flex-1">
           <div className="flex justify-between items-start">
-            <h2 className="text-2xl font-serif font-black italic tracking-tighter text-text-main leading-none">{user?.name}</h2>
+            <h2 className="text-2xl font-serif font-black italic tracking-tighter text-text-main leading-none">{user?.full_name}</h2>
             <div className="bg-primary/5 text-primary px-3 py-1 rounded-full text-[8px] font-bold uppercase tracking-[0.2em] border border-primary/10">
               {user?.role === 'host' ? 'Master Host' : 'Co-host Staff'}
             </div>

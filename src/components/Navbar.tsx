@@ -103,10 +103,10 @@ const Navbar: React.FC = () => {
             >
               <div className="p-4 mb-2 flex items-center gap-3 bg-sand/30 rounded-[1.8rem]">
                 <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
-                  <SmartImage src={user?.avatar || ''} className="w-full h-full object-cover" />
+                  <SmartImage src={user?.avatar_url || ''} className="w-full h-full object-cover" />
                 </div>
                 <div>
-                  <p className="text-xs font-black text-secondary uppercase tracking-widest">{user?.name}</p>
+                  <p className="text-xs font-black text-secondary uppercase tracking-widest">{user?.full_name}</p>
                   <p className="text-[10px] font-bold text-primary">
                     {user?.email === 'villaretiror@gmail.com' ? 'Master Host' : 'Huésped VIP'}
                   </p>
@@ -167,10 +167,10 @@ const Navbar: React.FC = () => {
             <NavItem
               path={user ? "#" : "/login"}
               icon={UserIcon}
-              label={user ? (user.name?.split(' ')[0] || "Perfil") : "Entrar"}
+              label={user ? (user.full_name?.split(' ')[0] || "Perfil") : "Entrar"}
               currentPath={currentPath}
               isAvatar={!!user}
-              userAvatar={user?.avatar}
+              userAvatar={user?.avatar_url}
               forceActive={currentPath === '/profile' || currentPath === '/login' || showMenu}
               onClick={handleProfileClick}
             />

@@ -20,10 +20,9 @@ export const localAuth = {
         const newUser: User = {
           id: `user-${Date.now()}`,
           email: normalizedEmail,
-          name: formattedName,
+          full_name: formattedName,
           role: 'guest',
-          verificationStatus: 'verified',
-          registeredAt: new Date().toISOString()
+          created_at: new Date().toISOString()
         };
 
         users.push({ ...newUser, password });
