@@ -463,16 +463,19 @@ ${stats.syncDetails}
 
 🚀 <i>Salty: "Le dije que lo contactarías por WhatsApp. Es momento de abordar."</i>`;
 
-        // 🧼 CLEAN DATA FOR TELEGRAM BUTTONS
-        const phoneDigits = params.phone.replace(/\D/g, '');
-        const hasEmail = params.email && params.email.includes('@');
+        // 🧼 MILITARY-GRADE DATA SANITIZATION FOR TELEGRAM BUTTONS
+        const email = (params.email || '').trim().toLowerCase();
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const phoneDigits = (params.phone || '').replace(/\D/g, '');
+        const phoneOk = phoneDigits.length >= 10;
         
-        const row1 = [
-            { text: "📲 WhatsApp", url: `https://wa.me/${phoneDigits}` }
-        ];
+        const row1 = [];
+        if (phoneOk) {
+            row1.push({ text: "📲 WhatsApp", url: `https://wa.me/${phoneDigits}` });
+        }
         
-        if (hasEmail) {
-            row1.push({ text: "📧 Email", url: `mailto:${params.email.trim()}` });
+        if (emailOk) {
+            row1.push({ text: "📧 Email", url: `mailto:${email}` });
         }
 
         return this.sendTelegramAlert(message, {
