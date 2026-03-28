@@ -196,28 +196,110 @@ async function handleVapiTools(req: any, res: any, message: any) {
 
         else if (name === 'check_availability') {
           const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-          const sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
-          const eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
+          const sDateInput = args.startDate || args.start_date || args.check_in || args.checkIn;
+          const eDateInput = args.endDate || args.end_date || args.check_out || args.checkOut;
           
-          if (!sDate || !eDate) {
+          if (!sDateInput || !eDateInput) {
               return { 
                 toolCallId: toolCall.id, 
-                result: { ok: false, data: "Faltan fechas exactas. Confirme día, mes y año de entrada y salida, y número de noches, antes de consultar disponibilidad." } 
+                result: { ok: false, data: "Faltan fechas exactas. Confirme día, mes y año antes de consultar disponibilidad." } 
               };
           }
 
-          const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
+          const qIn = new Date(sDateInput);
+          const qOut = new Date(eDateInput);
+
+          // 1. Fetch Property Feeds for LIVE SYNC
+          const { data: prop } = await supabase.from('properties').select('title, calendarSync').eq('id', propId).single();
+          const feeds: any[] = prop?.calendarSync || [];
           
-          if (availability.available) {
-            try {
-              const quote = await applyAIQuote(propId, sDate, eDate, undefined, supabase);
-              responseData = `DISPONIBLE. El total por ${quote.nights} noches es de ${quote.total} USD. ¿Confirmamos su reserva, Capitán?`;
-            } catch(e) {
-              responseData = `DISPONIBLE. Error al calcular total exacto. Sugiera verificar link oficial.`;
-            }
-          } else {
-            const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
-            responseData = `OCUPADO. Motivo: ${availability.reason || 'No disponible'}. ${alternate ? `Alternativa: ${alternate.title} está libre.` : 'No hay alternativas en estas fechas.'}`;
+          let externalBlocks: { start: string, end: string, source: string }[] = [];
+          
+          // 🔱 LIVE FETCH (Parallel with 5s timeout)
+          await Promise.all(feeds.map(async (feed) => {
+              if (!feed.url) return;
+              try {
+                  const res = await fetch(feed.url, { signal: AbortSignal.timeout(5000) });
+                  if (!res.ok) return;
+                  const text = await res.text();
+                  
+                  // Simple fast-parse of VEVENT
+                  const lines = text.split(/\r?\n/);
+                  let inEvent = false, dtStart = '', dtEnd = '';
+                  for (const line of lines) {
+                      if (line.includes('BEGIN:VEVENT')) inEvent = true;
+                      if (line.includes('END:VEVENT')) {
+                          if (dtStart && dtEnd) {
+                            const bIn = `${dtStart.substring(0,4)}-${dtStart.substring(4,6)}-${dtStart.substring(6,8)}`;
+                            const bOut = `${dtEnd.substring(0,4)}-${dtEnd.substring(4,6)}-${dtEnd.substring(6,8)}`;
+                            externalBlocks.push({ start: bIn, end: bOut, source: feed.platform });
+                          }
+                          inEvent = false; dtStart = ''; dtEnd = '';
+                      }
+                      if (inEvent) {
+                          if (line.startsWith('DTSTART')) dtStart = line.split(':').pop()?.substring(0,8) || '';
+                          if (line.startsWith('DTEND')) dtEnd = line.split(':').pop()?.substring(0,8) || '';
+                      }
+                  }
+              } catch (e) { console.error(`[Live Sync Fail] ${feed.platform}:`, e); }
+          }));
+
+          // 2. Check Overlap (requested range: [qIn, qOut))
+          const conflict = externalBlocks.find(b => {
+              const bIn = new Date(b.start);
+              const bOut = new Date(b.end);
+              return qIn < bOut && qOut > bIn;
+          });
+
+          if (conflict) {
+            const alternate = await findAlternatePropertyAvailable(propId, sDateInput, eDateInput, supabase);
+            return {
+              toolCallId: toolCall.id,
+              result: { 
+                ok: true, 
+                available: false, 
+                reason: `Ocupado vía ${conflict.source} (Sincronía en tiempo real)`,
+                alternate: alternate ? alternate.title : null
+              }
+            };
+          }
+
+          // 3. Fallback to Local DB for direct web bookings
+          const availability = await checkAvailabilityWithICal(propId, sDateInput, eDateInput, supabase);
+          
+          if (!availability.available) {
+            const alternate = await findAlternatePropertyAvailable(propId, sDateInput, eDateInput, supabase);
+            return {
+              toolCallId: toolCall.id,
+              result: { 
+                ok: true, 
+                available: false, 
+                reason: availability.reason || 'No disponible en base de datos local',
+                alternate: alternate ? alternate.title : null
+              }
+            };
+          }
+
+          // 4. Calculate Price (Success Case)
+          try {
+            const quote = await applyAIQuote(propId, sDateInput, eDateInput, undefined, supabase);
+            return {
+                toolCallId: toolCall.id,
+                result: {
+                    ok: true,
+                    available: true,
+                    priceTotal: quote.total,
+                    nights: quote.nights,
+                    currency: "USD",
+                    minNights: 2,
+                    message: `DISPONIBLE. Total por ${quote.nights} noches: ${quote.total} USD.`
+                }
+            };
+          } catch(e) {
+            return { 
+                toolCallId: toolCall.id, 
+                result: { ok: false, data: "Error al calcular cotización final. Por favor intente más tarde." } 
+            };
           }
         }
 
