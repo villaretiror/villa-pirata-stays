@@ -11,13 +11,13 @@ import { VILLA_KNOWLEDGE } from './constants/villa_knowledge.js';
  */
 export const queryPropertyKnowledge = async (query: string, rawPropertyId?: string, client?: SupabaseClient): Promise<{ ok: boolean, answer: string, sources: string[] }> => {
     const sb = client || supabase;
-    
+
     // 1. Resolve Identity
     const propertyId = rawPropertyId ? await resolvePropertyId(rawPropertyId, sb) : 'general';
-    
+
     // 2. Fetch context (Supabase + Hardcoded Knowledge)
     const [
-        { data: dbProp }, 
+        { data: dbProp },
         { data: sysSetting },
         { data: knowledgeRecords }
     ] = await Promise.all([
@@ -57,26 +57,26 @@ Responde ahora:
         const result = await ai.models.generateContent({
             model: SALTY_MODEL,
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            config: { 
-                temperature: 0.1, 
+            config: {
+                temperature: 0.1,
                 maxOutputTokens: 300,
                 systemInstruction: "Eres Salty, el cerebro informativo de Villa Retiro y Pirata House. Sé preciso y sofisticado."
             }
         });
 
         const answer = result.candidates?.[0]?.content?.parts?.[0]?.text || "Mis radares están fallando, favor de intentar nuevamente.";
-        
-        return { 
-            ok: true, 
-            answer: answer.trim(), 
-            sources: ['VILLA_KNOWLEDGE', 'Supabase DB'] 
+
+        return {
+            ok: true,
+            answer: answer.trim(),
+            sources: ['VILLA_KNOWLEDGE', 'Supabase DB']
         };
     } catch (err) {
         console.error("[QueryKnowledge Engine Error]:", err);
-        return { 
-            ok: false, 
-            answer: "Mis sistemas de navegación están bajo mantenimiento. ¿Gusta que guarde su pregunta para el Capitán?", 
-            sources: [] 
+        return {
+            ok: false,
+            answer: "Mis sistemas de navegación están bajo mantenimiento. ¿Gusta que guarde su pregunta para el Capitán?",
+            sources: []
         };
     }
 };
@@ -84,7 +84,7 @@ Responde ahora:
 // 🔱 MASTER PROPERTY RESOLVER: Converts human names/IDs to confirmed DB IDs
 export const resolvePropertyId = async (input: string, client: SupabaseClient): Promise<string> => {
     let cleanInput = String(input).trim();
-    
+
     // 1. Direct check (If it's a valid ID)
     if (!isNaN(Number(cleanInput)) && cleanInput.length >= 8) return cleanInput;
     if (cleanInput.length > 20) return cleanInput; // UUID-like
@@ -182,54 +182,70 @@ export const checkAvailabilityWithICal = async (
     checkInDate.setHours(0, 0, 0, 0);
 
     if (checkInDate < today) {
-        return { 
-            available: false, 
-            reason: `Capitán, el tiempo fluye hacia adelante en el Caribe. Esa fecha ya ha pasado por nuestro horizonte. ¿Podríamos buscar una estancia en el futuro?` 
+        return {
+            available: false,
+            reason: `Capitán, el tiempo fluye hacia adelante en el Caribe. Esa fecha ya ha pasado por nuestro horizonte. ¿Podríamos buscar una estancia en el futuro?`
         };
     }
 
     if (nights < minNights) {
-        return { 
-            available: false, 
-            reason: `Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.` 
+        return {
+            available: false,
+            reason: `Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`
         };
     }
 
-    // ── Step 1: Query unified bookings table
+    // ── Step 1: Query unified bookings table (Direct, Manual, Pending)
     type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
-    const { data: dbBookings, error: dbError } = await client
-        .from('bookings')
-        .select('check_in, check_out, status, hold_expires_at, source')
-        .eq('property_id', finalId)
-        .neq('status', 'cancelled');
+    
+    // 🔱 DUAL-QUERY ENGINE (FAST LOOKUP)
+    const [bookingRes, syncedRes] = await Promise.all([
+        client
+            .from('bookings')
+            .select('check_in, check_out, status, hold_expires_at, source')
+            .eq('property_id', finalId)
+            .neq('status', 'cancelled'),
+        client
+            .from('synced_blocks')
+            .select('check_in, check_out, source')
+            .eq('property_id', finalId)
+    ]);
 
-    if (dbError) {
-        console.error('[checkAvailability] Critical DB error:', dbError.message);
-        // 🛡️ UNCERTAINTY FAILSAFE: Never say "available" if the pulse is lost.
+    if (bookingRes.error || syncedRes.error) {
+        console.error('[checkAvailability] DB error:', bookingRes.error?.message || syncedRes.error?.message);
         return { 
             available: false, 
-            reason: 'Capitán, mis cartas náuticas están algo nubladas en este momento. Déjeme validar esto personalmente con el Capitán principal para asegurar que su estancia sea perfecta y evitar cualquier cruce de rutas.' 
+            reason: 'Capitán, mis cartas náuticas están algo nubladas en este momento. Déjeme validar esto personalmente con el Capitán principal.' 
         };
     }
 
-    const overlapBooking = (dbBookings as BookingAvailRow[] || []).find((b: BookingAvailRow) => {
+    // A. Native Overlap Check (Direct Bookings)
+    const nativeOverlap = (bookingRes.data as BookingAvailRow[] || []).find((b: BookingAvailRow) => {
         if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
         const bIn = new Date(b.check_in);
         const bOut = new Date(b.check_out);
         return qIn < bOut && qOut > bIn;
     });
 
-    if (overlapBooking) {
-        const bIn = new Date(overlapBooking.check_in);
-        const bOut = new Date(overlapBooking.check_out);
-        const diffDays = (bOut.getTime() - bIn.getTime()) / (1000 * 3600 * 24);
-        const isExternal = overlapBooking.source && overlapBooking.source !== 'Direct Web';
+    if (nativeOverlap) {
+        return { 
+            available: false, 
+            reason: `Fechas ya ocupadas por una reserva directa (${nativeOverlap.status === 'confirmed' ? 'Confirmada' : 'En proceso'}).` 
+        };
+    }
 
-        const reason = isExternal
-            ? `Fechas no disponibles — reservado vía ${overlapBooking.source}.`
-            : 'Fechas no disponibles — reserva directa existente.';
+    // B. Synced Overlap Check (External iCal Blocks)
+    const externalOverlap = (syncedRes.data || []).find((b: any) => {
+        const bIn = new Date(b.check_in);
+        const bOut = new Date(b.check_out);
+        return qIn < bOut && qOut > bIn;
+    });
 
-        return { available: false, reason };
+    if (externalOverlap) {
+        return { 
+            available: false, 
+            reason: `Fechas no disponibles — reservado vía ${externalOverlap.source}.` 
+        };
     }
 
     // ── Step 1.5: Query pending leads (short-term locks) ──────────
@@ -281,7 +297,7 @@ export const findAlternatePropertyAvailable = async (
     customSupabase?: SupabaseClient
 ): Promise<{ id: string, title: string } | null> => {
     const client = customSupabase || supabase;
-    
+
     // 1. Fetch all other properties
     const { data: others } = await client.from('properties')
         .select('id, title')
@@ -410,7 +426,7 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
         if (bIn > lastCheckout) {
             const diffTime = bIn.getTime() - lastCheckout.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            
+
             if (diffDays >= minNights) {
                 gaps.push({
                     start: lastCheckout.toISOString().split('T')[0],
@@ -419,7 +435,7 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
                 });
             }
         }
-        
+
         if (bOut > lastCheckout) {
             lastCheckout = bOut;
         }
@@ -431,7 +447,7 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
     if (gaps.length < 5) {
         const finalLimit = new Date();
         finalLimit.setMonth(finalLimit.getMonth() + 6);
-        
+
         if (lastCheckout < finalLimit) {
             const diffTime = finalLimit.getTime() - lastCheckout.getTime();
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -445,8 +461,8 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
         }
     }
 
-    return { 
-        slots: gaps, 
+    return {
+        slots: gaps,
         min_nights: minNights,
         property_id: finalId
     };
@@ -480,7 +496,7 @@ export const checkUserConcessions = async (userId: string): Promise<{ allowed: b
 
 export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut: string, promoCode?: string, customSupabase?: SupabaseClient) => {
     const client = customSupabase || supabase;
-    
+
     // 🛡️ REINFORCED RESOLUTION: Centralized Power
     const finalId = await resolvePropertyId(propertyId, client);
 
@@ -498,7 +514,7 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
     try {
         const sDate = new Date(`${checkIn}T12:00:00`);
         const eDate = new Date(`${checkOut}T12:00:00`);
-        
+
         // Fetch promo if any
         let promo = null;
         if (promoCode) {
@@ -514,13 +530,13 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
             promo: promo
         });
 
-        return { 
-            basePrice: quote.nightsTotal, 
-            tax: quote.ivuAmount, 
-            discount: quote.discountAmount, 
-            total: quote.total, 
-            nights: quote.nights, 
-            hasSeasonal: quote.hasSeasonalNight, 
+        return {
+            basePrice: quote.nightsTotal,
+            tax: quote.ivuAmount,
+            discount: quote.discountAmount,
+            total: quote.total,
+            nights: quote.nights,
+            hasSeasonal: quote.hasSeasonalNight,
             security_deposit: property.security_deposit || 0,
             cleaningFee: quote.cleaningFee,
             serviceFee: quote.serviceFee

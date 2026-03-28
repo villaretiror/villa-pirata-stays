@@ -17,13 +17,20 @@ const SmartImage: React.FC<SmartImageProps> = ({
     // 🚀 BOUTIQUE OPTIMIZATION: Handle Airbnb (muscache) and Unsplash resizing
     let optimizedSrc = error ? fallbackSrc : src;
     
-    if (optimizedSrc?.includes('muscache.com')) {
+    if (optimizedSrc && optimizedSrc.includes('muscache.com')) {
         // Append im_w to Airbnb images for optimized loading (720 is ideal for 1x cards)
         optimizedSrc = optimizedSrc.includes('?') 
             ? `${optimizedSrc}&im_w=720` 
             : `${optimizedSrc}?im_w=720`;
-    } else if (optimizedSrc?.includes('unsplash.com') && !optimizedSrc.includes('auto=format')) {
+    } else if (optimizedSrc && optimizedSrc.includes('unsplash.com') && !optimizedSrc.includes('auto=format')) {
         optimizedSrc += optimizedSrc.includes('?') ? '&auto=format' : '?auto=format';
+    } else if (optimizedSrc && optimizedSrc.includes('supabase.co/storage/v1/render/image')) {
+        // Supabase already using render endpoint, just ensure width/format
+        if (!optimizedSrc.includes('width=')) optimizedSrc += `&width=1200&format=webp&quality=80`;
+    } else if (optimizedSrc && optimizedSrc.includes('supabase.co/storage/v1/object/public')) {
+        // 🔱 SALTY TRANSFORMATION: Convert raw Public URL to Render URL for WebP delivery
+        optimizedSrc = optimizedSrc.replace('/object/public/', '/render/image/public/') + 
+                        (optimizedSrc.includes('?') ? '&' : '?') + 'width=1200&format=webp&quality=80';
     }
 
     return (
