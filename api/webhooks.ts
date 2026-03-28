@@ -62,10 +62,11 @@ export default async function handler(req: any, res: any) {
       console.info(`[🔱 Salty Caribe HQ] Processing request from Vapi. PR Time: ${prTime} | Space: Villa & Pirata Stays.`);
 
       const { message } = req.body;
-      const type = message?.type;
+      const rawBody = req.body;
+      const type = message?.type || rawBody?.type;
 
-      if (type === 'tool-calls' || type === 'function-call') {
-        return await handleVapiTools(req, res, message);
+      if (type === 'tool-calls' || type === 'function-call' || !!rawBody?.toolCallList || !!rawBody?.toolCalls || !!rawBody?.functionCall) {
+        return await handleVapiTools(req, res, message || rawBody);
       }
 
       // 📞 CAPTURA DE LLAMADAS Y TRANSFERENCIA FÍSICA A SUPABASE STORAGE
