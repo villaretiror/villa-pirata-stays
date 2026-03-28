@@ -176,112 +176,80 @@ async function handleVapiTools(req: any, res: any, message: any) {
     const args = typeof toolCall?.function?.arguments === 'string' ? JSON.parse(toolCall.function.arguments) : toolCall?.function?.arguments || toolCall?.arguments || {};
 
     const toolExecution = (async () => {
+      const startTime = Date.now();
       try {
-      if (name === 'get_property_info') {
-        const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-        const { data, error } = await supabase.from('properties').select('*').eq('id', propId).single();
-        if (error) throw new Error(`Permission Denied or Property Not Found: ${error.message}`);
-        return { toolCallId: toolCall.id, result: JSON.stringify(data) };
-      }
+        console.info(`[🔱 Tool Start] Call: ${message.call?.id || 'N/A'} | Tool: ${name}`);
+        
+        let responseData = "";
 
-      if (name === 'check_availability') {
-        // 🛡️ PARAMETER NORMALIZATION: Accept multiple naming conventions from AI
-        const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-        let sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
-        let eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
-        
-        // 🕒 SINCRONIZACIÓN DE FORMATOS (ISO 8601) - Robust check for Puerto Rico Today
-        const prNow = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Puerto_Rico"}));
-        const nowStr = prNow.toISOString().split('T')[0];
-        try {
-            if (sDate) sDate = new Date(sDate).toISOString().split('T')[0];
-            if (eDate) eDate = new Date(eDate).toISOString().split('T')[0];
-            
-            // Si la IA no envía fecha, o envía algo inválido, Salty asume hoy/mañana como cortesía proactiva
-            if (!sDate) sDate = nowStr;
-            if (!eDate) {
-               const nextDay = new Date(prNow);
-               nextDay.setDate(nextDay.getDate() + 2); // Mínimo 2 noches usualmente
-               eDate = nextDay.toISOString().split('T')[0];
-            }
-        } catch (e) {
-            console.warn("[Vapi] Invalid dates provided by AI", { sDate, eDate });
-            sDate = nowStr;
+        if (name === 'get_property_info') {
+          const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
+          const { data, error } = await supabase.from('properties').select('*').eq('id', propId).single();
+          if (error) throw new Error(`Property Not Found: ${error.message}`);
+          responseData = JSON.stringify(data);
         }
-        
-        // 🔱 MASTER VALIDATION (iCal + Seasonal logic - Using Master Key)
-        console.log(`[Vapi] Checking availability for ${propId} (input: ${args.propertyId}) from ${sDate} to ${eDate}. Today is ${nowStr}`);
-        const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
-        
-        if (availability.available) {
-          try {
-            const quote = await applyAIQuote(propId, sDate, eDate, undefined, supabase);
-            return { 
-              toolCallId: toolCall.id, 
-              result: `¡Excelente noticia! Estas fechas están disponibles para crear memorias inolvidables. El total por ${quote.nights} noches, incluyendo impuestos del paraíso, es de ${quote.total} dólares. ¿Le gustaría proceder con la reserva ahora mismo? ⚓` 
-            };
-          } catch(err: any) {
-             return {
-                toolCallId: toolCall.id,
-                result: `Las fechas están disponibles, pero hubo un ligero problema al calcular el total exacto. ¿Gusta que le envíe el enlace para verificarlo directamente?`
-             };
+
+        else if (name === 'check_availability') {
+          const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
+          let sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
+          let eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
+          
+          const prNow = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Puerto_Rico"}));
+          const nowStr = prNow.toISOString().split('T')[0];
+
+          if (!sDate) sDate = nowStr;
+          if (!eDate) {
+              const nextDay = new Date(prNow);
+              nextDay.setDate(nextDay.getDate() + 2);
+              eDate = nextDay.toISOString().split('T')[0];
+          }
+
+          const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
+          
+          if (availability.available) {
+            try {
+              const quote = await applyAIQuote(propId, sDate, eDate, undefined, supabase);
+              responseData = `DISPONIBLE. El total por ${quote.nights} noches es de ${quote.total} USD. ¿Confirmamos su reserva, Capitán?`;
+            } catch(e) {
+              responseData = `DISPONIBLE. Error al calcular total exacto. Sugiera verificar link oficial.`;
+            }
+          } else {
+            const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
+            responseData = `OCUPADO. Motivo: ${availability.reason || 'No disponible'}. ${alternate ? `Alternativa: ${alternate.title} está libre.` : 'No hay alternativas en estas fechas.'}`;
           }
         }
 
-        if (availability.reason?.includes("mis brújulas no reconocen")) {
-            return { toolCallId: toolCall.id, result: availability.reason };
+        else if (name === 'send_payment_sms') {
+          const phone = args.phone || args.telefono || "";
+          const guestName = args.guestName || args.nombre || 'Huésped';
+          const rawPropId = args.propertyId || args.property_id || '1081171030449673920';
+          const finalId = await resolvePropertyId(rawPropId, supabase);
+          
+          if (!phone) throw new Error("Missing phone number for SMS.");
+
+          const bookingLink = `https://villaretiror.com/booking/${finalId}`;
+          const content = `¡Hola ${guestName}! Soy Salty. Aquí tienes tu link de reserva para asegurar tu estancia: ${bookingLink}. ¡Te esperamos!`;
+          
+          const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
+          responseData = sent ? "SMS enviado exitosamente con el link de pago." : "Error al enviar el SMS. Intente de nuevo.";
+        } else {
+          responseData = "Herramienta no reconocida en este puerto.";
         }
 
-        // 🔍 PROACTIVE GAP SEARCH: If blocked, find alternate options
-        try {
-            const gapResult: any = await findCalendarGaps(propId, supabase);
-            const nextGap = gapResult?.slots?.[0];
-            
-            // 🔱 UPSELLING: Check other properties too
-            const alternate = await findAlternatePropertyAvailable(propId, sDate, eDate, supabase);
-            const altMsg = alternate 
-              ? `. Sin embargo, Capitán, veo que *${alternate.title}* está totalmente disponible para esas fechas. ¿Le gustaría que le hable un poco más de esta opción?`
-              : nextGap 
-                ? `. Pero tengo el horizonte despejado del ${nextGap.start} al ${nextGap.end}. ¿Le funcionaría esa travesía?`
-                : ". Por el momento esas fechas están reservadas en toda la flota.";
-
-            return { 
-              toolCallId: toolCall.id, 
-              result: `Está ocupado. Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio${altMsg}` 
-            };
-        } catch(err) {
-            return { 
-              toolCallId: toolCall.id, 
-              result: `Está ocupado. Lo lamento, Capitán, esas fechas ya están ocupadas en el refugio.` 
-            };
-        }
-      }
-
-      if (name === 'send_payment_sms') {
-        const phone = args.phone || args.telefono;
-        const guestName = args.guestName || args.nombre || 'Viajero';
-        const rawPropId = args.propertyId || args.property_id || '1081171030449673920';
-        const finalId = await resolvePropertyId(rawPropId, supabase);
-        const propertyTitle = (await supabase.from('properties').select('title').eq('id', finalId).single()).data?.title || 'Villa Retiro';
+        const duration = Date.now() - startTime;
+        console.info(`[🔱 Tool Success] ${name} | Duration: ${duration}ms`);
         
-        const bookingLink = `https://www.villaretiror.com/booking/${finalId}`;
-        const content = `¡Hola ${guestName}! Soy Salty. Aquí tienes el link oficial para asegurar tu estancia en ${propertyTitle}: ${bookingLink}. ¡Te esperamos en el paraíso! 🏝️`;
-        
-        const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
         return { 
           toolCallId: toolCall.id, 
-          result: sent 
-            ? `¡Listo! He disparado un mensaje de texto con el link de reserva directa a su móvil. ¿Desea que lo esperemos para confirmar su recepción o tiene alguna otra duda técnica? ⚓`
-            : `Hubo una turbulencia al enviar el mensaje, pero no se preocupe, puedo intentar de nuevo o dictar el link si prefiere.`
+          result: { ok: true, data: responseData } 
         };
-      }
-
-        return { toolCallId: toolCall.id, result: "Protocolo activo pero no reconozco la herramienta especificada." };
 
       } catch (err: any) {
-        const errMsg = err.message || "Unknown Failure";
-        console.error(`[Vapi Tool Critical Error - ${name}]:`, errMsg);
-        return { toolCallId: toolCall.id, result: `Mis sinceras disculpas, Capitán. Un ligero inconveniente técnico me impide procesar la solicitud en este instante. Por favor, comuníquese directamente con el Capitán principal para asistirle personalmente.` };
+        console.error(`[🔱 Tool Error] ${name}:`, err.message);
+        return { 
+          toolCallId: toolCall.id, 
+          result: { ok: false, data: `Error operacional: ${err.message}` } 
+        };
       }
     })();
 
@@ -289,7 +257,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
     const timeoutPromise = new Promise((resolve) => 
       setTimeout(() => resolve({ 
         toolCallId: toolCall.id, 
-        result: "Capitán, el sistema está procesando datos complejos. Por favor, pídale al cliente un segundo mientras mis brújulas terminan de girar o intente nuevamente la consulta." 
+        result: { ok: false, data: "Timeout operacional. El sistema está barajando datos complejos. Por favor, pida un segundo al cliente." }
       }), TIMEOUT_MS)
     );
 
