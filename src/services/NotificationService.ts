@@ -436,6 +436,45 @@ ${stats.syncDetails}
         }, false); // Bounces son LOUD
     },
     /**
+     * 🔱 CAPTAIN ALERT: Notificación Directa desde Salty Voice (Vapi)
+     */
+    async notifyCaptainFromVoiceCall(params: {
+        guestName: string;
+        property: string;
+        phone: string;
+        email: string;
+        checkIn: string;
+        checkOut: string;
+        total: string;
+        callId?: string;
+    }): Promise<boolean> {
+        const message = `
+🔱 <b>¡Salty acaba de cerrar un trato!</b> 🎙️
+━━━━━━━━━━━━━━━━━━━━
+👤 <b>Huésped:</b> ${params.guestName}
+🏠 <b>Propiedad:</b> ${params.property}
+📅 <b>Estancia:</b> ${params.checkIn} al ${params.checkOut}
+💵 <b>Inversión:</b> $${params.total} USD
+━━━━━━━━━━━━━━━━━━━━
+📞 <b>Teléfono:</b> <code>${params.phone}</code>
+📧 <b>Email:</b> <code>${params.email || 'No provisto'}</code>
+━━━━━━━━━━━━━━━━━━━━
+🆔 <b>Call ID:</b> <code>${params.callId || 'N/A'}</code>
+
+🚀 <i>Salty: "Le dije que lo contactarías por WhatsApp. Es momento de abordar."</i>`;
+
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [
+                [
+                    { text: "📲 WhatsApp", url: `https://wa.me/${params.phone.replace(/\+/g, '')}` },
+                    { text: "📧 Email", url: `mailto:${params.email}` }
+                ],
+                [{ text: "✅ Enterado Mi Capitán", callback_data: `ack_vapi_${params.callId || 'new'}` }]
+            ]
+        }, false); // Alertas del Capitán son LOUD
+    },
+
+    /**
      * 📅 SYNC SUMMARY: Reporte de Sincronización Masiva
      */
     async notifySyncSummary(totalImported: number, details: string): Promise<boolean> {

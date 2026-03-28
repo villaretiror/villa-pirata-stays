@@ -252,6 +252,25 @@ async function executeDirectTool(args: any, supabase: any) {
             : `Fallo Crítico al enviar Email: ${sent.error || 'Unknown Error'}.`
       };
 
+    } else if (toolName === 'notify_captain_telegram') {
+      const sent = await NotificationService.notifyCaptainFromVoiceCall({
+          guestName: args.guestName || args.nombre || 'Desconocido',
+          property: args.propertyName || args.propiedad || 'Sin mapear',
+          phone: args.phone || args.telefono || 'Sin número',
+          email: args.email || args.correo || 'N/A',
+          checkIn: args.startDate || args.check_in || 'N/A',
+          checkOut: args.endDate || args.check_out || 'N/A',
+          total: args.priceTotal || args.total || '0',
+          callId: args.callId || 'VAPI-BRAIN'
+      });
+      
+      return { 
+          ok: sent, 
+          data: sent 
+            ? "Capitán notificado vía Telegram de forma exitosa. 📡" 
+            : "Fallo en la señal de Telegram. Verifique Token/ChatID."
+      };
+
     } else {
       return { ok: false, data: "Herramienta desconocida." };
     }

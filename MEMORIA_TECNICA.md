@@ -79,6 +79,14 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
     *   **Seguridad**: Auditoría automática de correos via `email_logs` en Supabase.
 - **Por Qué**: Asegurar la entrega de enlaces de pago mediante un "puerto seguro" (email) si falla la mensajería móvil.
 
+### [2026-03-28] - 🔱 Salty 6.2: Notificación Directa al Capitán (Telegram)
+- **Logro**: Cierre de ciclo de venta automatizado. Salty ahora notifica al Capitán Brian en tiempo real vía Telegram al finalizar una llamada exitosa.
+- **Cambios Realizados**:
+    *   **Backend**: Nuevo método `notifyCaptainFromVoiceCall` en `NotificationService.ts` con botones de acción directa (WhatsApp/Email).
+    *   **Webhook**: Integración del tool `notify_captain_telegram` para ser llamado post-envío de link de pago.
+    *   **UX del Host**: Alerta visual con Call ID y resumen ejecutivo del trato cerrado por Salty.
+- **Por Qué**: Empoderar al Capitán para que pueda realizar el follow-up humano por WhatsApp de forma instantánea.
+
 ---
 
 ## 🛡️ Estatus de la Flota (Orquestación Activa)
@@ -88,7 +96,8 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 - [x] Auditoría de Integridad (Amenities vs Fotos).
 - [x] **Salty Voice Go-Live** — Número operacional activo.
 - [x] **Blindaje Salty Vapi** — Sincronía de producción alcanzada.
-- [x] **Salty 6.0** — Sincronización total de funciones y eliminación de errores de transcripción.
-- [x] **Salty 6.1** — Fallback de Pago vía Email implementado y auditado.
+- [x] **Salty 6.0** — Sincronización total de funciones.
+- [x] **Salty 6.1** — Fallback de Pago vía Email implementado.
+- [x] **Salty 6.2** — Notificación Directa al Capitán (Telegram) activa.
 
-"Salty 6.1 está en el aire. La flota es ahora imparable e infalible." 🔱 ⚓ 🎙️
+"Salty 6.2 está en el aire. La flota es ahora un organismo de respuesta inmediata." 🔱 ⚓ 🎙️
