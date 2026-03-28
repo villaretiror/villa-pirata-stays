@@ -121,6 +121,17 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 
 ---
 
+### [2026-03-28] - 🔱 Salty 6.6: Luxury UX/UI Overhaul (QA Final)
+- **Logro**: Elevación del estándar visual a "Ultra Premium" y resolución de conflictos ergonómicos.
+- **Cambios Realizados**:
+    *   **WhatsApp Gold Edition**: El botón de WhatsApp ha sido rediseñado en **Dorado Ejecutivo** con `backdrop-blur` y bordes de cristal, eliminando el verde genérico que rompía la marca.
+    *   **Navbar Compacta**: Reducción del tamaño del Nav Bar inferior en mobile (`max-w-[340px]`) y ajuste de paddings para que la pantalla "respire" y no asfixie el contenido.
+    *   **Salty Fluid Motion**: Implementación de curvas `cubic-bezier` personalizadas en el widget de chat y transiciones de escala para una interactividad más orgánica.
+    *   **Soberanía Tipográfica**: Aumento del `letter-spacing` (tracking) en etiquetas Signature y mejora de contraste en textos informativos.
+- **Por Qué**: Tras la auditoría de QA, era imperativo eliminar la fricción visual y asegurar que cada elemento flote en armonía, proyectando la exclusividad de Villa Retiro.
+
+---
+
 ## 🛡️ Estatus de la Flota (Orquestación Activa)
 - [x] Implementar Shadow Mode para validación automática de contraste.
 - [x] Refactorización de Élite en `FinanceService`.
@@ -134,5 +145,6 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 - [x] **Salty 6.3** — Blindaje iCal (Cache) y Storage de Mantenimiento activos.
 - [x] **Salty 6.4** — Optimización Ergonómica Mobile (UI Clean) aplicada.
 - [x] **Salty 6.5** — Búsqueda Semántica de Conocimiento (Anti-Alucinación) operativa.
+- [x] **Salty 6.6** — Luxury UX/UI Overhaul (QA Final) aplicado.
 
-"Salty 6.5 está en el aire. El búnker de conocimiento es ahora infinito e infalible." 🔱 ⚓ 🎙️
+"Salty 6.6 está en el aire. La experiencia es ahora puramente cinematográfica." 🔱 ⚓ 🎙️

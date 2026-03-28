@@ -91,8 +91,8 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <nav className="fixed bottom-6 pb-[env(safe-area-inset-bottom,20px)] left-0 right-0 z-50 flex justify-center pointer-events-none animate-slide-up">
-      <div className="relative flex justify-center w-full max-w-sm">
+    <nav className="fixed bottom-4 pb-[env(safe-area-inset-bottom,10px)] left-0 right-0 z-50 flex justify-center pointer-events-none animate-slide-up">
+      <div className="relative flex justify-center w-full max-w-[340px] px-4">
         <AnimatePresence>
           {showMenu && (
             <motion.div
@@ -156,7 +156,7 @@ const Navbar: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <ul className="pointer-events-auto bg-secondary/90 backdrop-blur-2xl shadow-[0_20px_50px_rgba(0,0,0,0.3)] rounded-[2.5rem] px-6 py-2.5 flex items-center justify-between w-[95%] m-0 list-none border border-white/10">
+        <ul className="pointer-events-auto bg-secondary/95 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] rounded-[1.8rem] px-5 py-1.5 flex items-center justify-between w-full m-0 list-none border border-white/5">
           <li><NavItem path="/" icon={Compass} label="Explorar" currentPath={currentPath} /></li>
           <li><NavItem path="/favorites" icon={Heart} label="Favoritos" currentPath={currentPath} /></li>
           <li><NavItem path="/messages" icon={MessageCircle} label="Chat" currentPath={currentPath} /></li>

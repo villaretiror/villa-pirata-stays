@@ -83,7 +83,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               <div className="w-4 h-4 text-primary">
                  <svg viewBox="0 0 100 100" fill="currentColor"><text y="70" x="50" text-anchor="middle" font-family="serif" font-weight="black" font-style="italic" font-size="50">VRR</text></svg>
               </div>
-              <span className="text-[8px] font-black text-white uppercase tracking-[0.2em] leading-none">Signature Stay</span>
+              <span className="text-[8px] font-black text-white uppercase tracking-[0.3em] leading-none">Signature Stay</span>
             </motion.div>
             {getBadges()}
         </div>
@@ -186,7 +186,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
         <div className="flex items-end justify-between border-t border-gray-100/50 pt-6">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase text-gray-400 tracking-[0.2em]">{property.location}</p>
+            <p className="text-[10px] font-bold uppercase text-gray-500 tracking-[0.3em]">{property.location}</p>
             <div className="flex items-center gap-2 text-text-main font-bold text-[11px] uppercase tracking-widest">
               <Users size={14} className="text-primary" />
               {Number(property.guests) || 1} Personas
@@ -199,9 +199,9 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
                 ${property.original_price}
               </span>
             )}
-            <div className="flex items-baseline gap-1.5 bg-primary px-4 py-2 rounded-2xl border border-primary/20 shadow-lg">
+            <div className="flex items-baseline gap-1.5 bg-primary px-4 py-2 rounded-2xl border border-primary/20 shadow-lg group-hover:shadow-primary/20 transition-all duration-500">
               <span className="font-black text-2xl text-secondary">${property.price || 0}</span>
-              <span className="text-[10px] font-black uppercase text-secondary/70 tracking-widest">/noche</span>
+              <span className="text-[10px] font-black uppercase text-secondary/70 tracking-[0.25em]">/noche</span>
             </div>
           </div>
         </div>

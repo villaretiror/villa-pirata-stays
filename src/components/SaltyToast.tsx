@@ -340,12 +340,13 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             <AnimatePresence>
                 {(showBubble || isExpanded) && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.8 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.8 }}
+                        initial={{ opacity: 0, scale: 0.8, y: 30, filter: 'blur(10px)' }}
+                        animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                        exit={{ opacity: 0, scale: 0.8, y: 30, filter: 'blur(10px)' }}
+                        transition={{ duration: 0.6, ease: [0.23, 1, 0.32, 1] }}
                         className={`pointer-events-auto transition-all duration-500 ${isExpanded ? 'w-[320px] md:w-[380px]' : 'max-w-[280px]'} mb-2`}
                     >
-                        <div className="bg-white/95 backdrop-blur-3xl border border-black/5 rounded-[2.5rem] rounded-br-[4px] shadow-2xl overflow-hidden flex flex-col">
+                        <div className="bg-white/95 backdrop-blur-3xl border border-black/10 rounded-[2.5rem] rounded-br-[4px] shadow-[0_20px_50px_rgba(0,0,0,0.15)] overflow-hidden flex flex-col">
                             {isExpanded && (
                                 <div className="flex items-center justify-between p-4 bg-primary border-b border-secondary/10">
                     <div className="flex items-center gap-3">
