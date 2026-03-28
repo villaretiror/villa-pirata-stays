@@ -92,44 +92,51 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         setBookings(bookingRes.data);
       }
 
-      // 🔱 DYNAMIC CATEGORY DISCOVERY MOTOR
+      // 🔱 DYNAMIC CATEGORY DISCOVERY MOTOR (Salty 6.0)
       if (guideRes.data && guideRes.data.length > 0) {
         const rows = guideRes.data as any[];
-        // Group by category from DB
-        const categoryMap = new Map<string, any[]>();
-        rows.forEach((r) => {
-          const cat = (r.category || 'otros').trim().toLowerCase();
-          if (!categoryMap.has(cat)) categoryMap.set(cat, []);
-          categoryMap.get(cat)!.push(r);
-        });
+        
+        // 🛡️ ID NORMALIZATION MAP: Unifies DB categories with Frontend IDs
+        const idMap: Record<string, string> = {
+          beach: 'beaches',
+          playa: 'beaches',
+          beaches: 'beaches',
+          food: 'gastronomy',
+          gastronomia: 'gastronomy',
+          restaurantes: 'gastronomy',
+          gastronomy: 'gastronomy',
+          landmark: 'nearby',
+          nearby: 'nearby',
+          places: 'nearby'
+        };
 
-        // Map categories dynamically
         const iconMap: Record<string, string> = {
-          beach: 'beach_access',
-          playa: 'beach_access',
-          food: 'restaurant',
-          gastronomia: 'restaurant',
-          landmark: 'place',
+          beaches: 'beach_access',
+          gastronomy: 'restaurant',
           nearby: 'place',
-          aventura: 'explore',
-          compras: 'shopping_bag',
-          nightlife: 'nightlife'
+          otros: 'explore'
         };
 
         const displayLabelMap: Record<string, string> = {
-          beach: siteContent?.sections.beaches || 'Playas del Paraíso',
-          playa: siteContent?.sections.beaches || 'Playas del Paraíso',
-          food: siteContent?.sections.gastronomy || 'Ruta Gastronómica',
-          gastronomia: siteContent?.sections.gastronomy || 'Ruta Gastronómica',
-          landmark: siteContent?.sections.nearby || 'Cerca de Ti',
+          beaches: siteContent?.sections.beaches || 'Playas del Paraíso',
+          gastronomy: siteContent?.sections.gastronomy || 'Ruta Gastronómica',
           nearby: siteContent?.sections.nearby || 'Cerca de Ti'
         };
 
-        finalGuide = Array.from(categoryMap.entries()).map(([dbKey, items]) => ({
-          id: dbKey,
-          dbKey,
-          category: displayLabelMap[dbKey] || dbKey.charAt(0).toUpperCase() + dbKey.slice(1),
-          icon: iconMap[dbKey] || 'explore',
+        // Group by normalized ID
+        const unifiedGroups = new Map<string, any[]>();
+        rows.forEach((r) => {
+          const raw = (r.category || 'otros').trim().toLowerCase();
+          const normId = idMap[raw] || raw;
+          if (!unifiedGroups.has(normId)) unifiedGroups.set(normId, []);
+          unifiedGroups.get(normId)!.push(r);
+        });
+
+        finalGuide = Array.from(unifiedGroups.entries()).map(([id, items]) => ({
+          id,
+          dbKey: id, // Mapping back for simpler tracking
+          category: displayLabelMap[id] || id.charAt(0).toUpperCase() + id.slice(1),
+          icon: iconMap[id] || 'explore',
           items: items.map(r => ({
             id: r.id,
             name: r.title,
@@ -141,7 +148,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             mapUrl: r.map_url || '',
             saltyTip: r.salty_tip || '',
             sortOrder: r.sort_order || 0
-          }))
+          })).sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0))
         }));
       }
 

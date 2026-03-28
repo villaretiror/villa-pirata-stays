@@ -132,6 +132,16 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 
 ---
 
+### [2026-03-28] - 🔱 Salty 6.7: Sincronización del Motor de Descubrimiento (Fix de Categorías)
+- **Logro**: Restauración total de la sección "Explora con Salty". Los botones de Playas, Comer y Guía ahora muestran contenido dinámico correctamente.
+- **Cambios Realizados**:
+    *   **Normalización de IDs**: Se implementó un mapa de normalización en `PropertyContext.tsx` que traduce categorías crudas de la base de datos (ej: 'playa', 'beach', 'food') a los IDs esperados por la interfaz ('beaches', 'gastronomy', 'nearby').
+    *   **Agrupación Inteligente**: Ahora múltiples categorías de la DB pueden alimentar un solo tab de la web, consolidando la información de valor para el huésped.
+    *   **Orden Jerárquico**: Se añadió soporte para `sortOrder` en las tarjetas de guía, permitiendo priorizar recomendaciones de élite.
+- **Por Qué**: Existía una desconexión técnica donde la base de datos usaba nombres en singular o español, mientras que el frontend buscaba IDs específicos, resultando en secciones vacías.
+
+---
+
 ## 🛡️ Estatus de la Flota (Orquestación Activa)
 - [x] Implementar Shadow Mode para validación automática de contraste.
 - [x] Refactorización de Élite en `FinanceService`.
@@ -146,5 +156,6 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 - [x] **Salty 6.4** — Optimización Ergonómica Mobile (UI Clean) aplicada.
 - [x] **Salty 6.5** — Búsqueda Semántica de Conocimiento (Anti-Alucinación) operativa.
 - [x] **Salty 6.6** — Luxury UX/UI Overhaul (QA Final) aplicado.
+- [x] **Salty 6.7** — Sincronización del Motor de Descubrimiento (Fix) operativa.
 
-"Salty 6.6 está en el aire. La experiencia es ahora puramente cinematográfica." 🔱 ⚓ 🎙️
+"Salty 6.7 está en el aire. El mapa del paraíso vuelve a brillar." 🔱 ⚓ 🎙️
