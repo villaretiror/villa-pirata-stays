@@ -8,7 +8,7 @@ import { Tables } from '../supabase_types';
 
 export const mapSupabaseProperty = (
   p: Tables<'properties'>, 
-  user?: { name?: string; avatar?: string; role?: string },
+  user?: { full_name?: string; avatar_url?: string; role?: string },
   options: { isAdmin?: boolean } = {}
 ): Property => {
   const rawPolicies = (p.policies as any) || {};
@@ -58,8 +58,8 @@ export const mapSupabaseProperty = (
     offers: (p.offers as any) || [],
     reviews_list: (p.reviews_list as any) || [],
     host: (p.host as any) || {
-      name: user?.name || 'Anfitrión VRR',
-      image: user?.avatar || '',
+      name: user?.full_name || 'Anfitrión VRR',
+      image: user?.avatar_url || '',
       yearsHosting: 1,
       badges: user?.role === 'host' ? ['Pro Host'] : []
     }

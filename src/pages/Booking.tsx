@@ -103,7 +103,7 @@ const Booking: React.FC = () => {
             property_id: id,
             check_in: format(startDate, 'yyyy-MM-dd'),
             check_out: format(endDate, 'yyyy-MM-dd'),
-            guest_name: user.name,
+            guest_name: user.full_name,
             guest_email: user.email,
             guest_phone: phone || user.phone || 'No provisto',
             status: 'pending_payment',
@@ -116,7 +116,7 @@ const Booking: React.FC = () => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 type: 'new_lead',
-                guestName: user.name,
+                guestName: user.full_name,
                 property: property?.title || 'Villa',
                 checkIn: format(startDate, 'dd MMM'),
                 checkOut: format(endDate, 'dd MMM'),
@@ -188,7 +188,7 @@ const Booking: React.FC = () => {
 
     const bookingPayload: BookingInsert = {
       user_id: user.id,
-      customer_name: user.name,
+      customer_name: user.full_name,
       source: 'Direct Web',
       property_id: id,
       check_in: format(startDate, 'yyyy-MM-dd'),
@@ -226,7 +226,7 @@ const Booking: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'reservation_confirmed',
-          customer: { name: user.name, email: user.email, phone: phone },
+          customer: { name: user.full_name, email: user.email, phone: phone },
           propertyId: property.id,
           bookingId: bookingData.id,
           checkIn: bookingData.check_in,
@@ -246,7 +246,7 @@ const Booking: React.FC = () => {
     navigate('/success', {
       state: {
         bookingData: {
-          guestName: user.name,
+          guestName: user.full_name,
           propertyName: property.title,
           checkIn: format(startDate, 'dd MMM yyyy'),
           checkOut: format(endDate, 'dd MMM yyyy'),

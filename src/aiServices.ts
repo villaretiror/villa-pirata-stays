@@ -316,9 +316,9 @@ export const findAlternatePropertyAvailable = async (
 };
 
 // 2. Lead & Abandonment Manager
-export const logAbandonmentLead = async (data: { name: string; email?: string; phone?: string; interest: string }) => {
+export const logAbandonmentLead = async (data: { full_name: string; email?: string; phone?: string; interest: string }) => {
     const { error } = await supabase.from('leads').insert({
-        name: data.name,
+        full_name: data.full_name,
         email: data.email || 'sin-email@anonymous.com',
         phone: data.phone || null,
         message: data.interest,   // Schema: 'interest' → maps to 'message' column
@@ -348,7 +348,7 @@ export const createTemporaryHold = async (
     // 1. Create the detailed lead first for Host visibility
     if (customer_name || phone_number || special_requests) {
         await supabase.from('leads').insert({
-            name: customer_name || 'Huésped Anónimo (AI)',
+            full_name: customer_name || 'Huésped Anónimo (AI)',
             phone: phone_number || null,
             email: 'via-salty-ai@stays.com',
             message: `[AI HOLD] ${special_requests || 'Sin peticiones especiales'}. Fechas: ${checkIn} al ${checkOut}`,
@@ -469,10 +469,10 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
 };
 
 // 5. Sentinel Middleware (Sentiment & Guardrail)
-export const handleCrisisAlert = async (name: string, message: string, contact: string, severity: number = 1) => {
+export const handleCrisisAlert = async (full_name: string, message: string, contact: string, severity: number = 1) => {
     const sentimentScore = severity / 5; // Simplified mapping
     const { error } = await supabase.from('urgent_alerts').insert({
-        name, message, contact, status: 'new', severity, sentiment_score: sentimentScore
+        full_name, message, contact, status: 'new', severity, sentiment_score: sentimentScore
     });
     return !error;
 };

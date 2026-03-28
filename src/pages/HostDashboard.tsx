@@ -34,7 +34,7 @@ type TaskRow = Tables<'operation_tasks'>;
 
 // Joined types for nested queries
 type BookingWithDetails = BookingRow & {
-  profiles: { full_name: string | null; avatar: string | null; phone: string | null; email?: string | null; tags: string[] | null } | null;
+  profiles: { full_name: string | null; avatar_url: string | null; phone: string | null; email?: string | null; tags: string[] | null } | null;
   properties: { title: string; images: string[] | null; policies?: any } | null;
 };
 
@@ -254,7 +254,7 @@ interface ReviewManagerProps {
 
 const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, onAddReview }) => {
   const [isAdding, setIsAdding] = useState(false);
-  const [newReview, setNewReview] = useState<Partial<Review>>({ rating: 5, source: 'Airbnb', date: 'Mayo 2024' });
+  const [newReview, setNewReview] = useState<Partial<Review>>({ rating: 5, source: 'Airbnb', created_at: 'Mayo 2024' });
   const [stats, setStats] = useState({ rating: property.rating || 5, count: property.reviews_count || 0 });
 
   const saveReview = () => {
@@ -264,13 +264,13 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
       author: newReview.author,
       text: newReview.text,
       rating: newReview.rating || 5,
-      date: newReview.date || 'Reciente',
+      created_at: newReview.created_at || 'Reciente',
       source: (newReview.source as 'Airbnb' | 'Booking.com' | 'Google') || 'Airbnb',
-      avatar: `https://ui-avatars.com/api/?name=${newReview.author}&background=random`
+      avatar_url: `https://ui-avatars.com/api/?name=${newReview.author}&background=random`
     };
     onAddReview(property.id, review);
     setIsAdding(false);
-    setNewReview({ rating: 5, source: 'Airbnb', date: 'Mayo 2024' });
+    setNewReview({ rating: 5, source: 'Airbnb', created_at: 'Mayo 2024' });
   };
 
   const saveStats = () => {
@@ -364,7 +364,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-sand p-8 rounded-[2.5rem] border border-primary/20 shadow-inner relative overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-5 relative z-10">
               <input placeholder="Nombre del Huésped" className="p-4 rounded-xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, author: e.target.value })} />
-              <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, date: e.target.value })} />
+              <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, created_at: e.target.value })} />
 
               <div className="relative">
                 <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
@@ -398,11 +398,11 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
               <div className="flex justify-between items-start mb-6">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-white shadow-sm">
-                    <img src={review.avatar || "https://i.pravatar.cc/100"} alt="User" />
+                    <img src={review.avatar_url || "https://i.pravatar.cc/100"} alt="User" />
                   </div>
                   <div>
                     <h4 className="font-serif font-black italic text-lg text-text-main group-hover/item:text-primary transition-colors leading-none truncate max-w-[150px]">{review.author}</h4>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-text-light mt-1 opacity-50">{review.date}</p>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-text-light mt-1 opacity-50">{review.created_at}</p>
                   </div>
                 </div>
                 <div className="bg-white px-3 py-1.5 rounded-full border border-gray-100 flex items-center gap-1.5 shadow-sm group-hover/item:scale-105 transition-transform">
@@ -1004,7 +1004,7 @@ const NotificationInbox = ({ leads, alerts, pendingPayments, onResolve }: { lead
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-bold text-text-main line-clamp-1">{n.name || n.profiles?.full_name || 'Novedad'}</p>
+                  <p className="text-sm font-bold text-text-main line-clamp-1">{n.full_name || n.profiles?.full_name || 'Novedad'}</p>
                   {n.type === 'payment' && getSourceBadge(n.source)}
                 </div>
                 <p className="text-[9px] font-medium uppercase tracking-widest text-text-light mt-0.5">
@@ -1154,7 +1154,7 @@ const HostDashboard: React.FC = () => {
 
       // 1. Unificación de Propiedades (Properties)
       const mappedProps = (bundle.properties || []).map((p: any) =>
-        mapSupabaseProperty(p, { name: user.name || '', avatar: user.avatar || '', role: user.role || '' }, { isAdmin: true })
+        mapSupabaseProperty(p, { full_name: user.full_name || '', avatar_url: user.avatar_url || '', role: user.role || '' }, { isAdmin: true })
       );
       onUpdateProperties(mappedProps);
 
@@ -1225,7 +1225,7 @@ const HostDashboard: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [user?.id, user?.email, user?.name, user?.avatar, user?.role, onUpdateProperties, DASH_CACHE_KEY, restoreCache]);
+  }, [user?.id, user?.email, user?.full_name, user?.avatar_url, user?.role, onUpdateProperties, DASH_CACHE_KEY, restoreCache]);
 
   const nextCheckins = useMemo(() => {
     const dates = [0, 1, 2].map(days => {
@@ -1551,7 +1551,7 @@ const HostDashboard: React.FC = () => {
         beds: 2,
         baths: 1,
         fees: { cleaningShort: 50, cleaningMedium: 75, cleaningLong: 100, petFee: 30, securityDeposit: 100 },
-        host: { name: user?.name || 'Host', image: user?.avatar || '', yearsHosting: 1, badges: [] }
+        host: { name: user?.full_name || 'Host', image: user?.avatar_url || '', yearsHosting: 1, badges: [] }
       };
 
       onUpdateProperties([...properties, newProperty]);
@@ -1775,8 +1775,8 @@ const HostDashboard: React.FC = () => {
               <div key={booking.id} className="flex items-center justify-between p-4 bg-gray-50/50 rounded-2xl border border-gray-100 group hover:bg-white hover:shadow-soft-sm transition-all cursor-default">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-sand flex items-center justify-center text-text-light text-xs font-black border border-white shadow-sm overflow-hidden">
-                    {booking.profiles?.avatar ? (
-                      <img src={booking.profiles.avatar} className="w-full h-full object-cover" alt="Avatar" />
+                    {booking.profiles?.avatar_url ? (
+                      <img src={booking.profiles.avatar_url} className="w-full h-full object-cover" alt="Avatar" />
                     ) : (
                       booking.profiles?.full_name?.charAt(0) || 'H'
                     )}
@@ -2181,11 +2181,11 @@ const HostDashboard: React.FC = () => {
                 <div key={i} className="p-5 hover:bg-gray-50/50 transition-colors flex items-center justify-between group">
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-full bg-sand text-secondary flex items-center justify-center font-bold text-sm shadow-sm border border-white">
-                      {lead.name.charAt(0).toUpperCase()}
+                      {(lead.full_name || 'Guest').charAt(0).toUpperCase()}
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <p className="font-bold text-sm text-text-main leading-tight">{lead.name}</p>
+                        <p className="font-bold text-sm text-text-main leading-tight">{lead.full_name || 'Huésped'}</p>
                         <div className="flex gap-1">
                           {(lead.tags || []).map((tag: string) => (
                             <span
@@ -2219,7 +2219,7 @@ const HostDashboard: React.FC = () => {
                     >
                       <span className="material-icons text-lg">local_offer</span>
                     </button>
-                    <button onClick={() => showToast(`Iniciando contacto con ${lead.name}`)} className="text-gray-300 group-hover:text-primary p-2 hover:bg-primary/5 rounded-full transition-all">
+                    <button onClick={() => showToast(`Iniciando contacto con ${lead.full_name || 'Huésped'}`)} className="text-gray-300 group-hover:text-primary p-2 hover:bg-primary/5 rounded-full transition-all">
                       <span className="material-icons text-lg">contact_email</span>
                     </button>
                   </div>
@@ -2657,7 +2657,7 @@ const HostDashboard: React.FC = () => {
           />
         )}
         {activeTab === 'conversion' && renderConversion()}
-        {activeTab === 'messages' && <HostMessageCenter hostAvatar={user?.avatar} onNavigate={(tab: any) => setActiveTab(tab)} />}
+        {activeTab === 'messages' && <HostMessageCenter hostAvatar={user?.avatar_url} onNavigate={(tab: any) => setActiveTab(tab)} />}
         {activeTab === 'concierge' && <DigitalConcierge />}
         {activeTab === 'insights' && <InsightViewer />}
         {activeTab === 'availability' && <HostAvailabilityManager properties={properties} />}
