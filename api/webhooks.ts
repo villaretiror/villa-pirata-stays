@@ -168,8 +168,8 @@ export default async function handler(req: any, res: any) {
 async function handleVapiTools(req: any, res: any, message: any) {
   const toolCallList = message?.toolCallList || message?.toolCalls || (message.functionCall ? [message.functionCall] : []);
   
-  // 🕒 LATENCY GUARD: Vapi needs a response in < 3s to maintain human rhythm.
-  const TIMEOUT_MS = 2800;
+  // 🕒 LATENCY GUARD: Vapi tools can handle up to 20s, but 10s is a safe bunker limit.
+  const TIMEOUT_MS = 10000;
   
   const results = await Promise.all(toolCallList.map(async (toolCall: any) => {
     const name = toolCall?.function?.name || toolCall?.name;
@@ -178,7 +178,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
     const toolExecution = (async () => {
       const startTime = Date.now();
       try {
-        console.info(`[🔱 Tool Start] Call: ${message.call?.id || 'N/A'} | Tool: ${name}`);
+        console.info(`[🔱 Tool Start] Call: ${message.call?.id || 'N/A'} | Tool: ${name} | ID: ${toolCall.id}`);
         
         let responseData = "";
 
@@ -191,17 +191,14 @@ async function handleVapiTools(req: any, res: any, message: any) {
 
         else if (name === 'check_availability') {
           const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-          let sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
-          let eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
+          const sDate = args.startDate || args.start_date || args.check_in || args.checkIn;
+          const eDate = args.endDate || args.end_date || args.check_out || args.checkOut;
           
-          const prNow = new Date(new Date().toLocaleString("en-US", {timeZone: "America/Puerto_Rico"}));
-          const nowStr = prNow.toISOString().split('T')[0];
-
-          if (!sDate) sDate = nowStr;
-          if (!eDate) {
-              const nextDay = new Date(prNow);
-              nextDay.setDate(nextDay.getDate() + 2);
-              eDate = nextDay.toISOString().split('T')[0];
+          if (!sDate || !eDate) {
+              return { 
+                toolCallId: toolCall.id, 
+                result: { ok: false, data: "Missing startDate/endDate. Por favor, confirme con el cliente el día, mes y año exacto antes de continuar." } 
+              };
           }
 
           const availability = await checkAvailabilityWithICal(propId, sDate, eDate, supabase);
