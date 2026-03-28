@@ -66,8 +66,18 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
     *   **Tool Names Hijack**: Renombramiento de funciones internas (`check_availability` y `send_payment_sms`) para que el modelo las llame de forma determinista, eliminando el fallo genérico de `api_request_tool`.
     *   **Seguridad Reforzada**: Soporte para múltiples formatos de headers de autenticación (`x-vapi-secret`, `vapi-webhook-secret`, `vapi_webhook_secret`) garantizando el handshake bajo cualquier configuración del proxy de Vapi.
     *   **Identidad de Propiedad**: Mapeo estricto de IDs de legado (`1081171030449673920` para Villa Retiro R y `42839458` para Pirata House) directamente en el `resolvePropertyId`.
-- **Validación Final**: Salty ahora reconoce "Salty" y "Cabo Rojo" mediante Keyword Boost en Deepgram, eliminando errores de transcripción ("Sulty").
-- **Por Qué**: Establecer una comunicación sin fricciones donde el modelo llama herramientas por su nombre funcional directo, reduciendo latencia y fallos de ejecución.
+- **Validación Final**: Salty ahora reconoce "Salty" y "Cabo Rojo" mediante Deepgram, eliminando errores de transcripción.
+- **Por Qué**: Establecer una comunicación sin fricciones donde el modelo llama herramientas por su nombre funcional directo.
+
+---
+
+### [2026-03-28] - 🔱 Salty 6.1: Fallback de Pago vía Email
+- **Logro**: Implementación de redundancia en el cierre de reservas. Salty ahora puede enviar el link de pago por email si el SMS falla.
+- **Cambios Realizados**:
+    *   **Backend**: Nuevo método `sendPaymentLinkEmail` en `MessagingService.ts` con diseño Bunker Premium (BCC a villaretiror@gmail.com).
+    *   **Webhook**: Integración del tool `send_payment_email` en el despachador universal.
+    *   **Seguridad**: Auditoría automática de correos via `email_logs` en Supabase.
+- **Por Qué**: Asegurar la entrega de enlaces de pago mediante un "puerto seguro" (email) si falla la mensajería móvil.
 
 ---
 
@@ -79,5 +89,6 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 - [x] **Salty Voice Go-Live** — Número operacional activo.
 - [x] **Blindaje Salty Vapi** — Sincronía de producción alcanzada.
 - [x] **Salty 6.0** — Sincronización total de funciones y eliminación de errores de transcripción.
+- [x] **Salty 6.1** — Fallback de Pago vía Email implementado y auditado.
 
-"Salty 6.0 está en el aire. La orquestación entre la nube y el búnker es perfecta." 🔱 ⚓ 🎙️
+"Salty 6.1 está en el aire. La flota es ahora imparable e infalible." 🔱 ⚓ 🎙️

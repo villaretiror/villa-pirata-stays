@@ -230,6 +230,28 @@ async function executeDirectTool(args: any, supabase: any) {
             : `Fallo Crítico al enviar SMS: ${sent.error || 'Unknown Error'}. Verifique logs.`
       };
       
+    } else if (toolName === 'send_payment_email') {
+      const email = args.email || args.correo || "";
+      const finalId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
+      if (!email) throw new Error("Missing email for payment link.");
+
+      const sent = await MessagingService.sendPaymentLinkEmail({ 
+          to: email, 
+          guestName: args.guestName || args.nombre,
+          propertyId: finalId,
+          startDate: args.startDate || args.check_in,
+          endDate: args.endDate || args.check_out,
+          priceTotal: args.priceTotal || args.total,
+          currency: args.currency || 'USD'
+      });
+      
+      return { 
+          ok: true, 
+          data: sent.success 
+            ? `Email enviado con éxito al puerto de destino. ID: ${sent.id || 'N/A'}` 
+            : `Fallo Crítico al enviar Email: ${sent.error || 'Unknown Error'}.`
+      };
+
     } else {
       return { ok: false, data: "Herramienta desconocida." };
     }
