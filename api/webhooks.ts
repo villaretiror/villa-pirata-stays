@@ -40,6 +40,8 @@ export default async function handler(req: any, res: any) {
       const vapiSecret = req.headers['x-vapi-secret'] || 
                          req.headers['vapi-webhook-secret'] || 
                          req.headers['vapi_webhook_secret'] || 
+                         req.headers['vapi_webhook_secret'.toUpperCase()] || 
+                         req.headers['VAPI_WEBHOOK_SECRET'] ||
                          (req.headers['authorization']?.startsWith('Bearer ') ? req.headers['authorization'].split(' ')[1] : null);
                         
       const expectedSecret = getEnvVar('VAPI_WEBHOOK_SECRET');
