@@ -11,14 +11,17 @@ const CRON_SECRET = process.env.CRON_SECRET || 'salty_cron_2026_secret';
  * Salty responds in <200ms during voice calls.
  */
 export default async function handler(req: any, res: any) {
-    // 1. ELITE SECURITY GUARD (CRON_SECRET)
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+    
+    // 1. ELITE SECURITY GUARD (STRICT CRON_SECRET ONLY)
     const authHeader = req.headers['authorization'];
     const querySecret = req.query?.secret;
-    if (authHeader !== `Bearer ${CRON_SECRET}` && querySecret !== CRON_SECRET) {
-        return res.status(401).json({ error: 'Unauthorized: Access Denied to the Bunker' });
+    const isCronAuthorized = authHeader === `Bearer ${CRON_SECRET}` || querySecret === CRON_SECRET;
+
+    if (!isCronAuthorized) {
+        return res.status(401).json({ error: 'Unauthorized: CRON_SECRET Required' });
     }
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
     const startTime = Date.now();
     const results: any = { 
         status: 'success', 

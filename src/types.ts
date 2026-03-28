@@ -14,8 +14,8 @@ export interface Review extends Partial<ReviewRow> {
   author: string;
   text: string;
   rating: number;
-  date?: string; 
-  avatar?: string; 
+  created_at?: string; 
+  avatar_url?: string; 
   source: 'Airbnb' | 'Booking.com' | 'Google' | 'Direct';
 }
 
@@ -127,10 +127,10 @@ export interface LocalGuideCategory {
 
 export interface User extends Partial<ProfileRow> {
   role: 'guest' | 'host' | 'admin';
-  name?: string; 
-  avatar?: string; 
-  registeredAt?: string; // Para compatibilidad con Profile.tsx
-  emergencyContact?: string; // Alias snake_case
+  full_name?: string; 
+  avatar_url?: string; 
+  created_at?: string; // Para compatibilidad con Profile.tsx
+  emergency_contact?: string; // Standard naming
   verificationStatus?: 'verified' | 'pending' | 'rejected' | 'none' | 'unverified';
   favoriteProperties?: string[];
 }
@@ -200,7 +200,7 @@ export interface UrgentAlert {
   name: string;
   message: string;
   contact: string;
-  status: 'new' | 'resolved';
+  status: 'pending' | 'resolved'; // Synced with DB default 'pending'
   severity: number;
   sentiment_score?: number;
   created_at: string;

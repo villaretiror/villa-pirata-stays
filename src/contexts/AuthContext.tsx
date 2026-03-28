@@ -26,14 +26,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const mapSupabaseUser = useCallback((sbUser: any, dbProfile: ProfileRow | null = null, extraData: any = {}): User & { total_bookings?: number; is_returning_guest?: boolean } => ({
     id: sbUser.id,
     email: sbUser.email || '',
-    name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
+    full_name: dbProfile?.full_name || sbUser.user_metadata?.name || sbUser.email?.split('@')[0] || 'Viajero',
     role: (sbUser.email?.toLowerCase() === 'villaretiror@gmail.com') ? 'host' : ((dbProfile?.role as 'guest' | 'host' | 'admin') || sbUser.user_metadata?.role || 'guest'),
-    avatar: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(dbProfile?.full_name || sbUser.user_metadata?.name || 'User')}&background=FF7F3F&color=fff`,
+    avatar_url: dbProfile?.avatar_url || sbUser.user_metadata?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(dbProfile?.full_name || sbUser.user_metadata?.name || 'User')}&background=FF7F3F&color=fff`,
     phone: dbProfile?.phone || sbUser.user_metadata?.phone || '',
-    emergencyContact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
+    emergency_contact: dbProfile?.emergency_contact || sbUser.user_metadata?.emergencyContact || '',
     bio: dbProfile?.bio || '',
     verificationStatus: sbUser.email_confirmed_at ? 'verified' : 'unverified',
-    registeredAt: sbUser.created_at,
+    created_at: sbUser.created_at,
     given_concessions: (dbProfile?.given_concessions as any[]) || [],
     total_bookings: extraData.total_bookings || 0,
     is_returning_guest: (extraData.total_bookings || 0) > 0
@@ -44,7 +44,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!prev && !newUser) return null;
       if (!prev || !newUser) return newUser;
       // Simple stability check
-      if (prev.id === newUser.id && prev.role === newUser.role && prev.email === newUser.email && prev.avatar === newUser.avatar && prev.name === newUser.name) {
+      if (prev.id === newUser.id && prev.role === newUser.role && prev.email === newUser.email && prev.avatar_url === newUser.avatar_url && prev.full_name === newUser.full_name) {
         return prev;
       }
       return newUser;
@@ -228,11 +228,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data, error } = await supabase.auth.updateUser({ data: { ...updated } });
     if (!error && data.user) {
       const profileUpdate: Partial<ProfileRow> = {};
-      if (updated.name) profileUpdate.full_name = updated.name;
+      if (updated.full_name) profileUpdate.full_name = updated.full_name;
       if (updated.phone) profileUpdate.phone = updated.phone;
       if (updated.bio !== undefined) profileUpdate.bio = updated.bio;
-      if (updated.avatar) profileUpdate.avatar_url = updated.avatar;
-      if (updated.emergencyContact) profileUpdate.emergency_contact = updated.emergencyContact;
+      if (updated.avatar_url) profileUpdate.avatar_url = updated.avatar_url;
+      if (updated.emergency_contact) profileUpdate.emergency_contact = updated.emergency_contact;
 
       await supabase.from('profiles').upsert({
         id: data.user.id,

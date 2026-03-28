@@ -6,6 +6,7 @@ import { useAvailability } from '../../../hooks/useAvailability';
 import { Property, CalendarSync } from '../../../types';
 import { ChevronLeft, ChevronRight, Calendar, RefreshCcw, X, ShieldCheck, Lock, Unlock, DollarSign, CalendarSearch } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
+import { supabase } from '../../../lib/supabase';
 
 interface CalendarSectionProps {
   form: any;
@@ -91,7 +92,18 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
   const syncExternalCalendars = async () => {
     setIsSyncing(true);
     try {
-      await fetch('/api/calendar/import', { method: 'POST' });
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch('/api/host/sync-manual', { 
+        method: 'POST',
+        headers: { 
+          'Authorization': `Bearer ${session?.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const resData = await response.json();
+      if (!response.ok) throw new Error(resData.error || "Sync Failed");
+      
       await refreshAvailability();
       if (onRefresh) onRefresh();
       showToast("Calendarios Sincronizados ✨");

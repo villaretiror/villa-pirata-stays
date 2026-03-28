@@ -20,7 +20,7 @@ const Profile: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
-    name: user?.name || '',
+    name: user?.full_name || '',
     phone: user?.phone || '',
     emergencyContact: user?.emergency_contact || ''
   });
@@ -38,7 +38,7 @@ const Profile: React.FC = () => {
     try {
       setIsSaving(true);
       await updateUser({
-        name: formData.name,
+        full_name: formData.name,
         phone: formData.phone,
         emergency_contact: formData.emergencyContact
       });
@@ -91,7 +91,7 @@ const Profile: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
           >
             <p className="text-white/70 text-xs font-bold uppercase tracking-[0.2em] mb-1">{greeting}</p>
-            <h1 className="text-3xl font-serif text-white font-bold">{(user.name || 'Huésped').split(' ')[0]}</h1>
+            <h1 className="text-3xl font-serif text-white font-bold">{(user.full_name || 'Huésped').split(' ')[0]}</h1>
           </motion.div>
           <button
             onClick={() => navigate('/')}
@@ -136,7 +136,7 @@ const Profile: React.FC = () => {
                     onClick={handleAvatarClick}
                     className={`w-full h-full rounded-full border-4 border-sand overflow-hidden shadow-xl relative group transition-all ${isEditing ? 'cursor-pointer scale-105' : ''}`}
                   >
-                    <SmartImage src={user.avatar || ''} className="w-full h-full object-cover" />
+                    <SmartImage src={user.avatar_url || ''} className="w-full h-full object-cover" />
                     {isEditing && (
                       <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                         <span className="material-icons text-white">add_a_photo</span>
@@ -154,7 +154,7 @@ const Profile: React.FC = () => {
                       className="text-2xl font-serif font-bold text-center w-full border-b border-gray-200 py-1 outline-none focus:border-primary"
                     />
                   ) : (
-                    <h2 className="text-2xl font-serif font-bold text-text-main">{user.name}</h2>
+                    <h2 className="text-2xl font-serif font-bold text-text-main">{user.full_name}</h2>
                   )}
                   <p className="text-xs text-text-light font-medium tracking-wide">{user.email}</p>
                 </div>
@@ -162,7 +162,7 @@ const Profile: React.FC = () => {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-sand/30 p-4 rounded-3xl">
                     <p className="text-[10px] font-bold text-text-light uppercase mb-1">Miembro desde</p>
-                    <p className="text-xs font-bold text-text-main">{new Date(user.registeredAt || user.created_at || Date.now()).getFullYear()}</p>
+                    <p className="text-xs font-bold text-text-main">{new Date(user.created_at || Date.now()).getFullYear()}</p>
                   </div>
                   <div className="bg-sand/30 p-4 rounded-3xl">
                     <p className="text-[10px] font-bold text-text-light uppercase mb-1">Estatus</p>

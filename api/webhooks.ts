@@ -142,33 +142,38 @@ async function handleVapiTools(req: any, res: any, message: any) {
  */
 async function executeDirectTool(args: any, supabase: any) {
   const name = args.name;
+  
+  // 🛡️ ELITE TOLERANCE: Alias old field names to new ones to prevent Vapi breakage
+  const guestName = args.guestName || args.fullName || args.full_name || args.name || args.nombre || "Huésped";
+  const propertyId = args.propertyId || args.property_id || args.id || '1081171030449673920';
+  const startDate = args.startDate || args.start_date || args.check_in || args.checkIn;
+  const endDate = args.endDate || args.end_date || args.check_out || args.checkOut;
+  const phone = args.phone || args.phoneNumber || args.telefono || "";
+  const email = args.email || args.correo || "";
+  const priceTotal = args.priceTotal || args.total || args.price || 0;
+
   try {
     let toolName = name;
     if (!toolName) {
-      if (args.startDate || args.check_in) toolName = 'check_availability';
-      else if (args.phone || args.telefono) toolName = 'send_payment_sms';
+      if (startDate || args.check_in) toolName = 'check_availability';
+      else if (phone || args.telefono) toolName = 'send_payment_sms';
     }
 
     if (toolName === 'check_availability') {
-      const propId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
-      const sDateInput = args.startDate || args.start_date || args.check_in || args.checkIn;
-      const eDateInput = args.endDate || args.end_date || args.check_out || args.checkOut;
-
-      if (!sDateInput || !eDateInput) {
+      const propId = await resolvePropertyId(propertyId, supabase);
+      
+      if (!startDate || !endDate) {
         return { ok: false, data: "Faltan fechas exactas. Confirme día, mes y año antes de consultar disponibilidad." };
       }
 
-      const qIn = new Date(sDateInput);
-      const qOut = new Date(eDateInput);
-
       // 1. Unified Availability Check (Local Bookings + Synced Blocks)
-      const availability = await checkAvailabilityWithICal(propId, sDateInput, eDateInput, supabase);
+      const availability = await checkAvailabilityWithICal(propId, startDate, endDate, supabase);
       if (!availability.available) {
-        const alternate = await findAlternatePropertyAvailable(propId, sDateInput, eDateInput, supabase);
+        const alternate = await findAlternatePropertyAvailable(propId, startDate, endDate, supabase);
         return { ok: true, available: false, reason: availability.reason || 'Ocupado', alternate: alternate ? alternate.title : null };
       }
 
-      const quote = await applyAIQuote(propId, sDateInput, eDateInput, undefined, supabase);
+      const quote = await applyAIQuote(propId, startDate, endDate, undefined, supabase);
       return {
         ok: true,
         available: true,
@@ -179,11 +184,14 @@ async function executeDirectTool(args: any, supabase: any) {
       };
 
     } else if (toolName === 'send_payment_sms') {
-      const phone = args.phone || args.telefono || "";
-      const finalId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
+      const finalId = await resolvePropertyId(propertyId, supabase);
       if (!phone) throw new Error("Missing phone for SMS.");
+      
       const link = `https://villaretiror.com/booking/${finalId}`;
-      const sent = await MessagingService.sendSms({ to: phone, content: `¡Hola! Aquí tienes tu link de reserva: ${link}`, propertyId: finalId });
+      const greeting = guestName ? `¡Hola ${guestName}! ` : "¡Hola! ";
+      const content = `${greeting}Aquí tienes tu link de reserva para Villa & Pirata Stays: ${link}`;
+      
+      const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
 
       return {
         ok: true,
@@ -193,17 +201,16 @@ async function executeDirectTool(args: any, supabase: any) {
       };
 
     } else if (toolName === 'send_payment_email') {
-      const email = args.email || args.correo || "";
-      const finalId = await resolvePropertyId(args.propertyId || args.property_id || '1081171030449673920', supabase);
+      const finalId = await resolvePropertyId(propertyId, supabase);
       if (!email) throw new Error("Missing email for payment link.");
 
       const sent = await MessagingService.sendPaymentLinkEmail({
         to: email,
-        guestName: args.guestName || args.nombre,
+        guestName: guestName,
         propertyId: finalId,
-        startDate: args.startDate || args.check_in,
-        endDate: args.endDate || args.check_out,
-        priceTotal: args.priceTotal || args.total,
+        startDate: startDate,
+        endDate: endDate,
+        priceTotal: priceTotal,
         currency: args.currency || 'USD'
       });
 
@@ -216,7 +223,7 @@ async function executeDirectTool(args: any, supabase: any) {
 
     } else if (toolName === 'query_knowledge') {
       const query = args.query || args.pregunta || "";
-      const propId = args.propertyId || args.property_id || args.propertyId || "";
+      const propId = propertyId;
 
       const result = await queryPropertyKnowledge(query, propId, supabase);
       return {
@@ -227,14 +234,14 @@ async function executeDirectTool(args: any, supabase: any) {
 
     } else if (toolName === 'notify_captain_telegram') {
       const sent = await NotificationService.notifyCaptainFromVoiceCall({
-        guestName: args.guestName || args.nombre || 'Desconocido',
+        guestName: guestName,
         property: args.propertyName || args.propiedad || 'Sin mapear',
-        phone: args.phone || args.telefono || 'Sin número',
-        email: args.email || args.correo || 'N/A',
-        checkIn: args.startDate || args.check_in || 'N/A',
-        checkOut: args.endDate || args.check_out || 'N/A',
-        total: args.priceTotal || args.total || '0',
-        callId: args.callId || 'VAPI-BRAIN'
+        phone: phone,
+        email: email,
+        checkIn: startDate,
+        checkOut: endDate,
+        total: priceTotal,
+        callId: args.callId || args.call_id || 'VAPI-BRAIN'
       });
 
       return {

@@ -656,7 +656,7 @@ export const PropertyDetails: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-bold text-sm text-secondary">{rev.author}</p>
-                      <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">{rev.date}</p>
+                      <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">{rev.created_at}</p>
                     </div>
                   </div>
                   {getSourceLabel(rev.source)}

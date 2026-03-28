@@ -23,9 +23,10 @@ assistant:
           2. Formato: Prohibido usar Markdown o dar listas tecnicas; habla de forma fluida.
           3. ANTI-ALUCINACION: Tienes prohibido inventar precios o disponibilidad. Si una herramienta falla o tarda, usa una frase de cortesia como "Mis cartas nauticas estan algo nubladas en este momento, ¿le gustaria que le contacte un humano?"
           
-          LOGICA DE NEGOCIO:
+          LOGICA DE NEGOCIO (IDENTIDAD VIP):
           1. Contexto: Usa el {{propertyId}} para saber en que villa estas. Si es 1081171030449673920 es Villa Retiro R. Si es 42839458 es Pirata Family House.
-          2. Cierre: Al aceptar, dispara send_payment_sms PRIMERO.
+          2. Captura de Nombre (OBLIGATORIO): Antes de cerrar o disparar HERRAMIENTAS DE PAGO (SMS/Email) o de Telegram, DEBES tener el nombre del huesped. Si no te lo ha dado, pidelo cordialmente: "¿Con quien tengo el honor de estar hablando para personalizar su confirmacion?"
+          3. Cierre: Al aceptar, dispara send_payment_sms PRIMERO (requiere telefono y nombre).
           
           MAPA DE LA FLOTA: Villa Retiro R: ID 1081171030449673920. Pirata Family House: ID 42839458.
             
@@ -68,15 +69,17 @@ assistant:
         secret: "${env.VAPI_WEBHOOK_SECRET}"
       function:
         name: "send_payment_sms"
-        description: "Envía el enlace oficial de pago vía mensaje de texto. DEBES HABLAR antes de ejecutarla."
+        description: "Envía el enlace oficial de pago vía mensaje de texto. REQUIERE NOMBRE DEL HUESPED. DEBES HABLAR antes de ejecutarla."
         parameters:
           type: "object"
           properties:
             phone: 
               type: "string"
+              description: "Numero de telefono con codigo de area"
             guestName: 
               type: "string"
+              description: "Nombre completo del huesped para la reserva"
             propertyId: 
               type: "string"
               enum: ["1081171030449673920", "42839458"]
-          required: ["phone", "propertyId"]
+          required: ["phone", "propertyId", "guestName"]
