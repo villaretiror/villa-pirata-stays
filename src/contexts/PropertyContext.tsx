@@ -107,7 +107,9 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             name: r.title,
             distance: r.distance || '5-10 min',
             desc: r.description || '',
-            image: r.image_url?.startsWith('http') ? r.image_url : `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/${r.image_url}`,
+            image: r.image_url?.startsWith('http') || r.image_url?.startsWith('/') 
+              ? r.image_url 
+              : `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/experiencia/${r.image_url}`,
             mapUrl: r.map_url || '',
             saltyTip: r.salty_tip || '',
             sortOrder: r.sort_order || 0
