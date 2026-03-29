@@ -561,18 +561,17 @@ const Booking: React.FC = () => {
                 exit={{ y: '100%' }}
                 className="bg-white w-full max-w-6xl rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl relative"
               >
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="font-serif font-black text-2xl text-secondary">Disponibilidad Real</h3>
+                <div className="flex justify-end items-center mb-0 px-2 pt-2">
                   <button 
                     onClick={() => setShowCalendarModal(false)} 
-                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all active:scale-90 border border-black/5 z-[2000005]"
+                    className="w-14 h-14 rounded-full bg-secondary text-primary shadow-2xl flex items-center justify-center hover:bg-secondary/90 transition-all active:scale-90 z-[2000005] border-4 border-white"
                     aria-label="Cerrar calendario"
                   >
-                    <X size={28} className="text-secondary" />
+                    <X size={32} />
                   </button>
                 </div>
                 
-                <div className="py-8">
+                <div className="py-0">
                   <BookingCalendar
                     startDate={startDate}
                     endDate={endDate}

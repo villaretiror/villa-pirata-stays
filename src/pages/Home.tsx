@@ -282,6 +282,7 @@ const Home: React.FC = () => {
                     <BookingCalendar 
                       startDate={startDate} 
                       endDate={endDate} 
+                      hideHeader={true}
                       onChange={(update) => {
                         const [start, end] = update;
                         setStartDate(start);
