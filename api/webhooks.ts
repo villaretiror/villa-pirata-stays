@@ -202,10 +202,31 @@ async function executeDirectTool(args: any, supabase: any) {
 
     } else if (toolName === 'send_payment_email') {
       const finalId = await resolvePropertyId(propertyId, supabase);
-      if (!email) throw new Error("Missing email for payment link.");
+      
+      // 🛡️ MILITARY-GRADE EMAIL VALIDATION
+      const emailRaw = String(email || '');
+      const emailNorm = emailRaw
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '')
+        .replace(/[;,]+$/g, '');
+
+      const isValidEmail = (e: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e);
+
+      if (!emailNorm) {
+        return { ok: false, data: "Falto el email. Por favor solicítalo al huésped." };
+      }
+
+      if (!isValidEmail(emailNorm)) {
+        return { 
+          ok: false, 
+          error: 'invalid_email',
+          data: `Email inválido: "${emailRaw}". Por favor confirma el email correcto con el huésped y reintenta formalmente.` 
+        };
+      }
 
       const sent = await MessagingService.sendPaymentLinkEmail({
-        to: email,
+        to: emailNorm,
         guestName: guestName,
         propertyId: finalId,
         startDate: startDate,
