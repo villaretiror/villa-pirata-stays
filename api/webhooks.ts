@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, addDays, isValid } from 'date-fns';
 import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
 import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable, queryPropertyKnowledge } from '../src/aiServices.js';
@@ -152,6 +152,75 @@ async function executeDirectTool(args: any, supabase: any) {
   const email = args.email || args.correo || "";
   const priceTotal = args.priceTotal || args.total || args.price || 0;
 
+  const { start: finalStartDate, end: finalEndDate, isNormalized } = (() => {
+    if (!startDate || !endDate) return { start: startDate, end: endDate, isNormalized: false };
+    try {
+      // 1. Precise parsing with Date-fns
+      let s = parseISO(startDate);
+      let e = parseISO(endDate);
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+
+      if (!isValid(s) || !isValid(e)) return { start: startDate, end: endDate, isNormalized: false };
+
+      const nights = Math.max(1, differenceInDays(e, s));
+      let changed = false;
+
+      // 2. Year Resolver (Start Date First)
+      if (s < now) {
+        console.log(`[🔱 Chronos] Correcting past year ${s.getFullYear()} to future...`);
+        changed = true;
+        // Jump to current year
+        if (s.getFullYear() < now.getFullYear()) s.setFullYear(now.getFullYear());
+        // If still past (Feb in March 2026), go next year
+        if (s < now) s.setFullYear(s.getFullYear() + 1);
+      }
+
+      // 3. Project End Date (Sync Duration)
+      e = addDays(s, nights);
+
+      const finalStart = s.toISOString().split('T')[0];
+      const finalEnd = e.toISOString().split('T')[0];
+
+      if (changed) console.log(`[🔱 Chronos] Normalized: ${finalStart} -> ${finalEnd} (${nights} nights)`);
+      return { start: finalStart, end: finalEnd, isNormalized: changed };
+    } catch (err) {
+      console.warn("[🔱 Chronos] Error:", err);
+      return { start: startDate, end: endDate, isNormalized: false };
+    }
+  })();
+
+  // 🔱 DETERMINISTIC PROPERTY RESOLUTION (Anti-Hallucination 6.0)
+  const resolvePropIdAntiHallucination = async (rawId: string, rawName: string, sb: any) => {
+    const cleanId = String(rawId || '').trim();
+    const cleanName = String(rawName || '').trim().toLowerCase();
+
+    // 1. Priority A: Explicit Canonical Name Mapping (Unbeatable)
+    if (cleanName.includes('retiro') || cleanName.includes('retiro r') || cleanName === 'villa retiro r') {
+      if (cleanId !== '1081171030449673920') console.log(`[🔱 Resolution] Resolved propertyId from propertyName fallback: Villa Retiro R`);
+      return '1081171030449673920';
+    }
+    if (cleanName.includes('pirata') || cleanName.includes('family') || cleanName.includes('house')) {
+      if (cleanId !== '42839458') console.log(`[🔱 Resolution] Resolved propertyId from propertyName fallback: Pirata Family House`);
+      return '42839458';
+    }
+
+    // 2. Priority B: Validate rawId against DB
+    if (cleanId) {
+      const { data: exists } = await sb.from('properties').select('id').eq('id', cleanId).maybeSingle();
+      if (exists) return String(exists.id);
+    }
+
+    // 3. Priority C: Fuzzy resolvePropertyId (AI Services)
+    const fuzzyId = await resolvePropertyId(cleanId || cleanName || '1081171030449673920', sb);
+    
+    // Final Validation: If fuzzyId doesn't exist in DB, it's a hallucination
+    const { data: finalCheck } = await sb.from('properties').select('id').eq('id', fuzzyId).maybeSingle();
+    if (finalCheck) return String(finalCheck.id);
+
+    return null; // Unresolvable
+  };
+
   try {
     let toolName = name;
     if (!toolName) {
@@ -159,39 +228,54 @@ async function executeDirectTool(args: any, supabase: any) {
       else if (phone || args.telefono) toolName = 'send_payment_sms';
     }
 
+    const currentPropName = args.propertyName || args.property_name || args.propiedad || "";
+    const finalId = await resolvePropIdAntiHallucination(propertyId, currentPropName, supabase);
+
+    if (!finalId) {
+      return { ok: false, error: "property_not_found", data: "Lo lamento, Capitán, pero mis brújulas no encuentran esa propiedad. ¿Podría confirmar el nombre de la villa?" };
+    }
+
     if (toolName === 'check_availability') {
-      const propId = await resolvePropertyId(propertyId, supabase);
-      
-      if (!startDate || !endDate) {
+      if (!finalStartDate || !finalEndDate) {
         return { ok: false, data: "Faltan fechas exactas. Confirme día, mes y año antes de consultar disponibilidad." };
       }
 
       // 1. Unified Availability Check (Local Bookings + Synced Blocks)
-      const availability = await checkAvailabilityWithICal(propId, startDate, endDate, supabase);
+      const availability = await checkAvailabilityWithICal(finalId, finalStartDate, finalEndDate, supabase);
       if (!availability.available) {
-        const alternate = await findAlternatePropertyAvailable(propId, startDate, endDate, supabase);
-        return { ok: true, available: false, reason: availability.reason || 'Ocupado', alternate: alternate ? alternate.title : null };
+        const alternate = await findAlternatePropertyAvailable(finalId, finalStartDate, finalEndDate, supabase);
+        return { 
+          ok: true, 
+          available: false, 
+          reason: availability.reason || 'Ocupado', 
+          alternate: alternate ? alternate.title : null,
+          normalizedStartDate: finalStartDate,
+          normalizedEndDate: finalEndDate,
+          isNormalized
+        };
       }
 
-      const quote = await applyAIQuote(propId, startDate, endDate, undefined, supabase);
+      const quote = await applyAIQuote(finalId, finalStartDate, finalEndDate, undefined, supabase);
       return {
         ok: true,
         available: true,
         priceTotal: quote.total,
         nights: quote.nights,
         currency: "USD",
+        normalizedStartDate: finalStartDate,
+        normalizedEndDate: finalEndDate,
+        isNormalized,
         message: `DISPONIBLE. Total por ${quote.nights} noches: ${quote.total} USD.`
       };
 
     } else if (toolName === 'send_payment_sms') {
-      const finalId = await resolvePropertyId(propertyId, supabase);
       if (!phone) throw new Error("Missing phone for SMS.");
 
       // 🛡️ RECALCULATE PRICE AS SOURCE OF TRUTH
       let verifiedPrice = priceTotal;
-      if (startDate && endDate) {
+      if (finalStartDate && finalEndDate) {
         try {
-          const quote = await applyAIQuote(finalId, startDate, endDate, undefined, supabase);
+          const quote = await applyAIQuote(finalId, finalStartDate, finalEndDate, undefined, supabase);
           verifiedPrice = quote.total;
         } catch (e) { console.warn("[Webhook] Price recalculation failed, using AI fallback."); }
       }
@@ -205,8 +289,8 @@ async function executeDirectTool(args: any, supabase: any) {
         content, 
         propertyId: finalId,
         guestName,
-        startDate,
-        endDate
+        startDate: finalStartDate,
+        endDate: finalEndDate
       });
 
       return {
@@ -217,8 +301,6 @@ async function executeDirectTool(args: any, supabase: any) {
       };
 
     } else if (toolName === 'send_payment_email') {
-      const finalId = await resolvePropertyId(propertyId, supabase);
-      
       // 🛡️ MILITARY-GRADE EMAIL VALIDATION
       const emailRaw = String(email || '');
       const emailNorm = emailRaw
@@ -243,9 +325,9 @@ async function executeDirectTool(args: any, supabase: any) {
 
       // 🛡️ RECALCULATE PRICE AS SOURCE OF TRUTH
       let verifiedPrice = priceTotal;
-      if (startDate && endDate) {
+      if (finalStartDate && finalEndDate) {
         try {
-          const quote = await applyAIQuote(finalId, startDate, endDate, undefined, supabase);
+          const quote = await applyAIQuote(finalId, finalStartDate, finalEndDate, undefined, supabase);
           verifiedPrice = quote.total;
         } catch (e) { console.warn("[Webhook] Price recalculation failed for email, using AI fallback."); }
       }
@@ -254,8 +336,8 @@ async function executeDirectTool(args: any, supabase: any) {
         to: emailNorm,
         guestName: guestName,
         propertyId: finalId,
-        startDate: startDate,
-        endDate: endDate,
+        startDate: finalStartDate,
+        endDate: finalEndDate,
         priceTotal: verifiedPrice,
         currency: args.currency || 'USD'
       });
@@ -269,9 +351,7 @@ async function executeDirectTool(args: any, supabase: any) {
 
     } else if (toolName === 'query_knowledge') {
       const query = args.query || args.pregunta || "";
-      const propId = propertyId;
-
-      const result = await queryPropertyKnowledge(query, propId, supabase);
+      const result = await queryPropertyKnowledge(query, finalId, supabase);
       return {
         ok: result.ok,
         answer: result.answer,
@@ -284,8 +364,8 @@ async function executeDirectTool(args: any, supabase: any) {
         property: args.propertyName || args.propiedad || 'Sin mapear',
         phone: phone,
         email: email,
-        checkIn: startDate,
-        checkOut: endDate,
+        checkIn: finalStartDate,
+        checkOut: finalEndDate,
         total: priceTotal,
         callId: args.callId || args.call_id || 'VAPI-BRAIN'
       });

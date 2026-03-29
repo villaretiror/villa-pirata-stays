@@ -11,32 +11,34 @@ const SmartImage: React.FC<SmartImageProps> = ({
     className,
     ...props
 }) => {
-    const [error, setError] = useState(false);
+    const [errorCount, setErrorCount] = useState(0);
     const [loaded, setLoaded] = useState(false);
 
     // 🚀 BOUTIQUE OPTIMIZATION: Handle Airbnb (muscache) and Unsplash resizing
-    let optimizedSrc = error ? fallbackSrc : src;
+    // We try 'src' first, then 'fallbackSrc' if 'src' fails.
+    let currentSrc = errorCount === 0 ? src : fallbackSrc;
+    let optimizedSrc = currentSrc;
     
     if (optimizedSrc && optimizedSrc.includes('muscache.com')) {
         // Append im_w to Airbnb images for optimized loading (720 is ideal for 1x cards)
         optimizedSrc = optimizedSrc.includes('?') 
-            ? `${optimizedSrc}&im_w=720` 
-            : `${optimizedSrc}?im_w=720`;
+            ? `${optimizedSrc}&im_w=1200` 
+            : `${optimizedSrc}?im_w=1200`;
     } else if (optimizedSrc && optimizedSrc.includes('unsplash.com') && !optimizedSrc.includes('auto=format')) {
         optimizedSrc += optimizedSrc.includes('?') ? '&auto=format' : '?auto=format';
     } else if (optimizedSrc && optimizedSrc.includes('supabase.co/storage/v1/render/image')) {
         // Supabase already using render endpoint, just ensure width/format
-        if (!optimizedSrc.includes('width=')) optimizedSrc += `&width=1200&format=webp&quality=80`;
+        if (!optimizedSrc.includes('width=')) optimizedSrc += `&width=1201&format=webp&quality=80`;
     } else if (optimizedSrc && optimizedSrc.includes('supabase.co/storage/v1/object/public')) {
         // 🔱 SALTY TRANSFORMATION: Convert raw Public URL to Render URL for WebP delivery
         optimizedSrc = optimizedSrc.replace('/object/public/', '/render/image/public/') + 
-                        (optimizedSrc.includes('?') ? '&' : '?') + 'width=1200&format=webp&quality=80';
+                        (optimizedSrc.includes('?') ? '&' : '?') + 'width=1201&format=webp&quality=80';
     }
 
     return (
         <div className={`relative overflow-hidden ${className}`}>
             {/* Blur Placeholder / Low-res base */}
-            {!loaded && !error && (
+            {!loaded && errorCount === 0 && (
                 <div className="absolute inset-0 bg-gradient-to-br from-sand to-gray-200">
                     {src?.includes('unsplash.com') && (
                         <img
@@ -55,8 +57,12 @@ const SmartImage: React.FC<SmartImageProps> = ({
                 className={`w-full h-full object-cover transition-all duration-1000 ease-out ${loaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-md'}`}
                 onLoad={() => setLoaded(true)}
                 onError={() => {
-                    if (!error) {
-                        setError(true);
+                    if (errorCount < 1 && fallbackSrc && fallbackSrc !== src) {
+                        // 🚢 RESCUE PROTOCOL: Try the fallback image exactly once
+                        console.warn(`[SmartImage] Primary failed. Attempting Rescue with fallback...`);
+                        setErrorCount(prev => prev + 1);
+                    } else {
+                        // All attempts failed
                         setLoaded(true);
                     }
                 }}
