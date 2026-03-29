@@ -84,7 +84,16 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                 <p className="text-[10px] sm:text-[12px] uppercase font-black tracking-[0.3em] sm:tracking-[0.4em] text-primary/60 leading-relaxed max-w-xs mx-auto">Seleccione su cronograma de estancia</p>
             </header>
             
-            <div className="booking-datepicker-wrapper relative shadow-bunker rounded-[3.5rem] overflow-hidden border border-black/5 bg-white">
+            {startDate && !endDate && minNights > 1 && (
+                <div className="mt-4 mb-6 animate-fade-in w-full flex justify-center">
+                    <div className="bg-secondary/95 backdrop-blur-xl border border-white/20 px-10 py-3 rounded-full flex items-center gap-3 shadow-[0_10px_30px_rgba(10,25,47,0.2)]">
+                        <span className="material-icons text-primary text-base">calendar_today</span>
+                        <span className="text-[12px] font-black uppercase tracking-[0.3em] text-white">Estancia Mínima: {minNights} Noches</span>
+                    </div>
+                </div>
+            )}
+
+            <div className="booking-datepicker-wrapper relative shadow-bunker rounded-[3.5rem] border border-black/5 bg-white mb-8">
                 <DatePicker
                     selectsRange={true}
                     startDate={startDate}
@@ -108,15 +117,6 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                         </div>
                     </div>
                 )}
-                
-                {startDate && !endDate && minNights > 1 && (
-                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 animate-fade-in w-max pointer-events-none">
-                        <div className="bg-secondary/95 backdrop-blur-xl border border-white/20 px-10 py-4 rounded-full flex items-center gap-3 shadow-[0_25px_50px_rgba(10,25,47,0.4)]">
-                            <span className="material-icons text-primary text-base">calendar_today</span>
-                            <span className="text-[12px] font-black uppercase tracking-[0.3em] text-white">Estancia Mínima: {minNights} Noches</span>
-                        </div>
-                    </div>
-                )}
             </div>
 
             <div className="flex flex-col sm:flex-row justify-center items-center gap-10 sm:gap-20 py-12 mt-8 border-t border-black/5 w-full max-w-2xl px-6">
@@ -135,10 +135,11 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
             <style>{`
         .vintage-premium-calendar { border: none !important; font-family: 'Outfit', sans-serif !important; background: white !important; }
         .react-datepicker { display: flex !important; padding: 2rem !important; gap: 3rem !important; border: none !important; background: white !important; flex-direction: row !important; }
-        .react-datepicker__navigation { top: 2.5rem !important; width: 44px !important; height: 44px !important; background: #fafafa !important; border-radius: 50% !important; border: 1px solid #eee !important; transition: all 0.3s ease !important; z-index: 10 !important; }
-        .react-datepicker__navigation:hover { background: #f0f0f0 !important; transform: scale(1.1); }
-        .react-datepicker__navigation--previous { left: 2rem !important; }
-        .react-datepicker__navigation--next { right: 2rem !important; }
+        .react-datepicker__navigation { top: 1.5rem !important; width: 48px !important; height: 48px !important; background: white !important; border-radius: 50% !important; border: 1px solid #ddd !important; transition: all 0.3s ease !important; z-index: 2000 !important; display: flex !important; align-items: center !important; justify-content: center !important; box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important; }
+        .react-datepicker__navigation:hover { background: #f0f0f0 !important; transform: scale(1.1) !important; }
+        .react-datepicker__navigation--previous { left: 0.5rem !important; }
+        .react-datepicker__navigation--next { right: 0.5rem !important; }
+        .react-datepicker__navigation-icon::before { border-color: #0A192F !important; border-width: 3px 3px 0 0 !important; width: 12px !important; height: 12px !important; }
         .react-datepicker__month-container { width: 320px !important; }
         .react-datepicker__header { background-color: white !important; border: none !important; padding: 0 !important; }
         .react-datepicker__current-month { font-family: 'serif' !important; font-weight: 900 !important; font-size: 2rem !important; margin-bottom: 2.5rem !important; color: #0A192F !important; text-transform: capitalize !important; letter-spacing: -0.06em !important; text-align: center !important; width: 100% !important; }
@@ -157,9 +158,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
         @media (max-width: 1023px) {
             .react-datepicker { flex-direction: column !important; padding: 1.5rem 1rem !important; gap: 2rem !important; }
             .react-datepicker__month-container { width: 100% !important; }
-            .react-datepicker__navigation { top: 1.5rem !important; width: 44px !important; height: 44px !important; }
-            .react-datepicker__navigation--previous { left: 1rem !important; }
-            .react-datepicker__navigation--next { right: 1rem !important; }
+            .react-datepicker__navigation { top: 1rem !important; }
+            .react-datepicker__navigation--previous { left: 0.5rem !important; }
+            .react-datepicker__navigation--next { right: 0.5rem !important; }
             .react-datepicker__day { height: 50px !important; font-size: 15px !important; }
             .react-datepicker__current-month { font-size: 1.75rem !important; margin-bottom: 2rem !important; }
             .react-datepicker__day-name { font-size: 11px !important; }

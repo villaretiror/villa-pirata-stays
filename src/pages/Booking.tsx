@@ -572,7 +572,7 @@ const Booking: React.FC = () => {
                   </button>
                 </div>
                 
-                <div className="max-h-[70vh] overflow-y-auto no-scrollbar py-4">
+                <div className="py-8">
                   <BookingCalendar
                     startDate={startDate}
                     endDate={endDate}
