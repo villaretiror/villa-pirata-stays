@@ -39,7 +39,7 @@ type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, bookings, favorites, isLoading, toggleFavorite, siteContent, localGuideData } = useProperty();
+  const { properties, bookings, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -238,6 +238,20 @@ const Home: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-32 relative bg-sand overflow-hidden scroll-smooth">
+      {/* 🔱 SALTY RADAR: Realtime Sync Indicator */}
+      <AnimatePresence>
+        {isRefreshing && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -20, x: '-50%' }}
+            className="fixed top-8 left-1/2 z-[3000000] bg-secondary/95 backdrop-blur-xl border border-primary/30 px-6 py-2.5 rounded-full flex items-center gap-3 shadow-2xl"
+          >
+            <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_#D4AF37]"></div>
+            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white">Sincronizando Disponibilidad...</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Background Mesh Gradients */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">

@@ -27,6 +27,7 @@ interface PropertyContextType {
   saveSiteContent: (content: SiteContent) => Promise<void>;
   saveVillaKnowledge: (knowledge: VillaKnowledge) => Promise<void>;
   refreshProperties: () => Promise<void>;
+  isRefreshing: boolean;
 }
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
@@ -59,6 +60,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
   const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('favorites');
@@ -140,6 +142,12 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (isConfigured) {
       const channel = supabase.channel('schema-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, () => mutateProperties())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async () => {
+           console.log("🔱 SALTY RADAR: Cambio en disponibilidad detectado. Refrescando...");
+           setIsRefreshing(true);
+           await Promise.all([fetchPropertiesFromDB(), mutateProperties()]);
+           setTimeout(() => setIsRefreshing(false), 1000); // UI breathing room
+        })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, () => fetchPropertiesFromDB())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'destination_guides' }, () => fetchPropertiesFromDB())
         .subscribe();
@@ -185,9 +193,13 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [fetchPropertiesFromDB]);
 
   const value: PropertyContextType = {
-    properties, localGuideData, secretSpots, bookings, villaKnowledge, siteContent, favorites, isLoading, error: pError,
+    properties, localGuideData, secretSpots, bookings, villaKnowledge, siteContent, favorites, isLoading, error: pError, isRefreshing,
     toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge,
-    refreshProperties: async () => { await Promise.all([mutateProperties(), fetchPropertiesFromDB()]); }
+    refreshProperties: async () => { 
+      setIsRefreshing(true);
+      await Promise.all([mutateProperties(), fetchPropertiesFromDB()]); 
+      setIsRefreshing(false);
+    }
   };
 
   return <PropertyContext.Provider value={value}>{children}</PropertyContext.Provider>;
