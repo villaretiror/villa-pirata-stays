@@ -5,56 +5,110 @@ import { supabase } from '../lib/supabase.js';
  * Architecture: Server-side Alerts for Business & System Health
  */
 
+// 🔱 GLOBAL MESSAGE QUEUE (Serializes Telegram requests to prevent 429s)
+let telegramQueue: Promise<boolean | void> = Promise.resolve();
+
 export const NotificationService = {
+    /**
+     * 🔱 SALTY DISPATCHER (THE SHIELD)
+     * Internal robust delivery engine with Retry + Backoff + DB Audit + Sequential Queue
+     */
+    async _dispatchWithRetry(token: string, chatId: string, payload: any, retries = 5): Promise<boolean> {
+        // Enforce sequential processing by chaining to the global promise
+        const currentExecution = telegramQueue.then(async () => {
+            let attempt = 0;
+            let lastError = '';
+
+            while (attempt < retries) {
+                try {
+                    // Ensure text is concise and sanitized
+                    if (payload.text) payload.text = payload.text.substring(0, 4000); 
+
+                    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+
+                    if (data.ok) {
+                        if (attempt > 0) console.log(`[NotificationService] Success after ${attempt} retries for ${chatId}.`);
+                        // Wait 1s between successful messages as a grace period for Telegram limits
+                        await new Promise(r => setTimeout(r, 1000));
+                        return true;
+                    }
+
+                    // 🚨 429: Too Many Requests (Rate Limit)
+                    if (response.status === 429 || data.error_code === 429) {
+                        const retryAfter = data.parameters?.retry_after || Math.pow(2, attempt + 1);
+                        console.warn(`[NotificationService] Telegram Rate Limit (429). Waiting ${retryAfter}s...`);
+                        await new Promise(r => setTimeout(r, retryAfter * 1000));
+                        attempt++;
+                        continue;
+                    }
+
+                    lastError = data.description || 'Unknown Telegram Error';
+                    if (lastError.includes('blocked') || lastError.includes('not found')) break;
+
+                    attempt++;
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                } catch (err: any) {
+                    lastError = `Fetch Error: ${err.message}`;
+                    attempt++;
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+
+            // 🔱 PROTOCOL ANTIGRAVITY: Log failure to Bunker
+            console.error(`[NotificationService] CRITICAL FAILURE after ${attempt} attempts for ${chatId}.`);
+            await supabase.from('system_logs').insert({
+                level: 'error',
+                service: 'NotificationService',
+                message: `Telegram Delivery Failure: ${lastError}`,
+                meta: { 
+                    chat_id: chatId, 
+                    attempts: attempt,
+                    message_preview: payload.text?.substring(0, 100)
+                }
+            }).catch((dbErr: any) => console.error("[NotificationService] DB Audit Failure:", dbErr.message));
+
+            return false;
+        });
+
+        telegramQueue = currentExecution;
+        const result = await currentExecution;
+        return !!result;
+    },
+
     /**
      * Envía una alerta a Telegram al chat del Host.
      */
     async sendTelegramAlert(message: string, keyboard?: any, silent: boolean = false): Promise<boolean> {
         const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-        const CHAT_ID        = process.env.TELEGRAM_CHAT_ID;
+        const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
 
         if (!TELEGRAM_TOKEN || !CHAT_ID) {
             console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
             return false;
         }
 
-        try {
-            const bodyPayload: any = {
-                chat_id: CHAT_ID,
-                text: message,
-                parse_mode: 'HTML',
-                disable_notification: silent
-            };
+        const payload: any = {
+            chat_id: CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_notification: silent
+        };
 
-            if (keyboard) {
-                bodyPayload.reply_markup = keyboard;
-                // 📡 DEBUGGING: Log outbound URLs to catch BUTTON_URL_INVALID
-                if (keyboard.inline_keyboard) {
-                    const urls = keyboard.inline_keyboard.flat().map((b: any) => b?.url).filter(Boolean);
-                    if (urls.length > 0) {
-                        console.log("[NotificationService] Outbound Telegram URLs:", urls);
-                    }
-                }
+        if (keyboard) {
+            payload.reply_markup = keyboard;
+            if (keyboard.inline_keyboard) {
+                const urls = keyboard.inline_keyboard.flat().map((b: any) => b?.url).filter(Boolean);
+                if (urls.length > 0) console.log("[NotificationService] Outbound URLs:", urls);
             }
-
-            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bodyPayload)
-            });
-
-            const data = await response.json();
-            if (!data.ok) {
-                console.error("[NotificationService] Error de Telegram:", data.description);
-                return false;
-            }
-            console.log("[NotificationService] Alerta Telegram enviada con éxito.");
-            return true;
-        } catch (error: Error | unknown) {
-            const msg = error instanceof Error ? error.message : String(error);
-            console.error("[NotificationService] Error de Red/Fetch:", msg);
-            return false;
         }
+
+        return this._dispatchWithRetry(TELEGRAM_TOKEN, CHAT_ID, payload);
     },
 
     /**
@@ -64,52 +118,33 @@ export const NotificationService = {
         const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 
         if (!TELEGRAM_TOKEN) {
-            console.warn("[NotificationService] Telegram Token faltante para envío directo.");
+            console.warn("[NotificationService] Telegram Token faltante.");
             return false;
         }
 
-        try {
-            const bodyPayload: any = {
-                chat_id: chatId,
-                text: message,
-                parse_mode: 'HTML',
-                disable_notification: silent
-            };
+        const payload: any = {
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'HTML',
+            disable_notification: silent
+        };
 
-            if (keyboard) {
-                bodyPayload.reply_markup = keyboard;
-            }
+        if (keyboard) payload.reply_markup = keyboard;
 
-            const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(bodyPayload)
-            });
-
-            const data = await response.json();
-            if (!data.ok) {
-                console.error("[NotificationService] Error de Telegram (Directo):", data.description);
-                return false;
-            }
-            return true;
-        } catch (error: Error | unknown) {
-            const msg = error instanceof Error ? error.message : String(error);
-            console.error("[NotificationService] Error de Red/Fetch (Directo):", msg);
-            return false;
-        }
+        return this._dispatchWithRetry(TELEGRAM_TOKEN, chatId, payload);
     },
 
     /**
      * 🏨 RESERVAS: Nueva Reservación Confirmada
      */
     async notifyNewReservation(
-        bookingId: string, 
-        guestName: string, 
-        property: string, 
-        checkIn: string, 
-        checkOut: string, 
-        price: string, 
-        source: string = 'Directo', 
+        bookingId: string,
+        guestName: string,
+        property: string,
+        checkIn: string,
+        checkOut: string,
+        price: string,
+        source: string = 'Directo',
         syncHash?: string
     ): Promise<boolean> {
         if (syncHash && bookingId) {
@@ -118,7 +153,7 @@ export const NotificationService = {
                 .select('sync_last_hash, notified_external_at')
                 .eq('id', bookingId)
                 .single();
-            
+
             if (existing?.sync_last_hash === syncHash && existing?.notified_external_at) {
                 console.log(`[NotificationService] Skipping redundant alert for booking ${bookingId} (Hash matched).`);
                 return true;
@@ -143,12 +178,12 @@ export const NotificationService = {
 <b>Total:</b> 💵 $${price} USD
 
 🚀 <i>Salty: Registrado en calendario y base de datos.</i>`;
-        
+
         // 💰 Reservas son High Urgency -> Loud
         const sent = await this.sendTelegramAlert(message, {
             inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_booking_${bookingId}` }]]
         }, false);
-        
+
         if (sent && bookingId) {
             await supabase.from('bookings').update({
                 notified_external_at: new Date().toISOString(),
@@ -218,8 +253,8 @@ export const NotificationService = {
 
             const cohostEmails = cohosts.map((c: any) => c.email);
             const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-            const hostChatId     = process.env.TELEGRAM_CHAT_ID;
-            const allChatIds     = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId || "").split(',').map((id: string) => id.trim()).filter(Boolean);
+            const hostChatId = process.env.TELEGRAM_CHAT_ID;
+            const allChatIds = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId || "").split(',').map((id: string) => id.trim()).filter(Boolean);
 
             const emergencyMsg =
                 `🔴 <b>[CO-HOST ALERT] ${propertyName.toUpperCase()}</b>\n\n` +
@@ -258,7 +293,7 @@ export const NotificationService = {
                 },
                 impact_score: severity === 'critical' ? 10 : severity === 'high' ? 7 : 4,
                 status: 'resolved'
-            }).catch(() => {});
+            }).catch(() => { });
 
         } catch (err: any) {
             console.error('[NotificationService] notifyEmergencyToCohosts error:', err.message);
@@ -415,7 +450,7 @@ ${stats.syncDetails}
 
         const baseUrl = siteUrl.replace(/\/$/, '');
         const safeSecret = encodeURIComponent(stats.secret || '');
-        
+
         const row1 = [
             { text: "🚀 Ver Dashboard", url: `${baseUrl}/host` }
         ];
