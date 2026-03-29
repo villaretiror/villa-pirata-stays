@@ -178,6 +178,7 @@ export const checkAvailabilityWithICal = async (
     // ── Step 0: Gold Rules Validation (Dashboard Rules)
     const { data: propSettings } = await client.from('properties').select('sync_settings').eq('id', finalId).single();
     const minNights = propSettings?.sync_settings?.min_nights || 2;
+    const allowRequestsBeyond = propSettings?.sync_settings?.allow_requests_beyond || false;
     const diffTime = qOut.getTime() - qIn.getTime();
     const nights = Math.ceil(diffTime / (1000 * 3600 * 24));
 
@@ -200,6 +201,13 @@ export const checkAvailabilityWithICal = async (
             reason: `Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`
         };
     }
+
+    // 🔱 MODO CAPTACIÓN: Check availability window if switch is active
+    const availabilityWindowMonths = propSettings?.sync_settings?.availability_window || 6;
+    const windowDate = new Date();
+    windowDate.setMonth(windowDate.getMonth() + availabilityWindowMonths);
+
+    const isBeyondWindow = qIn > windowDate;
 
     // ── Step 1: Query unified bookings table (Direct, Manual, Pending)
     type BookingAvailRow = { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null; source: string | null };
@@ -291,10 +299,32 @@ export const checkAvailabilityWithICal = async (
             const ds = curr.toISOString().split('T')[0];
             const isBlocked = rules.some((r: any) => ds >= r.start_date && ds <= r.end_date);
             if (isBlocked) {
+                if (allowRequestsBeyond) {
+                    return { 
+                        available: false, 
+                        is_request_only: true, 
+                        reason: 'Esa fecha está bloqueada en mi brújula actual, pero puedo enviarle su petición al Capitán Brian para que evalúe una excepción para usted.'
+                    };
+                }
                 return { available: false, reason: 'Fechas bloqueadas manualmente por el anfitrión (Hard Block).' };
             }
             curr.setDate(curr.getDate() + 1);
         }
+    }
+
+    // 🔱 WINDOW CHECK (Final Step)
+    if (isBeyondWindow) {
+        if (allowRequestsBeyond) {
+            return { 
+                available: false, 
+                is_request_only: true, 
+                reason: `Esa travesía está en un horizonte lejano (más de ${availabilityWindowMonths} meses), pero si gusta puedo tomar sus datos para asegurar su lugar en la bitácora del Capitán.`
+            };
+        }
+        return { 
+            available: false, 
+            reason: `Solo aceptamos reservas con hasta ${availabilityWindowMonths} meses de anticipación por el momento.` 
+        };
     }
 
     return { available: true };

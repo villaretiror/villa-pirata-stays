@@ -4,6 +4,9 @@ import { ShieldCheck, RefreshCcw, DollarSign, Search, Tag, Zap, Radio } from 'lu
 import { motion, AnimatePresence } from 'framer-motion';
 import CalendarSection from './PropertyEditor/CalendarSection';
 import { showToast } from '../../utils/toast';
+import { usePropertyStats } from '../../hooks/usePropertyStats';
+import { formatDistanceToNow } from 'date-fns';
+import { es } from 'date-fns/locale';
 
 export default function HostAvailabilityManager({ properties, onRefresh }: { properties: any[], onRefresh?: () => void }) {
   const [selectedPropertyId, setSelectedPropertyId] = useState(properties[0]?.id || '');
@@ -13,6 +16,38 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
 
   // local "form" state to talk to CalendarSection and handle iCal
   const [localForm, setLocalForm] = useState<any>(null);
+  const [auditLogs, setAuditLogs] = useState<any[]>([]);
+  const { occupancyRate, monthName } = usePropertyStats(selectedPropertyId, localForm?.blockedDates);
+
+  const fetchAuditLogs = async () => {
+    const { data } = await supabase
+        .from('security_audit_logs')
+        .select('*')
+        .eq('category', 'BUSINESS')
+        .order('created_at', { ascending: false })
+        .limit(5);
+    if (data) setAuditLogs(data);
+  };
+
+  useEffect(() => {
+    fetchAuditLogs();
+  }, [selectedPropertyId]);
+
+  const logAuditAction = async (action: string, metadata: any = {}) => {
+      const { data: { user } } = await supabase.auth.getUser();
+      await supabase.from('security_audit_logs').insert({
+          user_id: user?.id,
+          email: user?.email,
+          category: 'BUSINESS',
+          action: action,
+          metadata: { 
+            property_id: selectedPropertyId, 
+            property_title: activeProperty?.title,
+            ...metadata 
+          }
+      });
+      fetchAuditLogs();
+  };
 
   useEffect(() => {
     if (activeProperty) {
@@ -52,6 +87,10 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     if (error) {
        showToast("Error al guardar cambios 🔱");
     } else {
+       // Log price change specifically
+       if (updatedForm.price !== activeProperty?.price) {
+          logAuditAction(`Actualizó Tarifa Base a $${updatedForm.price}`, { old: activeProperty?.price, new: updatedForm.price });
+       }
        if (onRefresh) onRefresh();
     }
     setIsSaving(false);
@@ -194,8 +233,8 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <Zap className="w-8 h-8 text-primary" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50">Eficiencia Local</h4>
-                    <p className="text-3xl font-serif font-black italic mt-1">94% <span className="text-xs font-sans text-green-400">↑2%</span></p>
+                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50">Eficiencia {monthName}</h4>
+                    <p className="text-3xl font-serif font-black italic mt-1">{occupancyRate}% <span className="text-xs font-sans text-green-400">Real</span></p>
                  </div>
                  <Radio className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10 rotate-12" />
               </div>
@@ -469,11 +508,31 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
               </div>
 
               <div className="space-y-3 relative z-10">
-                  <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
-                     <p className="text-[9px] text-gray-300 leading-relaxed italic">
-                        "Vigilando {localForm.title}. Todo el perímetro digital está asegurado."
-                     </p>
-                  </div>
+                  {auditLogs.length > 0 ? (
+                      <div className="space-y-3">
+                         {auditLogs.map((log) => (
+                             <div key={log.id} className="p-3 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-all cursor-default group">
+                                <div className="flex justify-between items-start mb-1">
+                                    <p className="text-[9px] font-black text-white/90 uppercase tracking-tighter leading-tight">
+                                        {activeProperty?.id === log.metadata?.property_id ? 'Actualización Local' : log.metadata?.property_title || 'Sistema'}
+                                    </p>
+                                    <span className="text-[7px] font-bold text-white/40 uppercase">
+                                        {formatDistanceToNow(new Date(log.created_at), { addSuffix: true, locale: es })}
+                                    </span>
+                                </div>
+                                <p className="text-[10px] text-white/70 italic leading-snug">
+                                    "{log.action}"
+                                </p>
+                             </div>
+                         ))}
+                      </div>
+                  ) : (
+                    <div className="p-3 bg-white/5 rounded-2xl border border-white/10">
+                        <p className="text-[9px] text-gray-300 leading-relaxed italic">
+                            "Vigilando {activeProperty?.title || 'la propiedad'}. Todo el perímetro digital está asegurado."
+                        </p>
+                    </div>
+                  )}
               </div>
            </div>
          </div>
