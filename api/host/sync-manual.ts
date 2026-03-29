@@ -48,16 +48,28 @@ export default async function handler(req: any, res: any) {
                     
                     const blocks = CalendarSyncService.parseIcsToBlocks(icsText, prop.id);
                     if (blocks.length > 0) {
+                        const syncSessionId = `manual_sync_${Date.now()}_${feed.platform}`;
+                        
                         const syncedEntries = blocks.map(b => ({
                             property_id: prop.id,
                             check_in: b.start,
                             check_out: b.end,
                             source: feed.platform,
-                            sync_hash: b.hash
+                            sync_hash: b.hash,
+                            sync_session_id: syncSessionId
                         }));
 
-                        await supabase.from('synced_blocks').delete().eq('property_id', prop.id).eq('source', feed.platform);
-                        await supabase.from('synced_blocks').insert(syncedEntries);
+                        // 🔱 ATOMIC UPSERT: Keep the old ones until the new ones are in.
+                        const { error: upsError } = await supabase.from('synced_blocks').upsert(syncedEntries, { onConflict: 'sync_hash' });
+                        if (upsError) throw upsError;
+
+                        // 🧹 SCOPED PURGE: Delete only what NO LONGER exists in this platform's feed
+                        await supabase.from('synced_blocks')
+                           .delete()
+                           .eq('property_id', prop.id)
+                           .eq('source', feed.platform)
+                           .neq('sync_session_id', syncSessionId);
+
                         results.synced_blocks += blocks.length;
                     }
                 } catch (e: any) {

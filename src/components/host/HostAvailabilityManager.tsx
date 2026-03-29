@@ -92,16 +92,23 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     showToast("Salty está conectando con los satélites de Airbnb... 🛰️");
     
     try {
-      const response = await fetch('/api/calendar/import', { 
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+
+      const response = await fetch('/api/host/sync-manual', { 
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
       });
       
       if (response.ok) {
         showToast("Sincronización Global Completada. Travesías Aseguradas 🔱");
         if (onRefresh) onRefresh();
       } else {
-        showToast("Airbnb está tardando en responder. Salty seguirá intentando en segundo plano. 🛡️");
+        const errorData = await response.json().catch(() => ({}));
+        showToast(errorData.error || "Airbnb está tardando en responder. Salty seguirá intentando en segundo plano. 🛡️");
       }
     } catch (e) {
       showToast("Error en conexión satelital. Reintentando... 🛰️");

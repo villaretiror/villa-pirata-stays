@@ -220,17 +220,25 @@ export const checkAvailabilityWithICal = async (
     }
 
     // A. Native Overlap Check (Direct Bookings)
+    const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
+    
     const nativeOverlap = (bookingRes.data as BookingAvailRow[] || []).find((b: BookingAvailRow) => {
+        // 🛡️ INVENTORY PROTECTION: Only block for real intention
+        if (!BLOCKING_STATUSES.includes(b.status || '')) return false;
+        
+        // AI Hold TTL check
         if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
+        
         const bIn = new Date(b.check_in);
         const bOut = new Date(b.check_out);
         return qIn < bOut && qOut > bIn;
     });
 
     if (nativeOverlap) {
+        const statusLabel = nativeOverlap.status === 'confirmed' || nativeOverlap.status === 'Paid' ? 'Confirmada' : 'En proceso';
         return { 
             available: false, 
-            reason: `Fechas ya ocupadas por una reserva directa (${nativeOverlap.status === 'confirmed' ? 'Confirmada' : 'En proceso'}).` 
+            reason: `Fechas ya ocupadas por una reserva directa (${statusLabel}).` 
         };
     }
 

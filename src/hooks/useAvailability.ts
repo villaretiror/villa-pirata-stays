@@ -107,9 +107,15 @@ export const useAvailability = (propertyId: string | undefined) => {
             }
 
             // Process Bookings
+            const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
+            
             (activeBookings || []).forEach((b: { check_in: string; check_out: string; status: string | null; hold_expires_at: string | null }) => {
+                // 🛡️ INVENTORY PROTECTION: Only block for real intention
+                if (!BLOCKING_STATUSES.includes(b.status || '')) return;
+                
                 // Ignore expired AI holds
                 if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return;
+                
                 addRange(b.check_in, b.check_out);
             });
 
