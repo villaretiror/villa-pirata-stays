@@ -60,6 +60,17 @@ const Home: React.FC = () => {
   // Ref for auto-scrolling to results
   const resultsRef = useRef<HTMLDivElement>(null);
 
+  // 🔱 NAVIGATION RESCUE: ESC Key Listener
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isSearchOpen) {
+        setIsSearchOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isSearchOpen]);
+
   const handleSearch = () => {
     setIsSearchOpen(false);
     scrollToResults();
@@ -237,7 +248,10 @@ const Home: React.FC = () => {
 
       {/* Search Overlay */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-[100] bg-sand/90 backdrop-blur-xl flex items-start justify-center pt-24 pb-12 px-4 animate-fade-in overflow-y-auto">
+        <div 
+          onClick={(e) => { if (e.target === e.currentTarget) setIsSearchOpen(false); }}
+          className="fixed inset-0 z-[2000000] bg-sand/90 backdrop-blur-3xl flex items-start justify-center pt-24 pb-12 px-4 animate-fade-in overflow-y-auto"
+        >
           <div className="w-full max-w-sm md:max-w-4xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl animate-slide-up relative bg-white border border-white/50 my-auto">
 
             <div className="flex justify-between items-center mb-8">

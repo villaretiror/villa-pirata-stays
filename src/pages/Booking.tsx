@@ -10,7 +10,7 @@ import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X } from 'lucide-react';
+import { X, ArrowLeft } from 'lucide-react';
 import { BookingSkeleton } from '../components/Skeleton';
 import type { TablesInsert } from '../supabase_types';
 
@@ -62,6 +62,17 @@ const Booking: React.FC = () => {
   const [contractAccepted, setContractAccepted] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+
+  // 🔱 NAVIGATION RESCUE: ESC Key Listener
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && showCalendarModal) {
+        setShowCalendarModal(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showCalendarModal]);
 
   // 1. Fetch Fresh on Mount & Handle Recovery
   useEffect(() => {
@@ -541,7 +552,8 @@ const Booking: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto overflow-x-hidden"
+              onClick={(e) => { if (e.target === e.currentTarget) setShowCalendarModal(false); }}
+              className="fixed inset-0 z-[2000001] bg-secondary/80 backdrop-blur-xl flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto overflow-x-hidden"
             >
               <motion.div
                 initial={{ y: '100%' }}
@@ -553,19 +565,34 @@ const Booking: React.FC = () => {
                   <h3 className="font-serif font-black text-2xl text-secondary">Disponibilidad Real</h3>
                   <button 
                     onClick={() => setShowCalendarModal(false)} 
-                    className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors active:scale-95"
+                    className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-white shadow-xl flex items-center justify-center hover:bg-gray-50 transition-all active:scale-90 border border-black/5 z-[2000005]"
+                    aria-label="Cerrar calendario"
                   >
-                    <X size={24} className="text-secondary" />
+                    <X size={28} className="text-secondary" />
                   </button>
                 </div>
-                <BookingCalendar
-                  startDate={startDate}
-                  endDate={endDate}
-                  onChange={handleDateChange}
-                  blockedDates={blockedDates}
-                  minNights={min_nights_req}
-                  isRangeAvailable={isRangeAvailable}
-                />
+                
+                <div className="max-h-[70vh] overflow-y-auto no-scrollbar py-4">
+                  <BookingCalendar
+                    startDate={startDate}
+                    endDate={endDate}
+                    onChange={handleDateChange}
+                    blockedDates={blockedDates}
+                    minNights={min_nights_req}
+                    isRangeAvailable={isRangeAvailable}
+                  />
+                </div>
+
+                {/* Mobile Rescue Button */}
+                <div className="sm:hidden mt-6 pb-2">
+                  <button
+                    onClick={() => setShowCalendarModal(false)}
+                    className="w-full py-4 bg-gray-50 text-secondary/60 text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl flex items-center justify-center gap-2 border border-black/5 hover:bg-gray-100 transition-all"
+                  >
+                    <ArrowLeft size={14} />
+                    Regresar a Detalles
+                  </button>
+                </div>
                 <button
                   onClick={() => setShowCalendarModal(false)}
                   disabled={!startDate || !endDate}

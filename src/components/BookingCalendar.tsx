@@ -110,10 +110,10 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                 )}
                 
                 {startDate && !endDate && minNights > 1 && (
-                    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 animate-fade-in w-max pointer-events-none">
-                        <div className="bg-primary/95 backdrop-blur-xl border border-white/40 px-8 py-3 rounded-full flex items-center gap-3 shadow-[0_25px_50px_rgba(212,175,55,0.4)]">
-                            <span className="material-icons text-white text-base">calendar_today</span>
-                            <span className="text-[11px] font-black uppercase tracking-[0.25em] text-white">Estancia Mínima: {minNights} Noches</span>
+                    <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-30 animate-fade-in w-max pointer-events-none">
+                        <div className="bg-secondary/95 backdrop-blur-xl border border-white/20 px-10 py-4 rounded-full flex items-center gap-3 shadow-[0_25px_50px_rgba(10,25,47,0.4)]">
+                            <span className="material-icons text-primary text-base">calendar_today</span>
+                            <span className="text-[12px] font-black uppercase tracking-[0.3em] text-white">Estancia Mínima: {minNights} Noches</span>
                         </div>
                     </div>
                 )}
