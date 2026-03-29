@@ -200,7 +200,14 @@ async function executeDirectTool(args: any, supabase: any) {
       const greeting = guestName ? `¡Hola ${guestName}! ` : "¡Hola! ";
       const content = `${greeting}Aquí tienes tu link de reserva para Villa & Pirata Stays. Total: $${verifiedPrice} USD. Accede aquí: ${link}`;
       
-      const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
+      const sent = await MessagingService.sendSms({ 
+        to: phone, 
+        content, 
+        propertyId: finalId,
+        guestName,
+        startDate,
+        endDate
+      });
 
       return {
         ok: true,

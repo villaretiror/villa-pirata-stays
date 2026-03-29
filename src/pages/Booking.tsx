@@ -55,7 +55,7 @@ const Booking: React.FC = () => {
     isRangeAvailable 
   } = useAvailability(id);
 
-  const [phone, setPhone] = useState(user?.phone || '');
+  const [phone, setPhone] = useState(new URLSearchParams(location.search).get('phone') || user?.phone || '');
   const [guestMessage, setGuestMessage] = useState('');
   const [priceMismatch, setPriceMismatch] = useState(false);
   const [contractAccepted, setContractAccepted] = useState(false);
@@ -67,8 +67,17 @@ const Booking: React.FC = () => {
     refreshProperties();
     
     const loadRecovery = async () => {
+        // 🔱 SMART LINK RECOVERY (Vapi -> Booking)
+        const params = new URLSearchParams(location.search);
+        const ci = params.get('check_in');
+        const co = params.get('check_out');
+        
+        if (ci && co) {
+            console.log(`[Smart Link] Recovering dates: ${ci} to ${co}`);
+            setDateRange([parseISO(ci + 'T12:00:00'), parseISO(co + 'T12:00:00')]);
+        } 
         // Recovery from unfinished booking
-        if (recoverData?.booking_id && recoverData?.recover) {
+        else if (recoverData?.booking_id && recoverData?.recover) {
             const { data } = await supabase.from('bookings').select('check_in, check_out').eq('id', recoverData.booking_id).single();
             if (data) {
                 setDateRange([parseISO(data.check_in + 'T12:00:00'), parseISO(data.check_out + 'T12:00:00')]);
@@ -276,7 +285,11 @@ const Booking: React.FC = () => {
               <span className="material-icons text-text-main">close</span>
             </button>
             <div className="text-center">
-              <h2 className="font-serif font-black text-xl text-text-main leading-none">Confirmar Estancia</h2>
+              <h2 className="font-serif font-black text-xl text-text-main leading-none">
+                {new URLSearchParams(location.search).get('guest_name') 
+                  ? `Bienvenido, ${new URLSearchParams(location.search).get('guest_name')}`
+                  : 'Confirmar Estancia'}
+              </h2>
               <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mt-1 italic">Boutique Stays Experience</p>
             </div>
             <div className="w-12"></div>

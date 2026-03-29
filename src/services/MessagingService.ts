@@ -138,14 +138,24 @@ export const MessagingService = {
         content: string;
         propertyId?: string;
         bookingId?: string;
+        startDate?: string;
+        endDate?: string;
+        guestName?: string;
     }) {
         const cleanPhone = options.to.includes('+') ? options.to : `+${options.to.replace(/\D/g, '')}`;
-        const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
+        const siteUrl = (process.env.VITE_SITE_URL || 'https://www.villaretiror.com').replace(/\/$/, '');
         
-        // Link dinámico de pago si se provee propertyId
-        const payLink = options.propertyId 
-            ? `\n\nLink de Pago: ${siteUrl}/stay/${options.propertyId}${options.bookingId ? `?booking_id=${options.bookingId}` : ''}`
-            : '';
+        // 🔱 SMART LINK EVOLUTION: Direct to Booking funnel with pre-filled data
+        let payLink = '';
+        if (options.propertyId) {
+            const queryParams = new URLSearchParams({
+                check_in: options.startDate || '',
+                check_out: options.endDate || '',
+                guest_name: options.guestName || '',
+                source: 'salty_sms'
+            }).toString();
+            payLink = `\n\nLink de Pago: ${siteUrl}/booking/${options.propertyId}?${queryParams}`;
+        }
 
         const fullMessage = `${options.content}${payLink}\n\n🔱 Salty Concierge`;
 
@@ -202,7 +212,16 @@ export const MessagingService = {
         if (!p) throw new Error("Property not found for email link");
 
         const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
-        const payLink = `${siteUrl}/stay/${params.propertyId}`;
+        
+        // 🔱 SMART LINK EVOLUTION: Direct to Booking funnel with pre-filled data
+        const queryParams = new URLSearchParams({
+            check_in: params.startDate || '',
+            check_out: params.endDate || '',
+            guest_name: params.guestName || '',
+            source: 'salty_voice'
+        }).toString();
+        
+        const payLink = `${siteUrl.replace(/\/$/, '')}/booking/${params.propertyId}?${queryParams}`;
         const currency = params.currency || 'USD';
         
         const html = `
