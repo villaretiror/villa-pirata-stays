@@ -101,7 +101,7 @@ const SaltyVoiceButton: React.FC = () => {
         }
     };
     return (
-        <div className="fixed bottom-52 md:bottom-32 right-4 md:right-10 z-[99999] flex flex-col items-center gap-6 pointer-events-auto scale-[0.85] md:scale-100 origin-right">
+        <div className="fixed bottom-60 md:bottom-40 right-6 md:right-12 z-[999999] flex flex-col items-center gap-6 pointer-events-auto scale-90 md:scale-100 origin-right transition-all duration-300">
             {/* ☎️ VAPI WEB CALL BUTTON (Native Experience) */}
             <div className="relative group">
                 {/* 🔱 ELITE GLOW: Reactive to current volume! */}

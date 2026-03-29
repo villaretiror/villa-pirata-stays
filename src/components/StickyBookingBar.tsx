@@ -34,10 +34,10 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className="fixed bottom-6 left-4 right-4 z-[100] md:left-1/2 md:-translate-x-1/2 md:bottom-10 md:w-[600px]"
         >
-          <div className="bg-secondary/95 backdrop-blur-xl rounded-[2.5rem] p-4 shadow-bunker border border-white/10 flex items-center justify-between gap-4">
-            <div className="pl-6 py-2 overflow-hidden">
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50 mb-1 leading-none">Villa Retiro LLC</p>
-              <h4 className="text-white font-serif font-bold text-lg truncate leading-tight">{villaName}</h4>
+          <div className="bg-secondary/95 backdrop-blur-2xl rounded-[2.5rem] pt-8 pb-5 px-6 shadow-bunker border border-white/10 flex items-center justify-between gap-6">
+            <div className="pl-4 py-1.5 overflow-hidden">
+              <p className="text-[10px] font-black uppercase tracking-[0.25em] text-white/40 mb-1 leading-none">Villa Retiro LLC</p>
+              <h4 className="text-white font-serif font-bold text-xl truncate leading-tight tracking-tight">{villaName}</h4>
             </div>
             
             <button

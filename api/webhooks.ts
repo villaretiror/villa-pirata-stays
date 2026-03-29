@@ -142,7 +142,7 @@ async function handleVapiTools(req: any, res: any, message: any) {
  */
 async function executeDirectTool(args: any, supabase: any) {
   const name = args.name;
-  
+
   // 🛡️ ELITE TOLERANCE: Alias old field names to new ones to prevent Vapi breakage
   const guestName = args.guestName || args.fullName || args.full_name || args.name || args.nombre || "Huésped";
   const propertyId = args.propertyId || args.property_id || args.id || '1081171030449673920';
@@ -213,7 +213,7 @@ async function executeDirectTool(args: any, supabase: any) {
 
     // 3. Priority C: Fuzzy resolvePropertyId (AI Services)
     const fuzzyId = await resolvePropertyId(cleanId || cleanName || '1081171030449673920', sb);
-    
+
     // Final Validation: If fuzzyId doesn't exist in DB, it's a hallucination
     const { data: finalCheck } = await sb.from('properties').select('id').eq('id', fuzzyId).maybeSingle();
     if (finalCheck) return String(finalCheck.id);
@@ -244,10 +244,10 @@ async function executeDirectTool(args: any, supabase: any) {
       const availability = await checkAvailabilityWithICal(finalId, finalStartDate, finalEndDate, supabase);
       if (!availability.available) {
         const alternate = await findAlternatePropertyAvailable(finalId, finalStartDate, finalEndDate, supabase);
-        return { 
-          ok: true, 
-          available: false, 
-          reason: availability.reason || 'Ocupado', 
+        return {
+          ok: true,
+          available: false,
+          reason: availability.reason || 'Ocupado',
           alternate: alternate ? alternate.title : null,
           normalizedStartDate: finalStartDate,
           normalizedEndDate: finalEndDate,
@@ -279,14 +279,14 @@ async function executeDirectTool(args: any, supabase: any) {
           verifiedPrice = quote.total;
         } catch (e) { console.warn("[Webhook] Price recalculation failed, using AI fallback."); }
       }
-      
+
       const link = `https://villaretiror.com/booking/${finalId}`;
       const greeting = guestName ? `¡Hola ${guestName}! ` : "¡Hola! ";
       const content = `${greeting}Aquí tienes tu link de reserva para Villa & Pirata Stays. Total: $${verifiedPrice} USD. Accede aquí: ${link}`;
-      
-      const sent = await MessagingService.sendSms({ 
-        to: phone, 
-        content, 
+
+      const sent = await MessagingService.sendSms({
+        to: phone,
+        content,
         propertyId: finalId,
         guestName,
         startDate: finalStartDate,
@@ -316,10 +316,10 @@ async function executeDirectTool(args: any, supabase: any) {
       }
 
       if (!isValidEmail(emailNorm)) {
-        return { 
-          ok: false, 
+        return {
+          ok: false,
           error: 'invalid_email',
-          data: `Email inválido: "${emailRaw}". Por favor confirma el email correcto con el huésped y reintenta formalmente.` 
+          data: `Email inválido: "${emailRaw}". Por favor confirma el email correcto con el huésped y reintenta formalmente.`
         };
       }
 
