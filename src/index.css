@@ -6,8 +6,9 @@
   :root {
     --sand: #FDFBF7;
     --bunker: #0A192F;
-    --gold: #D4AF37;
-    --glass-blur: 15px;
+    --gold: #B38B00; /* Deepened Salty Gold for WCAG AA Contrast 4.5:1 */
+    --gold-light: #D4AF37; /* Original decorative gold */
+    --glass-blur: 12px;
   }
 
   body {

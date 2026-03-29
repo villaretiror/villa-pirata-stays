@@ -102,7 +102,10 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
 
         {/* 🎥 LIQUID IMAGE: Dynamic cropping & parallax */}
-        <div className="absolute inset-0 scale-110">
+        <div 
+          className="absolute inset-0 scale-110"
+          style={{ transform: 'translate3d(0,0,0)', willChange: 'transform' }}
+        >
           <motion.div style={{ y }} className="h-full w-full">
             <SmartImage
               src={property.images[currentImageIndex]}

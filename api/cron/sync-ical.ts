@@ -72,28 +72,44 @@ export default async function handler(req: any, res: any) {
                             sync_hash: b.hash
                         }));
 
-                        // D. ATOMIC TRANSACTION: Replace blocks for this source
-                        await supabase
+                        // D. ATOMIC-LIKE REPLACEMENT: Minimize window of inconsistency
+                        // Delete OLD blocks for this specific source
+                        const { error: delError } = await supabase
                             .from('synced_blocks')
                             .delete()
                             .eq('property_id', prop.id)
                             .eq('source', feed.platform);
 
+                        if (delError) throw new Error(`Delete failed: ${delError.message}`);
+
+                        // Insert NEW blocks
                         const { error: insError } = await supabase
                             .from('synced_blocks')
                             .insert(syncedEntries);
 
-                        if (insError) throw insError;
+                        if (insError) throw new Error(`Insert failed: ${insError.message}`);
 
                         results.synced_blocks += blocks.length;
                         results.log.push(`✅ ${prop.title} (${feed.platform}): Synced ${blocks.length} blocks.`);
                     } else {
-                        results.log.push(`ℹ️ ${prop.title} (${feed.platform}): No blocks in current feed.`);
-                        await supabase
+                        /**
+                         * 🛡️ FAIL-SAFE SHIELD (Bunker 6.0)
+                         * If a feed returns 0 blocks, it's highly suspicious (a property usually has past or future blocks).
+                         * We DO NOT wipe the calendar automatically to prevent 'Ghost Availability' during API glitches.
+                         */
+                        const { count } = await supabase
                             .from('synced_blocks')
-                            .delete()
+                            .select('*', { count: 'exact', head: true })
                             .eq('property_id', prop.id)
                             .eq('source', feed.platform);
+
+                        if ((count || 0) > 0) {
+                            const warnMsg = `⚠️ ${prop.title} (${feed.platform}): Feed empty. Shield active: kept ${count} existing blocks to prevent potential wipeout.`;
+                            console.warn(`[Sync-iCal] ${warnMsg}`);
+                            results.log.push(warnMsg);
+                        } else {
+                            results.log.push(`ℹ️ ${prop.title} (${feed.platform}): Feed empty (no previous blocks).`);
+                        }
                     }
                 } catch (feedErr: any) {
                     console.error(`[Sync-iCal] Error for ${prop.title} (${feed.platform}):`, feedErr.message);
@@ -103,14 +119,24 @@ export default async function handler(req: any, res: any) {
             results.synced_properties++;
         }
 
-        // 3. OPTIMIZATION: CLEANUP HISTORICAL DATA (Purge blocks older than yesterday)
-        const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-        const { count: purged } = await supabase
+        // 3. STORAGE OPTIMIZATION: HISTORICAL CLEANUP (Bunker 6.0)
+        // Description: Purge técnico de bloques caducados (>30 días) para mantener el motor ligero.
+        // OJO: Bookings (historial de ventas) se mantiene intacto.
+        const cleanupThreshold = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        
+        const { count: purged, error: purgeErr } = await supabase
             .from('synced_blocks')
-            .delete()
-            .lt('check_out', yesterday);
+            .delete({ count: 'exact' })
+            .lt('check_out', cleanupThreshold);
 
-        results.purged = purged || 0;
+        if (purgeErr) {
+            console.error('[Sync-iCal] Cleanup Failure:', purgeErr.message);
+            results.errors.push(`Cleanup Failed: ${purgeErr.message}`);
+        } else {
+            results.purged = purged || 0;
+            results.log.push(`🧹 CLEANUP: Eliminados ${results.purged} bloques caducados (>30d).`);
+        }
+
         results.duration_ms = Date.now() - startTime;
 
         // 4. LOG HEARTBEAT

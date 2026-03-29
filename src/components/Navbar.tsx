@@ -28,10 +28,11 @@ const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, i
     <Link
       to={path}
       onClick={onClick}
-      className="group relative flex flex-col items-center justify-center gap-1 w-[72px] transition-all active:scale-95"
+      aria-label={label}
+      className="group relative flex flex-col items-center justify-center gap-1 w-[72px] h-[52px] transition-all active:scale-95"
     >
       <div className={`
-        relative flex items-center justify-center w-12 h-9 rounded-full z-10 transition-all duration-300
+        relative flex items-center justify-center w-12 h-11 rounded-full z-10 transition-all duration-300
         ${isActive && !isAvatar
           ? 'text-primary'
           : 'text-text-light group-hover:text-secondary'
@@ -46,15 +47,15 @@ const NavItem = ({ path, icon: Icon, label, currentPath, forceActive, onClick, i
         )}
 
         {isAvatar ? (
-          <div className={`p-2.5 rounded-2xl transition-all duration-500 relative ${isActive ? 'bg-primary text-secondary shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
-            <SmartImage src={userAvatar || ''} className="w-full h-full object-cover" />
+          <div className={`p-2.5 rounded-2xl w-10 h-10 transition-all duration-500 relative ${isActive ? 'bg-primary text-secondary shadow-lg shadow-primary/20' : 'text-white/40 hover:text-white hover:bg-white/5'}`}>
+            <SmartImage src={userAvatar || ''} className="w-full h-full object-cover" alt="Perfil Usuario" />
           </div>
         ) : (
-          <Icon strokeWidth={1.5} className="w-5 h-5 relative z-10" />
+          <Icon strokeWidth={2} className="w-5 h-5 relative z-10" />
         )}
       </div>
       <span className={`
-        text-[7px] font-black uppercase tracking-[0.25em] transition-colors duration-300 w-full text-center px-0.5
+        text-[9px] font-black uppercase tracking-[0.25em] transition-colors duration-300 w-full text-center px-0.5
         ${isActive ? 'text-primary' : 'text-text-light group-hover:text-secondary'}
       `}>
         {label}
@@ -100,6 +101,7 @@ const Navbar: React.FC = () => {
               animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
               exit={{ opacity: 0, y: 20, scale: 0.95, filter: 'blur(10px)' }}
               className="absolute bottom-24 w-[90%] bg-secondary/90 backdrop-blur-2xl border border-white/10 rounded-[2.5rem] shadow-2xl p-3 pointer-events-auto overflow-hidden text-white"
+              style={{ willChange: 'transform, opacity', transform: 'translate3d(0,0,0)' }}
             >
               <div className="p-4 mb-2 flex items-center gap-3 bg-sand/30 rounded-[1.8rem]">
                 <div className="w-10 h-10 rounded-full border-2 border-primary overflow-hidden">
@@ -156,7 +158,10 @@ const Navbar: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <ul className="pointer-events-auto bg-secondary/95 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] rounded-[1.8rem] px-5 py-1.5 flex items-center justify-between w-full m-0 list-none border border-white/5">
+        <ul 
+          className="pointer-events-auto bg-secondary/95 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] rounded-[1.8rem] px-5 py-1.5 flex items-center justify-between w-full m-0 list-none border border-white/5"
+          style={{ willChange: 'transform, opacity', transform: 'translate3d(0,0,0)' }}
+        >
           <li><NavItem path="/" icon={Compass} label="Explorar" currentPath={currentPath} /></li>
           <li><NavItem path="/favorites" icon={Heart} label="Favoritos" currentPath={currentPath} /></li>
           <li><NavItem path="/messages" icon={MessageCircle} label="Chat" currentPath={currentPath} /></li>
