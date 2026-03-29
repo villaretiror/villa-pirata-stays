@@ -4,14 +4,18 @@ import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } fro
 import { FinanceService } from './services/FinanceService.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
 import { VILLA_KNOWLEDGE } from './constants/villa_knowledge.js';
-import { GoogleGenAI } from '@google/genai';
-import type { Tables } from './supabase_types.js';
+import * as GoogleGenAIModule from '@google/genai';
+
+// 🔱 ROBUST ESM INTEROP: Detect if it's a named export, default export, or a namespace.
+const GoogleGenAIClass: any = (GoogleGenAIModule as any).GoogleGenAI || (GoogleGenAIModule as any).default || GoogleGenAIModule;
 
 // 🔱 INITIALIZE AI (GEMINI)
-const ai = new GoogleGenAI({
+const ai = new GoogleGenAIClass({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || process.env.VITE_GEMINI_API_KEY || '',
 });
 const SALTY_MODEL = 'gemini-2.0-flash'; // ⚡ Gemini 2.0 Flash
+
+import type { Tables } from './supabase_types.js';
 
 type ProfileRow = Tables<'profiles'>;
 type GivenConcession = { date: string; type: string; discount: number };

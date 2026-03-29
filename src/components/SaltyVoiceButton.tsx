@@ -28,8 +28,10 @@ const SaltyVoiceButton: React.FC = () => {
     useEffect(() => {
         // Intentar inicializar Vapi desde el objeto global
         const initVapi = () => {
-            const VapiConstructor = (window as any).Vapi;
-            if (VapiConstructor && !vapiInstance) {
+            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
+            const VapiConstructor = rawVapi?.default || rawVapi;
+
+            if (VapiConstructor && typeof VapiConstructor === 'function' && !vapiInstance) {
                 const instance = new VapiConstructor(PUBLIC_KEY);
                 
                 instance.on('call-start', () => setCallStatus('active'));
@@ -96,8 +98,10 @@ const SaltyVoiceButton: React.FC = () => {
         // 🔱 AUTO-RECOVERY: If engine is missing, try one last sync
         let activeInstance = vapiInstance;
         if (!activeInstance) {
-            const VapiConstructor = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
-            if (VapiConstructor) {
+            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
+            const VapiConstructor = rawVapi?.default || rawVapi;
+
+            if (VapiConstructor && typeof VapiConstructor === 'function') {
                 console.log('🔱 Salty SOS: Critical engine recovery triggered.');
                 activeInstance = new VapiConstructor(PUBLIC_KEY);
                 setVapiInstance(activeInstance);

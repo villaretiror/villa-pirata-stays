@@ -21,7 +21,9 @@ export default async function handler(req: any, res: any) {
     }
 
     const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    if (authError || !user || (user.email !== 'villaretiror.pr@gmail.com' && user.user_metadata?.role !== 'host' && user.user_metadata?.role !== 'admin')) {
+    const ALLOWED_EMAILS = ['villaretiror.pr@gmail.com', 'villaretiror@gmail.com', 'villaretiror.stays@gmail.com'];
+    
+    if (authError || !user || (!ALLOWED_EMAILS.includes(user.email || '') && user.user_metadata?.role !== 'host' && user.user_metadata?.role !== 'admin')) {
         return res.status(403).json({ error: 'Unauthorized: Only Captains can trigger manual sync. ⚓' });
     }
 
