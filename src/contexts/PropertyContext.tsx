@@ -8,13 +8,23 @@ import useSWR from 'swr';
 
 type PropertyRow = Database['public']['Tables']['properties']['Row'];
 type SettingRow = Database['public']['Tables']['system_settings']['Row'];
+type BookingRow = Database['public']['Tables']['bookings']['Row'];
+
+// 🛰️ Local Interface for SyncedBlocks (Since they are missing from generated Types)
+interface SyncedBlockRow {
+  id: string;
+  property_id: string;
+  check_in: string;
+  check_out: string;
+  source?: string;
+}
 
 interface PropertyContextType {
   properties: Property[];
   localGuideData: LocalGuideCategory[];
   secretSpots: any[];
-  bookings: any[];
-  syncedBlocks: any[];
+  bookings: BookingRow[];
+  syncedBlocks: SyncedBlockRow[];
   villaKnowledge: VillaKnowledge;
   siteContent: SiteContent;
   favorites: string[];
@@ -61,8 +71,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [secretSpots, setSecretSpots] = useState<any[]>([]);
   const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
   const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [syncedBlocks, setSyncedBlocks] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<BookingRow[]>([]);
+  const [syncedBlocks, setSyncedBlocks] = useState<SyncedBlockRow[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -138,9 +148,17 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
-  // 🔱 UNIFIED AVAILABILITY SELECTOR (Elite Standard)
+  // 🔱 UNIFIED AVAILABILITY SELECTOR (Elite Standard - v6.1)
   const getOccupiedDatesForProperty = useCallback((propertyId: string) => {
-    const propertyBookings = bookings.filter(b => b.property_id === propertyId && b.status !== 'cancelled' && b.status !== 'expired');
+    // 🛡️ INVENTORY PROTECTION: Leads/Drafts do NOT block inventory
+    const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
+    
+    const propertyBookings = bookings.filter(b => 
+      b.property_id === propertyId && 
+      BLOCKING_STATUSES.includes(b.status || '') &&
+      b.status !== 'cancelled' && 
+      b.status !== 'expired'
+    );
     const propertySynced = syncedBlocks.filter(b => b.property_id === propertyId);
     const property = properties.find(p => p.id === propertyId);
     
@@ -182,7 +200,14 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     if (isConfigured) {
       const channel = supabase.channel('schema-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, () => mutateProperties())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async () => {
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async (payload: { new: BookingRow }) => {
+           // 🔱 TRAFFIC OPTIMIZATION: Ignore silent lead/draft updates to prevent global re-renders
+           const newStatus = payload.new ? (payload.new as any).status : null;
+           if (newStatus === 'draft' || newStatus === 'lead' || newStatus === 'Web Direct (Lead)') {
+             console.log("🔱 SALTY RADAR: Lead detectado (Silencioso).");
+             return; 
+           }
+           
            console.log("🔱 SALTY RADAR: Cambios en reservas directas.");
            setIsRefreshing(true);
            await fetchPropertiesFromDB();

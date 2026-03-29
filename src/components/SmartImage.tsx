@@ -36,7 +36,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
     }
 
     return (
-        <div className={`relative overflow-hidden ${className}`}>
+        <div className={`relative overflow-hidden aspect-square ${className || ''}`}>
             {/* 🌊 UNIVERSAL BLUR-UP (Elite Rescue Strategy) */}
             {!loaded && errorCount === 0 && (
                 <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-2xl">

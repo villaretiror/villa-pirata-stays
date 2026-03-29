@@ -22,7 +22,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
         if (!bookingId || bookingId === 'new') return;
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
         await supabase.from('bookings').update({
-            status: 'pending',
+            status: 'pending_ai_validation', // Estandarizado para CRON cleanup
             payment_method: 'ath_movil',
             hold_expires_at: expiresAt
         }).eq('id', bookingId);
