@@ -1,8 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { CalendarSyncService } from '../../src/services/CalendarSyncService.js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL || '';
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || '';
 
 /**
  * 🔱 HOST MANUAL SYNC (Panic Button)

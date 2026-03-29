@@ -4,6 +4,17 @@ import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } fro
 import { FinanceService } from './services/FinanceService.js';
 import { PromoCode, SeasonalPrice, Booking } from './types.js';
 import { VILLA_KNOWLEDGE } from './constants/villa_knowledge.js';
+import { GoogleGenAI } from '@google/genai';
+import type { Tables } from './supabase_types.js';
+
+// 🔱 INITIALIZE AI (GEMINI)
+const ai = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || process.env.VITE_GEMINI_API_KEY || '',
+});
+const SALTY_MODEL = 'gemini-2.0-flash'; // ⚡ Gemini 2.0 Flash
+
+type ProfileRow = Tables<'profiles'>;
+type GivenConcession = { date: string; type: string; discount: number };
 
 /**
  * 🔱 KNOWLEDGE SEARCH ENGINE (ANTI-HALLUCINATION)
@@ -118,20 +129,11 @@ export const resolvePropertyId = async (input: string, client: SupabaseClient): 
 
     return secondTry ? String(secondTry.id) : cleanInput;
 };
-import type { Tables } from './supabase_types.js';
 
-type ProfileRow = Tables<'profiles'>;
-type GivenConcession = { date: string; type: string; discount: number };
-import { GoogleGenAI } from '@google/genai';
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || '',
-});
-const SALTY_MODEL = 'gemini-3-flash-preview'; // ⚡ Gemini 3 Flash (Mar 2026 - Oficial)
-
+// 🔱 AI SERVICES LAYER - THE EXECUTIVE BRAIN
 /**
- * 👑 AI SERVICES LAYER - THE EXECUTIVE BRAIN
- * Architecture: Bridge between LLM and Backend Logic
+ * ARCHITECTURE NOTE:
+ * Bridge between LLM and Backend Logic
  */
 
 // 1. Availability Connector — DB-First Architecture
