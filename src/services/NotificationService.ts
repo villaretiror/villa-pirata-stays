@@ -463,6 +463,13 @@ ${stats.syncDetails}
         total: string;
         callId?: string;
     }): Promise<boolean> {
+        // 🧼 MILITARY-GRADE DATA SANITIZATION
+        const email = (params.email || '').trim().toLowerCase();
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const phoneDigits = (params.phone || '').replace(/\D/g, '');
+        const phoneOk = phoneDigits.length >= 10;
+        const emailLink = emailOk ? `<a href="mailto:${email}">${email}</a>` : 'No provisto';
+
         const message = `
 🔱 <b>¡Salty acaba de cerrar un trato!</b> 🎙️
 ━━━━━━━━━━━━━━━━━━━━
@@ -472,25 +479,16 @@ ${stats.syncDetails}
 💵 <b>Inversión:</b> $${params.total} USD
 ━━━━━━━━━━━━━━━━━━━━
 📞 <b>Teléfono:</b> <code>${params.phone}</code>
-📧 <b>Email:</b> <code>${params.email || 'No provisto'}</code>
+📧 <b>Email:</b> ${emailLink}
 ━━━━━━━━━━━━━━━━━━━━
 🆔 <b>Call ID:</b> <code>${params.callId || 'N/A'}</code>
 
 🚀 <i>Salty: "Le dije que lo contactarías por WhatsApp. Es momento de abordar."</i>`;
 
-        // 🧼 MILITARY-GRADE DATA SANITIZATION FOR TELEGRAM BUTTONS
-        const email = (params.email || '').trim().toLowerCase();
-        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        const phoneDigits = (params.phone || '').replace(/\D/g, '');
-        const phoneOk = phoneDigits.length >= 10;
-        
+        // 🧼 BUTTONS (ONLY HTTPS - NO MAILTO FOR RELIABILITY)
         const row1 = [];
         if (phoneOk) {
             row1.push({ text: "📲 WhatsApp", url: `https://wa.me/${phoneDigits}` });
-        }
-        
-        if (emailOk) {
-            row1.push({ text: "📧 Email", url: `mailto:${email}` });
         }
 
         return this.sendTelegramAlert(message, {
