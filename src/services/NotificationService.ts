@@ -28,6 +28,13 @@ export const NotificationService = {
 
             if (keyboard) {
                 bodyPayload.reply_markup = keyboard;
+                // 📡 DEBUGGING: Log outbound URLs to catch BUTTON_URL_INVALID
+                if (keyboard.inline_keyboard) {
+                    const urls = keyboard.inline_keyboard.flat().map((b: any) => b?.url).filter(Boolean);
+                    if (urls.length > 0) {
+                        console.log("[NotificationService] Outbound Telegram URLs:", urls);
+                    }
+                }
             }
 
             const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
@@ -406,12 +413,20 @@ ${stats.syncDetails}
 
 ✨ <i>El metrónomo de tu negocio late al ritmo correcto.</i>`;
 
+        const baseUrl = siteUrl.replace(/\/$/, '');
+        const safeSecret = encodeURIComponent(stats.secret || '');
+        
+        const row1 = [
+            { text: "🚀 Ver Dashboard", url: `${baseUrl}/host` }
+        ];
+
+        if (stats.secret) {
+            row1.push({ text: "🔄 Forzar Sync", url: `${baseUrl}/api/master-cron?task=sync&secret=${safeSecret}` });
+        }
+
         const keyboard = {
             inline_keyboard: [
-                [
-                    { text: "🚀 Ver Dashboard", url: `${siteUrl.replace(/\/$/, '')}/host` },
-                    { text: "🔄 Forzar Sync", url: `${siteUrl.replace(/\/$/, '')}/api/master-cron?task=sync&secret=${stats.secret}` }
-                ],
+                row1,
                 [{ text: "✅ Recibido", callback_data: "ack_health" }]
             ]
         };
