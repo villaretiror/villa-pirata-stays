@@ -62,6 +62,7 @@ const Booking: React.FC = () => {
   const [contractAccepted, setContractAccepted] = useState(false);
   const [showContractModal, setShowContractModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
+  const [bookingId, setBookingId] = useState<string | null>(recoverData?.booking_id || null);
 
   // 🔱 NAVIGATION RESCUE: ESC Key Listener
   useEffect(() => {
@@ -113,47 +114,49 @@ const Booking: React.FC = () => {
 
   const isLoading = isPropLoading || isAvailabilityLoading;
 
-  // 15s Abandonment Push & Ghost Lead Capture
+  // Availability Rules Logic
+  let min_nights_req = minNights || 2;
+  const sStr = startDate ? format(startDate, 'yyyy-MM-dd') : null;
+  const applicableRule = availabilityRules?.find(r => sStr && sStr >= r.start_date && sStr <= r.end_date);
+  if (applicableRule) {
+      if (applicableRule.min_nights) min_nights_req = applicableRule.min_nights;
+  }
+  const isTooShort = nights > 0 && nights < min_nights_req;
+
+  // 🎣 LEAD CAPTURE (Ghost Booking Protocol)
   useEffect(() => {
-    if (startDate && endDate && !isProcessing && user) {
-      const timer = setTimeout(async () => {
-        try {
-          const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-          const { error: leadErr } = await supabase.from('pending_bookings').upsert({
-            user_id: user.id,
-            property_id: id,
-            check_in: format(startDate, 'yyyy-MM-dd'),
-            check_out: format(endDate, 'yyyy-MM-dd'),
-            guest_name: user.full_name,
-            guest_email: user.email,
-            guest_phone: phone || user.phone || 'No provisto',
-            status: 'pending_payment',
-            expires_at: expiresAt
-          }, { onConflict: 'user_id,property_id,status' });
+    const timer = setTimeout(async () => {
+      if (!startDate || !endDate || !phone || phone.length < 5 || isTooShort || !id) return;
 
-          if (!leadErr) {
-            fetch('/api/master?action=notify', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                type: 'new_lead',
-                guestName: user.full_name,
-                property: property?.title || 'Villa',
-                checkIn: format(startDate, 'dd MMM'),
-                checkOut: format(endDate, 'dd MMM'),
-                phone: phone || user.phone
-              })
-            }).catch(() => {});
-          }
-        } catch (e) {}
+      try {
+        const payload: any = {
+          property_id: id,
+          user_id: user?.id,
+          check_in: format(startDate, 'yyyy-MM-dd'),
+          check_out: format(endDate, 'yyyy-MM-dd'),
+          total_price: pricing?.total || 0,
+          customer_name: user?.full_name || 'Huésped Interesado (Lead)',
+          status: 'draft',
+          source: 'Web Direct (Lead)',
+          payment_method: 'pending_selection',
+          guests_count: property?.guests || 1,
+          cancellation_reason: guestMessage,
+          hold_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() 
+        };
 
-        window.dispatchEvent(new CustomEvent('salty-push', {
-          detail: { message: "¡Buenas fechas! ¿Tienes alguna duda con el proceso de pago o la política de cancelación? Estoy aquí para aclararlo." }
-        }));
-      }, 5000); 
-      return () => clearTimeout(timer);
-    }
-  }, [startDate, endDate, phone, isProcessing, user, id, property?.title]);
+        if (bookingId && bookingId !== 'new') {
+          await supabase.from('bookings').update(payload).eq('id', bookingId);
+        } else {
+          const { data, error } = await supabase.from('bookings').insert(payload).select().single();
+          if (data) setBookingId(data.id);
+        }
+      } catch (err) {
+        console.warn('[LeadCapture] Silent capture active.');
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [phone, guestMessage, startDate, endDate, pricing, isTooShort, id, user, bookingId, property?.guests]);
 
   if (isLoading) return <BookingSkeleton />;
 
@@ -165,19 +168,6 @@ const Booking: React.FC = () => {
       </div>
     );
   }
-
-  // Availability Rules Logic
-  let min_nights_req = minNights || 2;
-  let blockReason = 'Estancia de nivel SuperHost';
-  if (startDate) {
-    const sStr = format(startDate, 'yyyy-MM-dd');
-    const applicableRule = availabilityRules?.find(r => sStr >= r.start_date && sStr <= r.end_date);
-    if (applicableRule) {
-        if (applicableRule.min_nights) min_nights_req = applicableRule.min_nights;
-        if (applicableRule.reason) blockReason = applicableRule.reason;
-    }
-  }
-  const isTooShort = nights > 0 && nights < min_nights_req;
 
   // Extract Pricing from Hook
   // Extract Pricing from Hook (Elite Standard)
@@ -538,13 +528,14 @@ const Booking: React.FC = () => {
             <div className="animate-slide-up">
               <PaymentProcessor 
                 total={total}
-                bookingId={recoverData?.booking_id || 'new'}
+                bookingId={bookingId || 'new'}
                 onSuccess={handlePaymentSuccess}
                 isProcessing={isProcessing}
                 user={user}
               />
             </div>
           )}
+ Riverside Protocol: Search state now persists across browsing sessions. (Internal Tag)
         </div>
 
         <AnimatePresence>

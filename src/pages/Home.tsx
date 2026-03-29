@@ -45,14 +45,38 @@ const Home: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [searchTab, setSearchTab] = useState<'dates'|'guests'>('dates');
 
-  // Advanced Guest State
-  const [adults, setAdults] = useState(1);
-  const [children, setChildren] = useState(0);
-  const [pets, setPets] = useState(0);
-  const [startDate, setStartDate] = useState<Date | null>(null);
-  const [endDate, setEndDate] = useState<Date | null>(null);
+  // 💾 SEARCH PERSISTENCE (Captain's Memory)
+  const [adults, setAdults] = useState(() => {
+    const saved = localStorage.getItem('vrr_search_adults');
+    return saved ? Math.max(1, parseInt(saved, 10)) : 1;
+  });
+  const [children, setChildren] = useState(() => {
+    const saved = localStorage.getItem('vrr_search_children');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [pets, setPets] = useState(() => {
+    const saved = localStorage.getItem('vrr_search_pets');
+    return saved ? parseInt(saved, 10) : 0;
+  });
+  const [startDate, setStartDate] = useState<Date | null>(() => {
+    const saved = localStorage.getItem('vrr_search_start');
+    return saved ? new Date(saved) : null;
+  });
+  const [endDate, setEndDate] = useState<Date | null>(() => {
+    const saved = localStorage.getItem('vrr_search_end');
+    return saved ? new Date(saved) : null;
+  });
   const [activeCategory, setActiveCategory] = useState<Category>('todo');
 
+  React.useEffect(() => {
+    localStorage.setItem('vrr_search_adults', adults.toString());
+    localStorage.setItem('vrr_search_children', children.toString());
+    localStorage.setItem('vrr_search_pets', pets.toString());
+    if (startDate) localStorage.setItem('vrr_search_start', startDate.toISOString());
+    else localStorage.removeItem('vrr_search_start');
+    if (endDate) localStorage.setItem('vrr_search_end', endDate.toISOString());
+    else localStorage.removeItem('vrr_search_end');
+  }, [adults, children, pets, startDate, endDate]);
   const [activeGuideTab, setActiveGuideTab] = useState<string | null>(null);
   const [selectedGuideItem, setSelectedGuideItem] = useState<LocalGuideItem | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
@@ -87,8 +111,7 @@ const Home: React.FC = () => {
 
   const handleCategorySelect = (cat: Category) => {
     setActiveCategory(cat);
-    // Give a tiny delay so the state updates and feels like a new "search"
-    setTimeout(scrollToResults, 100);
+    scrollToResults();
   };
 
   console.log("FILTRO ACTIVO:", { adults, children, pets, activeCategory, propertiesCount: properties.length });

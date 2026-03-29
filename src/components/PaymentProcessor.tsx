@@ -17,6 +17,21 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
     const [isUploading, setIsUploading] = useState(false);
     const [copied, setCopied] = useState(false);
 
+    // 🛡️ INVETORY SHIELD: 15-Minute Block for ATH Móvil
+    const activateTemporalBlock = async () => {
+        if (!bookingId || bookingId === 'new') return;
+        const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+        await supabase.from('bookings').update({
+            status: 'pending_verification',
+            payment_method: 'ath_movil',
+            hold_expires_at: expiresAt
+        }).eq('id', bookingId);
+        
+        window.dispatchEvent(new CustomEvent('salty-push', {
+            detail: { message: "🔱 Capitán, hemos bloqueado las fechas por 15 min para tu pago.", type: 'success' }
+        }));
+    };
+
     const handleCopyPhone = () => {
         // We clean the phone for ATH Movil (no hyphens, no leading 1 if present)
         const cleanPhone = HOST_PHONE.replace(/\D/g, '').replace(/^1/, '');
@@ -103,7 +118,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                         <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">PayPal</p>
                     </button>
                     <button
-                        onClick={() => setPaymentMethod('ath_movil')}
+                        onClick={() => { setPaymentMethod('ath_movil'); activateTemporalBlock(); }}
                         className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-primary bg-primary/5 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
                     >
                         <div className="w-12 h-8 flex items-center justify-center">
