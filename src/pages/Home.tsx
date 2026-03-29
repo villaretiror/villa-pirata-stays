@@ -39,7 +39,7 @@ type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, bookings, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData } = useProperty();
+  const { properties, bookings, syncedBlocks, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -106,13 +106,20 @@ const Home: React.FC = () => {
         const sStr = startDate.toISOString().split('T')[0];
         const eStr = endDate.toISOString().split('T')[0];
         
-        // 1. Check against Bookings Table (Direct + iCal)
-        const hasConflict = bookings.some(b => 
-          b.property_id === String(property.id) &&
-          ((sStr >= b.check_in && sStr < b.check_out) ||
-           (eStr > b.check_in && eStr <= b.check_out) ||
-           (sStr <= b.check_in && eStr >= b.check_out))
-        );
+        // 🔱 UNIFIED AVAILABILITY RADAR (Direct + iCal)
+        const allOccupiedDates = [
+          ...bookings.filter(b => b.property_id === String(property.id)).map(b => ({ s: b.check_in, e: b.check_out })),
+          ...syncedBlocks.filter(b => b.property_id === String(property.id)).map(b => ({ s: b.check_in, e: b.check_out }))
+        ];
+
+        const hasConflict = allOccupiedDates.some(b => {
+          const bStart = b.s;
+          const bEnd = b.e;
+          return (sStr >= bStart && sStr < bEnd) ||
+                 (eStr > bStart && eStr <= bEnd) ||
+                 (sStr <= bStart && eStr >= bEnd);
+        });
+        
         if (hasConflict) return false;
 
         // 2. Check against Manual Blocks
@@ -142,13 +149,17 @@ const Home: React.FC = () => {
   const globalBlockedDates = React.useMemo(() => {
     if (properties.length === 0) return [];
     
-    // 🔱 ELITE LOGIC (Patched): Merge manual dates + actual active bookings for EACH property.
+    // 🔱 ELITE LOGIC (Patched): Merge manual dates + actual active bookings + iCal Synced for EACH property.
     const allBlockedSets = properties.map(property => {
-      // 1. Manual blocks
-      const blocked = new Set<string>((property.blockeddates as string[]) || []);
+      if (property.isOffline) return new Set<string>();
       
-      // 2. Verified Active Bookings
-      const propBookings = bookings.filter(b => b.property_id === String(property.id));
+      const propId = String(property.id);
+      
+      // 1. Manual blocks
+      const blocked = new Set<string>((property.blockeddates as string[]) || (property.blockedDates as string[]) || []);
+      
+      // 2. Verified Active Bookings (Direct)
+      const propBookings = bookings.filter(b => b.property_id === propId);
       propBookings.forEach(b => {
          let current = new Date(b.check_in + 'T12:00:00');
          const out = new Date(b.check_out + 'T12:00:00');
@@ -157,8 +168,22 @@ const Home: React.FC = () => {
             current.setDate(current.getDate() + 1);
          }
       });
+
+      // 3. iCal Synced Blocks
+      const propSynced = syncedBlocks.filter(b => b.property_id === propId);
+      propSynced.forEach(b => {
+         let current = new Date(b.check_in + 'T12:00:00');
+         const out = new Date(b.check_out + 'T12:00:00');
+         while (current < out) {
+            blocked.add(current.toISOString().split('T')[0]);
+            current.setDate(current.getDate() + 1);
+         }
+      });
+
       return blocked;
     });
+
+    const activeVillasSets = allBlockedSets.filter(s => s.size > 0 || true); // Placeholder if needed
 
     // If a guest searches globally, we ONLY block a date visually on Home if EVERY property is rented/blocked on that date.
     const commonBlocks = allBlockedSets.length > 0 
@@ -168,7 +193,7 @@ const Home: React.FC = () => {
       : [];
 
     return commonBlocks.map(d => new Date(d + 'T12:00:00')); // T12 to avoid timezone shifts
-  }, [properties, bookings]);
+  }, [properties, bookings, syncedBlocks]);
 
   // 🛡️ RANGE VALIDATOR: Prevent users from crossing over fully booked dates
   const isRangeAvailable = (start: Date, end: Date) => {

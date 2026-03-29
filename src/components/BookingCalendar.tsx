@@ -138,9 +138,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({ startDate, endDate, o
                             <span className="text-[10px] font-bold text-secondary uppercase tracking-widest">Ya Reservado</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 px-6 py-2 bg-gray-50 rounded-full border border-black/5">
-                        <ShieldCheck size={14} className="text-emerald-600" />
-                        <span className="text-[9px] font-black uppercase tracking-widest text-secondary/50 italic">Canal Blindado & Encriptado</span>
+                    <div className="flex items-center gap-2 px-6 py-2.5 bg-emerald-50/50 rounded-full border border-emerald-100/50 shadow-sm transition-all hover:shadow-md">
+                        <ShieldCheck size={16} className="text-emerald-600" />
+                        <span className="text-[11px] font-black uppercase tracking-widest text-emerald-900 italic">Canal Blindado & Encriptado 🛡️</span>
                     </div>
                 </div>
             </div>

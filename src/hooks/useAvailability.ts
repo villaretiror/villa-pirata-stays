@@ -28,17 +28,26 @@ export const useAvailability = (propertyId: string | undefined) => {
             const now = new Date();
 
             // 🔱 BUNDLE FETCHING: Database-Level Consolidation
-            const { data: bundle } = await supabase.rpc('get_property_availability_bundle', { 
-                target_property_id: propertyId 
-            });
+            const [bundleRes, syncedRes] = await Promise.all([
+                supabase.rpc('get_property_availability_bundle', { 
+                    target_property_id: propertyId 
+                }),
+                supabase.from('synced_blocks').select('*').eq('property_id', propertyId)
+            ]);
+
+            const bundle = bundleRes.data;
+            const synced = syncedRes.data || [];
 
             if (!bundle) return;
 
             const rules = bundle.rules || [];
-            const activeBookings = bundle.bookings || [];
+            const dbBookings = bundle.bookings || [];
             const pending = bundle.leads || [];
             const propData = bundle.property || {};
             
+            // 🔱 UNIFIED VISION: Merge direct bookings with external iCal blocks
+            const activeBookings = [...dbBookings, ...synced];
+
             if (activeBookings) setAllBookings(activeBookings);
             if (pending) setPendingLeads(pending);
             if (rules) setAvailabilityRules(rules);

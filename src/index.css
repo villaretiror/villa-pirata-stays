@@ -11,12 +11,19 @@
     --glass-blur: 12px;
   }
 
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
   body {
     -webkit-tap-highlight-color: transparent;
     background: radial-gradient(circle at center, #FDFBF7 0%, #F5F7FA 100%);
     background-attachment: fixed;
     overscroll-behavior-y: none;
     color: var(--bunker);
+    transition: background-color 0.8s cubic-bezier(0.16, 1, 0.3, 1), color 0.8s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   h1,

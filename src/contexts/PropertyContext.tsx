@@ -14,6 +14,7 @@ interface PropertyContextType {
   localGuideData: LocalGuideCategory[];
   secretSpots: any[];
   bookings: any[];
+  syncedBlocks: any[];
   villaKnowledge: VillaKnowledge;
   siteContent: SiteContent;
   favorites: string[];
@@ -60,6 +61,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [villaKnowledge, setVillaKnowledge] = useState<VillaKnowledge>(DEFAULT_VILLA_KNOWLEDGE);
   const [siteContent, setSiteContent] = useState<SiteContent>(DEFAULT_SITE_CONTENT);
   const [bookings, setBookings] = useState<any[]>([]);
+  const [syncedBlocks, setSyncedBlocks] = useState<any[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [favorites, setFavorites] = useState<string[]>(() => {
     try {
@@ -75,13 +77,15 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
     try {
-      const [bookingRes, guideRes, settingsRes] = await Promise.all([
+      const [bookingRes, syncedRes, guideRes, settingsRes] = await Promise.all([
         supabase.from('bookings').select('*').neq('status', 'cancelled').abortSignal(signal),
+        supabase.from('synced_blocks').select('*').abortSignal(signal),
         supabase.from('destination_guides').select('*').eq('is_active', true).order('sort_order', { ascending: true }).abortSignal(signal),
         supabase.from('system_settings').select('key, value').abortSignal(signal)
       ]);
-
+      
       if (bookingRes.data) setBookings(bookingRes.data);
+      if (syncedRes.data) setSyncedBlocks(syncedRes.data);
 
       if (guideRes.data && guideRes.data.length > 0) {
         const rows = guideRes.data as any[];
@@ -143,10 +147,16 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       const channel = supabase.channel('schema-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'properties' }, () => mutateProperties())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, async () => {
-           console.log("🔱 SALTY RADAR: Cambio en disponibilidad detectado. Refrescando...");
+           console.log("🔱 SALTY RADAR: Cambios en reservas directas.");
            setIsRefreshing(true);
-           await Promise.all([fetchPropertiesFromDB(), mutateProperties()]);
-           setTimeout(() => setIsRefreshing(false), 1000); // UI breathing room
+           await fetchPropertiesFromDB();
+           setIsRefreshing(false);
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'synced_blocks' }, async () => {
+           console.log("🔱 SALTY RADAR: Bloqueo externo (iCal) detectado. Refrescando...");
+           setIsRefreshing(true);
+           await fetchPropertiesFromDB();
+           setIsRefreshing(false);
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'system_settings' }, () => fetchPropertiesFromDB())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'destination_guides' }, () => fetchPropertiesFromDB())
@@ -193,7 +203,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [fetchPropertiesFromDB]);
 
   const value: PropertyContextType = {
-    properties, localGuideData, secretSpots, bookings, villaKnowledge, siteContent, favorites, isLoading, error: pError, isRefreshing,
+    properties, localGuideData, secretSpots, bookings, syncedBlocks, villaKnowledge, siteContent, favorites, isLoading, error: pError, isRefreshing,
     toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge,
     refreshProperties: async () => { 
       setIsRefreshing(true);

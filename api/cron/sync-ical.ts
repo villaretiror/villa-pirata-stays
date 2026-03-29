@@ -63,34 +63,37 @@ export default async function handler(req: any, res: any) {
                     const blocks = CalendarSyncService.parseIcsToBlocks(icsText, prop.id);
                     
                     if (blocks.length > 0) {
-                        // C. PREPARE SYNCED_BLOCKS DATA
+                        // C. ATOMIC VISION (Session-Based Sync): Eliminates 'Ghost Availability' window.
+                        const syncSessionId = `sync_${Date.now()}_${feed.platform}`;
+                        
                         const syncedEntries = blocks.map(b => ({
                             property_id: prop.id,
                             check_in: b.start,
                             check_out: b.end,
                             source: feed.platform,
-                            sync_hash: b.hash
+                            sync_hash: b.hash,
+                            sync_session_id: syncSessionId // Track this specific run
                         }));
 
-                        // D. ATOMIC-LIKE REPLACEMENT: Minimize window of inconsistency
-                        // Delete OLD blocks for this specific source
-                        const { error: delError } = await supabase
+                        // 1. UPSERT NEW BLOCKS: Ensure they are in the DB BEFORE deleting old ones.
+                        const { error: upsError } = await supabase
+                            .from('synced_blocks')
+                            .upsert(syncedEntries, { onConflict: 'sync_hash' });
+
+                        if (upsError) throw new Error(`Atomic Upsert failed: ${upsError.message}`);
+
+                        // 2. PURGE STALE BLOCKS: Delete only those not part of this session.
+                        const { error: purgeError } = await supabase
                             .from('synced_blocks')
                             .delete()
                             .eq('property_id', prop.id)
-                            .eq('source', feed.platform);
+                            .eq('source', feed.platform)
+                            .neq('sync_session_id', syncSessionId);
 
-                        if (delError) throw new Error(`Delete failed: ${delError.message}`);
-
-                        // Insert NEW blocks
-                        const { error: insError } = await supabase
-                            .from('synced_blocks')
-                            .insert(syncedEntries);
-
-                        if (insError) throw new Error(`Insert failed: ${insError.message}`);
+                        if (purgeError) console.warn(`[Sync-iCal] Non-critical purge failure: ${purgeError.message}`);
 
                         results.synced_blocks += blocks.length;
-                        results.log.push(`✅ ${prop.title} (${feed.platform}): Synced ${blocks.length} blocks.`);
+                        results.log.push(`✅ ${prop.title} (${feed.platform}): Synced ${blocks.length} blocks with Atomic Vision.`);
                     } else {
                         /**
                          * 🛡️ FAIL-SAFE SHIELD (Bunker 6.0)

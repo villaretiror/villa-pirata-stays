@@ -37,14 +37,18 @@ const SmartImage: React.FC<SmartImageProps> = ({
 
     return (
         <div className={`relative overflow-hidden ${className}`}>
-            {/* Blur Placeholder / Low-res base */}
+            {/* 🌊 UNIVERSAL BLUR-UP (Elite Rescue Strategy) */}
             {!loaded && errorCount === 0 && (
-                <div className="absolute inset-0 bg-gradient-to-br from-sand to-gray-200">
-                    {src?.includes('unsplash.com') && (
+                <div className="absolute inset-0 bg-gray-50/50 backdrop-blur-2xl">
+                    {src && (
                         <img
-                            src={src + (src.includes('?') ? '&' : '?') + 'w=50&blur=50&auto=format'}
-                            className="w-full h-full object-cover scale-110 opacity-60"
-                            alt="loading-placeholder"
+                            src={
+                                src.includes('muscache.com') ? src.includes('?') ? `${src}&im_w=40` : `${src}?im_w=40` :
+                                src.includes('supabase.co') ? src + (src.includes('?') ? '&' : '?') + 'width=50&quality=20&blur=50' :
+                                src + (src.includes('?') ? '&' : '?') + 'w=50&blur=50&auto=format'
+                            }
+                            className="w-full h-full object-cover scale-110 opacity-40 blur-lg"
+                            alt="loading-luxury-placeholder"
                         />
                     )}
                 </div>

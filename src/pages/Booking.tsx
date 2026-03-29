@@ -292,9 +292,10 @@ const Booking: React.FC = () => {
           <div className="flex items-center justify-between">
             <button
               onClick={() => navigate(`/property/${id}`)}
-              className="w-12 h-12 rounded-full bg-black/5 hover:bg-black/10 flex items-center justify-center transition-all active:scale-95"
+              className="w-14 h-14 rounded-full bg-secondary text-primary flex items-center justify-center transition-all active:scale-95 shadow-bunker border border-primary/20 z-50 group hover:bg-gold-dark"
+              aria-label="Cerrar"
             >
-              <span className="material-icons text-text-main">close</span>
+              <X size={28} className="transition-transform group-hover:rotate-90" />
             </button>
             <div className="text-center">
               <h2 className="font-serif font-black text-xl text-text-main leading-none">

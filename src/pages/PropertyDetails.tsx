@@ -730,8 +730,12 @@ export const PropertyDetails: React.FC = () => {
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="relative w-full max-w-lg bg-white h-full shadow-2xl p-8 overflow-y-auto no-scrollbar"
             >
-              <button onClick={() => setShowHostDrawer(false)} className="absolute top-8 right-8 w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center">
-                <X size={24} className="text-gray-400" />
+              <button 
+                onClick={() => setShowHostDrawer(false)} 
+                className="absolute top-8 right-8 w-14 h-14 rounded-full bg-secondary text-primary flex items-center justify-center shadow-bunker border border-primary/20 z-50 group transition-all hover:bg-gold-dark active:scale-95"
+                aria-label="Cerrar"
+              >
+                <X size={28} className="transition-transform group-hover:rotate-90" />
               </button>
 
               <div className="mt-12 space-y-8">
@@ -797,11 +801,12 @@ export const PropertyDetails: React.FC = () => {
               {/* Header */}
               <div className="flex justify-between items-center px-8 py-8 border-b border-secondary/5 sticky top-0 bg-white z-10">
                 <h3 className="text-2xl font-serif font-bold text-text-main">Catálogo de Amenidades</h3>
-                <button
-                  onClick={() => setShowAmenities(false)}
-                  className="w-12 h-12 rounded-full bg-gray-50 flex items-center justify-center hover:bg-black hover:text-white transition-all active:scale-95"
+                <button 
+                  onClick={() => setShowAmenities(false)} 
+                  className="w-14 h-14 rounded-full bg-secondary text-primary flex items-center justify-center shadow-bunker border border-primary/20 group transition-all hover:bg-gold-dark active:scale-95"
+                  aria-label="Cerrar catálogo"
                 >
-                  <X size={20} />
+                  <X size={28} className="transition-transform group-hover:rotate-90" />
                 </button>
               </div>
 
