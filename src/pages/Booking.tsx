@@ -10,6 +10,7 @@ import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
+import { X } from 'lucide-react';
 import { BookingSkeleton } from '../components/Skeleton';
 import type { TablesInsert } from '../supabase_types';
 
@@ -540,7 +541,7 @@ const Booking: React.FC = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[100] bg-black/40 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-6"
+              className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-6 overflow-y-auto overflow-x-hidden"
             >
               <motion.div
                 initial={{ y: '100%' }}
@@ -548,10 +549,13 @@ const Booking: React.FC = () => {
                 exit={{ y: '100%' }}
                 className="bg-white w-full max-w-6xl rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl relative"
               >
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="font-serif font-black text-2xl">Disponibilidad Real</h3>
-                  <button onClick={() => setShowCalendarModal(false)} className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center">
-                    <span className="material-icons">close</span>
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="font-serif font-black text-2xl text-secondary">Disponibilidad Real</h3>
+                  <button 
+                    onClick={() => setShowCalendarModal(false)} 
+                    className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors active:scale-95"
+                  >
+                    <X size={24} className="text-secondary" />
                   </button>
                 </div>
                 <BookingCalendar

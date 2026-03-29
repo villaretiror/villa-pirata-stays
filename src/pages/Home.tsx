@@ -238,12 +238,12 @@ const Home: React.FC = () => {
       {/* Search Overlay */}
       {isSearchOpen && (
         <div className="fixed inset-0 z-[100] bg-sand/90 backdrop-blur-xl flex items-start justify-center pt-24 pb-12 px-4 animate-fade-in overflow-y-auto">
-          <div className="w-full max-w-sm rounded-[2.5rem] p-8 shadow-2xl animate-slide-up relative bg-white border border-white/50 my-auto">
+          <div className="w-full max-w-sm md:max-w-4xl rounded-[2.5rem] p-6 sm:p-8 shadow-2xl animate-slide-up relative bg-white border border-white/50 my-auto">
 
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-2xl font-bold font-serif text-text-main">Tu viaje</h2>
-              <button onClick={() => setIsSearchOpen(false)} className="p-2 -mr-2 rounded-full hover:bg-gray-100 transition-colors">
-                <X size={20} className="text-gray-400" />
+              <button onClick={() => setIsSearchOpen(false)} className="p-3 -mr-3 rounded-full bg-gray-50 hover:bg-gray-100 transition-all active:scale-90 shadow-sm">
+                <X size={24} className="text-secondary" />
               </button>
             </div>
 
