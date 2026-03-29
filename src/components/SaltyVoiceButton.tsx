@@ -65,39 +65,52 @@ const SaltyVoiceButton: React.FC = () => {
         };
     }, [vapiInstance]);
 
+    const startVapiCall = async (libInstance: any) => {
+        setCallStatus('loading');
+        try {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                alert('Navegador no compatible con voz. Use Chrome o Safari. ⚓');
+                setCallStatus('inactive');
+                return;
+            }
+
+            // 🔱 CONTEXT INJECTION: Tell Salty where we are!
+            await libInstance.start(SALTY_ASSISTANT_ID, {
+                assistantOverrides: {
+                    variableValues: {
+                        propertyId: propertyId || '1081171030449673920',
+                        currentPath: window.location.pathname,
+                        currentUrl: window.location.href
+                    }
+                }
+            });
+            console.log('Salty Voice Context Unified! 🔱');
+        } catch (err: any) {
+            console.error('Failed to start call:', err);
+            alert(`Error al iniciar llamada: ${err.message || 'Verifique el micro'}. 🎙️`);
+            setCallStatus('inactive');
+        }
+    };
+
     const toggleCall = async () => {
-        if (!vapiInstance) {
-            alert('Capitán, los motores de voz (Vapi) se están calentando. Intente en 2 segundos. 🔱⚓');
-            return;
+        // 🔱 AUTO-RECOVERY: If engine is missing, try one last sync
+        let activeInstance = vapiInstance;
+        if (!activeInstance) {
+            const VapiConstructor = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
+            if (VapiConstructor) {
+                console.log('🔱 Salty SOS: Critical engine recovery triggered.');
+                activeInstance = new VapiConstructor(PUBLIC_KEY);
+                setVapiInstance(activeInstance);
+            } else {
+                alert('Capitán, los motores de voz (Vapi) se están calibrando. Intente de nuevo en 2 segundos. 🔱⚓');
+                return;
+            }
         }
 
         if (callStatus === 'active') {
-            vapiInstance.stop();
+            activeInstance.stop();
         } else {
-            setCallStatus('loading');
-            try {
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    alert('Navegador no compatible con voz. Use Chrome o Safari. ⚓');
-                    setCallStatus('inactive');
-                    return;
-                }
-
-                // 🔱 CONTEXT INJECTION: Tell Salty where we are!
-                await vapiInstance.start(SALTY_ASSISTANT_ID, {
-                    assistantOverrides: {
-                        variableValues: {
-                            propertyId: propertyId || '1081171030449673920',
-                            currentPath: window.location.pathname,
-                            currentUrl: window.location.href
-                        }
-                    }
-                });
-                console.log('Salty Voice Context Unified! 🔱');
-            } catch (err: any) {
-                console.error('Failed to start call:', err);
-                alert(`Error al iniciar llamada: ${err.message || 'Verifique el micro'}. 🎙️`);
-                setCallStatus('inactive');
-            }
+            await startVapiCall(activeInstance);
         }
     };
     return (
