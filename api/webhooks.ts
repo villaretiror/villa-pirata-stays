@@ -186,17 +186,26 @@ async function executeDirectTool(args: any, supabase: any) {
     } else if (toolName === 'send_payment_sms') {
       const finalId = await resolvePropertyId(propertyId, supabase);
       if (!phone) throw new Error("Missing phone for SMS.");
+
+      // 🛡️ RECALCULATE PRICE AS SOURCE OF TRUTH
+      let verifiedPrice = priceTotal;
+      if (startDate && endDate) {
+        try {
+          const quote = await applyAIQuote(finalId, startDate, endDate, undefined, supabase);
+          verifiedPrice = quote.total;
+        } catch (e) { console.warn("[Webhook] Price recalculation failed, using AI fallback."); }
+      }
       
       const link = `https://villaretiror.com/booking/${finalId}`;
       const greeting = guestName ? `¡Hola ${guestName}! ` : "¡Hola! ";
-      const content = `${greeting}Aquí tienes tu link de reserva para Villa & Pirata Stays: ${link}`;
+      const content = `${greeting}Aquí tienes tu link de reserva para Villa & Pirata Stays. Total: $${verifiedPrice} USD. Accede aquí: ${link}`;
       
       const sent = await MessagingService.sendSms({ to: phone, content, propertyId: finalId });
 
       return {
         ok: true,
         data: sent.success
-          ? `SMS enviado con éxito. SID: ${sent.sid || 'N/A'}`
+          ? `SMS enviado con éxito. Total verificado: $${verifiedPrice} USD. SID: ${sent.sid || 'N/A'}`
           : `Fallo Crítico al enviar SMS: ${sent.error || 'Unknown Error'}. Verifique logs.`
       };
 
@@ -225,13 +234,22 @@ async function executeDirectTool(args: any, supabase: any) {
         };
       }
 
+      // 🛡️ RECALCULATE PRICE AS SOURCE OF TRUTH
+      let verifiedPrice = priceTotal;
+      if (startDate && endDate) {
+        try {
+          const quote = await applyAIQuote(finalId, startDate, endDate, undefined, supabase);
+          verifiedPrice = quote.total;
+        } catch (e) { console.warn("[Webhook] Price recalculation failed for email, using AI fallback."); }
+      }
+
       const sent = await MessagingService.sendPaymentLinkEmail({
         to: emailNorm,
         guestName: guestName,
         propertyId: finalId,
         startDate: startDate,
         endDate: endDate,
-        priceTotal: priceTotal,
+        priceTotal: verifiedPrice,
         currency: args.currency || 'USD'
       });
 
