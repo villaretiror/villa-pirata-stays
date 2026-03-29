@@ -22,7 +22,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
         if (!bookingId || bookingId === 'new') return;
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
         await supabase.from('bookings').update({
-            status: 'pending_verification',
+            status: 'pending',
             payment_method: 'ath_movil',
             hold_expires_at: expiresAt
         }).eq('id', bookingId);
@@ -80,7 +80,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
         if (bookingId && data.publicUrl) {
             await supabase.from('bookings').update({ 
                 payment_proof_url: data.publicUrl,
-                status: 'pending_ai_validation' // Salty o el Host podrán validarlo
+                status: 'Paid' // Supabase supports 'Paid' in the enum
             }).eq('id', bookingId);
         }
 

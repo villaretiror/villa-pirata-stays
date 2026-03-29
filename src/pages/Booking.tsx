@@ -136,7 +136,7 @@ const Booking: React.FC = () => {
           check_out: format(endDate, 'yyyy-MM-dd'),
           total_price: pricing?.total || 0,
           customer_name: user?.full_name || 'Huésped Interesado (Lead)',
-          status: 'draft',
+          status: 'pending',
           source: 'Web Direct (Lead)',
           payment_method: 'pending_selection',
           guests_count: property?.guests || 1,

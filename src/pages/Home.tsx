@@ -39,7 +39,7 @@ type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, bookings, syncedBlocks, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData } = useProperty();
+  const { properties, bookings, syncedBlocks, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData, getOccupiedDatesForProperty } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -129,19 +129,19 @@ const Home: React.FC = () => {
         const sStr = startDate.toISOString().split('T')[0];
         const eStr = endDate.toISOString().split('T')[0];
         
-        // 🔱 UNIFIED AVAILABILITY RADAR (Direct + iCal)
-        const allOccupiedDates = [
-          ...bookings.filter(b => b.property_id === String(property.id)).map(b => ({ s: b.check_in, e: b.check_out })),
-          ...syncedBlocks.filter(b => b.property_id === String(property.id)).map(b => ({ s: b.check_in, e: b.check_out }))
-        ];
-
-        const hasConflict = allOccupiedDates.some(b => {
-          const bStart = b.s;
-          const bEnd = b.e;
-          return (sStr >= bStart && sStr < bEnd) ||
-                 (eStr > bStart && eStr <= bEnd) ||
-                 (sStr <= bStart && eStr >= bEnd);
-        });
+        const occupiedDates = getOccupiedDatesForProperty(String(property.id));
+        const occupiedStrings = new Set(occupiedDates.map(d => d.toISOString().split('T')[0]));
+        
+        // 🛡️ RANGE VALIDATOR: Check every night of requested stay
+        let hasConflict = false;
+        let scan = new Date(startDate);
+        while (scan < endDate) {
+          if (occupiedStrings.has(scan.toISOString().split('T')[0])) {
+            hasConflict = true;
+            break;
+          }
+          scan.setDate(scan.getDate() + 1);
+        }
         
         if (hasConflict) return false;
 

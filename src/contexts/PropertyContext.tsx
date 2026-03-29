@@ -29,6 +29,7 @@ interface PropertyContextType {
   saveVillaKnowledge: (knowledge: VillaKnowledge) => Promise<void>;
   refreshProperties: () => Promise<void>;
   isRefreshing: boolean;
+  getOccupiedDatesForProperty: (propertyId: string) => Date[];
 }
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
@@ -137,6 +138,41 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  // 🔱 UNIFIED AVAILABILITY SELECTOR (Elite Standard)
+  const getOccupiedDatesForProperty = useCallback((propertyId: string) => {
+    const propertyBookings = bookings.filter(b => b.property_id === propertyId && b.status !== 'cancelled' && b.status !== 'expired');
+    const propertySynced = syncedBlocks.filter(b => b.property_id === propertyId);
+    const property = properties.find(p => p.id === propertyId);
+    
+    const blockedSet = new Set<string>();
+    
+    // 1. Bookings (Direct)
+    propertyBookings.forEach(b => {
+      let current = new Date(b.check_in + 'T12:00:00');
+      const out = new Date(b.check_out + 'T12:00:00');
+      while (current < out) {
+        blockedSet.add(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    // 2. iCal Blocks
+    propertySynced.forEach(b => {
+      let current = new Date(b.check_in + 'T12:00:00');
+      const out = new Date(b.check_out + 'T12:00:00');
+      while (current < out) {
+        blockedSet.add(current.toISOString().split('T')[0]);
+        current.setDate(current.getDate() + 1);
+      }
+    });
+
+    // 3. Manual Blocks (from property JSON)
+    const manual = (property?.blockeddates as string[]) || (property?.blockedDates as string[]) || [];
+    manual.forEach(d => blockedSet.add(d));
+
+    return Array.from(blockedSet).map(d => new Date(d + 'T12:00:00'));
+  }, [bookings, syncedBlocks, properties]);
+
   useEffect(() => {
     const controller = new AbortController();
     abortControllerRef.current = controller;
@@ -204,7 +240,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const value: PropertyContextType = {
     properties, localGuideData, secretSpots, bookings, syncedBlocks, villaKnowledge, siteContent, favorites, isLoading, error: pError, isRefreshing,
-    toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge,
+    toggleFavorite, updateProperties, updateGuide, saveGuideItem, deleteGuideItem, saveSiteContent, saveVillaKnowledge, getOccupiedDatesForProperty,
     refreshProperties: async () => { 
       setIsRefreshing(true);
       await Promise.all([mutateProperties(), fetchPropertiesFromDB()]); 
