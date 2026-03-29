@@ -336,7 +336,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     }, [location.pathname, showBubble, startDate, propertyTitle]);
 
     return (
-        <div className="fixed bottom-36 md:bottom-20 right-6 md:right-12 z-[999998] flex flex-col items-end gap-4 pointer-events-none transition-all duration-300">
+        <div className="fixed bottom-24 md:bottom-12 right-32 md:right-40 z-[999998] flex flex-col items-end gap-4 pointer-events-none transition-all duration-300">
             <AnimatePresence>
                 {(showBubble || isExpanded) && (
                     <motion.div
