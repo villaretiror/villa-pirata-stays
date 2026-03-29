@@ -8,6 +8,8 @@ import {
   ShieldCheck, MessageSquare, PlusCircle, Paperclip
 } from 'lucide-react';
 
+import { queryPropertyKnowledge } from '../../aiServices';
+
 interface Thread {
     id: string;
     guestName: string;
@@ -17,10 +19,12 @@ interface Thread {
     unread: number;
     avatar: string;
     status: 'active' | 'archived';
-    property?: string;
+    property_id?: string;
+    propertyTitle?: string;
     propertyImage?: string;
-    dates?: string;
-    paymentStatus?: 'paid' | 'pending';
+    checkIn?: string;
+    checkOut?: string;
+    bookingStatus?: string;
 }
 
 interface Message {
@@ -29,51 +33,6 @@ interface Message {
     sender: 'host' | 'guest' | 'ai';
     created_at: string;
 }
-
-const mockThreads: Thread[] = [
-    { 
-        id: '1', 
-        guestName: 'Familia Torres', 
-        source: 'Directo', 
-        lastMessage: '¿Tienen toallas de playa disponibles?', 
-        timestamp: '10:42 AM', 
-        unread: 2, 
-        avatar: 'https://i.pravatar.cc/150?img=32', 
-        status: 'active', 
-        property: 'Pirata Family House', 
-        propertyImage: 'https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/05f8a5b2-ef01-4470-a8f1-5f73fcba3301.jpeg?im_w=400',
-        dates: '22 - 25 Mar', 
-        paymentStatus: 'paid' 
-    },
-    { 
-        id: '2', 
-        guestName: 'Michael Brown', 
-        source: 'Airbnb', 
-        lastMessage: 'We just landed in San Juan! Ready for the drive.', 
-        timestamp: 'Ayer', 
-        unread: 0, 
-        avatar: 'https://i.pravatar.cc/150?img=11', 
-        status: 'active', 
-        property: 'Villa Retiro R', 
-        propertyImage: 'https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/95730c30-f345-41de-bf0d-1d9562c775e4.jpeg?im_w=400',
-        dates: 'Hoy - 28 Mar', 
-        paymentStatus: 'paid' 
-    },
-    { 
-        id: '3', 
-        guestName: 'Ana Smith', 
-        source: 'Salty AI', 
-        lastMessage: '[Lead Capturado] El cliente preguntó por fechas en diciembre y dejó su correo.', 
-        timestamp: 'Martes', 
-        unread: 0, 
-        avatar: 'https://i.pravatar.cc/150?img=5', 
-        status: 'active', 
-        property: 'Interés en Pirata', 
-        propertyImage: 'https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/fa1cce5f-f7b7-47e7-8502-b35a67c304d2.jpeg?im_w=400',
-        dates: 'Diciembre', 
-        paymentStatus: 'pending' 
-    },
-];
 
 interface HostMessageCenterProps {
     hostAvatar?: string;
@@ -103,38 +62,33 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                 .limit(20);
 
             if (!error && data) {
-                // Map to Thread interface (Data comes already joined from view)
                 const mapped: Thread[] = (data as any[]).map(log => ({
                     id: log.session_id,
-                    guestName: log.guest_name || `Interesado (${log.session_id.substring(0, 4)})`,
+                    guestName: log.guest_name || `Huésped (${log.session_id.substring(0, 4)})`,
                     source: 'Salty AI',
-                    lastMessage: `Corte de sesión: ${log.message_count} msgs`,
+                    lastMessage: log.last_sentiment === 'Urgente' ? '⚠️ NECESITA ATENCIÓN' : `Conversación AI: ${log.message_count} msgs`,
                     timestamp: new Date(log.last_interaction).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     unread: log.last_sentiment === 'Urgente' ? 1 : 0,
                     avatar: log.guest_avatar || `https://ui-avatars.com/api/?name=${log.session_id.substring(0, 2)}&background=random`,
                     status: 'active',
-                    property: log.current_property || 'Web Visitor',
-                    propertyImage: log.current_property?.includes('Pirata') 
-                        ? 'https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/05f8a5b2-ef01-4470-a8f1-5f73fcba3301.jpeg?im_w=400'
-                        : 'https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/95730c30-f345-41de-bf0d-1d9562c775e4.jpeg?im_w=400',
-                    dates: 'Consultando...',
-                    paymentStatus: 'pending'
+                    property_id: log.property_id,
+                    propertyTitle: log.property_title || 'Web Discovery',
+                    propertyImage: log.property_image,
+                    checkIn: log.check_in,
+                    checkOut: log.check_out,
+                    bookingStatus: log.booking_status
                 }));
 
-                setThreads([...mapped, ...mockThreads]);
+                setThreads(mapped);
                 if (mapped.length > 0 && !activeThread) setActiveThread(mapped[0]);
-                else if (!activeThread) setActiveThread(mockThreads[0]);
             }
             setLoading(false);
         };
 
         fetchThreads();
 
-        // Realtime for Threads
         const channel = supabase.channel('chat_logs_updates')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_logs' }, () => {
-                fetchThreads();
-            })
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_logs' }, () => fetchThreads())
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
@@ -155,23 +109,12 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
             if (!error && data) {
                 setMessages(data);
                 setTimeout(() => scrollToBottom("auto"), 100);
-            } else if (activeThread.id === '1' || activeThread.id === '2' || activeThread.id === '3') {
-                // Mock fallback original
-                const mockEntries: Message[] = [
-                    { id: 1, text: "Hola, ¿podrían ayudarme con una duda?", sender: 'guest', created_at: new Date(Date.now() - 3600000).toISOString() },
-                    { id: 2, text: "¡Hola! Claro que sí, dime cómo puedo ayudarte.", sender: 'host', created_at: new Date(Date.now() - 3500000).toISOString() },
-                    { id: 3, text: activeThread?.lastMessage || "Perfecto, gracias.", sender: 'guest', created_at: new Date(Date.now() - 3400000).toISOString() }
-                ];
-                setMessages(mockEntries);
-            } else {
-                setMessages([]);
             }
             setLoading(false);
         };
 
         fetchMessagesInternal();
 
-        // Realtime for Messages
         const channel = supabase.channel(`messages_${activeThread.id}`)
             .on('postgres_changes', { 
                 event: 'INSERT', 
@@ -194,7 +137,6 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
         const text = inputText;
         setInputText("");
 
-        // 1. Insert into ai_chat_logs
         const { error } = await supabase.from('ai_chat_logs').insert({
             session_id: activeThread.id,
             text: text,
@@ -202,24 +144,39 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
             intent: 'Human Response'
         });
 
-        // 2. Trigger Human Takeover (Habilitar para evitar que Salty responda encima)
         await supabase.from('chat_logs').update({
-            human_takeover_until: new Date(Date.now() + 30 * 60000).toISOString(), // 30 min takeover
+            human_takeover_until: new Date(Date.now() + 30 * 60000).toISOString(),
             last_interaction: new Date().toISOString()
         }).eq('session_id', activeThread.id);
 
-        if (error) {
-            console.error("Error al enviar mensaje:", error);
-            alert("No se pudo enviar el mensaje a la nube.");
-        }
+        if (error) console.error("Error al enviar mensaje:", error);
     };
 
-    const generateSaltyDraft = () => {
+    const generateSaltyDraft = async () => {
+        if (!activeThread || messages.length === 0) return;
         setIsSaltyDrafting(true);
-        setTimeout(() => {
-            setInputText("¡Hola Familia Torres! Claro que sí, tenemos 6 toallas de playa disponibles en el armario del pasillo principal, justo al lado del baño extra. ¿Necesitan algo más para su estancia?");
+        
+        try {
+            // Pick last guest message
+            const lastGuestMsg = [...messages].reverse().find(m => m.sender === 'guest')?.text;
+            
+            if (lastGuestMsg) {
+                const result = await queryPropertyKnowledge(
+                    lastGuestMsg, 
+                    activeThread.property_id || activeThread.propertyTitle
+                );
+                
+                if (result.ok) {
+                    setInputText(result.answer);
+                }
+            } else {
+                setInputText("¡Hola! ¿En qué puedo asistirte con respecto a tu estancia?");
+            }
+        } catch (e) {
+            console.error("Salty Draft Error:", e);
+        } finally {
             setIsSaltyDrafting(false);
-        }, 1200);
+        }
     };
 
     const getSourceBadge = (source: Thread['source']) => {
@@ -488,7 +445,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                         <div className="relative w-40 h-40 mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white mb-6">
                            <img src={activeThread.propertyImage || 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=400'} className="w-full h-full object-cover" alt="Property" />
                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                              <p className="text-white text-[10px] font-black uppercase tracking-widest">{activeThread.property}</p>
+                              <p className="text-white text-[10px] font-black uppercase tracking-widest">{activeThread.propertyTitle}</p>
                            </div>
                         </div>
                         <div className="space-y-6">
@@ -498,22 +455,24 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                                     <Calendar className="w-4 h-4 text-primary opacity-40" />
                                     <span className="text-[9px] font-black uppercase tracking-widest text-text-light">Estancia</span>
                                  </div>
-                                 <span className="text-[11px] font-black italic serif text-text-main">{activeThread.dates}</span>
+                                 <span className="text-[11px] font-black italic serif text-text-main">
+                                    {activeThread.checkIn ? `${new Date(activeThread.checkIn).toLocaleDateString()} - ${new Date(activeThread.checkOut!).toLocaleDateString()}` : 'Sin fechas'}
+                                 </span>
                               </div>
                               <div className="flex items-center justify-between">
                                  <div className="flex items-center gap-2">
                                     <CreditCard className="w-4 h-4 text-green-500 opacity-40" />
                                     <span className="text-[9px] font-black uppercase tracking-widest text-text-light">Estado</span>
                                  </div>
-                                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeThread.paymentStatus === 'paid' ? 'bg-green-100 text-green-600' : 'bg-sand text-primary'}`}>
-                                    {activeThread.paymentStatus === 'paid' ? 'Confirmado' : 'Pendiente'}
+                                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeThread.bookingStatus === 'confirmed' || activeThread.bookingStatus === 'Paid' ? 'bg-green-100 text-green-600' : 'bg-sand text-primary'}`}>
+                                    {activeThread.bookingStatus === 'confirmed' || activeThread.bookingStatus === 'Paid' ? 'Confirmado' : activeThread.bookingStatus || 'Consulta AI'}
                                  </span>
                               </div>
                            </div>
 
                             <div className="p-2 space-y-3 px-4">
                                <button 
-                                 onClick={() => onNavigate?.('conversion')}
+                                 onClick={() => onNavigate?.('leads')}
                                  className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-all group active:scale-95"
                                >
                                   <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60 group-hover:text-primary transition-colors">Ver Expediente CRM</span>
