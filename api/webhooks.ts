@@ -271,6 +271,14 @@ async function executeDirectTool(args: any, supabase: any) {
         message: `DISPONIBLE. Total por ${quote.nights} noches: ${quote.total} USD.`
       };
 
+    } else if (toolName === 'query_knowledge') {
+      const qResult = await queryPropertyKnowledge(args.query || args.question, finalId, supabase, { channel: 'vapi' });
+      return { 
+        ok: qResult.ok, 
+        answer: qResult.answer, 
+        propertyFacts: qResult.propertyFacts 
+      };
+
     } else if (toolName === 'find_next_availability') {
       const result = await findNextAvailability(finalId, finalStartDate || undefined, undefined, supabase);
       return {

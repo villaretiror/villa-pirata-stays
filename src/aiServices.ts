@@ -24,83 +24,147 @@ type GivenConcession = { date: string; type: string; discount: number };
  * 🔱 KNOWLEDGE SEARCH ENGINE (ANTI-HALLUCINATION)
  * Centralized logic to query static and dynamic knowledge for Salty Vapi and Chat.
  */
-export const queryPropertyKnowledge = async (query: string, rawPropertyId?: string, client?: SupabaseClient): Promise<{ ok: boolean, answer: string, sources: string[] }> => {
+/**
+ * 🔱 KNOWLEDGE SEARCH ENGINE (ANTI-HALLUCINATION) - LEVEL 10
+ * Centralized logic to query property data with DB-First priority.
+ * Implements strict intent routing for Specs, Amenities, Rules, and Policies.
+ */
+export const queryPropertyKnowledge = async (
+    query: string, 
+    rawPropertyId?: string, 
+    client?: SupabaseClient,
+    options: { channel?: 'vapi' | 'web' } = {}
+): Promise<{ ok: boolean, answer: string, propertyFacts?: any, needsHumanFollowup?: boolean, sources?: string[] }> => {
     const sb = client || supabase;
+    const propertyId = rawPropertyId ? await resolvePropertyId(rawPropertyId, sb) : '1081171030449673920';
 
-    // 1. Resolve Identity
-    const propertyId = rawPropertyId ? await resolvePropertyId(rawPropertyId, sb) : 'general';
+    // 1. Fetch Essential Structural Data (DB-First)
+    const { data: prop, error: dbError } = await sb.from('properties')
+        .select(`
+            title, subtitle, description, 
+            bedrooms, beds, baths, guests, 
+            amenities, house_rules, policies
+        `)
+        .eq('id', propertyId)
+        .maybeSingle();
 
-    // 2. Fetch context (Supabase + Hardcoded Knowledge)
-    const [
-        { data: dbProp },
-        { data: sysSetting },
-        { data: knowledgeRecords }
-    ] = await Promise.all([
-        propertyId !== 'general' ? sb.from('properties').select('*').eq('id', propertyId).maybeSingle() : Promise.resolve({ data: null }),
-        sb.from('system_settings').select('value').eq('key', 'villa_knowledge').maybeSingle(),
-        sb.from('salty_family_knowledge').select('key, value').limit(20)
-    ]);
-
-    const context = {
-        property_id: propertyId,
-        property_details: dbProp || "General Brand Context",
-        amenities_active: dbProp?.amenities || [],
-        house_rules_active: dbProp?.house_rules || [],
-        brand_knowledge: VILLA_KNOWLEDGE,
-        dynamic_settings: sysSetting?.value || {},
-        strategic_notes: knowledgeRecords || []
-    };
-
-    // 3. Ask Gemini for a "Salty-style" grounded answer
-    const prompt = `
-Eres Salty, el Concierge de Élite del Caribe. Tu misión es responder preguntas sobre las propiedades basándote en la siguiente jerarquía de verdad:
-
-1. PROPIEDAD ACTUAL (Nivel 1 - Verdad Absoluta): Usa 'property_details', 'amenities_active' y 'house_rules_active'. Si una amenidad (como Respaldo Solar o Piscina) NO está en esta lista, NO LA MENCIONES como existente para esta propiedad.
-2. CONOCIMIENTO DE MARCA (Nivel 2 - General): Usa 'brand_knowledge' solo si la propiedad no tiene una regla específica definida.
-3. AJUSTES DINÁMICOS: Usa 'dynamic_settings' para protocolos temporales.
-
-### CONTEXTO DE CONOCIMIENTO (JSON):
-${JSON.stringify(context)}
-
-### PREGUNTA DEL HUÉSPED:
-"${query}"
-
-### REGLAS DE ORO DE SALTY:
-1. Responde de forma CONCISA, profesional y con estilo Caribeño Chic.
-2. Si la información no está en el contexto NI en las amenidades activas, di: "Ese detalle no figura en mis registros actuales para esta propiedad. ¿Gusta que le ponga en contacto con el Capitán Brian vía WhatsApp para aclararlo?"
-3. Prohibido inventar precios o amenidades. 
-4. Responde en texto plano. No uses negritas ni markdown excesivo.
-5. Idioma: Español.
-
-Responde ahora:
-`.trim();
-
-    try {
-        const result = await ai.models.generateContent({
-            model: SALTY_MODEL,
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            config: {
-                temperature: 0.1,
-                maxOutputTokens: 300,
-                systemInstruction: "Eres Salty, el cerebro informativo de Villa Retiro y Pirata House. Sé preciso y sofisticado."
-            }
-        });
-
-        const answer = result.candidates?.[0]?.content?.parts?.[0]?.text || "Mis radares están fallando, favor de intentar nuevamente.";
-
-        return {
-            ok: true,
-            answer: answer.trim(),
-            sources: ['VILLA_KNOWLEDGE', 'Supabase DB']
-        };
-    } catch (err) {
-        console.error("[QueryKnowledge Engine Error]:", err);
-        return {
-            ok: false,
-            answer: "Mis sistemas de navegación están bajo mantenimiento. ¿Gusta que guarde su pregunta para el Capitán?",
-            sources: []
+    if (dbError || !prop) {
+        return { 
+            ok: false, 
+            answer: "En este momento no tengo ese dato exacto. ¿Desea que le contacte al equipo por mensaje?",
+            needsHumanFollowup: true
         };
     }
+
+    const q = query.toLowerCase();
+    let answer = "";
+    
+    // Extract Property Facts for potential reuse
+    const propertyFacts = {
+        title: prop.title,
+        bedrooms: prop.bedrooms,
+        beds: prop.beds,
+        baths: prop.baths,
+        guests: prop.guests,
+        checkIn: prop.policies?.checkInTime,
+        checkOut: prop.policies?.checkOutTime,
+        wifiName: prop.policies?.wifiName,
+        wifiPass: prop.policies?.wifiPass,
+        accessCode: prop.policies?.accessCode
+    };
+
+    // ── INTENT ROUTER (High Certainty) ─────────────────────
+
+    // A) Specs: Rooms, Beds, Capacity
+    if (q.includes('habitaci') || q.includes('dormitorio') || q.includes('cama') || q.includes('baño') || q.includes('capacidad') || q.includes('persona') || q.includes('cuarto')) {
+        answer = `La propiedad ${prop.title} cuenta con ${prop.bedrooms} habitaciones, ${prop.beds} camas y ${prop.baths} baños. Tiene una capacidad total para hospedar a ${prop.guests} personas con total comodidad.`;
+    }
+
+    // B) Amenities: What includes? Pool? WiFi?
+    else if (q.includes('amenidad') || q.includes('incluye') || q.includes('tiene') || q.includes('hay') || q.includes('cuenta con')) {
+        const amenitiesList = (prop.amenities || []).slice(0, 8);
+        const specificSearch = (prop.amenities || []).find((a: string) => q.includes(a.toLowerCase()));
+
+        if (specificSearch) {
+            answer = `Sí, la propiedad cuenta con ${specificSearch}. Además de otras amenidades principales como ${amenitiesList.filter((a: string) => a !== specificSearch).slice(0, 5).join(', ')}.`;
+        } else if (amenitiesList.length > 0) {
+            answer = `La villa incluye ${amenitiesList.join(', ')} y más. ¿Busca alguna amenidad en particular?`;
+        } else {
+            answer = "La propiedad cuenta con todas las amenidades esenciales para una estancia de lujo. ¿Desea saber sobre algo específico como piscina o aire acondicionado?";
+        }
+    }
+
+    // C) Logistics: Check-in / Check-out
+    else if (q.includes('check-in') || q.includes('entrada') || q.includes('llegada') || q.includes('salida') || q.includes('check-out') || q.includes('horario')) {
+        answer = `El horario de entrada es a las ${prop.policies?.checkInTime || '3:00 PM'} y el horario de salida es a las ${prop.policies?.checkOutTime || '11:00 AM'}.`;
+    }
+
+    // D) Rules: Smoking, Pets, Events
+    else if (q.includes('regla') || q.includes('norma') || q.includes('fumar') || q.includes('mascota') || q.includes('perro') || q.includes('fiesta') || q.includes('evento')) {
+        const rules = (prop.house_rules || []).slice(0, 5);
+        if (rules.length > 0) {
+            answer = `Nuestras reglas principales son: ${rules.join('. ')}.`;
+        } else {
+            answer = "Buscamos mantener un ambiente de respeto y tranquilidad. No se permite fumar en interiores ni realizar fiestas masivas. ¿Tiene alguna duda sobre una regla específica?";
+        }
+    }
+
+    // E) Connectivity & Access: WiFi, Codes
+    else if (q.includes('wifi') || q.includes('internet') || q.includes('clave') || q.includes('acceso') || q.includes('entrar') || q.includes('código')) {
+        const { wifiName, wifiPass, accessCode } = prop.policies || {};
+        if (wifiName && wifiPass) {
+            answer = `La red WiFi es ${wifiName} y la clave es ${wifiPass}. El código de acceso para su entrada es ${accessCode || 'enviado al confirmar su reserva'}.`;
+        } else {
+            answer = "La información de red y códigos de acceso se comparten de forma privada una vez confirmada la reserva por motivos de seguridad.";
+        }
+    }
+
+    // F) Cancellation Policies
+    else if (q.includes('cancelaci') || q.includes('reembolso') || q.includes('devoluci') || q.includes('cancelar')) {
+        const policy = prop.policies?.cancellationPolicy || "Nuestra política varía según la temporada de reserva. Generalmente es estricta pero justa para proteger su estancia.";
+        answer = policy.length > 180 ? policy.substring(0, 180) + "..." : policy;
+    }
+
+    // ── FALLBACK STAGE (Gemini Reasoning) ──────────────────
+    if (!answer) {
+        // For Vapi, we prefer a safe fallback over hallucinations
+        if (options.channel === 'vapi') {
+            return {
+                ok: false,
+                answer: "En este momento no tengo ese dato exacto. ¿Desea que le contacte al equipo por mensaje?",
+                needsHumanFollowup: true
+            };
+        }
+
+        // For Web Chat, use Gemini for more flexible answers (keeping the prompt strict)
+        try {
+            const prompt = `Responde como Salty, el Concierge de Élite. Sé profesional, neutro y sofisticado. No uses vocativos (como Capitán).
+            Basa tu respuesta únicamente en estos datos de la propiedad:
+            Título: ${prop.title}
+            Descripción: ${prop.description}
+            Amenidades: ${(prop.amenities || []).join(', ')}
+            Reglas: ${(prop.house_rules || []).join(', ')}
+            
+            Pregunta: "${query}"`;
+
+            const result = await ai.models.generateContent({
+                model: SALTY_MODEL,
+                contents: [{ role: 'user', parts: [{ text: prompt }] }],
+                config: { temperature: 0.1, maxOutputTokens: 250 }
+            });
+
+            answer = result.candidates?.[0]?.content?.parts?.[0]?.text || "Ese detalle no figura en mis registros actuales. ¿Gusta que consulte al equipo?";
+        } catch (e) {
+            answer = "En este momento no tengo ese dato exacto. ¿Desea que le contacte al equipo por mensaje?";
+        }
+    }
+
+    return {
+        ok: true,
+        answer: answer.trim(),
+        propertyFacts,
+        sources: ['Supabase DB - Structural']
+    };
 };
 
 // 🔱 MASTER PROPERTY RESOLVER: Converts human names/IDs to confirmed DB IDs
@@ -198,14 +262,16 @@ export const checkAvailabilityWithICal = async (
     if (checkInDate < today) {
         return {
             available: false,
-            reason: `Capitán, el tiempo fluye hacia adelante en el Caribe. Esa fecha ya ha pasado por nuestro horizonte. ¿Podríamos buscar una estancia en el futuro?`
+            reason: `El tiempo fluye hacia adelante en el Caribe. Esa fecha ya ha pasado por nuestro horizonte. ¿Podríamos buscar una estancia en el futuro?`,
+            unavailableLine: `Lo siento, esa fecha ya ha pasado. Por favor, sugiera un rango en el futuro.`
         };
     }
 
     if (nights < minNights) {
         return {
             available: false,
-            reason: `Capitán, esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`
+            reason: `Esta estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`,
+            unavailableLine: `Esa estancia no cumple con el mínimo de ${minNights} noches requerido para esta propiedad.`
         };
     }
 
@@ -260,7 +326,7 @@ export const checkAvailabilityWithICal = async (
         return { 
             available: false, 
             reason: `Fechas ya ocupadas por una reserva directa (${statusLabel}).`,
-            unavailableLine: `Lo siento, Capitán. Esas fechas ya están reservadas directamente en nuestro sistema.`
+            unavailableLine: `Lo siento, esas fechas ya están reservadas directamente en nuestro sistema.`
         };
     }
 
@@ -275,7 +341,7 @@ export const checkAvailabilityWithICal = async (
         return { 
             available: false, 
             reason: `Fechas no disponibles — reservado vía ${externalOverlap.source}.`,
-            unavailableLine: `Esas fechas ya están tomadas en mi bitácora de ${externalOverlap.source}, Capitán.`
+            unavailableLine: `Esas fechas ya están tomadas en mi bitácora de ${externalOverlap.source}.`
         };
     }
 
@@ -328,13 +394,13 @@ export const checkAvailabilityWithICal = async (
                 available: false, 
                 is_request_only: true, 
                 reason: `Esa travesía está en un horizonte lejano (más de ${availabilityWindowMonths} meses), pero si gusta puedo tomar sus datos para asegurar su lugar en la bitácora del Capitán.`,
-                unavailableLine: `Esa fecha está en un horizonte lejano, Capitán. Solo aceptamos reservas con seis meses de anticipación, pero puedo anotar sus datos para el Capitán Brian.`
+                unavailableLine: `Esa fecha está en un horizonte muy lejano. Solo aceptamos reservas con seis meses de anticipación, pero puedo anotar sus datos para ponernos en contacto luego.`
             };
         }
         return { 
             available: false, 
             reason: `Solo aceptamos reservas con hasta ${availabilityWindowMonths} meses de anticipación por el momento.`,
-            unavailableLine: `Lo siento, Capitán. Solo aceptamos reservas con hasta seis meses de anticipación por ahora.`
+            unavailableLine: `Lo siento. Solo aceptamos reservas con hasta seis meses de anticipación por ahora.`
         };
     }
 
@@ -368,7 +434,7 @@ export const findNextAvailability = async (
         return { 
             ok: true, 
             found: false, 
-            nextAvailabilityLine: "Capitán, mis radares no encuentran huecos disponibles en los próximos seis meses para esta villa." 
+            nextAvailabilityLine: "Lo siento, mis radares no encuentran huecos disponibles en los próximos seis meses para esta villa." 
         };
     }
 
@@ -381,7 +447,7 @@ export const findNextAvailability = async (
         return {
             ok: true,
             found: true,
-            nextAvailabilityLine: `He encontrado un horizonte despejado, Capitán. La villa ${propTitle} está libre del ${dateStr} al ${endStr}, por un total de ${quote.total} dólares por las ${quote.nights} noches.`,
+            nextAvailabilityLine: `He encontrado un horizonte despejado. La villa ${propTitle} está libre del ${dateStr} al ${endStr}, por un total de ${quote.total} dólares por las ${quote.nights} noches.`,
             data: {
                 startDate: validGap.start,
                 endDate: validGap.end,
@@ -394,7 +460,7 @@ export const findNextAvailability = async (
         return {
             ok: true,
             found: true,
-            nextAvailabilityLine: `Tengo disponibilidad a partir del ${validGap.start}, pero el cálculo de doblones está en mantenimiento. ¿Gusta que le reserve las fechas?`,
+            nextAvailabilityLine: `Tengo disponibilidad a partir del ${validGap.start}, pero el cálculo de precio está en mantenimiento. ¿Gusta que verifique las fechas?`,
             data: { startDate: validGap.start, endDate: validGap.end, nights: validGap.nights }
         };
     }
@@ -430,7 +496,7 @@ export const findAlternatePropertyAvailable = async (
         return { 
             id: String(firstAvailable.id), 
             title: firstAvailable.title,
-            alternateSuggestionLine: `Sin embargo, Capitán, tengo disponible la propiedad "${firstAvailable.title}" para esas mismas fechas. ¿Gusta que verifique el precio de esa villa para usted?`
+            alternateSuggestionLine: `Sin embargo, tengo disponible la propiedad "${firstAvailable.title}" para esas mismas fechas. ¿Gusta que verifique la cotización para usted?`
         };
     }
     return null;
