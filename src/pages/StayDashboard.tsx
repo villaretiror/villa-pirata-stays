@@ -268,7 +268,7 @@ const StayDashboard: React.FC = () => {
                             className="bg-white/10 hover:bg-white/20 p-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
                             <Navigation size={16} className="text-green-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Google Maps</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">Google Maps</span>
                         </a>
                         <a 
                             href={`https://waze.com/ul?ll=${coords}&navigate=yes`}
@@ -276,7 +276,7 @@ const StayDashboard: React.FC = () => {
                             className="bg-white/10 hover:bg-white/20 p-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
                         >
                             <Car size={16} className="text-blue-400" />
-                            <span className="text-[10px] font-black uppercase tracking-widest">Waze</span>
+                            <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">Waze</span>
                         </a>
                     </div>
                 </section>
@@ -298,7 +298,7 @@ const StayDashboard: React.FC = () => {
                         <div className="space-y-3">
                             <button 
                                 onClick={() => navigate('/messages', { state: { in_stay: true, property_id: booking.property_id, villa: prop?.title } })}
-                                className="w-full bg-white text-black py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-[10px] flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all shadow-xl shadow-black/50"
+                                className="w-full bg-white text-black py-5 rounded-[1.5rem] font-semibold uppercase tracking-[0.25em] opacity-80 text-[10px] flex items-center justify-center gap-2 hover:bg-primary hover:text-white transition-all shadow-xl shadow-black/50"
                             >
                                 💬 Preguntar algo a Salty <ArrowRight size={14} />
                             </button>
@@ -360,7 +360,7 @@ const StayDashboard: React.FC = () => {
                             <div className="space-y-4">
                                 <button 
                                     onClick={() => setShowCancelModal(false)}
-                                    className="w-full bg-white text-black py-6 rounded-3xl font-black uppercase tracking-widest text-[10px]"
+                                    className="w-full bg-white text-black py-6 rounded-3xl font-semibold uppercase tracking-[0.25em] opacity-80 text-[10px]"
                                 >
                                     Mantener mi Reserva
                                 </button>

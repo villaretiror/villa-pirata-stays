@@ -5,11 +5,15 @@ module.exports = {
         "./src/**/*.{js,ts,jsx,tsx,css,json}"
     ],
     darkMode: "class",
+    future: {
+        hoverOnlyWhenSupported: true,
+    },
     theme: {
         extend: {
             colors: {
                 // 🔱 ATLANTIC SIGNATURE PALETTE
-                primary: "#997300",    // Sovereign Gold (WCAG Contrast compliant)
+                primary: "var(--vrr-gold)",       // The Gold Standard
+                "gold-dark": "var(--vrr-gold-dark)",
                 secondary: "#0A192F",  // Deep Atlantic Navy (Sustituye al negro)
                 sand: "#FDFBF7",       // Champagne Mist (Fondo más limpio)
                 surface: "#FFFFFF",

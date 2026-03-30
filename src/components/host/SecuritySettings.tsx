@@ -74,7 +74,7 @@ const SecuritySettings: React.FC = () => {
                     </div>
                     <div>
                         <h3 className="font-serif font-black italic text-2xl">Seguridad CEO (2FA)</h3>
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/50">Capa de Blindaje para los Dueños</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50">Capa de Blindaje para los Dueños</p>
                     </div>
                 </div>
 
@@ -93,7 +93,7 @@ const SecuritySettings: React.FC = () => {
                                 <button 
                                     onClick={handleEnroll}
                                     disabled={loading}
-                                    className="px-8 py-3 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
+                                    className="px-8 py-3 bg-primary text-white rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:scale-105 active:scale-95 transition-all flex items-center gap-2"
                                 >
                                     {loading ? 'Preparando...' : 'Configurar 2FA Ahora'}
                                 </button>
@@ -107,7 +107,7 @@ const SecuritySettings: React.FC = () => {
                                             <p className="text-xs font-bold text-primary italic">1. Escanee este código QR con su aplicación de autenticación.</p>
                                             <p className="text-[10px] text-white/50">O ingrese el código manualmente: <code className="bg-white/10 px-2 py-1 rounded text-white">{secret}</code></p>
                                             <div className="space-y-1">
-                                                <label className="text-[10px] font-black uppercase tracking-widest text-white/50 ml-1">2. Ingrese el código de 6 dígitos</label>
+                                                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50 ml-1">2. Ingrese el código de 6 dígitos</label>
                                                 <input 
                                                     value={token} 
                                                     onChange={e => setToken(e.target.value)}
@@ -119,7 +119,7 @@ const SecuritySettings: React.FC = () => {
                                             <button 
                                                 onClick={handleVerify}
                                                 disabled={loading || token.length < 6}
-                                                className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary hover:text-white transition-all shadow-xl"
+                                                className="w-full py-4 bg-white text-black rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:bg-primary hover:text-white transition-all shadow-xl"
                                             >
                                                 {loading ? 'Verificando...' : 'Verificar y Activar Protocolo'}
                                             </button>
@@ -138,7 +138,7 @@ const SecuritySettings: React.FC = () => {
                             <h4 className="font-serif font-bold text-xl text-green-400">Paz Mental Activada</h4>
                             <p className="text-xs text-white/70">Su cuenta está protegida con Autenticación de Doble Factor.</p>
                         </div>
-                        <p className="text-[8px] font-black uppercase tracking-widest text-white/30 italic">Protocolo de Seguridad Nivel CEO</p>
+                        <p className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/30 italic">Protocolo de Seguridad Nivel CEO</p>
                     </div>
                 )}
             </section>
@@ -149,7 +149,7 @@ const SecuritySettings: React.FC = () => {
                         <AlertCircle className="text-primary w-5 h-5" />
                     </div>
                     <div>
-                        <h5 className="text-[10px] font-black uppercase tracking-widest mb-1">Copia de Seguridad</h5>
+                        <h5 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 mb-1">Copia de Seguridad</h5>
                         <p className="text-[10px] text-text-light leading-relaxed">Guarde su clave secreta en un lugar seguro. Si pierde su dispositivo, necesitará esta clave para recuperar su cuenta.</p>
                     </div>
                 </div>
@@ -158,7 +158,7 @@ const SecuritySettings: React.FC = () => {
                         <Smartphone className="text-primary w-5 h-5" />
                     </div>
                     <div>
-                        <h5 className="text-[10px] font-black uppercase tracking-widest mb-1">Múltiples Dispositivos</h5>
+                        <h5 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 mb-1">Múltiples Dispositivos</h5>
                         <p className="text-[10px] text-text-light leading-relaxed">Puede escanear el código QR con varios teléfonos si desea tener el acceso compartido con los otros dueños.</p>
                     </div>
                 </div>

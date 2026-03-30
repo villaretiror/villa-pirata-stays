@@ -6,9 +6,9 @@
   :root {
     --sand: #FDFBF7;
     --bunker: #0A192F;
-    --gold: #B38B00; /* Deepened Salty Gold for WCAG AA Contrast 4.5:1 */
-    --gold-light: #D4AF37; /* Original decorative gold */
-    --glass-blur: 12px;
+    --vrr-gold: #D4AF37; /* Original decorative gold now standard */
+    --vrr-gold-dark: #B8860B; /* Deeper gold for gradients & active states */
+    --glass-blur: 16px; /* Optimized GPU glass */
   }
 
   html {
@@ -101,11 +101,11 @@
   }
 
   .salty-mode .text-primary {
-    color: var(--gold) !important;
+    color: var(--vrr-gold) !important;
   }
 
   .salty-mode .bg-primary {
-    background-color: var(--gold) !important;
+    background-color: var(--vrr-gold) !important;
   }
 
   .salty-mode .border-white\/40,

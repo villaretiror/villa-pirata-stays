@@ -189,7 +189,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
               className={`px-6 py-4 bg-secondary text-primary rounded-2xl flex items-center gap-3 transition-all hover:scale-105 active:scale-95 shadow-xl border border-primary/20 ${isSyncingGlobal ? 'opacity-50' : ''}`}
             >
                <RefreshCcw className={`w-4 h-4 ${isSyncingGlobal ? 'animate-spin' : ''}`} />
-               <span className="text-[10px] font-black uppercase tracking-widest">
+               <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">
                 {isSyncingGlobal ? 'Conectando Satélites... 🛰️' : 'Sincronización Forzada 🔱'}
                </span>
             </button>
@@ -233,7 +233,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <Zap className="w-8 h-8 text-primary" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-white/50">Eficiencia {monthName}</h4>
+                    <h4 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50">Eficiencia {monthName}</h4>
                     <p className="text-3xl font-serif font-black italic mt-1">{occupancyRate}% <span className="text-xs font-sans text-green-400">Real</span></p>
                  </div>
                  <Radio className="absolute -bottom-4 -right-4 w-32 h-32 opacity-10 rotate-12" />
@@ -244,7 +244,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <RefreshCcw className="w-8 h-8 text-blue-600" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Bloqueos Externos</h4>
+                    <h4 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400">Bloqueos Externos</h4>
                     <p className="text-3xl font-serif font-black italic mt-1">
                       {activeProperty.calendarSync?.reduce((acc: number, f: any) => acc + (f.events_found || 0), 0) || 0}
                       <span className="text-xs font-sans text-gray-400 ml-2">Eventos</span>
@@ -257,7 +257,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                     <Tag className="w-8 h-8 text-primary" />
                  </div>
                  <div>
-                    <h4 className="text-[10px] font-black uppercase tracking-widest text-gray-400">Antelación</h4>
+                    <h4 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400">Antelación</h4>
                     <p className="text-3xl font-serif font-black italic mt-1">
                       {activeProperty.availability_rules?.[0]?.advance_notice_days || 2}
                       <span className="text-xs font-sans text-gray-400 ml-2">Días Req.</span>

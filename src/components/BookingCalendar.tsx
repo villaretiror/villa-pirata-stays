@@ -266,7 +266,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 <header className="text-center mb-6 sm:mb-10 px-4 pt-4">
                     <div className="inline-flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-100 mb-4 shadow-sm animate-fade-in">
                         <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                        <span className="text-[10px] font-black uppercase tracking-widest text-emerald-800">Sincronía AST (Puerto Rico Time)</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-emerald-800">Sincronía AST (Puerto Rico Time)</span>
                     </div>
                     <h3 className="font-serif font-black text-4xl sm:text-5xl text-secondary mb-3 tracking-tighter italic leading-none">Disponibilidad Real</h3>
                     <p className="text-[11px] sm:text-[13px] uppercase font-bold tracking-[0.4em] text-secondary/40">Seleccione su estancia Signature</p>
@@ -278,13 +278,13 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                 {startDate && !endDate && minNights > 1 && (
                     <div className="animate-slide-up flex items-center gap-3 bg-secondary px-8 py-3 rounded-full border border-primary/20 shadow-2xl z-10">
                         <CalendarIcon size={16} className="text-primary" />
-                        <span className="text-[11px] font-black uppercase tracking-widest text-white">Estancia mínima: {minNights} Noches</span>
+                        <span className="text-[11px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white">Estancia mínima: {minNights} Noches</span>
                     </div>
                 )}
                 {isVeryBlocked && !startDate && (
                     <div className="animate-slide-up flex items-center gap-3 bg-secondary/5 px-6 py-2.5 rounded-full border border-secondary/10">
                         <Star size={14} className="text-primary" />
-                        <span className="text-[10px] font-black uppercase tracking-widest text-secondary/60">Temporada de Alta Demanda</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-secondary/60">Temporada de Alta Demanda</span>
                     </div>
                 )}
             </div>

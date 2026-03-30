@@ -11,14 +11,14 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
     <div className="space-y-8 animate-fade-in pb-10">
       <header>
         <h3 className="text-xl font-serif font-black italic text-text-main tracking-tighter">Detalles de la Propiedad 🔱</h3>
-        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Información General, Ubicación y Capacidad</p>
+        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Información General, Ubicación y Capacidad</p>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Título y Subtítulo */}
         <div className="space-y-4 col-span-1 md:col-span-2">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Título de la Villa</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#2D5A27] block mb-2 ml-1">Título de la Villa</label>
             <input
               value={form.title}
               onChange={e => setForm({ ...form, title: e.target.value })}
@@ -27,7 +27,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
             />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-light block mb-2 ml-1">Subtítulo Descriptivo</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light block mb-2 ml-1">Subtítulo Descriptivo</label>
             <input
               value={form.subtitle || ''}
               onChange={e => setForm({ ...form, subtitle: e.target.value })}
@@ -40,7 +40,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
         {/* Ubicación y Dirección */}
         <div className="space-y-4">
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-light block mb-2 ml-1">Ubicación (Label)</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light block mb-2 ml-1">Ubicación (Label)</label>
             <input
               value={form.location || ''}
               onChange={e => setForm({ ...form, location: e.target.value })}
@@ -48,7 +48,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
             />
           </div>
           <div>
-            <label className="text-[10px] font-black uppercase tracking-widest text-text-light block mb-2 ml-1">Dirección Exacta</label>
+            <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light block mb-2 ml-1">Dirección Exacta</label>
             <textarea
               value={form.address || ''}
               onChange={e => setForm({ ...form, address: e.target.value })}
@@ -61,7 +61,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-primary block mb-2 ml-1">Precio x Noche</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary block mb-2 ml-1">Precio x Noche</label>
               <div className="relative">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 text-primary font-black">$</span>
                 <input
@@ -73,7 +73,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
               </div>
             </div>
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 block mb-2 ml-1">Precio Original (Tachado)</label>
+              <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400 block mb-2 ml-1">Precio Original (Tachado)</label>
               <input
                 type="number"
                 value={form.original_price || ''}
@@ -91,7 +91,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
             ].map((stat) => (
               <div key={stat.key} className="bg-sand/20 p-3 rounded-2xl border border-primary/20 flex flex-col items-center">
                 <span className="material-icons text-primary/60 text-xs mb-1">{stat.icon}</span>
-                <p className="text-[7px] font-black uppercase tracking-widest text-text-light mb-1">{stat.label}</p>
+                <p className="text-[7px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light mb-1">{stat.label}</p>
                 <input
                   type="number"
                   value={(form as any)[stat.key]}
@@ -106,7 +106,7 @@ const InfoSection: React.FC<InfoSectionProps> = ({ form, setForm }) => {
       
       {/* Description */}
       <div>
-        <label className="text-[10px] font-black uppercase tracking-widest text-text-light block mb-2 ml-1">Descripción Narrativa ✨</label>
+        <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light block mb-2 ml-1">Descripción Narrativa ✨</label>
         <textarea
           value={form.description || ''}
           onChange={e => setForm({ ...form, description: e.target.value })}

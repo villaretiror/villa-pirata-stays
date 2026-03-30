@@ -176,7 +176,7 @@ const Profile: React.FC = () => {
                 <h3 className="font-serif font-bold text-lg mb-6 text-text-main">Información Privada</h3>
                 <div className="space-y-6">
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light mb-2 block">Teléfono de contacto</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light mb-2 block">Teléfono de contacto</label>
                     {isEditing ? (
                       <input
                         value={formData.phone}
@@ -189,7 +189,7 @@ const Profile: React.FC = () => {
                     )}
                   </div>
                   <div>
-                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light mb-2 block">Emergencia (Persona / Tel)</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light mb-2 block">Emergencia (Persona / Tel)</label>
                     {isEditing ? (
                       <input
                         value={formData.emergencyContact}
@@ -287,7 +287,7 @@ const Profile: React.FC = () => {
                     </div>
                     <button
                       onClick={() => navigate('/login')}
-                      className="px-4 py-2 text-[10px] font-black uppercase tracking-widest bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
+                      className="px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all"
                     >
                       Gestionar
                     </button>

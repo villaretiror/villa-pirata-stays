@@ -78,7 +78,7 @@ const HealthStatusGroup: React.FC = () => {
         return (
             <div className="relative group/led flex items-center gap-1.5 cursor-help">
                 <div className={`w-2 h-2 rounded-full ${colorClass} ${shadowClass} transition-all duration-500`}></div>
-                <span className="text-[9px] font-black uppercase tracking-widest text-text-light group-hover/led:text-text-main transition-colors">
+                <span className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light group-hover/led:text-text-main transition-colors">
                     {label}
                 </span>
 

@@ -25,10 +25,10 @@ const Footer: React.FC = () => {
         {/* Secondary Info & Copyright */}
         <div className="pt-12 border-t border-white/5 w-full flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
           <div className="space-y-1">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white">
               Villa Retiro LLC © 2026
             </p>
-            <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em] opacity-40">
+            <p className="text-[9px] text-primary font-semibold uppercase tracking-[0.25em] opacity-80 opacity-40">
               Salty · Concierge Oficial VRR™
             </p>
           </div>

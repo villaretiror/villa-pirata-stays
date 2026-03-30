@@ -282,7 +282,7 @@ const Home: React.FC = () => {
       <div className="flex items-center gap-4 bg-gray-50 rounded-full p-1 shadow-inner">
         <button
           onClick={() => setVal(Math.max(min, val - 1))}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${val <= min ? 'text-gray-300 opacity-50' : 'bg-white text-text-main shadow-sm hover:scale-105 active:scale-95'}`}
+          className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${val <= min ? 'text-gray-300 opacity-50' : 'bg-white text-text-main shadow-sm hover:scale-105 active:scale-95'}`}
           disabled={val <= min}
         >
           <Minus size={14} />
@@ -295,7 +295,7 @@ const Home: React.FC = () => {
             }
             setVal(Math.min(8, val + 1));
           }}
-          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${val >= 8 ? 'bg-gray-100 text-gray-300' : 'bg-white text-primary shadow-sm hover:scale-105 active:scale-95'}`}
+          className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${val >= 8 ? 'bg-gray-100 text-gray-300' : 'bg-white text-primary shadow-sm hover:scale-105 active:scale-95'}`}
         >
           <Plus size={14} />
         </button>
@@ -316,7 +316,7 @@ const Home: React.FC = () => {
             className="fixed top-8 left-1/2 z-[3000000] bg-secondary/95 backdrop-blur-xl border border-primary/30 px-6 py-2.5 rounded-full flex items-center gap-3 shadow-2xl"
           >
             <div className="w-2 h-2 rounded-full bg-primary animate-pulse shadow-[0_0_10px_#D4AF37]"></div>
-            <span className="text-[10px] font-black uppercase tracking-[0.25em] text-white">Sincronizando Disponibilidad...</span>
+            <span className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.25em] text-white">Sincronizando Disponibilidad...</span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -347,13 +347,13 @@ const Home: React.FC = () => {
               <div className="flex bg-sand/60 p-1 rounded-2xl mb-6">
                 <button 
                    onClick={() => setSearchTab('dates')} 
-                   className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${searchTab === 'dates' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                   className={`flex-1 py-3 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 rounded-xl transition-all ${searchTab === 'dates' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                    1. Fechas
                 </button>
                 <button 
                    onClick={() => setSearchTab('guests')} 
-                   className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all ${searchTab === 'guests' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                   className={`flex-1 py-3 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 rounded-xl transition-all ${searchTab === 'guests' ? 'bg-white text-primary shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                    2. Huéspedes
                 </button>
@@ -447,7 +447,7 @@ const Home: React.FC = () => {
             <Bell size={24} className="text-secondary group-hover:scale-110 transition-transform" />
           </button>
         </div>
-        <p className="text-primary font-black uppercase tracking-[0.2em] transition-all duration-500 drop-shadow-sm text-[10px]">
+        <p className="text-primary font-semibold uppercase tracking-[0.25em] opacity-80 transition-all duration-500 drop-shadow-sm text-[10px]">
           Salty · Concierge Oficial VRR 🌟
         </p>
       </div>
@@ -458,7 +458,7 @@ const Home: React.FC = () => {
         tabIndex={0}
         aria-label="Caja de búsqueda general"
         onKeyDown={(e) => { if (e.key === 'Enter') setIsSearchOpen(true); }}
-        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10 mx-6 text-left"
+        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10 mx-6 text-left transform-gpu"
       >
         <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform" aria-hidden="true">
           <Search size={20} />
@@ -499,7 +499,7 @@ const Home: React.FC = () => {
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 text-center md:text-left">
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.3em] text-primary mb-2 opacity-80">Explora con Salty</p>
+              <p className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] text-primary mb-2 opacity-80">Explora con Salty</p>
               <h2 className="font-serif font-bold text-4xl text-text-main leading-[1.1] tracking-tight">Sabor Local & <span className="text-secondary italic font-medium">Invasión de Sentidos.</span></h2>
             </div>
             
@@ -539,7 +539,7 @@ const Home: React.FC = () => {
               <div id={`section-${activeGuideTab}`} className="scroll-mt-32">
                   <div className="flex justify-between items-end mb-8">
                     <div>
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-1">Cabo Rojo Suroeste</p>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-1">Cabo Rojo Suroeste</p>
                       <h2 className="font-serif font-bold text-3xl text-text-main">Destinos Recomendados</h2>
                     </div>
                   </div>
@@ -714,16 +714,16 @@ const Home: React.FC = () => {
             >
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Nombre</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Nombre</label>
                   <input name="name" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none" placeholder="Tu nombre" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Email</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Email</label>
                   <input name="email" type="email" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none" placeholder="tu@email.com" />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Mensaje</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Mensaje</label>
                 <textarea name="message" required className="w-full bg-white border border-gray-100 rounded-xl px-4 py-3 text-sm focus:ring-2 ring-primary/20 outline-none h-32" placeholder="¿En qué podemos ayudarte?"></textarea>
               </div>
               <button
@@ -803,7 +803,7 @@ const StickyHomeHeader = ({ onSearchClick }: { onSearchClick: () => void }) => {
               className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-4 py-2 rounded-full transition-colors group"
             >
               <Search size={14} className="text-primary group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-text-light">Buscar Fechas</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Buscar Fechas</span>
             </button>
           </div>
         </motion.div>

@@ -65,7 +65,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
             <span className="material-icons">construction</span>
           </div>
           <h3 className="font-serif font-black italic text-lg text-text-main">Módulo en Construcción 🔱</h3>
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Salty está puliendo esta sección para ti</p>
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Salty está puliendo esta sección para ti</p>
         </div>
       );
     }
@@ -81,7 +81,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
             <h2 className="font-serif font-black italic text-2xl tracking-tighter text-text-main line-clamp-2 leading-none">{form.title}</h2>
             <div className="flex items-center gap-2 mt-3">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-glow shadow-green-400" />
-              <p className="text-[9px] text-primary font-black uppercase tracking-[0.2em]">Enlace Directo Activo 🔱</p>
+              <p className="text-[9px] text-primary font-semibold uppercase tracking-[0.25em] opacity-80">Enlace Directo Activo 🔱</p>
             </div>
           </div>
 
@@ -104,7 +104,7 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
 
           <button 
             onClick={onCancel}
-            className="mt-10 flex items-center justify-center gap-2 p-4 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all text-[10px] font-black uppercase tracking-widest"
+            className="mt-10 flex items-center justify-center gap-2 p-4 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-2xl transition-all text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80"
           >
             <span className="material-icons text-sm">logout</span>
             Salir del Modo Edición
@@ -130,20 +130,20 @@ const PropertyEditorModal: React.FC<PropertyEditorModalProps> = ({
           {/* Footer Actions HUD */}
           <div className="p-8 border-t border-gray-100 bg-white/80 backdrop-blur-md flex gap-4 items-center justify-between">
             <div className="hidden lg:block">
-              <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Autoguardado Local</p>
+              <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400">Autoguardado Local</p>
               <p className="text-[9px] font-bold text-primary italic">Salty previene la pérdida de datos 🔱</p>
             </div>
             <div className="flex gap-4 flex-1 lg:flex-none lg:w-96">
               <button 
                 onClick={onCancel}
-                className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-gray-100 rounded-2xl transition-all"
+                className="flex-1 py-4 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400 hover:bg-gray-100 rounded-2xl transition-all"
               >
                 Descartar
               </button>
               <button
                 onClick={() => !isSaving && onSave(form)}
                 disabled={isSaving}
-                className={`flex-[2] py-4 text-[10px] font-black uppercase tracking-widest text-white rounded-2xl shadow-2xl transition-all flex items-center justify-center gap-2 ${
+                className={`flex-[2] py-4 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white rounded-2xl shadow-2xl transition-all flex items-center justify-center gap-2 ${
                   isSaving ? 'bg-gray-300 cursor-not-allowed shadow-none' : 'bg-primary shadow-primary/30 hover:scale-[1.02] active:scale-98'
                 }`}
               >

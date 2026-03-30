@@ -41,9 +41,9 @@ const PhotoSection: React.FC<PhotoSectionProps> = ({ form, setForm }) => {
       <header className="flex justify-between items-end">
         <div>
           <h3 className="text-xl font-serif font-black italic text-text-main tracking-tighter">Curaduría Visual 🔱</h3>
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Gestión de Galería y Portada</p>
+          <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Gestión de Galería y Portada</p>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-primary/60">{form.images.length} fotos totales</p>
+        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary/60">{form.images.length} fotos totales</p>
       </header>
 
       {/* Upload Dropzone */}
@@ -79,7 +79,7 @@ const PhotoSection: React.FC<PhotoSectionProps> = ({ form, setForm }) => {
             <span className={`material-icons text-3xl mb-2 transition-transform duration-500 ${isUploading ? 'animate-spin' : 'group-hoverScale-110'}`}>
               {isUploading ? 'sync' : 'cloud_upload'}
             </span>
-            <p className="mb-1 text-xs font-black uppercase tracking-widest text-text-light">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">
               {isUploading ? 'Subiendo Galería Elite...' : 'Vuela o Arrastra Fotos'}
             </p>
             <p className="text-[9px] text-gray-400 font-bold uppercase tracking-widest tracking-tighter mt-1">Soporta múltiples archivos (Máx 2MB c/u)</p>

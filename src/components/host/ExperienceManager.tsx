@@ -60,7 +60,7 @@ const ExperienceManager: React.FC<ExperienceManagerProps> = ({ guideData }) => {
             </h3>
             <button
               onClick={() => setIsEditing({ catId: category.id })}
-              className="px-5 py-2.5 bg-text-main text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg hover:scale-105 transition-transform flex items-center gap-2"
+              className="px-5 py-2.5 bg-text-main text-white rounded-xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 shadow-lg hover:scale-105 transition-transform flex items-center gap-2"
             >
               <span className="material-icons text-sm">add</span>
               Agregar Lugar
@@ -130,47 +130,47 @@ const GuideEditorModal = ({ item, onSave, onCancel }: { item?: LocalGuideItem, o
         <div className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2 space-y-1">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Nombre del Lugar</label>
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Nombre del Lugar</label>
               <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="w-full p-3.5 border border-gray-100 rounded-2xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. Playa Buyé" />
             </div>
             <div className="space-y-1">
-              <label className="block text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Orden (SEO)</label>
+              <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Orden (SEO)</label>
               <input type="number" value={form.sortOrder} onChange={e => setForm({ ...form, sortOrder: parseInt(e.target.value) || 0 })} className="w-full p-3.5 border border-gray-100 rounded-2xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" placeholder="0" />
             </div>
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Distancia / Tiempo</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Distancia / Tiempo</label>
             <input value={form.distance} onChange={e => setForm({ ...form, distance: e.target.value })} className="w-full p-3.5 border border-gray-100 rounded-2xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" placeholder="e.g. 12-15 min" />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-text-light ml-1">URL de Imagen Premium</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">URL de Imagen Premium</label>
             <input value={form.image} onChange={e => setForm({ ...form, image: e.target.value })} className="w-full p-3.5 border border-gray-100 rounded-2xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" placeholder="https://unsplash.com/..." />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Google Maps Link</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Google Maps Link</label>
             <input value={form.mapUrl} onChange={e => setForm({ ...form, mapUrl: e.target.value })} className="w-full p-3.5 border border-gray-100 rounded-2xl bg-gray-50 text-sm font-bold outline-none focus:ring-2 focus:ring-primary/20" placeholder="https://google.com/maps/..." />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Descripción Aspiracional</label>
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Descripción Aspiracional</label>
             <textarea value={form.desc} onChange={e => setForm({ ...form, desc: e.target.value })} className="w-full p-3.5 border border-gray-100 rounded-2xl bg-gray-50 text-sm font-medium outline-none focus:ring-2 focus:ring-primary/20 h-28 resize-none" placeholder="Describe la magia del lugar..." />
           </div>
 
           <div className="space-y-1">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-primary ml-1 flex items-center gap-1">
+            <label className="block text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary ml-1 flex items-center gap-1">
               <span className="material-icons text-xs">tips_and_updates</span> Salty Tip (Tu secreto)
             </label>
             <textarea value={form.saltyTip} onChange={e => setForm({ ...form, saltyTip: e.target.value })} className="w-full p-3.5 border border-primary/10 rounded-2xl bg-primary/5 text-sm font-medium text-primary outline-none focus:ring-2 focus:ring-primary/20 h-20 resize-none" placeholder="Un consejo personal de experto..." />
           </div>
 
           <div className="pt-4 flex gap-4">
-            <button onClick={onCancel} className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-text-light hover:bg-gray-100 rounded-2xl transition-colors">Cancelar</button>
+            <button onClick={onCancel} className="flex-1 py-4 text-xs font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light hover:bg-gray-100 rounded-2xl transition-colors">Cancelar</button>
             <button 
               onClick={() => onSave(form)} 
-              className="flex-1 py-4 bg-primary text-white text-xs font-black uppercase tracking-widest rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all"
+              className="flex-1 py-4 bg-primary text-white text-xs font-semibold uppercase tracking-[0.25em] opacity-80 rounded-2xl shadow-xl shadow-primary/20 active:scale-95 transition-all"
             >
               Guardar Destino
             </button>

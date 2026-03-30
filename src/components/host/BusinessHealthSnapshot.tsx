@@ -85,7 +85,7 @@ const BusinessHealthSnapshot: React.FC = () => {
             CEO Snapshot
             <span className="text-primary text-xl animate-pulse">🔥</span>
           </h2>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-white/40">Visualización de alto nivel • Salty Engine v3.0</p>
+          <p className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] text-white/40">Visualización de alto nivel • Salty Engine v3.0</p>
         </div>
         
         <div className="flex items-center gap-2 bg-white/5 p-1.5 rounded-2xl border border-white/10 backdrop-blur-md">
@@ -93,7 +93,7 @@ const BusinessHealthSnapshot: React.FC = () => {
             <button
               key={r}
               onClick={() => setRange(r)}
-              className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
+              className={`px-4 py-2 rounded-xl text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 transition-all ${
                 range === r ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -105,7 +105,7 @@ const BusinessHealthSnapshot: React.FC = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-10 relative z-10">
         <div className="space-y-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Estado Financiero</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50">Estado Financiero</p>
           <div className="space-y-1">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-serif font-black tracking-tight">${stats.revenue.toLocaleString()}</span>
@@ -119,19 +119,19 @@ const BusinessHealthSnapshot: React.FC = () => {
         </div>
 
         <div className="space-y-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Balance Neto</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50">Balance Neto</p>
           <div className="space-y-1">
             <span className={`text-3xl font-serif font-black tracking-tight ${profit >= 0 ? 'text-white' : 'text-primary'}`}>
               ${profit.toLocaleString()}
             </span>
-            <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-primary">
+            <div className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary">
                Yield Real-Time
             </div>
           </div>
         </div>
 
         <div className="space-y-3">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Operación IA</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50">Operación IA</p>
           <div className="space-y-1">
             <div className="flex items-baseline gap-2">
               <span className="text-3xl font-serif font-black tracking-tight">{stats.queries}</span>
@@ -142,7 +142,7 @@ const BusinessHealthSnapshot: React.FC = () => {
         </div>
 
         <div className="space-y-3 flex flex-col justify-end">
-          <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/50">Eficiencia Salty</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/50">Eficiencia Salty</p>
           <div className="space-y-2">
             <div className="flex justify-between items-center text-[10px] font-black">
                <span>Score Actual</span>

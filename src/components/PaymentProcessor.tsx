@@ -314,7 +314,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
 
                             <div className="space-y-4 relative z-10">
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1 leading-none">Número de Transferencia</p>
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-1 leading-none">Número de Transferencia</p>
                                     <div className="flex items-center justify-between">
                                         <p className="text-xl font-black text-secondary tracking-tighter">787-356-0895</p>
                                         <button
@@ -328,7 +328,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                                 </div>
 
                                 <div className="pt-3 border-t border-primary/20">
-                                    <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-1 leading-none">A nombre de</p>
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-1 leading-none">A nombre de</p>
                                     <p className="text-sm font-bold text-slate-700">Villa Retiro R</p>
                                 </div>
                             </div>
@@ -338,7 +338,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent p-5"></div>
                             <div className="relative z-10 flex justify-between items-center">
                                 <div>
-                                    <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-1">Inversión Total</p>
+                                    <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/40 mb-1">Inversión Total</p>
                                     <p className="text-2xl font-black tracking-tight text-primary">${total}</p>
                                 </div>
                                 <div className="text-right">

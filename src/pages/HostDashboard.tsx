@@ -133,7 +133,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
           <h3 className="font-serif font-black italic text-2xl text-text-main tracking-tight">{p.title}</h3>
           <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
             <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-            <span className="text-[8px] font-black uppercase tracking-widest text-text-light">Auto-Optimizer Active</span>
+            <span className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Auto-Optimizer Active</span>
           </div>
         </div>
 
@@ -144,7 +144,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
               <div className="w-8 h-8 bg-sand text-primary rounded-lg flex items-center justify-center">
                 <Zap className="w-4 h-4" />
               </div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Psicología de Venta (FOMO)</h4>
+              <h4 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-500">Psicología de Venta (FOMO)</h4>
             </div>
 
             <div className="relative">
@@ -175,7 +175,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
               <div className="w-8 h-8 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
                 <Map className="w-4 h-4" />
               </div>
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-500">Logística de Confianza</h4>
+              <h4 className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-500">Logística de Confianza</h4>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -240,7 +240,7 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
 const LoadingSpinner = () => (
   <div className="fixed inset-0 z-[110] bg-white/80 backdrop-blur-md flex flex-col items-center justify-center animate-fade-in">
     <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mb-4"></div>
-    <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-main animate-pulse">Sincronizando con Supabase...</p>
+    <p className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] text-text-main animate-pulse">Sincronizando con Supabase...</p>
   </div>
 );
 
@@ -288,12 +288,12 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
               {property.title}
             </h3>
           </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-text-light opacity-50 ml-5">Social Proof Management</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light opacity-50 ml-5">Social Proof Management</p>
         </div>
 
         <div className="flex items-center gap-8 bg-gray-50/80 p-6 rounded-3xl border border-gray-100 shadow-inner">
           <div className="text-center">
-            <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Score Global</p>
+            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light mb-1">Score Global</p>
             <div className="flex items-baseline gap-1">
               <span className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.rating}</span>
               <Star className="w-3.5 h-3.5 text-primary fill-primary mb-1" />
@@ -301,7 +301,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
           </div>
           <div className="w-px h-10 bg-gray-200" />
           <div className="text-center">
-            <p className="text-[8px] font-black uppercase tracking-widest text-text-light mb-1">Total Reseñas</p>
+            <p className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light mb-1">Total Reseñas</p>
             <p className="text-3xl font-serif font-black italic text-text-main leading-none">{stats.count}</p>
           </div>
         </div>
@@ -354,7 +354,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
           </div>
           <button
             onClick={() => setIsAdding(!isAdding)}
-            className={`text-[9px] font-black uppercase tracking-widest px-4 py-2 rounded-full border transition-all ${isAdding ? 'bg-red-50 text-red-500 border-red-100' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'}`}
+            className={`text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 px-4 py-2 rounded-full border transition-all ${isAdding ? 'bg-red-50 text-red-500 border-red-100' : 'bg-primary/5 text-primary border-primary/20 hover:bg-primary/10'}`}
           >
             {isAdding ? 'Cerrar Panel' : '+ Añadir Manualmente'}
           </button>
@@ -367,7 +367,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
               <input placeholder="Fecha de Estadía (Ej: Junio 2024)" className="p-4 rounded-xl border border-primary/20 focus:ring-2 ring-primary/20 outline-none text-sm font-bold" onChange={e => setNewReview({ ...newReview, created_at: e.target.value })} />
 
               <div className="relative">
-                <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
+                <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 appearance-none" onChange={e => setNewReview({ ...newReview, source: e.target.value as any })}>
                   <option value="Airbnb">Origen: Airbnb</option>
                   <option value="Booking.com">Origen: Booking.com</option>
                   <option value="Google">Origen: Google Maps</option>
@@ -376,7 +376,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
               </div>
 
               <div className="relative text-center">
-                <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-black uppercase tracking-widest appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
+                <select className="w-full p-4 rounded-xl border border-primary/20 bg-white outline-none focus:ring-2 ring-primary/20 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 appearance-none text-center" onChange={e => setNewReview({ ...newReview, rating: parseInt(e.target.value) })}>
                   <option value={5}>Rating: ★ ★ ★ ★ ★</option>
                   <option value={4}>Rating: ★ ★ ★ ★ ☆</option>
                 </select>
@@ -402,12 +402,12 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
                   </div>
                   <div>
                     <h4 className="font-serif font-black italic text-lg text-text-main group-hover/item:text-primary transition-colors leading-none truncate max-w-[150px]">{review.author}</h4>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-text-light mt-1 opacity-50">{review.created_at}</p>
+                    <p className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light mt-1 opacity-50">{review.created_at}</p>
                   </div>
                 </div>
                 <div className="bg-white px-3 py-1.5 rounded-full border border-gray-100 flex items-center gap-1.5 shadow-sm group-hover/item:scale-105 transition-transform">
                   <div className={`w-1.5 h-1.5 rounded-full ${review.source === 'Airbnb' ? 'bg-[#FF385C]' : review.source === 'Booking.com' ? 'bg-[#003580]' : 'bg-green-500'}`} />
-                  <span className="text-[7px] font-black uppercase tracking-widest text-text-main">{review.source}</span>
+                  <span className="text-[7px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-main">{review.source}</span>
                 </div>
               </div>
 
@@ -430,7 +430,7 @@ const ReviewManager: React.FC<ReviewManagerProps> = ({ property, onUpdateStats, 
         {(property.reviews_list || []).length === 0 && !isAdding && (
           <div className="text-center py-12 bg-gray-50/30 rounded-[3rem] border border-dashed border-gray-100">
             <Sparkles className="w-10 h-10 text-gray-200 mx-auto mb-3" />
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-300">Tu legado está listo para ser documentado</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-300">Tu legado está listo para ser documentado</p>
           </div>
         )}
       </div>
@@ -587,7 +587,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         <select
           value={selectedPropertyId}
           onChange={(e) => onFilterChange(e.target.value)}
-          className="bg-transparent border-none text-xs font-black uppercase tracking-widest outline-none"
+          className="bg-transparent border-none text-xs font-semibold uppercase tracking-[0.25em] opacity-80 outline-none"
         >
           <option value="all">Todas las villas</option>
           {properties.map(p => <option key={p.id} value={p.id}>{p.title}</option>)}
@@ -610,7 +610,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
         <button
           onClick={handleExport}
-          className="p-2 bg-black text-white rounded-xl flex items-center gap-2 text-[10px] font-black uppercase tracking-widest group"
+          className="p-2 bg-black text-white rounded-xl flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 group"
         >
           <Printer className="w-4 h-4" />
           Imprimir Reporte
@@ -621,7 +621,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         <div className="flex justify-between items-center mb-8">
           <div>
             <h3 className="text-2xl font-serif font-black italic text-text-main tracking-tighter">Análisis de Desempeño 🔱</h3>
-            <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Métricas Consolidadas de los últimos 6 meses</p>
+            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Métricas Consolidadas de los últimos 6 meses</p>
           </div>
           <div className="flex flex-col items-end gap-1">
             <span className="text-[10px] font-black text-primary uppercase tracking-widest">Margen Operativo</span>
@@ -630,7 +630,7 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         </div>
 
         <div className="h-64 w-full" style={{ minHeight: '300px' }}>
-          <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl border border-dashed border-gray-100 flex items-center justify-center text-[10px] font-black uppercase text-gray-300">Cargando Gráficas...</div>}>
+          <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl border border-dashed border-gray-100 flex items-center justify-center text-[10px] font-semibold uppercase opacity-80 text-gray-300">Cargando Gráficas...</div>}>
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={stats}>
                 <defs>
@@ -659,17 +659,17 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:rotate-12 transition-transform duration-700">
             <TrendingUp className="w-16 h-16" />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-widest text-gray-500 mb-2">Ingresos {currentMonthData.name}</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-500 mb-2">Ingresos {currentMonthData.name}</p>
           <p className="text-3xl font-serif font-black italic tracking-tighter text-primary-light">${currentMonthData.Total.toLocaleString()}</p>
         </div>
 
         <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft">
-          <p className="text-[10px] font-black uppercase tracking-widest text-red-400 mb-2">Gastos Operativos</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-red-400 mb-2">Gastos Operativos</p>
           <p className="text-3xl font-serif font-black italic tracking-tighter text-red-600">-${currentMonthData.Gastos.toLocaleString()}</p>
         </div>
 
         <div className="bg-primary/10 p-8 rounded-[2.5rem] border border-primary/20 shadow-sm">
-          <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-2">Profit Real Neto</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-2">Profit Real Neto</p>
           <p className="text-3xl font-serif font-black italic tracking-tighter text-primary">${currentMonthData.Profit.toLocaleString()}</p>
         </div>
       </div>
@@ -905,7 +905,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
             <div key={ch.id || idx} className="flex justify-between items-center p-4 bg-gray-50 rounded-2xl border border-gray-100 group">
               <div>
                 <p className="text-xs font-bold text-text-main">{ch.email}</p>
-                <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-sand text-primary'}`}>
+                <span className={`text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-sand text-primary'}`}>
                   {ch.status === 'active' ? 'Activo' : 'Pendiente'}
                 </span>
                 {ch.status === 'pending' && <button onClick={() => handleResendInvitation(ch)} className="ml-2 text-[8px] text-gray-400 hover:text-black font-black uppercase">Reenviar</button>}
@@ -917,7 +917,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
         </div>
         <div className="flex gap-2">
           <input value={newCohostEmail} onChange={e => setNewCohostEmail(e.target.value)} placeholder="email@equipo.com" className="flex-1 p-3 bg-white border border-gray-200 rounded-xl text-xs outline-none" />
-          <button onClick={handleInvite} disabled={!newCohostEmail} className="bg-black text-white px-4 rounded-xl text-[10px] font-black uppercase">Invitar</button>
+          <button onClick={handleInvite} disabled={!newCohostEmail} className="bg-black text-white px-4 rounded-xl text-[10px] font-semibold uppercase opacity-80">Invitar</button>
         </div>
       </div>
 
@@ -1052,13 +1052,13 @@ const SmartValidationModal = ({ data, onConfirm, onClose }: { data: any, onConfi
         <div className="flex gap-4">
           <button
             onClick={() => onClose()}
-            className="flex-1 py-4 text-xs font-black uppercase tracking-widest text-gray-500 hover:bg-gray-100 rounded-2xl transition-all"
+            className="flex-1 py-4 text-xs font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-500 hover:bg-gray-100 rounded-2xl transition-all"
           >
             Descartar
           </button>
           <button
             onClick={() => onConfirm(data)}
-            className="flex-[2] py-4 text-xs font-black uppercase tracking-widest text-white bg-primary rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-98"
+            className="flex-[2] py-4 text-xs font-semibold uppercase tracking-[0.25em] opacity-80 text-white bg-primary rounded-2xl shadow-xl shadow-primary/20 hover:scale-[1.02] active:scale-98"
           >
             Confirmar e Importar 🔱
           </button>
@@ -1664,7 +1664,7 @@ const HostDashboard: React.FC = () => {
             <div className="flex items-center gap-2">
               <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-2xl border border-white/5 backdrop-blur-sm">
                 <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_rgba(34,197,94,0.5)]"></span>
-                <span className="text-[9px] font-black uppercase tracking-widest text-green-500/80">Operativo</span>
+                <span className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-green-500/80">Operativo</span>
               </div>
               <button
                 onClick={async () => {
@@ -1800,10 +1800,10 @@ const HostDashboard: React.FC = () => {
                     <p className="text-sm font-serif font-black italic text-green-600 mb-0.5 tracking-tight">${booking.total_price}</p>
                     <div className="flex flex-wrap justify-end gap-1.5 opacity-80 group-hover:opacity-100 transition-opacity">
                       {getSourceBadge(booking.source)}
-                      <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.status === 'Paid' || booking.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                      <span className={`text-[7px] font-semibold uppercase tracking-[0.25em] opacity-80 px-2 py-1 rounded-full border ${booking.status === 'Paid' || booking.status === 'confirmed' ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
                         {booking.status === 'Paid' || booking.status === 'confirmed' ? 'PAGADO' : 'PENDIENTE'}
                       </span>
-                      <span className={`text-[7px] font-black uppercase tracking-widest px-2 py-1 rounded-full border ${booking.contract_signed ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-sand text-primary border-primary/20'}`}>
+                      <span className={`text-[7px] font-semibold uppercase tracking-[0.25em] opacity-80 px-2 py-1 rounded-full border ${booking.contract_signed ? 'bg-blue-50 text-blue-600 border-blue-100' : 'bg-sand text-primary border-primary/20'}`}>
                         {booking.contract_signed ? 'FIRMANTE ✓' : 'SIN FIRMA'}
                       </span>
                     </div>
@@ -1823,7 +1823,7 @@ const HostDashboard: React.FC = () => {
           ) : (
             <div className="text-center py-6 text-gray-300">
               <span className="material-icons text-3xl opacity-20 block mb-2">event_available</span>
-              <p className="text-[9px] uppercase font-black tracking-widest leading-none">Todo bajo control</p>
+              <p className="text-[9px] uppercase font-semibold tracking-[0.25em] opacity-80 leading-none">Todo bajo control</p>
             </div>
           )}
         </div>
@@ -1897,7 +1897,7 @@ const HostDashboard: React.FC = () => {
                     ${data.val}
                   </div>
                 </div>
-                <span className="text-[8px] font-black uppercase tracking-widest text-text-light">{data.label}</span>
+                <span className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">{data.label}</span>
               </div>
             );
           })}
@@ -1965,7 +1965,7 @@ const HostDashboard: React.FC = () => {
             <button
               key={s}
               onClick={() => setCleaningStatus(s as any)}
-              className={`flex-1 py-2 text-[10px] font-black uppercase rounded-xl border transition-all ${cleaningStatus === s ? 'bg-black text-white border-black' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
+              className={`flex-1 py-2 text-[10px] font-semibold uppercase opacity-80 rounded-xl border transition-all ${cleaningStatus === s ? 'bg-black text-white border-black' : 'bg-gray-50 text-gray-400 border-gray-100'}`}
             >
               {s === 'dirty' ? 'Sucia' : s === 'progress' ? 'Limp' : 'Ok'}
             </button>
@@ -1986,13 +1986,13 @@ const HostDashboard: React.FC = () => {
                   {/* CANCELLATION SNAP BADGE */}
                   {booking.applied_policy && (
                     <div className="group/snap relative">
-                      <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border border-blue-100 flex items-center gap-1 cursor-help">
+                      <div className="bg-blue-50 text-blue-600 px-3 py-1.5 rounded-full text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-blue-100 flex items-center gap-1 cursor-help">
                         <span className="material-icons text-[10px]">gavel</span>
                         {booking.applied_policy.type}
                       </div>
                       {/* Tooltip on Hover */}
                       <div className="absolute top-full left-0 mt-2 w-64 p-4 bg-white rounded-2xl shadow-2xl border border-gray-100 z-50 opacity-0 group-hover/snap:opacity-100 pointer-events-none transition-opacity">
-                        <p className="text-[10px] font-black uppercase text-blue-500 mb-1 tracking-widest pb-1 border-b border-blue-50">Snap de Política Legal</p>
+                        <p className="text-[10px] font-semibold uppercase opacity-80 text-blue-500 mb-1 tracking-widest pb-1 border-b border-blue-50">Snap de Política Legal</p>
                         <p className="text-[11px] font-medium text-text-main leading-relaxed">
                           {booking.applied_policy.snapshot}
                         </p>
@@ -2018,7 +2018,7 @@ const HostDashboard: React.FC = () => {
                   </h3>
                   <div className="flex items-center gap-3 mt-2">
                     <span className="text-xl font-serif font-black italic text-primary tracking-tight">${booking.total_price}</span>
-                    <span className="bg-sand/30 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] text-text-light">{booking.status}</span>
+                    <span className="bg-sand/30 px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">{booking.status}</span>
                   </div>
                 </div>
               </div>
@@ -2244,7 +2244,7 @@ const HostDashboard: React.FC = () => {
             <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/20">
               <Star className="w-5 h-5 text-primary fill-primary" />
             </div>
-            <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/5">Prestige & Authority Hub</span>
+            <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-white/5">Prestige & Authority Hub</span>
           </div>
           <h2 className="text-4xl font-serif font-black italic tracking-tighter mb-4 leading-none">Tu Legado de Excelencia</h2>
           <p className="text-sm text-white/50 max-w-2xl leading-relaxed italic">
@@ -2281,7 +2281,7 @@ const HostDashboard: React.FC = () => {
         <div className="flex gap-4">
           <button
             onClick={() => setActiveTab('availability')}
-            className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[9px] font-black uppercase tracking-[0.2em] shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95 group"
+            className="bg-white text-black border border-gray-100 rounded-full px-6 py-2.5 text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 shadow-soft hover:bg-black hover:text-white transition-all flex items-center gap-2.5 active:scale-95 group"
           >
             <RefreshCcw strokeWidth={2} className="w-3.5 h-3.5 text-[#FF7F3F] group-hover:scale-110 transition-transform" /> Gestionar Calendarios
           </button>
@@ -2318,7 +2318,7 @@ const HostDashboard: React.FC = () => {
                 <div className="flex justify-between items-end mt-4">
                   <div className="flex items-baseline gap-0.5">
                     <span className="text-xl font-serif font-black italic text-text-main tracking-tighter">${p.price}</span>
-                    <span className="text-text-light text-[8px] font-black uppercase tracking-widest ml-1 opacity-40">/noche</span>
+                    <span className="text-text-light text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 ml-1 opacity-40">/noche</span>
                   </div>
                   {/* 🛡️ ROLE-BASED ACCESS: Only host/admin can edit listings */}
                   {(user?.role === 'host' || user?.role === 'admin' || user?.email === 'villaretiror@gmail.com') ? (
@@ -2352,7 +2352,7 @@ const HostDashboard: React.FC = () => {
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
               <CreditCard className="w-16 h-16 text-primary" />
             </div>
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-primary/60 mb-2">Conciliación Manual</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary/60 mb-2">Conciliación Manual</p>
             <h3 className="text-xl font-serif font-black italic text-secondary tracking-tighter mb-1">ATH Móvil</h3>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
@@ -2364,7 +2364,7 @@ const HostDashboard: React.FC = () => {
             <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
               <span className="material-icons text-6xl text-blue-600">payments</span>
             </div>
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-700/60 mb-2">Pasarela Activa</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-blue-700/60 mb-2">Pasarela Activa</p>
             <h3 className="text-xl font-serif font-black italic text-blue-900 tracking-tighter mb-1">PayPal Hub</h3>
             <div className="flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-blue-400" />
@@ -2377,7 +2377,7 @@ const HostDashboard: React.FC = () => {
               <ShieldCheck className="w-16 h-16 text-primary" />
             </div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-transparent" />
-            <p className="text-[9px] font-black uppercase tracking-[0.2em] text-white/40 mb-2">Automatización (Stripe)</p>
+            <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/40 mb-2">Automatización (Stripe)</p>
             <h3 className="text-xl font-serif font-black italic text-white tracking-tighter mb-1 flex items-center gap-2">
               Stripe Pay <span className="text-[8px] bg-primary px-2 py-0.5 rounded-full not-italic tracking-widest uppercase">Próximamente</span>
             </h3>
@@ -2390,7 +2390,7 @@ const HostDashboard: React.FC = () => {
           <div className="bg-white/50 backdrop-blur-sm p-4 rounded-3xl border border-gray-100 flex justify-between items-center px-8 shadow-soft-sm">
             <div className="flex items-center gap-3">
               <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]" />
-              <p className="text-[10px] font-black uppercase tracking-widest text-text-light">Dinero en Proceso de Validación</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Dinero en Proceso de Validación</p>
             </div>
             <p className="text-xl font-serif font-black italic text-text-main tracking-tighter">${totalPendingVal.toLocaleString()}</p>
           </div>
@@ -2410,15 +2410,15 @@ const HostDashboard: React.FC = () => {
                     <h4 className="font-serif font-black italic text-xl text-text-main leading-tight tracking-tight truncate">{payment.profiles?.full_name}</h4>
                     <div className="flex items-center gap-2 mt-1.5">
                       <span className="text-lg font-serif font-bold text-green-600 tracking-tight">${payment.total_price}</span>
-                      <span className="text-[8px] font-black uppercase tracking-[0.2em] text-text-light opacity-40">• {payment.properties?.title}</span>
+                      <span className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light opacity-40">• {payment.properties?.title}</span>
                     </div>
                   </div>
-                  <div className="bg-sand text-primary px-4 py-2 rounded-full text-[9px] font-black uppercase tracking-widest border border-primary/20 shadow-sm">Audit</div>
+                  <div className="bg-sand text-primary px-4 py-2 rounded-full text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-primary/20 shadow-sm">Audit</div>
                 </div>
 
                 <div className="mb-8">
                   <div className="flex justify-between items-center mb-4 px-2">
-                    <p className="text-[10px] font-black uppercase text-text-light tracking-[0.3em]">Comprobante Digital</p>
+                    <p className="text-[10px] font-semibold uppercase opacity-80 text-text-light tracking-[0.3em]">Comprobante Digital</p>
                     <span className="text-[9px] font-medium text-text-light opacity-50 uppercase tracking-widest">{payment.payment_method?.replace('_', ' ')}</span>
                   </div>
                   <div className="relative aspect-video rounded-[2.5rem] overflow-hidden border border-gray-100 bg-gray-50 group/img shadow-inner ring-1 ring-black/5">
@@ -2458,7 +2458,7 @@ const HostDashboard: React.FC = () => {
               <span className="material-icons text-4xl text-gray-400 group-hover:text-primary transition-colors">verified_user</span>
             </div>
             <h4 className="text-xl font-serif font-black italic text-text-main mb-2">Liquidez Conciliada</h4>
-            <p className="text-[10px] font-black uppercase tracking-[0.3em] text-text-light opacity-50">No hay pagos pendientes de validación</p>
+            <p className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] text-text-light opacity-50">No hay pagos pendientes de validación</p>
           </div>
         )}
       </div>

@@ -47,7 +47,7 @@ const SecretSpots: React.FC = () => {
                         animate={{ y: 0, opacity: 1 }}
                         className="inline-block bg-primary/20 backdrop-blur-md px-4 py-1.5 rounded-full border border-primary/30 mb-4"
                     >
-                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary">Regalo Exclusivo de Salty</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary">Regalo Exclusivo de Salty</span>
                     </motion.div>
                     <motion.h1
                         initial={{ y: 20, opacity: 0 }}
@@ -104,7 +104,7 @@ const SecretSpots: React.FC = () => {
                         <h4 className="text-xl font-serif font-bold mb-4">¿Listo para la aventura?</h4>
                         <button
                             onClick={() => navigate('/')}
-                            className="bg-black text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs hover:scale-105 transition-all shadow-xl"
+                            className="bg-black text-white px-10 py-4 rounded-2xl font-semibold uppercase tracking-[0.25em] opacity-80 text-xs hover:scale-105 transition-all shadow-xl"
                         >
                             Volver a mi Reserva
                         </button>

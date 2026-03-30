@@ -457,7 +457,7 @@ const Messages: React.FC = () => {
             </div>
             <div>
               <p className="font-serif font-black italic text-lg text-[#1a1a1a] tracking-tighter">Salty · Concierge VRR</p>
-              <p className="text-[9px] text-[#BBA27E] font-black uppercase tracking-[0.2em] flex items-center gap-1.5">
+              <p className="text-[9px] text-[#BBA27E] font-semibold uppercase tracking-[0.25em] opacity-80 flex items-center gap-1.5">
                 <span className="flex h-2 w-2 relative">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
@@ -470,7 +470,7 @@ const Messages: React.FC = () => {
         {takeoverUntil && new Date(takeoverUntil) > new Date() && (
           <div className="bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20 flex items-center gap-2 animate-pulse">
             <span className="material-icons text-primary text-xs">shield</span>
-            <span className="text-[10px] font-black uppercase tracking-widest text-primary">Gobernanza Manual</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary">Gobernanza Manual</span>
           </div>
         )}
       </header>
@@ -570,7 +570,7 @@ const Messages: React.FC = () => {
                                 </div>
                                 <div className="mt-2 inline-flex items-center gap-1 bg-black/5 px-2 py-1 rounded-md">
                                   <span className="material-icons text-[10px]">verified</span>
-                                  <span className="text-[8px] font-black uppercase tracking-widest">Reserva Garantizada</span>
+                                  <span className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80">Reserva Garantizada</span>
                                 </div>
                              </div>
                           </div>
@@ -581,7 +581,7 @@ const Messages: React.FC = () => {
                       <div className="space-y-4 pt-4 border-t border-black/5">
                         <div className="flex justify-between items-center group">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-0.5">Fechas</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-black/40 mb-0.5">Fechas</p>
                             <p className="text-xs font-bold text-black">{paymentData.checkIn} – {paymentData.checkOut}</p>
                           </div>
                           <button className="text-[10px] font-bold underline text-black/60 hover:text-black">Cambiar</button>
@@ -589,7 +589,7 @@ const Messages: React.FC = () => {
 
                         <div className="flex justify-between items-center group">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-widest text-black/40 mb-0.5">Huéspedes</p>
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-black/40 mb-0.5">Huéspedes</p>
                             <p className="text-xs font-bold text-black">{paymentData.guests} viajeros</p>
                           </div>
                           <button className="text-[10px] font-bold underline text-black/60 hover:text-black">Cambiar</button>
@@ -627,7 +627,7 @@ const Messages: React.FC = () => {
                       <div className="p-4 bg-sand/50 rounded-2xl border border-primary/20">
                         <div className="flex items-center gap-2 mb-2">
                           <span className="material-icons text-primary text-sm">event_busy</span>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-secondary">Política de Cancelación</span>
+                          <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-secondary">Política de Cancelación</span>
                         </div>
                         <p className="text-[11px] text-secondary/70 leading-relaxed italic">
                           {properties.find(p => p.id === paymentData.propertyId)?.policies?.cancellationPolicy || "Paga ahora para confirmar. Reembolso total si cancelas con 7 días de antelación."}
@@ -680,7 +680,7 @@ const Messages: React.FC = () => {
                                <span className="material-icons text-primary animate-pulse text-lg">shield</span>
                              </div>
                              <div className="flex-1">
-                               <p className="text-[10px] font-black uppercase tracking-widest text-primary">Salty en Misión de Escolta</p>
+                               <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary">Salty en Misión de Escolta</p>
                                <p className="text-[11px] text-primary/70 font-medium">Monitoreando su transacción para un cierre 100% seguro.</p>
                              </div>
                            </div>
@@ -728,7 +728,7 @@ const Messages: React.FC = () => {
                   <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
                 </div>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-primary">Un miembro del equipo está redactando una respuesta...</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary">Un miembro del equipo está redactando una respuesta...</p>
             </div>
           </div>
         )}
@@ -743,7 +743,7 @@ const Messages: React.FC = () => {
                   <div className="w-1.5 h-1.5 bg-primary/60 rounded-full animate-bounce"></div>
                 </div>
               </div>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#BBA27E] animate-pulse">Salty está consultando disponibilidad real en Cabo Rojo...</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#BBA27E] animate-pulse">Salty está consultando disponibilidad real en Cabo Rojo...</p>
             </div>
           </div>
         )}
@@ -778,7 +778,7 @@ const Messages: React.FC = () => {
               setIsTyping(true);
               const toast = document.createElement('div');
               toast.id = 'voice-toast';
-              toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full z-[200] font-black uppercase tracking-widest text-[10px] flex items-center gap-3 animate-slide-up shadow-2xl border border-[#BBA27E]/30';
+              toast.className = 'fixed top-24 left-1/2 -translate-x-1/2 bg-black text-white px-6 py-3 rounded-full z-[200] font-semibold uppercase tracking-[0.25em] opacity-80 text-[10px] flex items-center gap-3 animate-slide-up shadow-2xl border border-[#BBA27E]/30';
               toast.innerHTML = `<span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> Salty te escucha...`;
               document.body.appendChild(toast);
               console.log("[Salty Chat Audio] Listening...");

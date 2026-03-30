@@ -20,7 +20,7 @@ import { useAvailability } from '../hooks/useAvailability';
 import { useBooking } from '../hooks/useBooking';
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
 
-const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
+const TAG_STYLE = "text-[10px] uppercase font-semibold tracking-[0.25em] opacity-80";
 
 const Booking: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -331,7 +331,7 @@ const Booking: React.FC = () => {
                   ? `Bienvenido, ${new URLSearchParams(location.search).get('guest_name')}`
                   : 'Confirmar Estancia'}
               </h2>
-              <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mt-1 italic">Boutique Stays Experience</p>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#FF7F3F] mt-1 italic">Boutique Stays Experience</p>
             </div>
             <div className="w-12"></div>
           </div>
@@ -384,7 +384,7 @@ const Booking: React.FC = () => {
               {startDate && endDate && (
                 <button
                   onClick={() => setShowCalendarModal(true)}
-                  className="text-[10px] font-black uppercase text-primary underline underline-offset-4"
+                  className="text-[10px] font-semibold uppercase opacity-80 text-primary underline underline-offset-4"
                 >
                   Cambiar Fechas
                 </button>
@@ -428,13 +428,13 @@ const Booking: React.FC = () => {
                   <span className="material-icons text-2xl">chat</span>
                </div>
                <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-primary mb-1 tracking-[0.2em]">Asistencia Signature 🔱</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-1 tracking-[0.2em]">Asistencia Signature 🔱</p>
                   <p className="text-sm font-serif font-black italic">"Dudas en {property?.title || 'la Villa'}? Pregunta a Salty"</p>
                </div>
             </div>
             <button 
               onClick={() => navigate('/messages', { state: { initialPlace: property?.title } })}
-              className="bg-primary text-white px-6 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:shadow-[0_10px_20px_rgba(255,127,63,0.3)] transition-all shadow-lg shadow-primary/20"
+              className="bg-primary text-white px-6 py-4 rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:shadow-[0_10px_20px_rgba(255,127,63,0.3)] transition-all shadow-lg shadow-primary/20"
             >
               Consultar
             </button>
@@ -467,13 +467,13 @@ const Booking: React.FC = () => {
               <input
                 type="text"
                 placeholder="CÓDIGO PROMO"
-                className="flex-1 px-6 py-4 bg-white border border-gray-100 rounded-2xl text-xs font-black uppercase tracking-widest outline-none shadow-sm"
+                className="flex-1 px-6 py-4 bg-white border border-gray-100 rounded-2xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 outline-none shadow-sm"
                 value={promoCode}
                 onChange={(e) => setPromoCode(e.target.value)}
               />
               <button
                 onClick={handleApplyPromo}
-                className="bg-primary/10 text-primary px-8 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-primary/20 transition-all border border-primary/10"
+                className="bg-primary/10 text-primary px-8 rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:bg-primary/20 transition-all border border-primary/10"
               >
                 Validar
               </button>
@@ -518,7 +518,7 @@ const Booking: React.FC = () => {
               
               <div className="pt-6 border-t border-dashed border-gray-200 mt-2 flex justify-between items-end">
                 <div className="flex flex-col gap-1.5">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-[#FF7F3F] mb-0.5">Inversión Final</p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#FF7F3F] mb-0.5">Inversión Final</p>
                 </div>
                 <p className="text-5xl font-serif font-black text-text-main">${total.toFixed(2)}</p>
               </div>
@@ -616,7 +616,7 @@ const Booking: React.FC = () => {
                 <div className="sm:hidden mt-6 pb-2">
                   <button
                     onClick={() => setShowCalendarModal(false)}
-                    className="w-full py-4 bg-gray-50 text-secondary/60 text-[10px] font-black uppercase tracking-[0.3em] rounded-2xl flex items-center justify-center gap-2 border border-black/5 hover:bg-gray-100 transition-all"
+                    className="w-full py-4 bg-gray-50 text-secondary/60 text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] rounded-2xl flex items-center justify-center gap-2 border border-black/5 hover:bg-gray-100 transition-all"
                   >
                     <ArrowLeft size={14} />
                     Regresar a Detalles
@@ -625,7 +625,7 @@ const Booking: React.FC = () => {
                 <button
                   onClick={() => setShowCalendarModal(false)}
                   disabled={!startDate || !endDate}
-                  className="w-full mt-8 bg-primary text-white py-5 rounded-2xl font-black uppercase tracking-widest disabled:opacity-20 transition-all shadow-xl hover:scale-[1.02] active:scale-95"
+                  className="w-full mt-8 bg-primary text-white py-5 rounded-2xl font-semibold uppercase tracking-[0.25em] opacity-80 disabled:opacity-20 transition-all shadow-xl hover:scale-[1.02] active:scale-95"
                 >
                   Confirmar Selección
                 </button>

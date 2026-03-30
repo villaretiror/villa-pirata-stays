@@ -115,20 +115,20 @@ export const DigitalConcierge: React.FC = () => {
   const getStatusBadge = (log: EmailLog) => {
     if (log.status === 'bounced') {
       return (
-        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-[10px] font-black uppercase tracking-wider">
+        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-100 text-[10px] font-semibold uppercase opacity-80 tracking-wider">
           <AlertCircle className="w-3 h-3" /> Error / Rebote
         </span>
       );
     }
     if (log.opened_at) {
       return (
-        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 text-[10px] font-black uppercase tracking-wider">
+        <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-50 text-green-700 border border-green-100 text-[10px] font-semibold uppercase opacity-80 tracking-wider">
           <Eye className="w-3 h-3" /> Abierto
         </span>
       );
     }
     return (
-      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-black uppercase tracking-wider">
+      <span className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-600 border border-blue-100 text-[10px] font-semibold uppercase opacity-80 tracking-wider">
         <Send className="w-3 h-3" /> Enviado
       </span>
     );
@@ -146,18 +146,18 @@ export const DigitalConcierge: React.FC = () => {
             <div className="w-10 h-10 bg-primary/20 rounded-xl flex items-center justify-center border border-primary/20">
               <Eye className="w-5 h-5 text-primary" />
             </div>
-            <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-[0.2em] border border-white/5">Digital Concierge Intelligence</span>
+            <span className="bg-white/10 px-4 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-white/5">Digital Concierge Intelligence</span>
           </div>
           <h2 className="text-4xl font-serif font-black italic tracking-tighter mb-4 leading-none">Concierge Intelligence</h2>
           <div className="flex flex-wrap gap-4 mt-8">
             <button 
               onClick={() => setShowTestModal(true)}
-              className="bg-primary text-black px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-transform flex items-center gap-2"
+              className="bg-primary text-black px-6 py-3 rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:scale-105 transition-transform flex items-center gap-2"
             >
               <Send className="w-4 h-4" /> Enviar Manual / Test
             </button>
             <div className="bg-white/10 px-6 py-3 rounded-2xl border border-white/5 flex items-center gap-3">
-              <span className="text-[10px] font-black uppercase tracking-widest opacity-60">Engagement:</span>
+              <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 opacity-60">Engagement:</span>
               <span className="text-lg font-serif font-black italic">
                 {logs.length > 0 ? Math.round((logs.filter(l => l.opened_at).length / logs.length) * 100) : 0}%
               </span>
@@ -174,7 +174,7 @@ export const DigitalConcierge: React.FC = () => {
             
             <div className="space-y-6">
               <div className="space-y-2">
-                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Plantilla</label>
+                <label className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400 ml-1">Plantilla</label>
                 <select 
                   className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-xs"
                   value={testForm.type}
@@ -205,7 +205,7 @@ export const DigitalConcierge: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-[9px] font-black uppercase tracking-[0.2em] text-gray-400 ml-1">Propiedad Asociada</label>
+                <label className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400 ml-1">Propiedad Asociada</label>
                 <select 
                   className="w-full p-4 bg-gray-50 rounded-2xl border-none outline-none font-bold text-xs"
                   value={testForm.propertyId}
@@ -220,14 +220,14 @@ export const DigitalConcierge: React.FC = () => {
               <div className="flex gap-4 pt-6">
                 <button 
                   onClick={() => setShowTestModal(false)}
-                  className="flex-1 py-4 text-[10px] font-black uppercase tracking-widest text-gray-400"
+                  className="flex-1 py-4 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400"
                 >
                   Cancelar
                 </button>
                 <button 
                   disabled={isSendingTest}
                   onClick={handleManualSend}
-                  className="flex-3 py-4 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-black/20 flex items-center justify-center gap-2"
+                  className="flex-3 py-4 bg-black text-white rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 shadow-xl shadow-black/20 flex items-center justify-center gap-2"
                 >
                   {isSendingTest ? "Enviando..." : <><Send className="w-4 h-4" /> DISPATCH</>}
                 </button>
@@ -286,12 +286,12 @@ export const DigitalConcierge: React.FC = () => {
                 </div>
                 <p className="text-xs text-text-light opacity-60 truncate">{log.subject}</p>
                 <div className="flex items-center gap-3 mt-2">
-                  <span className="text-[10px] font-black uppercase text-gray-400 flex items-center gap-1">
+                  <span className="text-[10px] font-semibold uppercase opacity-80 text-gray-400 flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     Enviado: {format(new Date(log.created_at), 'd MMM, HH:mm', { locale: es })}
                   </span>
                   {log.opened_at && (
-                    <span className="text-[10px] font-black uppercase text-primary flex items-center gap-1">
+                    <span className="text-[10px] font-semibold uppercase opacity-80 text-primary flex items-center gap-1">
                       <Eye className="w-3 h-3" />
                       Leído: {format(new Date(log.opened_at), 'd MMM, HH:mm', { locale: es })}
                     </span>
@@ -302,7 +302,7 @@ export const DigitalConcierge: React.FC = () => {
               {/* Acciones Rápidas */}
               <div className="flex items-center gap-3 pt-4 md:pt-0 border-t md:border-none border-gray-50">
                 <div className="text-right hidden md:block">
-                  <p className="text-[9px] font-black uppercase tracking-widest text-text-light opacity-40">Destinatario</p>
+                  <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light opacity-40">Destinatario</p>
                   <p className="text-[10px] font-bold text-text-main">{log.guest_email}</p>
                 </div>
                 {log.booking_id && (
@@ -317,7 +317,7 @@ export const DigitalConcierge: React.FC = () => {
           <div className="bg-white rounded-[3rem] p-16 text-center border-2 border-dashed border-gray-100">
             <Mail className="w-12 h-12 text-gray-200 mx-auto mb-4" />
             <h4 className="font-serif font-black italic text-xl text-text-main">Silencio Digital</h4>
-            <p className="text-[10px] font-black uppercase tracking-widest text-gray-300 mt-2">No se han registrado envíos recientes en este periodo.</p>
+            <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-300 mt-2">No se han registrado envíos recientes en este periodo.</p>
           </div>
         )}
       </div>

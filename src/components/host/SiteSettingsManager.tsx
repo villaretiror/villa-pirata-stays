@@ -81,25 +81,25 @@ const SiteSettingsManager: React.FC = () => {
       <div className="flex bg-gray-100 p-1 rounded-2xl w-fit mb-8 overflow-x-auto no-scrollbar max-w-full">
         <button 
           onClick={() => setActiveTab('branding')}
-          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'branding' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
+          className={`px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 transition-all whitespace-nowrap ${activeTab === 'branding' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
         >
           Marca y Web
         </button>
         <button 
           onClick={() => setActiveTab('knowledge')}
-          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'knowledge' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
+          className={`px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 transition-all whitespace-nowrap ${activeTab === 'knowledge' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
         >
           Cerebro de Salty
         </button>
         <button 
           onClick={() => setActiveTab('governance')}
-          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'governance' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
+          className={`px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 transition-all whitespace-nowrap ${activeTab === 'governance' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
         >
           Gobernanza
         </button>
         <button 
           onClick={() => setActiveTab('security')}
-          className={`px-6 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === 'security' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
+          className={`px-6 py-2.5 rounded-xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 transition-all whitespace-nowrap ${activeTab === 'security' ? 'bg-white text-text-main shadow-sm' : 'text-text-light hover:text-text-main'}`}
         >
           Seguridad
         </button>
@@ -114,19 +114,19 @@ const SiteSettingsManager: React.FC = () => {
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Título Hero</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Título Hero</label>
                 <input value={siteForm.hero.title} onChange={e => setSiteForm({...siteForm, hero: {...siteForm.hero, title: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Eslogan (Cursiva)</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Eslogan (Cursiva)</label>
                 <input value={siteForm.hero.slogan} onChange={e => setSiteForm({...siteForm, hero: {...siteForm.hero, slogan: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Badge de Salida</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Badge de Salida</label>
                 <input value={siteForm.hero.welcome_badge} onChange={e => setSiteForm({...siteForm, hero: {...siteForm.hero, welcome_badge: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Promo Notificación</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Promo Notificación</label>
                 <input value={siteForm.hero.notif_promo} onChange={e => setSiteForm({...siteForm, hero: {...siteForm.hero, notif_promo: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold text-primary" />
               </div>
             </div>
@@ -140,16 +140,16 @@ const SiteSettingsManager: React.FC = () => {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Título de Contacto (usa . para separar italic)</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Título de Contacto (usa . para separar italic)</label>
                   <input value={siteForm.contact.title} onChange={e => setSiteForm({...siteForm, contact: {...siteForm.contact, title: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" placeholder="Reserva con.Salty" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Teléfono Público</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Teléfono Público</label>
                   <input value={siteForm.contact.phone} onChange={e => setSiteForm({...siteForm, contact: {...siteForm.contact, phone: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
                 </div>
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Subtítulo Descriptivo</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Subtítulo Descriptivo</label>
                 <textarea value={siteForm.contact.subtitle} onChange={e => setSiteForm({...siteForm, contact: {...siteForm.contact, subtitle: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium h-24 resize-none" />
               </div>
             </div>
@@ -159,7 +159,7 @@ const SiteSettingsManager: React.FC = () => {
             <button 
               onClick={handleSaveBranding}
               disabled={isSaving}
-              className="px-12 py-4 bg-text-main text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+              className="px-12 py-4 bg-text-main text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
             >
               {isSaving && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>}
               Guardar Configuración Web
@@ -185,11 +185,11 @@ const SiteSettingsManager: React.FC = () => {
               <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-text-light">Ubicación & Logística</h4>
               <div className="space-y-4">
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Descripción de Cabo Rojo</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Descripción de Cabo Rojo</label>
                   <textarea value={knowledgeForm.location.description} onChange={e => setKnowledgeForm({...knowledgeForm, location: {...knowledgeForm.location, description: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium h-24 resize-none" />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Distancias Clave</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Distancias Clave</label>
                   <input value={knowledgeForm.location.distances} onChange={e => setKnowledgeForm({...knowledgeForm, location: {...knowledgeForm.location, distances: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
                 </div>
               </div>
@@ -200,16 +200,16 @@ const SiteSettingsManager: React.FC = () => {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Check-in</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Check-in</label>
                     <input value={knowledgeForm.policies.checkIn} onChange={e => setKnowledgeForm({...knowledgeForm, policies: {...knowledgeForm.policies, checkIn: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Check-out</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Check-out</label>
                     <input value={knowledgeForm.policies.checkOut} onChange={e => setKnowledgeForm({...knowledgeForm, policies: {...knowledgeForm.policies, checkOut: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-bold" />
                   </div>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Reglas de Oro</label>
+                  <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Reglas de Oro</label>
                   <textarea value={knowledgeForm.policies.rules} onChange={e => setKnowledgeForm({...knowledgeForm, policies: {...knowledgeForm.policies, rules: e.target.value}})} className="w-full p-3.5 bg-gray-50 border border-gray-100 rounded-2xl text-sm font-medium h-24 resize-none" />
                 </div>
               </div>
@@ -220,11 +220,11 @@ const SiteSettingsManager: React.FC = () => {
             <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-text-light">Tips de Supervivencia (Salty Style)</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Estacionamiento / Playas</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary ml-1">Estacionamiento / Playas</label>
                 <textarea value={knowledgeForm.survival_tips.parking} onChange={e => setKnowledgeForm({...knowledgeForm, survival_tips: {...knowledgeForm.survival_tips, parking: e.target.value}})} className="w-full p-3.5 bg-primary/5 border border-primary/10 text-primary rounded-2xl text-sm font-medium h-24 resize-none" />
               </div>
               <div className="space-y-1">
-                <label className="text-[10px] font-black uppercase tracking-widest text-primary ml-1">Efectivo / Cajeros</label>
+                <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary ml-1">Efectivo / Cajeros</label>
                 <textarea value={knowledgeForm.survival_tips.cash} onChange={e => setKnowledgeForm({...knowledgeForm, survival_tips: {...knowledgeForm.survival_tips, cash: e.target.value}})} className="w-full p-3.5 bg-primary/5 border border-primary/10 text-primary rounded-2xl text-sm font-medium h-24 resize-none" />
               </div>
             </div>
@@ -234,7 +234,7 @@ const SiteSettingsManager: React.FC = () => {
             <button 
               onClick={handleSaveKnowledge}
               disabled={isSaving}
-              className="px-12 py-4 bg-primary text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+              className="px-12 py-4 bg-primary text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
             >
               {isSaving && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>}
               Sincronizar Cerebro Salty
@@ -261,7 +261,7 @@ const SiteSettingsManager: React.FC = () => {
                 <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-text-light">{prop.title}</h4>
                 <div className="grid grid-cols-2 gap-6">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Precio Mínimo ($)</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Precio Mínimo ($)</label>
                     <input 
                       type="number"
                       value={prop.min_price_floor} 
@@ -274,7 +274,7 @@ const SiteSettingsManager: React.FC = () => {
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-text-light ml-1">Descuento Máx (%)</label>
+                    <label className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light ml-1">Descuento Máx (%)</label>
                     <input 
                       type="number"
                       value={prop.max_discount_allowed} 
@@ -298,7 +298,7 @@ const SiteSettingsManager: React.FC = () => {
             <button 
               onClick={handleSaveGovernance}
               disabled={isSaving}
-              className="px-12 py-4 bg-black text-white rounded-2xl text-xs font-black uppercase tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
+              className="px-12 py-4 bg-black text-white rounded-2xl text-xs font-semibold uppercase tracking-[0.25em] opacity-80 shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center gap-3"
             >
               {isSaving && <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin"></div>}
               Aplicar Blindaje Financiero

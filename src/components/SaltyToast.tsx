@@ -444,7 +444,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     </button>
                                                     <button 
                                                         onClick={sendRecordedAudio}
-                                                        className="px-4 py-2 bg-primary text-secondary rounded-xl text-[10px] font-black uppercase hover:scale-105 transition-all"
+                                                        className="px-4 py-2 bg-primary text-secondary rounded-xl text-[10px] font-semibold uppercase opacity-80 hover:scale-105 transition-all"
                                                     >
                                                         Enviar 📤
                                                     </button>

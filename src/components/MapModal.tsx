@@ -72,7 +72,7 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, placeName, villaNa
                         <Navigation size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-primary leading-none mb-1">Tu Villa</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary leading-none mb-1">Tu Villa</p>
                         <p className="font-bold text-text-main text-sm">{villaName}</p>
                     </div>
                  </div>
@@ -81,7 +81,7 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, placeName, villaNa
                         <Compass size={20} />
                     </div>
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-secondary leading-none mb-1">Destino</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-secondary leading-none mb-1">Destino</p>
                         <p className="font-bold text-text-main text-sm">{placeName}</p>
                     </div>
                  </div>
@@ -102,14 +102,14 @@ const MapModal: React.FC<MapModalProps> = ({ isOpen, onClose, placeName, villaNa
                     </div>
                     <button 
                         onClick={() => mapUrl && window.open(mapUrl, '_blank')}
-                        className="bg-primary text-white px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-[11px] hover:scale-[1.05] active:scale-95 transition-all shadow-lg shadow-primary/20"
+                        className="bg-primary text-white px-8 py-4 rounded-2xl font-semibold uppercase tracking-[0.25em] opacity-80 text-[11px] hover:scale-[1.05] active:scale-95 transition-all shadow-lg shadow-primary/20"
                     >
                         Abrir GPS en Google Maps
                     </button>
                 </div>
                 
                 <div className="text-center">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-text-light opacity-60">
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light opacity-60">
                         Cabo Rojo Experience · Villa Retiro & Pirata Stays
                     </p>
                 </div>

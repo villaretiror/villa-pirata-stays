@@ -42,7 +42,7 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
         >
           <div className="bg-secondary/95 backdrop-blur-3xl rounded-[2.5rem] md:rounded-full py-2.5 md:py-6 px-6 md:px-8 shadow-bunker border border-white/5 flex items-center justify-between gap-4 md:gap-8">
             <div className="pl-1 md:pl-2 py-1">
-              <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-0.5 md:mb-1 leading-none">Reserva Directa</p>
+              <p className="text-[8px] md:text-[10px] font-semibold uppercase opacity-80 tracking-[0.25em] text-primary mb-0.5 md:mb-1 leading-none">Reserva Directa</p>
               <h4 className="text-white font-serif font-bold text-base md:text-xl truncate leading-tight tracking-wider uppercase">Villa Retiro R</h4>
             </div>
             

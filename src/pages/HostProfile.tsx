@@ -79,7 +79,7 @@ const HostProfile: React.FC = () => {
                 <div className="absolute top-12 left-6 right-6 flex justify-between items-center">
                     <button
                         onClick={() => navigate(-1)}
-                        className="w-12 h-12 glass rounded-full flex items-center justify-center text-white"
+                        className="w-12 h-12 glass rounded-full flex items-center justify-center text-white transform-gpu"
                     >
                         <span className="material-icons">arrow_back</span>
                     </button>
@@ -101,7 +101,7 @@ const HostProfile: React.FC = () => {
                             <h1 className="text-2xl font-serif font-bold text-text-main mb-2">{host.full_name}</h1>
                             <div className="flex items-center justify-center gap-2 mb-6">
                                 <span className="material-icons text-primary text-sm">verified</span>
-                                <span className="text-[10px] font-black uppercase tracking-widest text-text-light">Identidad Verificada</span>
+                                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Identidad Verificada</span>
                             </div>
 
                             <div className="pt-6 border-t border-gray-100 grid grid-cols-2 gap-4">

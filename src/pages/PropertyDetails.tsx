@@ -51,7 +51,7 @@ import {
 
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
 
-const TAG_STYLE = "text-[10px] uppercase font-black tracking-widest";
+const TAG_STYLE = "text-[10px] uppercase font-semibold tracking-[0.25em] opacity-80";
 const SECTION_TITLE_STYLE = "text-2xl font-serif text-text-main mb-6";
 
 export const PropertyDetails: React.FC = () => {
@@ -398,7 +398,7 @@ export const PropertyDetails: React.FC = () => {
             <h1 className="text-4xl md:text-6xl font-serif font-black text-text-main leading-none tracking-tighter mb-4">
               {property.title}
             </h1>
-            <div className="flex items-center gap-2 text-primary font-black uppercase tracking-[0.2em] text-xs">
+            <div className="flex items-center gap-2 text-primary font-semibold uppercase tracking-[0.25em] opacity-80 text-xs">
               <MapPin size={18} className="text-primary" />
               <span className="underline underline-offset-8 decoration-primary/30">{property.location}</span>
             </div>
@@ -428,13 +428,13 @@ export const PropertyDetails: React.FC = () => {
               {hasSolar && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-[#E1EAD1] text-[#4A5D23] rounded-full border border-[#D0DCB8] shadow-sm animate-fade-in">
                   <Zap size={14} className="animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Energía 24/7 (Solar/Gen)</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">Energía 24/7 (Solar/Gen)</span>
                 </div>
               )}
               {hasCistern && (
                 <div className="flex items-center gap-2 px-4 py-2 bg-[#E1EAD1] text-[#4A5D23] rounded-full border border-[#D0DCB8] shadow-sm animate-fade-in animation-delay-500">
                   <Droplets size={14} className="animate-bounce" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Reserva de Agua Garantizada</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">Reserva de Agua Garantizada</span>
                 </div>
               )}
             </div>
@@ -463,7 +463,7 @@ export const PropertyDetails: React.FC = () => {
               <h2 className="text-3xl font-serif font-bold text-text-main">Amenidades de Élite</h2>
               <button
                 onClick={() => setShowAmenities(true)}
-                className="text-primary text-[10px] font-black uppercase tracking-[0.2em] border-b border-primary/20 pb-1"
+                className="text-primary text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 border-b border-primary/20 pb-1"
               >
                 Ver todas ({(property.amenities || []).length})
               </button>
@@ -576,7 +576,7 @@ export const PropertyDetails: React.FC = () => {
                 </div>
                 <p className={TAG_STYLE + " text-gray-400 mb-1"}>Inversión Preferencial</p>
                 <span className="material-icons text-white text-sm">pool</span>
-                <span className="text-[10px] font-black uppercase text-white/90">
+                <span className="text-[10px] font-semibold uppercase opacity-80 text-white/90">
                   {(property.amenities || []).length} amenidades exclusivas
                 </span>
                 <div className="flex items-baseline gap-2">
@@ -587,7 +587,7 @@ export const PropertyDetails: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 text-[#BBA27E]">
                   <Zap size={14} className="fill-[#BBA27E]" />
-                  <span className="text-[10px] font-black uppercase tracking-widest">Reserva instantánea preferida por VRR</span>
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">Reserva instantánea preferida por VRR</span>
                 </div>
               </div>
 
@@ -605,7 +605,7 @@ export const PropertyDetails: React.FC = () => {
 
                 <Link
                   to={`/booking/${property.id}${startDate ? `?check_in=${format(startDate, 'yyyy-MM-dd')}` : ''}${endDate ? `&check_out=${format(endDate, 'yyyy-MM-dd')}` : ''}`}
-                  className="w-full bg-secondary text-primary py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border border-primary/20"
+                  className="w-full bg-secondary text-primary py-6 rounded-[2.5rem] font-semibold uppercase tracking-[0.25em] opacity-80 text-sm flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border border-primary/20"
                 >
                   Vivir la Experiencia
                   <Compass size={20} />
@@ -616,7 +616,7 @@ export const PropertyDetails: React.FC = () => {
                     <ShieldCheck size={18} />
                   </div>
                   <div>
-                    <p className="text-[10px] font-black uppercase tracking-tighter text-green-700">Mejor Tarifa Garantizada</p>
+                    <p className="text-[10px] font-semibold uppercase opacity-80 tracking-tighter text-green-700">Mejor Tarifa Garantizada</p>
                     <p className="text-[10px] text-green-600 font-medium">Ahorras un 15% vs OTAs</p>
                   </div>
                 </div>
@@ -638,7 +638,7 @@ export const PropertyDetails: React.FC = () => {
                 <div className="absolute inset-0 bg-secondary/5 flex items-center justify-center">
                   <div className="bg-white/90 backdrop-blur-md px-4 py-2 rounded-full shadow-lg flex items-center gap-2 border border-white/20">
                     <Compass size={16} className="text-primary" />
-                    <span className="text-[10px] font-black uppercase tracking-tighter">Explorar Zona</span>
+                    <span className="text-[10px] font-semibold uppercase opacity-80 tracking-tighter">Explorar Zona</span>
                   </div>
                 </div>
               </div>
@@ -672,7 +672,7 @@ export const PropertyDetails: React.FC = () => {
                   </p>
                   <button 
                     onClick={() => toggleTranslation(i)}
-                    className="text-[10px] font-black uppercase tracking-[0.2em] text-primary mb-6 flex items-center gap-2 hover:opacity-70 transition-opacity"
+                    className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-6 flex items-center gap-2 hover:opacity-70 transition-opacity"
                   >
                     <span className="material-icons text-[14px]">translate</span>
                     {translatedReviews[i] ? 'Ver Original' : 'Salty: Traducir al Español'}
@@ -685,7 +685,7 @@ export const PropertyDetails: React.FC = () => {
                     </div>
                     <div>
                       <p className="font-bold text-sm text-secondary">{rev.author}</p>
-                      <p className="text-[10px] text-primary font-black uppercase tracking-[0.2em]">{rev.created_at}</p>
+                      <p className="text-[10px] text-primary font-semibold uppercase tracking-[0.25em] opacity-80">{rev.created_at}</p>
                     </div>
                   </div>
                   {getSourceLabel(rev.source)}
@@ -777,7 +777,7 @@ export const PropertyDetails: React.FC = () => {
                   </div>
                   <div>
                     <h2 className="text-3xl font-serif font-black">{property.host.name}</h2>
-                    <p className="text-secondary font-black uppercase tracking-widest text-[11px] mt-1">Anfitrión de Élite Villa Retiro</p>
+                    <p className="text-secondary font-semibold uppercase tracking-[0.25em] opacity-80 text-[11px] mt-1">Anfitrión de Élite Villa Retiro</p>
                   </div>
                 </div>
 
@@ -800,11 +800,11 @@ export const PropertyDetails: React.FC = () => {
                 </div>
 
                 <div className="space-y-4 pt-8 border-t border-secondary/5">
-                  <button onClick={() => window.open(`tel:${HOST_PHONE}`)} className="w-full bg-secondary text-white py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                  <button onClick={() => window.open(`tel:${HOST_PHONE}`)} className="w-full bg-secondary text-white py-5 rounded-[2rem] font-semibold uppercase tracking-[0.25em] opacity-80 text-xs flex items-center justify-center gap-3">
                     <Phone size={14} />
                     Llamada Directa
                   </button>
-                  <button onClick={() => window.open(`https://wa.me/${HOST_PHONE}`)} className="w-full bg-white border-2 border-green-100 text-green-700 py-5 rounded-[2rem] font-black uppercase tracking-widest text-xs flex items-center justify-center gap-3">
+                  <button onClick={() => window.open(`https://wa.me/${HOST_PHONE}`)} className="w-full bg-white border-2 border-green-100 text-green-700 py-5 rounded-[2rem] font-semibold uppercase tracking-[0.25em] opacity-80 text-xs flex items-center justify-center gap-3">
                     <MessageSquare size={14} />
                     WhatsApp Business
                   </button>
@@ -843,7 +843,7 @@ export const PropertyDetails: React.FC = () => {
               <div className="flex-1 overflow-y-auto px-8 py-8 no-scrollbar space-y-12">
                 {categorizeAmenities(property.amenities || []).map(([category, items]) => (
                   <div key={category} className="space-y-6">
-                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-primary bg-primary/5 w-fit px-4 py-1.5 rounded-full border border-primary/10">
+                    <h4 className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] text-primary bg-primary/5 w-fit px-4 py-1.5 rounded-full border border-primary/10">
                       {category}
                     </h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -854,7 +854,7 @@ export const PropertyDetails: React.FC = () => {
                           </div>
                           <div className="flex flex-col">
                             <span className="font-bold text-text-main">{amenity}</span>
-                            <span className="text-[10px] text-primary/60 font-black uppercase tracking-widest">Incluido ✓</span>
+                            <span className="text-[10px] text-primary/60 font-semibold uppercase tracking-[0.25em] opacity-80">Incluido ✓</span>
                           </div>
                         </div>
                       ))}
@@ -866,7 +866,7 @@ export const PropertyDetails: React.FC = () => {
               <div className="p-8 bg-white border-t border-black/5 pb-safe">
                 <button
                   onClick={() => setShowAmenities(false)}
-                  className="w-full bg-black text-white font-black uppercase tracking-widest py-6 rounded-[2.5rem] shadow-xl active:scale-95 transition-all text-xs"
+                  className="w-full bg-black text-white font-semibold uppercase tracking-[0.25em] opacity-80 py-6 rounded-[2.5rem] shadow-xl active:scale-95 transition-all text-xs"
                 >
                   Cerrar Catálogo
                 </button>
@@ -879,7 +879,7 @@ export const PropertyDetails: React.FC = () => {
       {/* Mobile Bottom Bar - High Contrast Glass */}
       <div className="fixed bottom-6 left-6 right-6 lg:hidden z-[60] flex items-center justify-between p-5 bg-black rounded-[2.5rem] shadow-2xl border border-white/20 animate-fade-in-up shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="pl-4">
-          <p className="text-[10px] text-white/60 font-black uppercase tracking-widest leading-none mb-1">Inversión Noche</p>
+          <p className="text-[10px] text-white/60 font-semibold uppercase tracking-[0.25em] opacity-80 leading-none mb-1">Inversión Noche</p>
           <div className="flex items-baseline gap-1 text-white">
             <span className="text-2xl font-serif font-black">{symbols[currency]}{convertedPrice}</span>
             <span className="text-[10px] font-black text-[#FF7F3F] uppercase">{currency}</span>
@@ -887,7 +887,7 @@ export const PropertyDetails: React.FC = () => {
         </div>
         <Link
           to={`/booking/${property.id}${startDate ? `?check_in=${format(startDate, 'yyyy-MM-dd')}` : ''}${endDate ? `&check_out=${format(endDate, 'yyyy-MM-dd')}` : ''}`}
-          className="bg-[#FF7F3F] text-white h-14 px-10 rounded-[1.75rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center shadow-lg shadow-[#FF7F3F]/40 hover:scale-[1.05] active:scale-95 transition-all border border-white/10"
+          className="bg-[#FF7F3F] text-white h-14 px-10 rounded-[1.75rem] font-semibold uppercase tracking-[0.25em] opacity-80 text-[11px] flex items-center justify-center shadow-lg shadow-[#FF7F3F]/40 hover:scale-[1.05] active:scale-95 transition-all border border-white/10"
         >
           Vivir la Experiencia
         </Link>

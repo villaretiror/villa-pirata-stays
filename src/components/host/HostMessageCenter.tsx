@@ -181,10 +181,10 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
 
     const getSourceBadge = (source: Thread['source']) => {
         switch (source) {
-            case 'Airbnb': return <span className="bg-[#FF5A5F]/10 text-[#FF5A5F] px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-[#FF5A5F]/5">Airbnb</span>;
-            case 'Booking': return <span className="bg-[#003580]/10 text-[#003580] px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-[#003580]/5">Booking.com</span>;
-            case 'Salty AI': return <span className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-purple-200/20">Salty Assist</span>;
-            default: return <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[8px] font-black uppercase tracking-widest border border-primary/10">Canal Directo</span>;
+            case 'Airbnb': return <span className="bg-[#FF5A5F]/10 text-[#FF5A5F] px-2 py-0.5 rounded-full text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-[#FF5A5F]/5">Airbnb</span>;
+            case 'Booking': return <span className="bg-[#003580]/10 text-[#003580] px-2 py-0.5 rounded-full text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-[#003580]/5">Booking.com</span>;
+            case 'Salty AI': return <span className="bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-purple-600 px-2 py-0.5 rounded-full text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-purple-200/20">Salty Assist</span>;
+            default: return <span className="bg-primary/10 text-primary px-2 py-0.5 rounded-full text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-primary/10">Canal Directo</span>;
         }
     };
 
@@ -200,7 +200,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                         <input
                             type="text"
                             placeholder="Buscar canal o huésped..."
-                            className="w-full pl-11 p-4 bg-white/80 rounded-2xl text-[10px] font-black uppercase tracking-widest outline-none focus:ring-2 focus:ring-primary/10 border border-gray-100 placeholder:text-gray-300 transition-all shadow-sm"
+                            className="w-full pl-11 p-4 bg-white/80 rounded-2xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 outline-none focus:ring-2 focus:ring-primary/10 border border-gray-100 placeholder:text-gray-300 transition-all shadow-sm"
                         />
                     </div>
                 </div>
@@ -226,7 +226,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                             <div className="flex-1 min-w-0 pr-2">
                                 <div className="flex justify-between items-center mb-1.5">
                                     <span className={`text-[13px] font-serif font-black italic truncate leading-none ${t.unread > 0 ? 'text-text-main' : 'text-text-main/80'}`}>{t.guestName}</span>
-                                    <span className="text-[8px] text-gray-400 font-black uppercase tracking-widest">{t.timestamp}</span>
+                                    <span className="text-[8px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80">{t.timestamp}</span>
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                     {getSourceBadge(t.source)}
@@ -252,7 +252,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                                 <div>
                                     <h3 className="font-serif font-black italic text-xl text-text-main leading-tight mb-1">{activeThread.guestName}</h3>
                                     <div className="flex items-center gap-3">
-                                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-green-600">En Línea</p>
+                                        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-green-600">En Línea</p>
                                         <div className="w-1 h-1 rounded-full bg-gray-200" />
                                         {getSourceBadge(activeThread.source)}
                                     </div>
@@ -281,7 +281,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                                 <div className="flex justify-center items-center h-full">
                                     <div className="flex flex-col items-center gap-4">
                                        <div className="w-12 h-12 border-[3px] border-primary/20 border-t-primary rounded-full animate-spin" />
-                                       <p className="text-[9px] font-black uppercase tracking-widest text-primary/40">Sincronizando Historial</p>
+                                       <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary/40">Sincronizando Historial</p>
                                     </div>
                                 </div>
                             ) : (
@@ -330,7 +330,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                                                 <p className={`leading-relaxed ${isMe ? 'font-medium' : 'font-medium'}`}>{msg.text}</p>
 
                                                 <div className={`flex items-center gap-1.5 mt-4 justify-end ${isMe ? 'opacity-40' : 'opacity-20'}`}>
-                                                    <span className="text-[8px] font-black uppercase tracking-widest">{time}</span>
+                                                    <span className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80">{time}</span>
                                                     {isMe && <CheckCheck className="w-3 h-3" />}
                                                 </div>
                                             </div>
@@ -347,7 +347,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                             {isSaltyDrafting && (
                                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="absolute -top-12 left-10 right-10 flex items-center gap-2 bg-purple-50 text-purple-600 p-3 rounded-2xl border border-purple-100 shadow-sm shadow-purple-200/50">
                                    <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                                   <p className="text-[9px] font-black uppercase tracking-widest">Salty está analizando el manual de protocolo...</p>
+                                   <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80">Salty está analizando el manual de protocolo...</p>
                                    <div className="ml-auto flex gap-1">
                                       {[1,2,3].map(i => <div key={i} className="w-1 h-1 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: `${i*0.2}s`}} />)}
                                    </div>
@@ -430,7 +430,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                            <MessageSquare className="w-12 h-12 text-primary opacity-30" />
                         </div>
                         <h3 className="text-3xl font-serif font-black italic text-text-main mb-3 leading-none tracking-tighter">Salty CRM & Messaging</h3>
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-text-light opacity-50 max-w-xs leading-relaxed">
+                        <p className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.4em] text-text-light opacity-50 max-w-xs leading-relaxed">
                            Seleccione un hilo para auditar la conversación y gestionar la experiencia del huésped.
                         </p>
                     </div>
@@ -445,7 +445,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                         <div className="relative w-40 h-40 mx-auto rounded-3xl overflow-hidden shadow-2xl border-4 border-white mb-6">
                            <img src={activeThread.propertyImage || 'https://images.unsplash.com/photo-1613490493576-7fde63acd811?auto=format&fit=crop&q=80&w=400'} className="w-full h-full object-cover" alt="Property" />
                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent p-4">
-                              <p className="text-white text-[10px] font-black uppercase tracking-widest">{activeThread.propertyTitle}</p>
+                              <p className="text-white text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">{activeThread.propertyTitle}</p>
                            </div>
                         </div>
                         <div className="space-y-6">
@@ -453,7 +453,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                               <div className="flex items-center justify-between mb-4">
                                  <div className="flex items-center gap-2">
                                     <Calendar className="w-4 h-4 text-primary opacity-40" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-text-light">Estancia</span>
+                                    <span className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Estancia</span>
                                  </div>
                                  <span className="text-[11px] font-black italic serif text-text-main">
                                     {activeThread.checkIn ? `${new Date(activeThread.checkIn).toLocaleDateString()} - ${new Date(activeThread.checkOut!).toLocaleDateString()}` : 'Sin fechas'}
@@ -462,9 +462,9 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                               <div className="flex items-center justify-between">
                                  <div className="flex items-center gap-2">
                                     <CreditCard className="w-4 h-4 text-green-500 opacity-40" />
-                                    <span className="text-[9px] font-black uppercase tracking-widest text-text-light">Estado</span>
+                                    <span className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Estado</span>
                                  </div>
-                                 <span className={`text-[9px] font-black uppercase tracking-widest px-3 py-1 rounded-full ${activeThread.bookingStatus === 'confirmed' || activeThread.bookingStatus === 'Paid' ? 'bg-green-100 text-green-600' : 'bg-sand text-primary'}`}>
+                                 <span className={`text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 px-3 py-1 rounded-full ${activeThread.bookingStatus === 'confirmed' || activeThread.bookingStatus === 'Paid' ? 'bg-green-100 text-green-600' : 'bg-sand text-primary'}`}>
                                     {activeThread.bookingStatus === 'confirmed' || activeThread.bookingStatus === 'Paid' ? 'Confirmado' : activeThread.bookingStatus || 'Consulta AI'}
                                  </span>
                               </div>
@@ -475,14 +475,14 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                                  onClick={() => onNavigate?.('leads')}
                                  className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-all group active:scale-95"
                                >
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60 group-hover:text-primary transition-colors">Ver Expediente CRM</span>
+                                  <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light/60 group-hover:text-primary transition-colors">Ver Expediente CRM</span>
                                   <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-primary transition-all" />
                                </button>
                                <button 
                                  onClick={() => alert("Manual de Protocolo: Se ha enviado una copia del manual de check-in al huésped.")}
                                  className="w-full flex justify-between items-center p-3 rounded-2xl hover:bg-gray-50 transition-all group active:scale-95"
                                >
-                                  <span className="text-[10px] font-black uppercase tracking-widest text-text-light/60 group-hover:text-secondary transition-colors">Guía de Check-in</span>
+                                  <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light/60 group-hover:text-secondary transition-colors">Guía de Check-in</span>
                                   <MapPin className="w-4 h-4 text-gray-300 group-hover:text-secondary transition-all" />
                                </button>
                             </div>
@@ -490,7 +490,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
                            <div className="pt-4 border-t border-gray-50">
                               <div className="flex items-center gap-3 px-6 mb-4">
                                  <ShieldCheck className="w-5 h-5 text-gray-300" />
-                                 <p className="text-[8px] font-black uppercase tracking-[0.2em] text-text-light text-left">Protocolo Élite Activo • Salty Verified</p>
+                                 <p className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light text-left">Protocolo Élite Activo • Salty Verified</p>
                               </div>
                            </div>
                         </div>

@@ -61,7 +61,7 @@ const AmenitiesSection: React.FC<AmenitiesSectionProps> = ({ form, setForm }) =>
         {/* Current Amenities List */}
         <div className="lg:col-span-7 space-y-6">
           <div className="flex justify-between items-center px-2">
-            <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-text-light flex items-center gap-2">
+            <h4 className="text-[10px] font-semibold uppercase opacity-80 tracking-[0.3em] text-text-light flex items-center gap-2">
               <CheckCircle2 className="w-3 h-3 text-primary" /> Inventario Activo
             </h4>
             <span className="text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/10">
@@ -93,7 +93,7 @@ const AmenitiesSection: React.FC<AmenitiesSectionProps> = ({ form, setForm }) =>
             {amenities.length === 0 && (
               <div className="w-full py-12 text-center border-2 border-dashed border-gray-100 rounded-[2rem] flex flex-col items-center justify-center opacity-30">
                 <span className="material-icons text-4xl mb-2">inventory_2</span>
-                <p className="text-[10px] font-black uppercase tracking-widest">Lista Vacía</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80">Lista Vacía</p>
               </div>
             )}
           </div>
@@ -132,7 +132,7 @@ const AmenitiesSection: React.FC<AmenitiesSectionProps> = ({ form, setForm }) =>
               <input 
                 type="text" 
                 placeholder="Buscar sugerencias..." 
-                className="bg-transparent text-[10px] font-black uppercase tracking-widest text-text-light outline-none flex-1 placeholder:text-gray-300"
+                className="bg-transparent text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light outline-none flex-1 placeholder:text-gray-300"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
               />
@@ -142,7 +142,7 @@ const AmenitiesSection: React.FC<AmenitiesSectionProps> = ({ form, setForm }) =>
                 <button
                   key={item}
                   onClick={() => handleAdd(item)}
-                  className="bg-gray-50/50 hover:bg-white px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest text-text-light border border-gray-100 hover:border-primary hover:text-primary transition-all hover:shadow-soft"
+                  className="bg-gray-50/50 hover:bg-white px-4 py-2 rounded-xl text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light border border-gray-100 hover:border-primary hover:text-primary transition-all hover:shadow-soft"
                 >
                   + {item}
                 </button>

@@ -57,7 +57,7 @@ const CustomCursor: React.FC = () => {
           <motion.span 
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="text-[10px] font-black uppercase tracking-tighter text-primary whitespace-nowrap"
+            className="text-[10px] font-semibold uppercase opacity-80 tracking-tighter text-primary whitespace-nowrap"
           >
             Vivir la Experiencia
           </motion.span>

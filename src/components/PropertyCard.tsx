@@ -46,7 +46,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
     return (
       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
         {(property.rating || 0) >= 4.9 && (
-          <div className="bg-primary px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest text-secondary shadow-lg flex items-center gap-1.5 ring-1 ring-secondary/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
+          <div className="bg-primary px-2.5 py-1 rounded-lg text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-secondary shadow-lg flex items-center gap-1.5 ring-1 ring-secondary/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
             <Flame size={10} className="fill-secondary" />
             Colección Élite
           </div>
@@ -70,7 +70,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         if (onClick) onClick(property.id);
         else navigate(`/property/${property.id}`);
       }}
-      className="group cursor-pointer relative bg-white rounded-[2.5rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-700 flex flex-col border border-secondary/5"
+      className="group cursor-pointer relative bg-white rounded-[2.5rem] overflow-hidden shadow-soft hover:shadow-2xl transition-all duration-700 flex flex-col border border-secondary/5 transform-gpu"
     >
       {/* Visual Header / Media */}
       <div className="relative aspect-[16/10] sm:aspect-[4/3] overflow-hidden m-2 rounded-[2rem]">
@@ -207,7 +207,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             )}
             <div className="flex items-baseline gap-1.5 bg-primary px-4 py-2 rounded-2xl border border-primary/20 shadow-lg group-hover:shadow-primary/20 transition-all duration-500">
               <span className="font-black text-2xl text-secondary">${property.price || 0}</span>
-              <span className="text-[10px] font-black uppercase text-secondary/70 tracking-[0.25em]">/noche</span>
+              <span className="text-[10px] font-semibold uppercase opacity-80 text-secondary/70 tracking-[0.25em]">/noche</span>
             </div>
           </div>
         </div>

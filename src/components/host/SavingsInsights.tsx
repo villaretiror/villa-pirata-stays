@@ -30,7 +30,7 @@ const SavingsInsights: React.FC<SavingsInsightsProps> = ({ bookings }) => {
 
             <div className="relative z-10">
                 <div className="flex items-center gap-2 mb-4">
-                    <span className="bg-white/20 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest backdrop-blur-md border border-white/10">
+                    <span className="bg-white/20 px-3 py-1 rounded-full text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 backdrop-blur-md border border-white/10">
                         Oportunidad Directa
                     </span>
                 </div>
@@ -40,7 +40,7 @@ const SavingsInsights: React.FC<SavingsInsightsProps> = ({ bookings }) => {
 
                 <div className="flex items-end justify-between">
                     <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest text-accent mb-1">Ahorro Estimado (15%)</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-accent mb-1">Ahorro Estimado (15%)</p>
                         <p className="text-3xl font-serif font-black text-white leading-none">
                             ${savingsMetrics.totalSavings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>

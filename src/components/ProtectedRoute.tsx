@@ -98,16 +98,16 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, role }) => {
           <p className="font-serif font-black text-xl text-text-main animate-pulse">
             {timedOut ? 'Autenticación Lenta' : 'Autenticando Acceso'}
           </p>
-          <p className="text-[10px] font-black uppercase tracking-[0.2em] text-[#FF7F3F]">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#FF7F3F]">
             {timedOut ? 'Posible error de red' : 'Boutique Stays Security'}
           </p>
         </div>
         {timedOut && (
           <div className="flex flex-col gap-3 mt-4">
-            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-black text-white rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl active:scale-95 transition-all">
+            <button onClick={() => window.location.reload()} className="px-8 py-3 bg-black text-white rounded-full text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 shadow-xl active:scale-95 transition-all">
               Reintentar
             </button>
-            <button onClick={() => logout()} className="px-8 py-2 text-[10px] font-black uppercase tracking-widest border border-black/10 rounded-full active:scale-95 transition-all">
+            <button onClick={() => logout()} className="px-8 py-2 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 border border-black/10 rounded-full active:scale-95 transition-all">
               Cerrar Sesión
             </button>
           </div>

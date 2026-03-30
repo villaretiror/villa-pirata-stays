@@ -34,7 +34,7 @@ class SectionErrorBoundary extends Component<Props, State> {
                     <p className="text-text-light text-xs mb-6 max-w-[240px] mx-auto italic">Hubo un fallo al renderizar estos datos. Intenta recargar la página para reintentar.</p>
                     <button
                         onClick={() => this.setState({ hasError: false })}
-                        className="bg-black text-white px-8 py-3 rounded-full text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg"
+                        className="bg-black text-white px-8 py-3 rounded-full text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:scale-105 transition-all shadow-lg"
                     >
                         Reintentar
                     </button>

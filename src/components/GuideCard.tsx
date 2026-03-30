@@ -54,13 +54,13 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, onMapCl
       </div>
 
       <div className="flex justify-between items-center mb-3 px-1">
-        <div className="bg-sand/60 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-secondary border border-primary/30 flex items-center gap-1.5 shadow-sm">
+        <div className="bg-sand/60 px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-secondary border border-primary/30 flex items-center gap-1.5 shadow-sm">
           <span className="material-icons text-[12px]">directions_car</span> {item.distance}
         </div>
         {item.mapUrl && (
           <button
             onClick={handleMapClick}
-            className="map-trigger bg-blue-50/50 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100/50 flex items-center gap-1.5 hover:bg-blue-100 transition-all shadow-sm active:scale-95"
+            className="map-trigger bg-blue-50/50 px-3 py-1.5 rounded-full text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-blue-600 border border-blue-100/50 flex items-center gap-1.5 hover:bg-blue-100 transition-all shadow-sm active:scale-95"
           >
             <span className="material-icons text-[12px]">near_me</span> Mapa
           </button>
@@ -80,8 +80,8 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, onMapCl
       </div>
 
       <div className="mt-auto pt-4 border-t border-dashed border-gray-100 flex items-center justify-between group/salty">
-        <span className="text-[10px] font-black uppercase tracking-widest text-text-light group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>
-        <div className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-primary bg-primary/5 px-3 py-2 rounded-xl group-hover/salty:bg-primary group-hover/salty:text-white transition-all shadow-sm">
+        <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light group-hover/salty:text-primary transition-colors">¿Quieres saber más?</span>
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary bg-primary/5 px-3 py-2 rounded-xl group-hover/salty:bg-primary group-hover/salty:text-white transition-all shadow-sm">
           <span>Pregunta a Salty</span>
           <span className="material-icons text-sm">chat_bubble_outline</span>
         </div>

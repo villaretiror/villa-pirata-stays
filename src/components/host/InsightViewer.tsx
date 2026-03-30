@@ -75,7 +75,7 @@ const InsightViewer: React.FC = () => {
             <span className="material-icons text-primary">psychology</span>
           </div>
           <div>
-            <h3 className="text-sm font-black uppercase tracking-widest text-text-main leading-tight">Módulo de Supervisión CEO</h3>
+            <h3 className="text-sm font-semibold uppercase tracking-[0.25em] opacity-80 text-text-main leading-tight">Módulo de Supervisión CEO</h3>
             <p className="text-[10px] text-text-light font-medium uppercase tracking-wider">Insights Tácticos de Salty</p>
           </div>
         </div>
@@ -128,7 +128,7 @@ const InsightViewer: React.FC = () => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white rounded-[2rem] p-6 border border-gray-100 shadow-sm hover:shadow-md transition-all relative overflow-hidden group"
             >
-              <div className={`absolute top-0 right-0 px-4 py-1 text-[8px] font-black uppercase tracking-widest ${
+              <div className={`absolute top-0 right-0 px-4 py-1 text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 ${
                 insight.type === 'proposal' ? 'bg-primary text-white' : 
                 insight.type === 'pattern' ? 'bg-secondary text-white' : 'bg-black text-white'
               }`}>

@@ -35,7 +35,7 @@ const HostNavbar: React.FC<HostNavbarProps> = ({ activeTab, onNavigateHome }) =>
                 <h1 className="text-xl sm:text-3xl font-serif font-black italic tracking-tighter text-text-main truncate">
                     {tabTitles[activeTab] || 'Dashboard'}
                 </h1>
-                <p className="text-[8px] sm:text-[10px] font-black uppercase tracking-[0.2em] sm:tracking-[0.3em] text-primary mt-0.5">Control</p>
+                <p className="text-[8px] sm:text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 sm:tracking-[0.3em] text-primary mt-0.5">Control</p>
             </div>
 
             <div className="flex items-center gap-2 sm:gap-6">

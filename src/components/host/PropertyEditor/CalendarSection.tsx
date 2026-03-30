@@ -270,7 +270,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
           <button 
             onClick={syncExternalCalendars}
             disabled={isSyncing}
-            className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[9px] font-black uppercase tracking-widest hover:bg-black hover:text-white transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-6 py-3 bg-white border border-gray-100 rounded-2xl text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:bg-black hover:text-white transition-all shadow-sm disabled:opacity-50"
           >
             <RefreshCcw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             {isSyncing ? 'Sincronizando...' : 'Actualizar Canales'}
@@ -294,7 +294,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
             <div key={idx} className="flex items-center gap-3 group cursor-help">
               <div className={`w-3 h-3 rounded-full ${item.color} shadow-sm shrink-0 group-hover:scale-125 transition-transform`} />
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-text-main leading-none">{item.label}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-main leading-none">{item.label}</p>
                 <p className="text-[8px] text-gray-400 font-bold uppercase tracking-tighter mt-1">{item.desc}</p>
               </div>
             </div>
@@ -335,7 +335,7 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
                         </div>
                         <button 
                             onClick={applySeasonalPrice}
-                            className="bg-primary text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg shadow-primary/20"
+                            className="bg-primary text-white px-6 py-3 rounded-xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:scale-105 transition-all shadow-lg shadow-primary/20"
                         >
                             Fijar Tarifa
                         </button>
@@ -345,14 +345,14 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
                     <>
                         <button 
                             onClick={applyManualBlock}
-                            className="flex items-center gap-2 px-6 py-4 bg-gray-900 text-white rounded-[1.25rem] hover:bg-black transition-all active:scale-95 text-[10px] font-black uppercase tracking-widest shadow-lg shadow-black/20"
+                            className="flex items-center gap-2 px-6 py-4 bg-gray-900 text-white rounded-[1.25rem] hover:bg-black transition-all active:scale-95 text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 shadow-lg shadow-black/20"
                         >
                             <Lock className="w-3.5 h-3.5" />
                             Bloquear / Liberar
                         </button>
                         <button 
                             onClick={() => setIsPricingMode(true)}
-                            className="flex items-center gap-2 px-6 py-4 bg-primary text-white rounded-[1.25rem] hover:scale-105 active:scale-95 transition-all text-[10px] font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+                            className="flex items-center gap-2 px-6 py-4 bg-primary text-white rounded-[1.25rem] hover:scale-105 active:scale-95 transition-all text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 shadow-lg shadow-primary/20"
                         >
                             <DollarSign className="w-3.5 h-3.5" />
                             Ajustar Tarifa

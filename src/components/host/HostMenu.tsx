@@ -551,7 +551,7 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
         </div>
 
         {loadingTasks ? (
-          <div className="py-12 text-center text-[10px] font-black uppercase text-gray-400 tracking-[0.2em] animate-pulse">Sincronizando tareas...</div>
+          <div className="py-12 text-center text-[10px] font-semibold uppercase opacity-80 text-gray-400 tracking-[0.2em] animate-pulse">Sincronizando tareas...</div>
         ) : (
           <div className="space-y-4 max-h-80 overflow-y-auto no-scrollbar pr-1">
             {tasks.map(task => (

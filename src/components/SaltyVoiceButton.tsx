@@ -154,7 +154,7 @@ const SaltyVoiceButton: React.FC = () => {
                     <div className={`absolute top-0 right-1 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-colors z-20 ${callStatus === 'active' ? 'bg-red-500' : 'bg-green-500'}`}></div>
                     
                     {/* Floating Label - ALIGNED TO RIGHT FLANK */}
-                    <span className="absolute right-full mr-6 bg-secondary text-primary text-[10px] font-black uppercase tracking-[0.2em] px-5 py-3 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-primary/20 backdrop-blur-md flex flex-col items-end gap-1">
+                    <span className="absolute right-full mr-6 bg-secondary text-primary text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 px-5 py-3 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-primary/20 backdrop-blur-md flex flex-col items-end gap-1">
                         <span>{callStatus === 'active' ? 'Terminar Llamada 📡' : 'Concierge Voz ☎️'}</span>
                         <span className="text-[8px] text-white/50 border-t border-white/10 pt-1 w-full text-right truncate">DIRECTO: 209-267-3503</span>
                     </span>

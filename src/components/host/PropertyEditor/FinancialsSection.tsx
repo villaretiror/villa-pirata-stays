@@ -78,13 +78,13 @@ const FinancialsSection: React.FC<FinancialsSectionProps> = ({ property, booking
     <div className="space-y-8 animate-fade-in pb-10">
       <header>
         <h3 className="text-xl font-serif font-black italic text-text-main tracking-tighter">Rentabilidad y Finanzas 🔱</h3>
-        <p className="text-[10px] text-gray-400 font-black uppercase tracking-widest mt-1">Ingresos vs Gastos del Mes en Curso</p>
+        <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Ingresos vs Gastos del Mes en Curso</p>
       </header>
 
       {/* Financial Health Widget */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-6 bg-gradient-to-br from-gray-900 to-gray-800 rounded-[2.5rem] shadow-xl text-white">
-          <p className="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-2">Ingresos Mes ({new Date().toLocaleString('es-ES', { month: 'long' })})</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-400 mb-2">Ingresos Mes ({new Date().toLocaleString('es-ES', { month: 'long' })})</p>
           <p className="text-3xl font-serif font-black italic tracking-tighter text-yellow-400">${totalIncome.toLocaleString()}</p>
           <div className="mt-4 flex items-center gap-2">
             <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -95,13 +95,13 @@ const FinancialsSection: React.FC<FinancialsSectionProps> = ({ property, booking
         </div>
 
         <div className="p-6 bg-red-50/50 border border-red-100 rounded-[2.5rem] shadow-sm">
-          <p className="text-[9px] font-black uppercase tracking-widest text-red-400 mb-2">Gastos Operativos</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-red-400 mb-2">Gastos Operativos</p>
           <p className="text-3xl font-serif font-black italic tracking-tighter text-red-600">-${totalExpensesSum.toLocaleString()}</p>
           <p className="text-[9px] font-bold text-red-400 mt-2 uppercase tracking-tighter">{expenseRatio.toFixed(1)}% de ratio de gasto</p>
         </div>
 
         <div className="p-6 bg-primary/10 border border-primary/20 rounded-[2.5rem] shadow-sm flex flex-col justify-center">
-          <p className="text-[9px] font-black uppercase tracking-widest text-primary mb-2">Profit Neto Real</p>
+          <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-2">Profit Neto Real</p>
           <p className={`text-3xl font-serif font-black italic tracking-tighter ${netProfit >= 0 ? 'text-primary' : 'text-red-500'}`}>
             ${netProfit.toLocaleString()}
           </p>
@@ -116,14 +116,14 @@ const FinancialsSection: React.FC<FinancialsSectionProps> = ({ property, booking
         {/* Add Expense Form */}
         <div className="flex flex-col md:flex-row gap-4 mb-8 p-6 bg-sand/20 rounded-[2rem] border border-primary/20/30">
           <div className="flex-1">
-            <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Descripción</label>
+            <label className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#2D5A27] block mb-2 ml-1">Descripción</label>
             <input value={newExpDesc} onChange={e => setNewExpDesc(e.target.value)} placeholder="Ej: Reparación A/C Master" className="w-full p-3 rounded-xl border-none bg-white text-xs font-bold outline-none" />
           </div>
           <div className="w-full md:w-32">
-            <label className="text-[9px] font-black uppercase tracking-widest text-[#2D5A27] block mb-2 ml-1">Monto ($)</label>
+            <label className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#2D5A27] block mb-2 ml-1">Monto ($)</label>
             <input type="number" value={newExpAmount} onChange={e => setNewExpAmount(Number(e.target.value))} className="w-full p-3 rounded-xl border-none bg-white text-xs font-bold outline-none" />
           </div>
-          <button onClick={handleAddExpense} className="md:mt-6 bg-black text-white px-6 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest hover:scale-105 transition-all shadow-lg active:scale-95">Registrar 🔱</button>
+          <button onClick={handleAddExpense} className="md:mt-6 bg-black text-white px-6 py-3 rounded-xl text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 hover:scale-105 transition-all shadow-lg active:scale-95">Registrar 🔱</button>
         </div>
 
         <div className="space-y-3">

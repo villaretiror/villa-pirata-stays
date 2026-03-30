@@ -49,7 +49,7 @@ const Favorites: React.FC = () => {
             <h1 className="text-4xl md:text-5xl font-serif font-black italic text-text-main dark-text-white tracking-tighter leading-none">
               Mi Bitácora
             </h1>
-            <p className="text-[11px] font-black uppercase tracking-[0.2em] text-primary/60 dark-text-accent/60 mt-2 flex items-center gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary/60 dark-text-accent/60 mt-2 flex items-center gap-2">
               <Anchor className="w-3 h-3" />
               {favoriteProperties.length} Reservas en Potencia
             </p>
