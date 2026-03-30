@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { differenceInDays, parseISO, addDays, isValid } from 'date-fns';
 import { MessagingService } from '../src/services/MessagingService.js';
 import { NotificationService } from '../src/services/NotificationService.js';
-import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable, queryPropertyKnowledge } from '../src/aiServices.js';
+import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable, queryPropertyKnowledge, findNextAvailability } from '../src/aiServices.js';
 
 const getEnvVar = (key: string): string => {
   return process.env[key] || process.env[`VITE_${key}`] || "";
@@ -242,12 +242,15 @@ async function executeDirectTool(args: any, supabase: any) {
 
       // 1. Unified Availability Check (Local Bookings + Synced Blocks)
       const availability = await checkAvailabilityWithICal(finalId, finalStartDate, finalEndDate, supabase);
+      
       if (!availability.available) {
         const alternate = await findAlternatePropertyAvailable(finalId, finalStartDate, finalEndDate, supabase);
         return {
           ok: true,
           available: false,
           reason: availability.reason || 'Ocupado',
+          unavailableLine: availability.unavailableLine,
+          alternateSuggestionLine: alternate?.alternateSuggestionLine,
           alternate: alternate ? alternate.title : null,
           normalizedStartDate: finalStartDate,
           normalizedEndDate: finalEndDate,
@@ -266,6 +269,15 @@ async function executeDirectTool(args: any, supabase: any) {
         normalizedEndDate: finalEndDate,
         isNormalized,
         message: `DISPONIBLE. Total por ${quote.nights} noches: ${quote.total} USD.`
+      };
+
+    } else if (toolName === 'find_next_availability') {
+      const result = await findNextAvailability(finalId, finalStartDate || undefined, undefined, supabase);
+      return {
+        ok: result.ok,
+        found: result.found,
+        nextAvailabilityLine: result.nextAvailabilityLine,
+        data: result.data
       };
 
     } else if (toolName === 'send_payment_sms') {

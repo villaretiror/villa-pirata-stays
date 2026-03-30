@@ -167,7 +167,7 @@ export const checkAvailabilityWithICal = async (
     checkIn: string,
     checkOut: string,
     customSupabase?: SupabaseClient
-): Promise<{ available: boolean; reason?: string; is_request_only?: boolean }> => {
+): Promise<{ available: boolean; reason?: string; is_request_only?: boolean; unavailableLine?: string }> => {
     const client = customSupabase || supabase;
     const qIn = new Date(checkIn);
     const qOut = new Date(checkOut);
@@ -259,7 +259,8 @@ export const checkAvailabilityWithICal = async (
         const statusLabel = nativeOverlap.status === 'confirmed' || nativeOverlap.status === 'Paid' ? 'Confirmada' : 'En proceso';
         return { 
             available: false, 
-            reason: `Fechas ya ocupadas por una reserva directa (${statusLabel}).` 
+            reason: `Fechas ya ocupadas por una reserva directa (${statusLabel}).`,
+            unavailableLine: `Lo siento, Capitán. Esas fechas ya están reservadas directamente en nuestro sistema.`
         };
     }
 
@@ -273,7 +274,8 @@ export const checkAvailabilityWithICal = async (
     if (externalOverlap) {
         return { 
             available: false, 
-            reason: `Fechas no disponibles — reservado vía ${externalOverlap.source}.` 
+            reason: `Fechas no disponibles — reservado vía ${externalOverlap.source}.`,
+            unavailableLine: `Esas fechas ya están tomadas en mi bitácora de ${externalOverlap.source}, Capitán.`
         };
     }
 
@@ -325,16 +327,77 @@ export const checkAvailabilityWithICal = async (
             return { 
                 available: false, 
                 is_request_only: true, 
-                reason: `Esa travesía está en un horizonte lejano (más de ${availabilityWindowMonths} meses), pero si gusta puedo tomar sus datos para asegurar su lugar en la bitácora del Capitán.`
+                reason: `Esa travesía está en un horizonte lejano (más de ${availabilityWindowMonths} meses), pero si gusta puedo tomar sus datos para asegurar su lugar en la bitácora del Capitán.`,
+                unavailableLine: `Esa fecha está en un horizonte lejano, Capitán. Solo aceptamos reservas con seis meses de anticipación, pero puedo anotar sus datos para el Capitán Brian.`
             };
         }
         return { 
             available: false, 
-            reason: `Solo aceptamos reservas con hasta ${availabilityWindowMonths} meses de anticipación por el momento.` 
+            reason: `Solo aceptamos reservas con hasta ${availabilityWindowMonths} meses de anticipación por el momento.`,
+            unavailableLine: `Lo siento, Capitán. Solo aceptamos reservas con hasta seis meses de anticipación por ahora.`
         };
     }
 
     return { available: true };
+};
+
+/**
+ * 🛰️ PROACTIVE AVAILABILITY SENSOR (Vapi Optimized)
+ * Scans the next 180 days for the first available gap of N nights.
+ */
+export const findNextAvailability = async (
+    propertyId: string, 
+    afterDate?: string, 
+    nights?: number,
+    customSupabase?: SupabaseClient
+): Promise<{ ok: boolean; found: boolean; nextAvailabilityLine?: string; data?: any }> => {
+    const client = customSupabase || supabase;
+    const finalId = await resolvePropertyId(propertyId, client);
+    const startDate = afterDate ? new Date(afterDate) : new Date();
+    
+    // Resolve min nights
+    const { data: prop } = await client.from('properties').select('sync_settings, title').eq('id', finalId).single();
+    const minNights = nights || prop?.sync_settings?.min_nights || 2;
+    const propTitle = prop?.title || "nuestra villa";
+
+    const gaps = await findCalendarGaps(finalId, client);
+    const slots = Array.isArray(gaps) ? gaps : (gaps as any).slots || [];
+    const validGap = (slots as any[]).find((g: any) => g.nights >= minNights);
+
+    if (!validGap) {
+        return { 
+            ok: true, 
+            found: false, 
+            nextAvailabilityLine: "Capitán, mis radares no encuentran huecos disponibles en los próximos seis meses para esta villa." 
+        };
+    }
+
+    // Calculate Price for the found gap
+    try {
+        const quote = await applyAIQuote(finalId, validGap.start, validGap.end, undefined, client);
+        const dateStr = new Date(validGap.start + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+        const endStr = new Date(validGap.end + 'T12:00:00').toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+        
+        return {
+            ok: true,
+            found: true,
+            nextAvailabilityLine: `He encontrado un horizonte despejado, Capitán. La villa ${propTitle} está libre del ${dateStr} al ${endStr}, por un total de ${quote.total} dólares por las ${quote.nights} noches.`,
+            data: {
+                startDate: validGap.start,
+                endDate: validGap.end,
+                nights: quote.nights,
+                priceTotal: quote.total,
+                propertyTitle: propTitle
+            }
+        };
+    } catch (e) {
+        return {
+            ok: true,
+            found: true,
+            nextAvailabilityLine: `Tengo disponibilidad a partir del ${validGap.start}, pero el cálculo de doblones está en mantenimiento. ¿Gusta que le reserve las fechas?`,
+            data: { startDate: validGap.start, endDate: validGap.end, nights: validGap.nights }
+        };
+    }
 };
 
 /**
@@ -346,7 +409,7 @@ export const findAlternatePropertyAvailable = async (
     checkIn: string,
     checkOut: string,
     customSupabase?: SupabaseClient
-): Promise<{ id: string, title: string } | null> => {
+): Promise<{ id: string, title: string, alternateSuggestionLine?: string } | null> => {
     const client = customSupabase || supabase;
 
     // 1. Fetch all other properties
@@ -363,8 +426,18 @@ export const findAlternatePropertyAvailable = async (
     }));
 
     const firstAvailable = availabilityChecks.find(p => p.available);
-    return firstAvailable ? { id: String(firstAvailable.id), title: firstAvailable.title } : null;
+    if (firstAvailable) {
+        return { 
+            id: String(firstAvailable.id), 
+            title: firstAvailable.title,
+            alternateSuggestionLine: `Sin embargo, Capitán, tengo disponible la propiedad "${firstAvailable.title}" para esas mismas fechas. ¿Gusta que verifique el precio de esa villa para usted?`
+        };
+    }
+    return null;
 };
+
+// ... [rest of the file remains unchanged]
+
 
 // 2. Lead & Abandonment Manager
 export const logAbandonmentLead = async (data: { full_name: string; email?: string; phone?: string; interest: string }) => {
