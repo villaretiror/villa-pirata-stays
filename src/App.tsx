@@ -18,6 +18,7 @@ const ContractView = lazy(() => import('./pages/ContractView'));
 const HostProfile = lazy(() => import('./pages/HostProfile'));
 const SecretSpots = lazy(() => import('./pages/SecretSpots'));
 const StayDashboard = lazy(() => import('./pages/StayDashboard'));
+const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
 
 // Static Components (Keep for fast initial UI)
 import Navbar from './components/Navbar';
@@ -136,13 +137,15 @@ const App: React.FC = () => {
               <Route path="/booking/:id" element={<Booking />} />
               <Route path="/success" element={<Success />} />
               <Route path="/reservation/:id" element={<ReservationDetails />} />
-              <Route path="/stay/:id" element={<StayDashboard />} />
               <Route path="/favorites" element={<Favorites />} />
               <Route path="/messages" element={<Message />} />
               <Route path="/login" element={<Login />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/host-profile/:id" element={<HostProfile />} />
-              <Route path="/host" element={<ProtectedRoute role="host"><HostDashboard /></ProtectedRoute>} />
+              <Route path="/host/*" element={<ProtectedRoute><HostDashboard /></ProtectedRoute>} />
+              <Route path="/staff-dashboard" element={<StaffDashboard />} />
+              <Route path="/reservation/:id" element={<ReservationDetails />} />
+              <Route path="/stay/:id" element={<StayDashboard />} />
               <Route path="/contrato" element={<ContractView />} />
               <Route path="/secret-spots" element={<SecretSpots />} />
               {/* 🔱 ELITE RESCUE PROTOCOL: Redirect to Home if path is not found */}

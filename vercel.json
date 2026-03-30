@@ -90,6 +90,10 @@
         {
             "path": "/api/master?task=weekly_report",
             "schedule": "0 13 * * 1"
+        },
+        {
+            "path": "/api/cron/send-lockbox-codes",
+            "schedule": "0 * * * *"
         }
     ]
 }
