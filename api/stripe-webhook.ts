@@ -56,11 +56,18 @@ export default async function handler(req: any, res: any) {
 
       if (!bookingId) {
         // Fallback: If metadata failed, search Supabase by the Payment Intent ID
-        const { data: b } = await supabase.from('bookings').select('id').eq('stripe_payment_intent_id', stripePaymentId).single();
+        const { data: b } = await supabase.from('bookings').select('id, status').eq('stripe_payment_intent_id', stripePaymentId).single();
         if (b) bookingId = b.id;
       }
 
       if (bookingId) {
+         // 🛡️ IDEMPOTENCY CATCH: Evita que el webhook aplique pagos dobles y envíe correos repetidos
+         const { data: currentBooking } = await supabase.from('bookings').select('status').eq('id', bookingId).single();
+         if (currentBooking?.status === 'confirmed') {
+              console.log(`[Stripe Webhook] 🔱 Reservation ${bookingId} already CONFIRMED. Ignoring redundant event.`);
+              return res.status(200).json({ received: true, redundant: true });
+         }
+
          // Secure Atomic Update - Backend execution bypasses RLS
          await supabase.from('bookings').update({
             status: 'confirmed',

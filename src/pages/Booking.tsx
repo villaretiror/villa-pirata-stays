@@ -226,7 +226,8 @@ const Booking: React.FC = () => {
       contract_signed: true,
       auto_cancel_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       cleaning_fee_at_booking: Number(property.cleaning_fee || 0),
-      service_fee_at_booking: Number(property.service_fee || 0)
+      service_fee_at_booking: Number(property.service_fee || 0),
+      addons_breakdown: selectedAddons.length > 0 ? selectedAddons : null
     };
 
     const isRecovery = recoverData?.booking_id && recoverData?.recover;

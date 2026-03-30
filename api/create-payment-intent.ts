@@ -90,21 +90,24 @@ export default async function handler(req: any, res: any) {
     if (booking.property_id && booking.check_in && booking.check_out) {
         const { data: prop } = await supabase.from('properties').select('"calendarSync"').eq('id', booking.property_id).single();
         if (prop && prop.calendarSync && Array.isArray(prop.calendarSync)) {
-            for (const feed of prop.calendarSync) {
-                if (!feed.url) continue;
-                try {
-                    const tsUrl = feed.url + (feed.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
-                    const feedRes = await fetch(tsUrl, { signal: AbortSignal.timeout(6000) });
-                    if (!feedRes.ok) continue;
-                    const icsText = await feedRes.text();
-                    
-                    const isOverlap = checkIcsOverlap(icsText, booking.check_in, booking.check_out);
-                    if (isOverlap) {
-                         console.warn(`[GHOST WINDOW] Overlap blocked for booking ${booking.id}!`);
-                         return res.status(409).json({ error: 'GHOST_WINDOW_OVERLAP' });
-                    }
-                } catch (e) {
-                    console.warn('[Ghost Window] ICAL Ping warning: ', e);
+            const validFeeds = prop.calendarSync.filter((feed: any) => !!feed.url);
+            
+            // 🔥 PARALLEL EXECUTION (ANTI-TIMEOUT)
+            const validations = await Promise.allSettled(
+              validFeeds.map(async (feed: any) => {
+                 const tsUrl = feed.url + (feed.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+                 const feedRes = await fetch(tsUrl, { signal: AbortSignal.timeout(6000) });
+                 if (!feedRes.ok) return false;
+                 
+                 const icsText = await feedRes.text();
+                 return checkIcsOverlap(icsText, booking.check_in, booking.check_out);
+              })
+            );
+            
+            for (const result of validations) {
+                if (result.status === 'fulfilled' && result.value === true) {
+                     console.warn(`[GHOST WINDOW] Overlap blocked for booking ${booking.id}!`);
+                     return res.status(409).json({ error: 'GHOST_WINDOW_OVERLAP' });
                 }
             }
         }

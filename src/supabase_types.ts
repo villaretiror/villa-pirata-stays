@@ -161,10 +161,14 @@ export type Database = {
           service_fee_at_booking: number | null
           source: string | null
           status: string | null
+          stripe_client_secret: string | null
+          stripe_payment_intent_id: string | null
           sync_last_hash: string | null
           total_paid_at_booking: number | null
-          total_price: number
+          total_price: number | null
+          updated_at: string | null
           user_id: string | null
+          addons_breakdown: Json | null
         }
         Insert: {
           applied_policy?: Json | null
@@ -197,6 +201,7 @@ export type Database = {
           total_paid_at_booking?: number | null
           total_price: number
           user_id?: string | null
+          addons_breakdown?: Json | null
         }
         Update: {
           applied_policy?: Json | null
@@ -229,6 +234,7 @@ export type Database = {
           total_paid_at_booking?: number | null
           total_price?: number
           user_id?: string | null
+          addons_breakdown?: Json | null
         }
         Relationships: [
           {

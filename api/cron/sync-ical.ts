@@ -52,7 +52,12 @@ export default async function handler(req: any, res: any) {
                     // A. Fetch iCal content (Server-side directly, bypass caching)
                     const tsUrl = feed.url + (feed.url.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
                     const response = await fetch(tsUrl, {
-                        headers: { 'User-Agent': 'VillaRetiro-Cron-Engine/4.0' },
+                        headers: { 
+                           'User-Agent': 'VillaRetiro-Cron-Engine/4.0',
+                           'Cache-Control': 'no-cache, no-store, must-revalidate',
+                           'Pragma': 'no-cache',
+                           'Expires': '0'
+                        },
                         signal: AbortSignal.timeout(15000)
                     });
 
