@@ -12,8 +12,14 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
 
   useEffect(() => {
     const handleScroll = () => {
-      // Show after 800px of scroll
-      if (window.scrollY > 800) {
+      const scrollY = window.scrollY;
+      const windowHeight = window.innerHeight;
+      const fullHeight = document.documentElement.scrollHeight;
+      
+      // 🔱 FORM-STEALTH LOGIC: Hide when near the bottom (Contact/Lead forms)
+      const isNearEnd = scrollY + windowHeight > fullHeight - 450;
+      
+      if (scrollY > 800 && !isNearEnd) {
         setIsVisible(true);
       } else {
         setIsVisible(false);
@@ -32,26 +38,25 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-6 left-4 right-4 z-[100] md:left-1/2 md:-translate-x-1/2 md:bottom-10 md:w-[600px]"
+          className="fixed bottom-6 left-4 right-4 z-[100] md:left-1/2 md:-translate-x-1/2 md:bottom-10 md:w-[500px]"
         >
-          <div className="bg-secondary/95 backdrop-blur-3xl rounded-[2.5rem] md:rounded-[3rem] py-4 md:py-8 px-6 md:px-10 shadow-bunker border border-white/10 flex items-center justify-between gap-4 md:gap-8">
-            <div className="pl-2 md:pl-4 py-1">
-              <p className="text-[9px] md:text-[11px] font-black uppercase tracking-[0.2em] md:tracking-[0.3em] text-white/40 mb-1 md:mb-2 leading-none">Villa Retiro LLC</p>
-              <h4 className="text-white font-serif font-bold text-lg md:text-2xl truncate leading-tight tracking-tight">{villaName}</h4>
+          <div className="bg-secondary/95 backdrop-blur-3xl rounded-[2.5rem] md:rounded-full py-2.5 md:py-6 px-6 md:px-8 shadow-bunker border border-white/5 flex items-center justify-between gap-4 md:gap-8">
+            <div className="pl-1 md:pl-2 py-1">
+              <p className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.25em] text-primary mb-0.5 md:mb-1 leading-none">Reserva Directa</p>
+              <h4 className="text-white font-serif font-bold text-base md:text-xl truncate leading-tight tracking-wider uppercase">Villa Retiro R</h4>
             </div>
             
             <button
               onClick={onAction}
-              className="bg-primary text-secondary px-5 md:px-8 py-4 md:py-5 rounded-2xl md:rounded-[1.75rem] font-black uppercase tracking-wider md:tracking-widest text-[10px] md:text-[11px] flex items-center gap-2 md:gap-3 shadow-lg shadow-primary/30 hover:scale-[1.05] active:scale-95 transition-all outline outline-4 outline-white/5 whitespace-nowrap"
+              className="bg-primary text-secondary px-5 md:px-6 py-3.5 md:py-4 rounded-xl md:rounded-2xl font-black uppercase tracking-wider text-[9px] md:text-[11px] flex items-center gap-2 md:gap-3 shadow-lg shadow-primary/20 hover:scale-[1.05] active:scale-95 transition-all outline outline-2 outline-white/5 whitespace-nowrap"
             >
-              <span className="hidden sm:inline">Reservar Ahora</span>
-              <span className="sm:hidden">Reservar</span>
-              <Compass size={16} className="md:w-[18px]" />
+              <span>Reservar</span>
+              <Compass size={14} className="md:w-[16px]" />
             </button>
           </div>
           
           {/* Subtle Glow */}
-          <div className="absolute -inset-1 bg-gradient-to-r from-primary/20 to-primary/40 rounded-[3rem] blur-xl -z-10 opacity-50"></div>
+          <div className="absolute -inset-0.5 bg-gradient-to-r from-primary/10 to-primary/20 rounded-[2.5rem] md:rounded-full blur-lg -z-10 opacity-30"></div>
         </motion.div>
       )}
     </AnimatePresence>
