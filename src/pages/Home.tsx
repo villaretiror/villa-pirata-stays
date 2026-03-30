@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useDeferredValue } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m as motion, AnimatePresence, LazyMotion, domAnimation } from 'framer-motion';
 import PropertyCard from '../components/PropertyCard';
 import GuideCard from '../components/GuideCard';
 import ReviewCarousel from '../components/ReviewCarousel';
@@ -43,6 +43,7 @@ const Home: React.FC = () => {
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isChecking, setIsChecking] = useState(false);
   const [searchTab, setSearchTab] = useState<'dates'|'guests'>('dates');
 
   // 💾 SEARCH PERSISTENCE (Captain's Memory)
@@ -67,6 +68,14 @@ const Home: React.FC = () => {
     return saved ? new Date(saved) : null;
   });
   const [activeCategory, setActiveCategory] = useState<Category>('todo');
+
+  // 🚀 REACT 18 DEFERRED VALUES: Avoids UI jank on typing/clicking
+  const deferredAdults = useDeferredValue(adults);
+  const deferredChildren = useDeferredValue(children);
+  const deferredPets = useDeferredValue(pets);
+  const deferredStartDate = useDeferredValue(startDate);
+  const deferredEndDate = useDeferredValue(endDate);
+  const deferredCategory = useDeferredValue(activeCategory);
 
   React.useEffect(() => {
     localStorage.setItem('vrr_search_adults', adults.toString());
@@ -96,8 +105,14 @@ const Home: React.FC = () => {
   }, [isSearchOpen]);
 
   const handleSearch = () => {
-    setIsSearchOpen(false);
-    scrollToResults();
+    setIsChecking(true);
+    window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "Salty está verificando el calendario oficial de Villa Retiro R... ⚓", speak: false } }));
+    
+    setTimeout(() => {
+      setIsChecking(false);
+      setIsSearchOpen(false);
+      scrollToResults();
+    }, 1500);
   };
 
   const scrollToResults = () => {
@@ -116,26 +131,25 @@ const Home: React.FC = () => {
 
   console.log("FILTRO ACTIVO:", { adults, children, pets, activeCategory, propertiesCount: properties.length });
 
-  // 🚀 PERFORMANCE: Memoize filtered results to prevent UI jank during category switches
   const filteredProperties = React.useMemo(() => {
     return properties.filter(property => {
       if (property.isOffline) return false;
-      const totalHumans = adults + children;
+      const totalHumans = deferredAdults + deferredChildren;
       const capacity = Number(property.guests) || 1;
       if (capacity < totalHumans) return false;
 
       // 🛡️ AVAILABILITY SHIELD: Filter by dates if selected
-      if (startDate && endDate) {
-        const sStr = startDate.toISOString().split('T')[0];
-        const eStr = endDate.toISOString().split('T')[0];
+      if (deferredStartDate && deferredEndDate) {
+        const sStr = deferredStartDate.toISOString().split('T')[0];
+        const eStr = deferredEndDate.toISOString().split('T')[0];
         
         const occupiedDates = getOccupiedDatesForProperty(String(property.id));
         const occupiedStrings = new Set(occupiedDates.map(d => d.toISOString().split('T')[0]));
         
         // 🛡️ RANGE VALIDATOR: Check every night of requested stay
         let hasConflict = false;
-        let scan = new Date(startDate);
-        while (scan < endDate) {
+        let scan = new Date(deferredStartDate);
+        while (scan < deferredEndDate) {
           if (occupiedStrings.has(scan.toISOString().split('T')[0])) {
             hasConflict = true;
             break;
@@ -151,22 +165,22 @@ const Home: React.FC = () => {
         if (isBlockedManually) return false;
       }
 
-      if (pets > 0) {
+      if (deferredPets > 0) {
         const hText = (property.amenities || []).join(" ").toLowerCase();
         if (!hText.includes("pet") && !hText.includes("mascota")) return false;
       }
 
-      if (activeCategory === "todo") return true;
+      if (deferredCategory === "todo") return true;
       const aText = (property.amenities || []).join(" ").toLowerCase();
       const dText = (property.description || "").toLowerCase();
 
-      if (activeCategory === "piscina") return aText.includes("piscina") || dText.includes("piscina");
-      if (activeCategory === "playa") return dText.includes("playa") || dText.includes("mar") || dText.includes("beach");
-      if (activeCategory === "mascotas") return aText.includes("pet") || aText.includes("mascota");
+      if (deferredCategory === "piscina") return aText.includes("piscina") || dText.includes("piscina");
+      if (deferredCategory === "playa") return dText.includes("playa") || dText.includes("mar") || dText.includes("beach");
+      if (deferredCategory === "mascotas") return aText.includes("pet") || aText.includes("mascota");
 
       return true;
     });
-  }, [properties, bookings, adults, children, pets, activeCategory, startDate, endDate]);
+  }, [properties, getOccupiedDatesForProperty, deferredAdults, deferredChildren, deferredPets, deferredCategory, deferredStartDate, deferredEndDate]);
 
   // Combined Blocks for the Global Search Calendar (Dates where ALL villas are occupied)
   const globalBlockedDates = React.useMemo(() => {
@@ -275,8 +289,13 @@ const Home: React.FC = () => {
         </button>
         <span className="font-bold text-lg w-5 text-center select-none">{val}</span>
         <button
-          onClick={() => setVal(Math.min(10, val + 1))} // Cap at 10 for safety
-          className="w-9 h-9 rounded-full flex items-center justify-center bg-white text-primary shadow-sm hover:scale-105 active:scale-95 transition-all"
+          onClick={() => {
+            if (val >= 8) {
+              window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "El aforo de nuestras villas está diseñado para un máximo seguro de 8 exploradores. ⚓" } }));
+            }
+            setVal(Math.min(8, val + 1));
+          }}
+          className={`w-9 h-9 rounded-full flex items-center justify-center transition-all ${val >= 8 ? 'bg-gray-100 text-gray-300' : 'bg-white text-primary shadow-sm hover:scale-105 active:scale-95'}`}
         >
           <Plus size={14} />
         </button>
@@ -285,6 +304,7 @@ const Home: React.FC = () => {
   );
 
   return (
+    <LazyMotion features={domAnimation}>
     <div className="min-h-screen pb-32 relative bg-sand overflow-hidden scroll-smooth">
       {/* 🔱 SALTY RADAR: Realtime Sync Indicator */}
       <AnimatePresence>
@@ -389,12 +409,23 @@ const Home: React.FC = () => {
             </div>
 
             <button 
-          onClick={handleSearch}
-          className="w-full bg-secondary text-primary font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:shadow-primary/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-primary/20"
-        >
-          <Search size={16} className="group-hover:scale-110 transition-transform" />
-          Ver Disponibilidad
-        </button>
+              onClick={handleSearch}
+              disabled={isChecking}
+              className="w-full bg-secondary text-primary font-black text-xs uppercase tracking-[0.2em] py-5 rounded-[1.5rem] shadow-xl hover:shadow-primary/10 active:scale-[0.98] transition-all flex items-center justify-center gap-2 group border border-primary/20 disabled:opacity-80 disabled:scale-100 disabled:cursor-wait"
+              aria-label="Ver disponibilidad de la villa"
+            >
+              {isChecking ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                  Checking Availability...
+                </>
+              ) : (
+                <>
+                  <Search size={16} className="group-hover:scale-110 transition-transform" />
+                  Ver Disponibilidad
+                </>
+              )}
+            </button>
           </div>
         </div>
       )}
@@ -408,31 +439,43 @@ const Home: React.FC = () => {
             </h1>
             <p className="text-[10px] uppercase font-black tracking-[0.3em] text-primary mt-1">Cabo Rojo · Puerto Rico</p>
           </div>
-          <div className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group overflow-hidden relative">
+          <button 
+            className="w-12 h-12 bg-white rounded-2xl shadow-card flex items-center justify-center border border-white/50 cursor-pointer hover:bg-gray-50 active:scale-95 transition-all group overflow-hidden relative"
+            aria-label="Ver Notificaciones"
+            onClick={() => window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "Salty: ¡Pronto habilitaré tus notificaciones! ⚓" } }))}
+          >
             <Bell size={24} className="text-secondary group-hover:scale-110 transition-transform" />
-          </div>
+          </button>
         </div>
-        <p className="text-primary/60 text-[10px] font-black uppercase tracking-[0.2em] transition-all duration-500">
+        <p className="text-primary font-black uppercase tracking-[0.2em] transition-all duration-500 drop-shadow-sm text-[10px]">
           Salty · Concierge Oficial VRR 🌟
         </p>
       </div>
 
       <div
         onClick={() => setIsSearchOpen(true)}
-        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10 mx-6"
+        role="button"
+        tabIndex={0}
+        aria-label="Caja de búsqueda general"
+        onKeyDown={(e) => { if (e.key === 'Enter') setIsSearchOpen(true); }}
+        className="glass rounded-2xl p-2 flex items-center shadow-glass cursor-pointer hover:bg-white/80 transition-all group border border-white/60 bg-gradient-to-r from-white/40 to-white/10 mx-6 text-left"
       >
-        <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform">
+        <div className="bg-white w-12 h-12 rounded-xl flex items-center justify-center shadow-sm text-primary group-hover:scale-105 transition-transform" aria-hidden="true">
           <Search size={20} />
         </div>
-        <div className="flex-1 px-4">
+        <div className="flex-1 px-4 min-p-1">
           <p className="font-bold text-text-main text-sm">
             {startDate ? `${format(startDate, 'dd MMM', { locale: es })} - ${endDate ? format(endDate, 'dd MMM', { locale: es }) : '...'}` : 'Cabo Rojo, PR'}
           </p>
           <p className="text-xs text-text-light">{getGuestSummary()}</p>
         </div>
-        <div className="bg-gray-100 p-2 rounded-xl text-gray-400 group-hover:text-primary transition-colors">
+        <button 
+          className="bg-gray-100 p-4 -my-2 -mr-2 rounded-xl text-gray-400 group-hover:text-primary transition-colors hover:bg-gray-200 outline-none focus:ring-2 focus:ring-primary/40"
+          aria-label="Abrir selección de huéspedes"
+          onClick={(e) => { e.stopPropagation(); setSearchTab('guests'); setIsSearchOpen(true); }}
+        >
           <Sliders size={20} />
-        </div>
+        </button>
       </div>
 
       {/* Categories */}
@@ -561,6 +604,7 @@ const Home: React.FC = () => {
                   <PropertyCard
                     property={property}
                     index={index}
+                    priority={index === 0}
                     onClick={(id) => navigate(`/property/${id}`, { 
                       state: { startDate, endDate, adults, children, pets } 
                     })}
@@ -572,7 +616,7 @@ const Home: React.FC = () => {
             </AnimatePresence>
           ) : (
             /* 🐆 LUXURY EMPTY STATE */
-            <div className="col-span-full flex flex-col items-center justify-center py-20 px-10 text-center bg-white/40 border border-white/50 rounded-[3rem] backdrop-blur-md">
+            <div className="col-span-full flex flex-col items-center justify-center pt-20 pb-48 lg:pb-20 px-10 text-center bg-white/40 border border-white/50 rounded-[3rem] backdrop-blur-md">
               <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mb-6 text-primary shadow-inner border border-primary/20">
                  <Search size={48} className="animate-pulse" />
               </div>
@@ -700,12 +744,15 @@ const Home: React.FC = () => {
       </div>
 
       {/* MODALS & STICKY ELEMENTS */}
-      {!isSearchOpen && (
+      {!isSearchOpen && filteredProperties.length > 0 && (
         <StickyBookingBar 
           villaName={properties[0]?.title || "Villa Retiro R & Pirata Family"} 
           onAction={() => setIsSearchOpen(true)} // Cambiado para abrir el modal directamente
         />
       )}
+
+      {/* STICKY HEADER SCROLL */}
+      <StickyHomeHeader onSearchClick={() => setIsSearchOpen(true)} />
 
       {selectedGuideItem && (
         <MapModal
@@ -718,6 +765,50 @@ const Home: React.FC = () => {
         />
       )}
     </div>
+    </LazyMotion>
+  );
+};
+
+// Sub-component for Sticky Header
+const StickyHomeHeader = ({ onSearchClick }: { onSearchClick: () => void }) => {
+  const [isScrolled, setIsScrolled] = React.useState(false);
+  
+  React.useEffect(() => {
+    const checkScroll = () => {
+      setIsScrolled(window.scrollY > 300);
+    };
+    window.addEventListener('scroll', checkScroll, { passive: true });
+    return () => window.removeEventListener('scroll', checkScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {isScrolled && (
+        <motion.div
+           initial={{ y: -100, opacity: 0 }}
+           animate={{ y: 0, opacity: 1 }}
+           exit={{ y: -100, opacity: 0 }}
+           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+           className="fixed top-0 left-0 right-0 z-[100] px-4 py-3"
+        >
+          <div className="max-w-4xl mx-auto bg-white/90 backdrop-blur-xl rounded-full shadow-lg border border-black/[0.05] p-2 pr-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-primary text-xl shadow-inner font-serif italic">
+                R
+              </div>
+              <span className="font-serif font-black text-secondary tracking-tight hidden sm:block">Villa Retiro R</span>
+            </div>
+            <button 
+              onClick={onSearchClick}
+              className="flex items-center gap-2 bg-gray-50 hover:bg-gray-100 border border-gray-200 px-4 py-2 rounded-full transition-colors group"
+            >
+              <Search size={14} className="text-primary group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-text-light">Buscar Fechas</span>
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

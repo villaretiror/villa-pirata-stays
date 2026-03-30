@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Receipt, ArrowLeft } from 'lucide-react';
@@ -9,6 +9,19 @@ const Success: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const bookingData = location.state?.bookingData;
+
+  useEffect(() => {
+    // 🔱 SALTY TOAST CONFIRMATION
+    const timer = setTimeout(() => {
+      window.dispatchEvent(new CustomEvent('salty-push', { 
+        detail: { 
+          message: "¡Pago procesado con éxito! Salty ya tiene todo listo para tu retiro en Cabo Rojo. ¡Prepárate para el paraíso! ⚓",
+          speak: false 
+        } 
+      }));
+    }, 800);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Real contact number for the host (can be env var)
 

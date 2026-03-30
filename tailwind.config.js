@@ -9,7 +9,7 @@ module.exports = {
         extend: {
             colors: {
                 // 🔱 ATLANTIC SIGNATURE PALETTE
-                primary: "#D4AF37",    // Sovereign Gold
+                primary: "#997300",    // Sovereign Gold (WCAG Contrast compliant)
                 secondary: "#0A192F",  // Deep Atlantic Navy (Sustituye al negro)
                 sand: "#FDFBF7",       // Champagne Mist (Fondo más limpio)
                 surface: "#FFFFFF",

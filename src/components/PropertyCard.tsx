@@ -11,6 +11,7 @@ interface PropertyCardProps {
   onClick?: (id: string) => void | Promise<void>;
   isFavorite?: boolean;
   onToggleFavorite?: (id: string) => void;
+  priority?: boolean;
 }
 
 const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -18,7 +19,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   index,
   onClick,
   isFavorite,
-  onToggleFavorite
+  onToggleFavorite,
+  priority = false
 }) => {
   const navigate = useNavigate();
   const cardRef = useRef<HTMLElement>(null);
@@ -111,6 +113,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
               src={property.images[currentImageIndex]}
               className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
               alt={property.title || 'Villa'}
+              priority={priority}
             />
           </motion.div>
         </div>

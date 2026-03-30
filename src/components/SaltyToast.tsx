@@ -318,7 +318,15 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
             }
         };
 
+        const handleScroll = () => {
+             // Si el usuario scrollea, minimizamos a Salty para que no tape contenido
+             if (window.scrollY > 300 && isExpanded === false) {
+                 setShowBubble(false);
+             }
+        };
+
         window.addEventListener('salty-push', handlePush);
+        window.addEventListener('scroll', handleScroll, { passive: true });
         
         const timer = setTimeout(() => {
             if (!showBubble) {
@@ -331,12 +339,13 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
 
         return () => {
             window.removeEventListener('salty-push', handlePush);
+            window.removeEventListener('scroll', handleScroll);
             clearTimeout(timer);
         };
-    }, [location.pathname, showBubble, startDate, propertyTitle]);
+    }, [location.pathname, showBubble, startDate, propertyTitle, isExpanded]);
 
     return (
-        <div className="fixed bottom-56 md:bottom-28 right-6 md:right-32 z-[1999] flex flex-col items-end gap-5 pointer-events-none transition-all duration-300">
+        <div className="fixed bottom-[8.5rem] md:bottom-28 right-6 md:right-32 z-[1999] flex flex-col items-end gap-5 pointer-events-none transition-all duration-300">
             <AnimatePresence>
                 {(showBubble || isExpanded) && (
                     <motion.div

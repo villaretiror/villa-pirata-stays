@@ -231,6 +231,31 @@ const Booking: React.FC = () => {
       return;
     }
 
+    // 🔱 STRIPE VIP FLOW: Handshake backend
+    if (method === 'stripe') {
+      try {
+        const secretRes = await fetch('/api/create-payment-intent', {
+            method: 'POST',
+            body: JSON.stringify({ bookingId: bookingData.id }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const secretData = await secretRes.json();
+        
+        if (secretRes.ok && secretData.clientSecret) {
+           return secretData.clientSecret;
+        } else {
+           console.error("[Stripe Fetch] Failed to create intent:", secretData);
+           setIsProcessing(false);
+           return;
+        }
+      } catch (err) {
+         console.error("[Stripe NetError]", err);
+         setIsProcessing(false);
+         return;
+      }
+    }
+
+    // LEGACY & MANUAL PAYMENTS PIPELINE (ATH Móvil, PayPal)
     try {
       const response = await fetch('/api/send', {
         method: 'POST',

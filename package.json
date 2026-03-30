@@ -18,6 +18,8 @@
     "@paypal/react-paypal-js": "^9.0.1",
     "@react-email/components": "^1.0.10",
     "@react-email/render": "^2.0.4",
+    "@stripe/react-stripe-js": "^6.0.0",
+    "@stripe/stripe-js": "^9.0.0",
     "@supabase/supabase-js": "^2.100.1",
     "@vapi-ai/server-sdk": "^0.11.0",
     "canvas-confetti": "^1.9.4",
@@ -35,6 +37,7 @@
     "react-router-dom": "^7.13.1",
     "recharts": "^3.8.0",
     "resend": "^3.5.0",
+    "stripe": "^21.0.1",
     "swr": "^2.4.1",
     "twilio": "^5.13.0",
     "zod": "^3.25.76"

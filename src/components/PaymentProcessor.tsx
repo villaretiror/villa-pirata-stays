@@ -1,18 +1,128 @@
 import React, { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { supabase } from '../lib/supabase';
 import { HOST_PHONE } from '../constants';
 import PayPalPayment from './PayPalPayment';
 
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY);
+
 interface PaymentProcessorProps {
     total: number;
-    bookingId?: string; // Reservar ID si ya se creó, o pasarlo después
+    bookingId?: string;
     onSuccess: (status: string, proofUrl?: string, method?: string) => void;
     isProcessing: boolean;
     user: any;
 }
 
+const CheckoutForm: React.FC<{ onSuccess: any, total: number, isProcessing: boolean }> = ({ onSuccess, total, isProcessing }) => {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [localProcessing, setLocalProcessing] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        
+        if (!stripe || !elements) return;
+
+        setLocalProcessing(true);
+        setErrorMessage(null);
+
+        window.dispatchEvent(new CustomEvent('salty-push', {
+            detail: { message: "🔱 Asegurando tu pago en nuestra bóveda... ⚓", speak: false }
+        }));
+
+        const { error: submitError } = await elements.submit();
+        if (submitError) {
+            setErrorMessage(submitError.message || "Ha ocurrido un error inesperado.");
+            setLocalProcessing(false);
+            return;
+        }
+
+        try {
+            // onSuccess gets hijacked to insert booking and fetch clientSecret securely
+            const clientSecret = await onSuccess('pending_webhook', undefined, 'stripe');
+            
+            if (typeof clientSecret === 'string') {
+                const { error: confirmError } = await stripe.confirmPayment({
+                    elements,
+                    clientSecret,
+                    confirmParams: {
+                        return_url: `${window.location.origin}/success`,
+                    }
+                });
+
+                if (confirmError) {
+                    setErrorMessage(confirmError.message || "Fallo confirmando el túnel de pago");
+                    setLocalProcessing(false);
+                }
+            } else {
+                setErrorMessage("Conexión a la Bóveda de V.R.R denegada. Reintente más tarde.");
+                setLocalProcessing(false);
+            }
+        } catch (err) {
+             setErrorMessage("Línea cortada con Stripe Gateway.");
+             setLocalProcessing(false);
+        }
+    };
+
+    return (
+        <form onSubmit={handleSubmit} className="space-y-6 animate-slide-up bg-white/40 pt-4 rounded-[2.5rem] border-transparent backdrop-blur-xl">
+            <div className="flex items-center gap-3 mb-2 px-2">
+                <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center text-primary shadow-soft">
+                    <span className="material-icons text-sm">lock</span>
+                </div>
+                <div>
+                   <h3 className="font-bold text-xs uppercase tracking-wider text-text-light">Tarjeta de Crédito / Débito</h3>
+                   <p className="text-[9px] text-gray-500 tracking-widest uppercase">Cifrado B2B por Stripe</p>
+                </div>
+            </div>
+
+            <div className="p-4 bg-white rounded-3xl border border-primary/10 shadow-soft">
+                <PaymentElement 
+                    options={{
+                        layout: 'tabs',
+                    }} 
+                />
+            </div>
+            
+            {errorMessage && (
+                <div className="text-[10px] font-black tracking-widest text-[#FF6B35] uppercase bg-[#FF6B35]/10 p-3 rounded-xl border border-[#FF6B35]/20">
+                    {errorMessage}
+                </div>
+            )}
+
+            <button
+                type="submit"
+                disabled={!stripe || isProcessing || localProcessing}
+                className={`w-full font-black text-xs tracking-[0.2em] py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 uppercase disabled:opacity-70 disabled:scale-100 ${
+                     localProcessing || isProcessing 
+                     ? 'bg-secondary/80 text-primary cursor-wait' 
+                     : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20 hover:shadow-primary/20'
+                }`}
+            >
+                {localProcessing || isProcessing ? (
+                    <>
+                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                        VALIDANDO 🔱
+                    </>
+                ) : (
+                    <>
+                        FINALIZAR RESERVA DE ${total.toFixed(2)}
+                        <span className="material-icons text-sm">check_circle</span>
+                    </>
+                )}
+            </button>
+            <div className="w-full flex justify-center mt-2 opacity-50 grayscale hover:grayscale-0 transition-all">
+               <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" className="h-4" alt="Powered by Stripe" />
+            </div>
+        </form>
+    );
+};
+
 const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, onSuccess, isProcessing, user }) => {
-    const [paymentMethod, setPaymentMethod] = useState<'ath_movil' | 'paypal'>('ath_movil');
+    const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'ath_movil' | 'paypal'>('stripe');
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [copied, setCopied] = useState(false);
@@ -22,18 +132,17 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
         if (!bookingId || bookingId === 'new') return;
         const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
         await supabase.from('bookings').update({
-            status: 'pending_ai_validation', // Estandarizado para CRON cleanup
+            status: 'pending_ai_validation',
             payment_method: 'ath_movil',
             hold_expires_at: expiresAt
         }).eq('id', bookingId);
         
         window.dispatchEvent(new CustomEvent('salty-push', {
-            detail: { message: "🔱 Capitán, hemos bloqueado las fechas por 15 min para tu pago.", type: 'success' }
+            detail: { message: "🔱 Capitán, hemos bloqueado las fechas por 15 min para tu reservación.", speak: false }
         }));
     };
 
     const handleCopyPhone = () => {
-        // We clean the phone for ATH Movil (no hyphens, no leading 1 if present)
         const cleanPhone = HOST_PHONE.replace(/\D/g, '').replace(/^1/, '');
         navigator.clipboard.writeText(cleanPhone);
         setCopied(true);
@@ -43,7 +152,6 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
     const handleATHUpload = async () => {
         if (!screenshot) return null;
 
-        // 1. Validación de Tipo
         const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
         if (!allowedTypes.includes(screenshot.type)) {
             alert("⚠️ Formato inválido. Solo se permiten imágenes (.jpg, .png, .webp)");
@@ -51,10 +159,9 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
             return null;
         }
 
-        // 2. Validación de Tamaño (5MB)
         const maxSize = 5 * 1024 * 1024;
         if (screenshot.size > maxSize) {
-            alert("⚠️ Archivo demasiado grande. El límite es de 5MB. Por favor, toma una captura de pantalla (screenshot) más pequeña.");
+            alert("⚠️ Archivo demasiado grande. El límite es de 5MB.");
             setScreenshot(null);
             return null;
         }
@@ -76,11 +183,10 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
 
         const { data } = supabase.storage.from('payments').getPublicUrl(filePath);
         
-        // 🛡️ COO SAFEGUARD: Vincular recibo a la reserva
         if (bookingId && data.publicUrl) {
             await supabase.from('bookings').update({ 
                 payment_proof_url: data.publicUrl,
-                status: 'Paid' // Supabase supports 'Paid' in the enum
+                status: 'Paid'
             }).eq('id', bookingId);
         }
 
@@ -103,33 +209,95 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
         onSuccess('waiting_approval', proofUrl || undefined, 'ath_movil');
     };
 
+    // Configuramos Stripe Elements con la Appearance API dictada por VRR
+    const appearance = {
+        theme: 'flat' as const,
+        variables: {
+            colorPrimary: '#997300',
+            colorBackground: '#FDFCF0',
+            colorText: '#333333',
+            fontFamily: '"Playfair Display", serif',
+            borderRadius: '16px',
+            colorDanger: '#FF6B35',
+            spacingUnit: '4px'
+        },
+        rules: {
+            '.Tab': {
+                border: '1px solid rgba(153, 115, 0, 0.2)',
+                boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.05)',
+            },
+            '.Tab:hover': {
+                color: '#997300',
+            },
+            '.Tab--selected': {
+                borderColor: '#997300',
+                boxShadow: '0px 4px 12px rgba(153, 115, 0, 0.15)',
+            },
+            '.Input': {
+                padding: '12px 16px',
+                border: '1px solid rgba(0, 0, 0, 0.05)',
+                boxShadow: 'inset 0 1px 2px rgba(0,0,0,0.02)',
+            },
+            '.Input:focus': {
+                borderColor: '#997300',
+                boxShadow: '0px 0px 0px 2px rgba(153, 115, 0, 0.2)',
+            }
+        }
+    };
+
     return (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6 animate-fade-in w-full">
             <div className="space-y-3">
-                <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">¿Cómo prefieres pagar?</h3>
-                <div className="grid grid-cols-2 gap-3">
+                <h3 className="font-bold text-sm uppercase tracking-wider text-text-light">Selecciona Método de Inversión</h3>
+                <div className="grid grid-cols-3 gap-2">
+                    <button
+                        onClick={() => setPaymentMethod('stripe')}
+                        className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all ${paymentMethod === 'stripe' ? 'border-primary bg-primary/5 scale-[1.02] shadow-soft' : 'border-gray-100 bg-white opacity-60 hover:opacity-100 hover:border-primary/30'}`}
+                    >
+                        <div className="w-10 h-8 flex items-center justify-center text-primary">
+                            <span className="material-icons">credit_card</span>
+                        </div>
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-text-light text-center leading-tight">Tarjeta</p>
+                    </button>
+                    
                     <button
                         onClick={() => setPaymentMethod('paypal')}
-                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-primary/5 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
+                        className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all ${paymentMethod === 'paypal' ? 'border-primary bg-primary/5 scale-[1.02] shadow-soft' : 'border-gray-100 bg-white opacity-60 hover:opacity-100 hover:border-primary/30'}`}
                     >
-                        <div className="w-12 h-8 flex items-center justify-center">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-5" alt="PayPal" />
+                        <div className="w-10 h-8 flex items-center justify-center">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/b/b5/PayPal.svg" className="h-4" alt="PayPal" />
                         </div>
-                        <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">PayPal</p>
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-text-light text-center leading-tight">PayPal</p>
                     </button>
+                    
                     <button
                         onClick={() => { setPaymentMethod('ath_movil'); activateTemporalBlock(); }}
-                        className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 transition-all ${paymentMethod === 'ath_movil' ? 'border-primary bg-primary/5 scale-[1.02] shadow-sm' : 'border-gray-100 bg-white opacity-60'}`}
+                        className={`p-3 rounded-2xl border-2 flex flex-col items-center justify-center gap-1.5 transition-all ${paymentMethod === 'ath_movil' ? 'border-primary bg-primary/5 scale-[1.02] shadow-soft' : 'border-gray-100 bg-white opacity-60 hover:opacity-100 hover:border-primary/30'}`}
                     >
-                        <div className="w-12 h-8 flex items-center justify-center">
-                            <span className="bg-[#FF6B35] text-white px-2 py-0.5 rounded-md font-black text-[10px] italic">ATH</span>
+                        <div className="w-10 h-8 flex items-center justify-center">
+                            <span className="bg-[#FF6B35] text-white px-2 py-0.5 rounded-md font-black text-[9px] italic">ATH</span>
                         </div>
-                        <p className="font-bold text-[10px] uppercase tracking-widest text-text-light">ATH Móvil</p>
+                        <p className="font-bold text-[9px] uppercase tracking-widest text-text-light text-center leading-tight">ATH Móvil</p>
                     </button>
                 </div>
             </div>
 
-            {paymentMethod === 'ath_movil' ? (
+            {paymentMethod === 'stripe' && (
+                <Elements 
+                    stripe={stripePromise} 
+                    options={{ 
+                        mode: 'payment',
+                        amount: Math.max(50, Math.round(total * 100)),
+                        currency: 'usd',
+                        appearance,
+                        paymentMethodCreation: 'manual'
+                    }}
+                >
+                    <CheckoutForm onSuccess={onSuccess} total={total} isProcessing={isProcessing} />
+                </Elements>
+            )}
+
+            {paymentMethod === 'ath_movil' && (
                 <div className="bg-primary/5 p-5 rounded-[1.5rem] border border-primary/10 animate-slide-up">
                     <div className="flex items-center gap-2 mb-3">
                         <div className="w-8 h-8 bg-secondary rounded-full flex items-center justify-center">
@@ -139,7 +307,6 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                     </div>
 
                     <div className="space-y-4 mb-5">
-                        {/* Information Card */}
                         <div className="bg-white p-5 rounded-3xl border border-primary/10 shadow-soft relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:rotate-12 transition-transform">
                                 <span className="material-icons text-6xl text-secondary">qr_code_2</span>
@@ -167,7 +334,6 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                             </div>
                         </div>
 
-                        {/* Amount Card */}
                         <div className="bg-secondary text-white p-5 rounded-3xl shadow-xl relative overflow-hidden">
                             <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent p-5"></div>
                             <div className="relative z-10 flex justify-between items-center">
@@ -200,35 +366,37 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                             onChange={(e) => setScreenshot(e.target.files?.[0] || null)}
                         />
                     </label>
-                </div>
-            ) : (
-                <div className="animate-fade-in p-2">
-                    <PayPalPayment
-                        amount={total}
-                        onSuccess={(details) => onSuccess('confirmed', undefined, 'paypal')}
-                        onError={(err) => alert("Error en PayPal: " + err)}
-                    />
-                    <p className="text-[9px] text-center text-text-light mt-4 uppercase tracking-widest opacity-60">
-                        Confirmación Instantánea vía PayPal Secure Gateway
-                    </p>
+
+                    <button
+                        onClick={handleManualConfirm}
+                        disabled={isProcessing || isUploading || !screenshot}
+                        className={`w-full font-black text-xs tracking-widest py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 mt-5 ${isProcessing || isUploading || !screenshot ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20'}`}
+                    >
+                        {isProcessing || isUploading ? (
+                            <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                        ) : (
+                            <>
+                                FINALIZAR RESERVA 🔱
+                                <span className="material-icons text-sm">check_circle</span>
+                            </>
+                        )}
+                    </button>
                 </div>
             )}
 
-            {paymentMethod === 'ath_movil' && (
-                <button
-                    onClick={handleManualConfirm}
-                    disabled={isProcessing || isUploading || !screenshot}
-                    className={`w-full font-black text-xs tracking-widest py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 ${isProcessing || isUploading || !screenshot ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20'}`}
-                >
-                    {isProcessing || isUploading ? (
-                        <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
-                    ) : (
-                        <>
-                            FINALIZAR RESERVA 🔱
-                            <span className="material-icons text-sm">check_circle</span>
-                        </>
-                    )}
-                </button>
+            {paymentMethod === 'paypal' && (
+                <div className="animate-fade-in p-2 bg-white/40 rounded-[2.5rem] border border-primary/10 shadow-soft">
+                    <div className="p-4">
+                        <PayPalPayment
+                            amount={total}
+                            onSuccess={(details) => onSuccess('confirmed', undefined, 'paypal')}
+                            onError={(err) => alert("Error en PayPal: " + err)}
+                        />
+                    </div>
+                    <p className="text-[9px] text-center text-text-light mb-4 uppercase tracking-widest opacity-60">
+                        Confirmación Instantánea vía PayPal Secure Gateway
+                    </p>
+                </div>
             )}
         </div>
     );

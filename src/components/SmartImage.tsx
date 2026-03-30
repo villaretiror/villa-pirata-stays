@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 
 interface SmartImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
     fallbackSrc?: string;
+    priority?: boolean;
 }
 
 const SmartImage: React.FC<SmartImageProps> = ({
@@ -9,6 +10,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
     fallbackSrc = 'https://images.unsplash.com/photo-1549492423-400230234946?auto=format&fit=crop&q=80&w=1200',
     alt,
     className,
+    priority = false,
     ...props
 }) => {
     const [errorCount, setErrorCount] = useState(0);
@@ -57,7 +59,8 @@ const SmartImage: React.FC<SmartImageProps> = ({
             <img
                 src={optimizedSrc}
                 alt={alt}
-                loading="lazy"
+                loading={priority ? "eager" : "lazy"}
+                fetchPriority={priority ? "high" : "auto"}
                 className={`w-full h-full object-cover transition-all duration-1000 ease-out ${loaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-md'}`}
                 onLoad={() => setLoaded(true)}
                 onError={() => {
