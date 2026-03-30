@@ -47,35 +47,35 @@ const GuideCard: React.FC<GuideCardProps> = ({ item, onEdit, onAskSalty, onMapCl
       )}
 
       <div className="h-44 rounded-2xl bg-gray-100 mb-4 overflow-hidden relative shadow-inner">
-        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent flex items-end p-5 z-10">
-          <p className="text-white font-serif font-bold text-xl leading-[1.1] tracking-tight drop-shadow-lg">{item.name}</p>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent flex items-end p-6 z-10">
+          <p className="text-white font-serif font-bold text-xl leading-[1.1] tracking-tight drop-shadow-xl">{item.name}</p>
         </div>
         <SmartImage src={item.image} className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110" alt={item.name} />
       </div>
 
-      <div className="flex justify-between items-center mb-3">
-        <div className="bg-sand/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-secondary border border-primary/20 flex items-center gap-1.5 shadow-sm">
+      <div className="flex justify-between items-center mb-3 px-1">
+        <div className="bg-sand/60 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-secondary border border-primary/30 flex items-center gap-1.5 shadow-sm">
           <span className="material-icons text-[12px]">directions_car</span> {item.distance}
         </div>
         {item.mapUrl && (
           <button
             onClick={handleMapClick}
-            className="map-trigger bg-blue-50/50 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100/50 flex items-center gap-1.5 hover:bg-blue-100 transition-all shadow-sm active:scale-95"
+            className="map-trigger bg-blue-50/50 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest text-blue-600 border border-blue-100/50 flex items-center gap-1.5 hover:bg-blue-100 transition-all shadow-sm active:scale-95"
           >
             <span className="material-icons text-[12px]">near_me</span> Mapa
           </button>
         )}
       </div>
 
-      <p className="text-sm text-text-light line-clamp-3 leading-relaxed mb-6 font-medium opacity-80">{item.desc}</p>
+      <p className="text-sm text-text-light line-clamp-3 leading-relaxed mb-6 font-medium opacity-90 px-1">{item.desc}</p>
 
-      <div className="mb-4 p-3 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/10 transition-colors">
-        <div className="absolute top-0 right-0 p-1 opacity-10">
+      <div className="mb-4 p-4 bg-primary/5 rounded-2xl border border-primary/10 relative overflow-hidden group-hover:bg-primary/15 transition-colors mx-1">
+        <div className="absolute top-0 right-0 p-1 opacity-20">
           <span className="material-icons text-primary text-xl">tips_and_updates</span>
         </div>
-        <p className="text-[11px] text-primary/90 leading-relaxed italic relative z-10">
-          <span className="font-bold not-italic mr-1 uppercase text-[9px] tracking-wider">Salty Tip:</span> 
-          "{item.saltyTip || "Pregúntame para obtener un consejo de experto sobre este lugar. ¡Cabo Rojo tiene sus secretos!"}"
+        <p className="text-[11px] text-primary/95 leading-relaxed italic relative z-10">
+          <span className="font-bold not-italic mr-1 uppercase text-[9px] tracking-wider text-primary/70">Salty Tip:</span> 
+          "{item.saltyTip?.replace(/^Salty Tip:\s*/i, '') || "Pregúntame para obtener un consejo de experto sobre este lugar. ¡Cabo Rojo tiene sus secretos!"}"
         </p>
       </div>
 
