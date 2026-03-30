@@ -12,6 +12,7 @@ import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSea
 import { AnimatePresence, motion } from 'framer-motion';
 import { X, ArrowLeft } from 'lucide-react';
 import { BookingSkeleton } from '../components/Skeleton';
+import UpsellModule, { AVAILABLE_ADDONS } from '../components/UpsellModule';
 import type { TablesInsert } from '../supabase_types';
 
 type BookingInsert = TablesInsert<'bookings'>;
@@ -44,6 +45,7 @@ const Booking: React.FC = () => {
     pricing,
     isProcessing,
     setIsProcessing,
+    isOrphanOffer,
     setDateRange,
     nights
   } = useBooking(property);
@@ -63,6 +65,9 @@ const Booking: React.FC = () => {
   const [showContractModal, setShowContractModal] = useState(false);
   const [showCalendarModal, setShowCalendarModal] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(recoverData?.booking_id || null);
+  const [selectedAddons, setSelectedAddons] = useState<string[]>([]);
+  // Simulated social proof
+  const [activeCheckouts] = useState(Math.floor(Math.random() * 5) + 2);
 
   // 🔱 NAVIGATION RESCUE: ESC Key Listener
   useEffect(() => {
@@ -191,6 +196,13 @@ const Booking: React.FC = () => {
     serviceFee: 0
   };
 
+  const addonsTotal = selectedAddons.reduce((acc, id) => {
+    const addon = AVAILABLE_ADDONS.find(a => a.id === id);
+    return acc + (addon?.price || 0);
+  }, 0);
+  
+  const finalTotal = total + addonsTotal;
+
   const handleApplyPromo = () => applyPromo(promoCode);
 
   const handlePaymentSuccess = async (status: string, proofUrl?: string, method?: string) => {
@@ -204,8 +216,8 @@ const Booking: React.FC = () => {
       property_id: id,
       check_in: format(startDate, 'yyyy-MM-dd'),
       check_out: format(endDate, 'yyyy-MM-dd'),
-      total_price: total,
-      total_paid_at_booking: total,
+      total_price: finalTotal,
+      total_paid_at_booking: finalTotal,
       guests_count: property.guests || null,
       status: status,
       payment_method: method,
@@ -501,7 +513,18 @@ const Booking: React.FC = () => {
                   </div>
                 )}
                 
-                {appliedPromo && (
+                {isOrphanOffer && (
+                  <div className="flex justify-between items-center text-sm text-[var(--vrr-gold-dark)] font-bold bg-[var(--vrr-gold-light)]/10 p-3 rounded-xl border border-[var(--vrr-gold)]/30 shadow-sm animate-pulse-gold relative overflow-hidden">
+                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer-effect_2s_infinite]"></div>
+                    <span className="flex items-center gap-1.5 relative z-10">
+                      <span className="material-icons text-sm">sailing</span>
+                      Oferta del Capitán (15%)
+                    </span>
+                    <span className="font-serif font-black text-lg relative z-10">-${discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
+                
+                {appliedPromo && !isOrphanOffer && (
                   <div className="flex justify-between items-center text-sm text-green-700 font-bold bg-green-50/50 p-2 rounded-xl border border-green-100/50">
                     <span className="flex items-center gap-1">
                       <span className="material-icons text-xs">confirmation_number</span>
@@ -516,13 +539,18 @@ const Booking: React.FC = () => {
                    <span className="text-gray-400 font-serif font-bold text-base">${ivuAmount.toFixed(2)}</span>
                 </div>
               
+                
               <div className="pt-6 border-t border-dashed border-gray-200 mt-2 flex justify-between items-end">
                 <div className="flex flex-col gap-1.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-[#FF7F3F] mb-0.5">Inversión Final</p>
+                  <p className="text-[10px] uppercase font-semibold tracking-[0.25em] opacity-80 text-[#FF7F3F] mb-0.5">Inversión Final</p>
                 </div>
-                <p className="text-5xl font-serif font-black text-text-main">${total.toFixed(2)}</p>
+                <p className="text-5xl font-serif font-black text-text-main">${finalTotal.toFixed(2)}</p>
               </div>
             </div>
+            
+            {/* 🔱 UPSELL MODULE */}
+            <UpsellModule selectedAddons={selectedAddons} onChange={setSelectedAddons} />
+            
           </section>
 
           {startDate && endDate && !isTooShort && (
@@ -563,9 +591,14 @@ const Booking: React.FC = () => {
           )}
 
           {!isTooShort && (
-            <div className="animate-slide-up">
+            <div className="animate-slide-up space-y-6">
+              <div className="bg-primary/5 rounded-[2rem] p-6 border border-primary/20 text-center animate-pulse">
+                <p className="text-xs font-bold text-text-main">
+                  <span className="text-primary mr-1 tracking-widest uppercase">Salty:</span> {activeCheckouts} navegantes están evaluando estas mismas fechas en las últimas 24 horas. ¡Asegura tu anclaje ahora! ⚓
+                </p>
+              </div>
               <PaymentProcessor 
-                total={total}
+                total={finalTotal}
                 bookingId={bookingId || 'new'}
                 onSuccess={handlePaymentSuccess}
                 isProcessing={isProcessing}

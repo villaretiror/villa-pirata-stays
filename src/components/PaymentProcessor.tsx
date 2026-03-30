@@ -114,8 +114,14 @@ const CheckoutForm: React.FC<{ onSuccess: any, total: number, isProcessing: bool
                     </>
                 )}
             </button>
-            <div className="w-full flex justify-center mt-2 opacity-50 grayscale hover:grayscale-0 transition-all">
-               <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" className="h-4" alt="Powered by Stripe" />
+            <div className="w-full text-center mt-4 animate-fade-in flex flex-col items-center gap-2">
+               <p className="text-[10px] uppercase font-semibold tracking-[0.25em] text-text-main flex items-center justify-center gap-1.5 opacity-80">
+                 <span className="material-icons text-xs text-[#0A192F]">lock</span>
+                 Transacción encriptada y segura vía Stripe
+               </p>
+               <div className="flex justify-center opacity-40 grayscale hover:grayscale-0 transition-all hover:opacity-100">
+                  <img src="https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg" className="h-4" alt="Powered by Stripe" />
+               </div>
             </div>
         </form>
     );

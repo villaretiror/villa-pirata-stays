@@ -28,8 +28,9 @@ export const FinanceService = {
     startDate: Date;
     endDate: Date;
     promo?: PromoCode | null;
+    isOrphanDays?: boolean;
   }) {
-    const { property, startDate, endDate, promo } = params;
+    const { property, startDate, endDate, promo, isOrphanDays } = params;
     
     // 1. Initial State
     let nightsTotal = 0;
@@ -61,6 +62,12 @@ export const FinanceService = {
     // 4. Promo Logic & Price Floor Guard
     let discountAmount = 0;
     let appliedDiscountPercent = 0;
+    
+    // 🔱 CAPTAIN'S OFFER (Orphan Days)
+    if (isOrphanDays) {
+      discountAmount += (subtotal * 0.15); // 15% off automatically
+      appliedDiscountPercent = 15;
+    }
 
     if (promo) {
       discountAmount = (subtotal * (promo.discount_percent || 0)) / 100;
