@@ -75,11 +75,31 @@ export const CalendarSyncService = {
             }
             if (line === 'END:VEVENT' && inEvent) {
                 inEvent = false;
+
+                // 🛡️ ICAL PRECISION PARSER: Manejo explícito de hora UTC hacia AST
+                const processICalDate = (raw: string) => {
+                    if (raw.includes('T')) {
+                        const dt = raw.trim();
+                        if (dt.length >= 15) {
+                            const isoStr = `${dt.substring(0,4)}-${dt.substring(4,6)}-${dt.substring(6,8)}T${dt.substring(9,11)}:${dt.substring(11,13)}:${dt.substring(13,15)}Z`;
+                            const dateObj = new Date(isoStr);
+                            if (!isNaN(dateObj.getTime())) {
+                                // Forzamos PR Time (UTC - 4)
+                                const prTime = new Date(dateObj.getTime() + (3600000 * -4));
+                                const y = prTime.getUTCFullYear();
+                                const m = String(prTime.getUTCMonth() + 1).padStart(2, '0');
+                                const d = String(prTime.getUTCDate()).padStart(2, '0');
+                                return `${y}-${m}-${d}`;
+                            }
+                        }
+                    }
+                    const dateOnly = raw.replace(/T.*/, '').trim();
+                    return `${dateOnly.substring(0, 4)}-${dateOnly.substring(4, 6)}-${dateOnly.substring(6, 8)}`;
+                };
+
                 if (dtStart.length >= 8 && dtEnd.length >= 8) {
-                    const startRaw = dtStart.replace(/T.*/, '').trim();
-                    const endRaw = dtEnd.replace(/T.*/, '').trim();
-                    const startDate = `${startRaw.substring(0, 4)}-${startRaw.substring(4, 6)}-${startRaw.substring(6, 8)}`;
-                    const endDate = `${endRaw.substring(0, 4)}-${endRaw.substring(4, 6)}-${endRaw.substring(6, 8)}`;
+                    const startDate = processICalDate(dtStart);
+                    const endDate = processICalDate(dtEnd);
                     const eventHash = `${startDate}_${endDate}_${summary}_${uid}`.substring(0, 100);
 
                     blocks.push({ start: startDate, end: endDate, summary, hash: eventHash });

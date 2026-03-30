@@ -241,6 +241,19 @@ const Booking: React.FC = () => {
         });
         const secretData = await secretRes.json();
         
+        // 👻 GHOST WINDOW INTERCEPT - THE SECOND LINE OF DEFENSE
+        if (secretRes.status === 409 && secretData.error === 'GHOST_WINDOW_OVERLAP') {
+            window.dispatchEvent(new CustomEvent('salty-push', {
+                detail: {
+                    message: "¡Capitán, malas noticias! 🏴‍☠️ Alguien acaba de reservar esas fechas en otra plataforma justo ahora. El calendario manda.",
+                    type: 'error',
+                    speak: false
+                }
+            }));
+            setIsProcessing(false);
+            return;
+        }
+
         if (secretRes.ok && secretData.clientSecret) {
            return secretData.clientSecret;
         } else {

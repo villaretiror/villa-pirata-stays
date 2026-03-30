@@ -5,6 +5,9 @@ import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } fr
 import SmartImage from '../components/SmartImage';
 import { HOST_PHONE } from '../constants';
 import { PropertyDetailsSkeleton } from '../components/Skeleton';
+import { useAvailability } from '../hooks/useAvailability';
+import BookingCalendar from '../components/BookingCalendar';
+import { format } from 'date-fns';
 
 import { 
   Users, 
@@ -70,6 +73,10 @@ export const PropertyDetails: React.FC = () => {
     setTranslatedReviews(prev => ({ ...prev, [index]: !prev[index] }));
   };
   const [currency, setCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
+  const [selectedRange, setSelectedRange] = useState<[Date | null, Date | null]>([null, null]);
+  const [startDate, endDate] = selectedRange;
+  
+  const { blockedDates, minNights, isRangeAvailable, isLoading: isAvailabilityLoading } = useAvailability(id || '');
 
   // Currency conversion (Simulated for display)
   const rates = { USD: 1, EUR: 0.94, GBP: 0.79 };
@@ -474,6 +481,28 @@ export const PropertyDetails: React.FC = () => {
             </div>
           </section>
 
+          {/* Live Dynamic Calendar Widget */}
+          <section className="space-y-6 bg-sand/20 p-2 sm:p-8 rounded-[3.5rem] border border-primary/20 mb-8 mx-0 md:-mx-8">
+            <div className="flex justify-between items-center mb-0 px-4 sm:px-0">
+              <h2 className="text-3xl font-serif font-bold text-text-main flex items-center gap-3">
+                <Calendar size={32} className="text-primary" />
+                Elige tus fechas
+              </h2>
+            </div>
+            
+            <BookingCalendar 
+              startDate={startDate}
+              endDate={endDate}
+              onChange={(update) => setSelectedRange(update)}
+              blockedDates={blockedDates}
+              minNights={minNights}
+              isRangeAvailable={isRangeAvailable}
+              hideHeader={true}
+              propertyPrice={convertedPrice}
+              seasonalPrices={property.seasonal_prices}
+            />
+          </section>
+
           {/* Host Card Minimal */}
           <section
             onClick={() => setShowHostDrawer(true)}
@@ -575,7 +604,7 @@ export const PropertyDetails: React.FC = () => {
                 </div>
 
                 <Link
-                  to={`/booking/${property.id}`}
+                  to={`/booking/${property.id}${startDate ? `?check_in=${format(startDate, 'yyyy-MM-dd')}` : ''}${endDate ? `&check_out=${format(endDate, 'yyyy-MM-dd')}` : ''}`}
                   className="w-full bg-secondary text-primary py-6 rounded-[2.5rem] font-black uppercase tracking-widest text-sm flex items-center justify-center gap-3 shadow-2xl hover:scale-[1.02] active:scale-95 transition-all border border-primary/20"
                 >
                   Vivir la Experiencia
@@ -857,7 +886,7 @@ export const PropertyDetails: React.FC = () => {
           </div>
         </div>
         <Link
-          to={`/booking/${property.id}`}
+          to={`/booking/${property.id}${startDate ? `?check_in=${format(startDate, 'yyyy-MM-dd')}` : ''}${endDate ? `&check_out=${format(endDate, 'yyyy-MM-dd')}` : ''}`}
           className="bg-[#FF7F3F] text-white h-14 px-10 rounded-[1.75rem] font-black uppercase tracking-widest text-[11px] flex items-center justify-center shadow-lg shadow-[#FF7F3F]/40 hover:scale-[1.05] active:scale-95 transition-all border border-white/10"
         >
           Vivir la Experiencia

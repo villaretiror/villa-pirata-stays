@@ -154,19 +154,29 @@ export const useAvailability = (propertyId: string | undefined) => {
         refresh: fetchAvailability,
         isRangeAvailable: (start: Date, end: Date) => {
             if (!start || !end) return true;
-            const sStr = start.toISOString().split('T')[0];
-            const eStr = end.toISOString().split('T')[0];
+
+            // 🛡️ TIME-TRAVEL SHIELD: Local Date Formatting (No UTC Shifts)
+            const formatLocal = (d: Date) => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
+            const sStr = formatLocal(start);
+            const eStr = formatLocal(end);
             
             // Generate requested range strings
             const requestedRange: string[] = [];
             let curr = new Date(sStr + 'T12:00:00');
             const last = new Date(eStr + 'T12:00:00');
+            
             while (curr < last) {
-                requestedRange.push(curr.toISOString().split('T')[0]);
+                requestedRange.push(formatLocal(curr));
                 curr.setDate(curr.getDate() + 1);
             }
 
-            const blockedStrings = new Set(blockedDates.map(d => d.toISOString().split('T')[0]));
+            const blockedStrings = new Set(blockedDates.map(d => formatLocal(d)));
             return !requestedRange.some(d => blockedStrings.has(d));
         }
     };
