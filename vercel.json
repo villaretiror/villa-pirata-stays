@@ -93,7 +93,7 @@
         },
         {
             "path": "/api/cron/send-lockbox-codes",
-            "schedule": "0 * * * *"
+            "schedule": "0 8 * * *"
         }
     ]
 }
