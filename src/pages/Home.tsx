@@ -89,6 +89,7 @@ const Home: React.FC = () => {
   const [activeGuideTab, setActiveGuideTab] = useState<string | null>(null);
   const [selectedGuideItem, setSelectedGuideItem] = useState<LocalGuideItem | null>(null);
   const [isMapModalOpen, setIsMapModalOpen] = useState(false);
+  const [isOccupiedModalOpen, setIsOccupiedModalOpen] = useState(false);
 
   // Ref for auto-scrolling to results
   const resultsRef = useRef<HTMLDivElement>(null);
@@ -105,13 +106,23 @@ const Home: React.FC = () => {
   }, [isSearchOpen]);
 
   const handleSearch = () => {
+    if (!startDate || !endDate) {
+      window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "Salty: Primero selecciona tus fechas de invasión, Capitán. ⚓", type: 'warning' } }));
+      return;
+    }
+
     setIsChecking(true);
-    window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "Salty está verificando el calendario oficial de Villa Retiro R... ⚓", speak: false } }));
+    window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "Salty está verificando el radar de Villa Retiro R... ⚓", speak: false } }));
     
     setTimeout(() => {
       setIsChecking(false);
-      setIsSearchOpen(false);
-      scrollToResults();
+      
+      if (filteredProperties.length === 0) {
+        setIsOccupiedModalOpen(true);
+      } else {
+        setIsSearchOpen(false);
+        scrollToResults();
+      }
     }, 1500);
   };
 
@@ -429,6 +440,65 @@ const Home: React.FC = () => {
           </div>
         </div>
       )}
+
+      <style>{`
+        @keyframes pulse-gold {
+          0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.4); }
+          70% { box-shadow: 0 0 0 20px rgba(212, 175, 55, 0); }
+          100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0); }
+        }
+        .animate-pulse-gold {
+          animation: pulse-gold 2s infinite;
+        }
+      `}</style>
+
+      {/* Búnker Ocupado Modal (Elite Feedback) */}
+      <AnimatePresence>
+        {isOccupiedModalOpen && (
+          <div className="fixed inset-0 z-[3000000] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsOccupiedModalOpen(false)}
+              className="absolute inset-0 bg-secondary/80 backdrop-blur-md"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white rounded-[4rem] p-10 shadow-2xl border border-primary/20 text-center z-[3000001] overflow-hidden"
+            >
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-primary/20 via-primary to-primary/20"></div>
+
+              <div className="w-24 h-24 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-8 text-5xl shadow-inner border border-primary/20 animate-pulse-gold">
+                🔱
+              </div>
+              <h3 className="font-serif font-black text-3xl text-secondary mb-6 tracking-tighter italic">¡Búnker Ocupado!</h3>
+              <p className="text-[13px] text-text-light font-bold leading-relaxed mb-10 px-4">
+                "Salty ha revisado la bitácora y parece que las fechas del <span className="text-primary font-black underline underline-offset-4">{startDate && format(startDate, 'dd MMM', { locale: es })}</span> al <span className="text-primary font-black underline underline-offset-4">{endDate && format(endDate, 'dd MMM', { locale: es })}</span> ya tienen tripulación. ¿Qué te parece si buscamos otro momento para tu invasión a Cabo Rojo? 🦜⚓"
+              </p>
+              <div className="space-y-4">
+                <button 
+                  onClick={() => {
+                    setIsOccupiedModalOpen(false);
+                    setSearchTab('dates');
+                  }}
+                  className="w-full bg-secondary text-primary font-black uppercase tracking-[0.2em] py-5 rounded-2xl shadow-xl hover:scale-[1.02] active:scale-95 transition-all text-[11px] border border-primary/20"
+                >
+                  CAMBIAR FECHAS 📅
+                </button>
+                <button 
+                  onClick={() => setIsOccupiedModalOpen(false)}
+                  className="w-full bg-transparent text-secondary/40 font-black uppercase tracking-[0.1em] text-[10px] py-4 rounded-2xl hover:text-secondary transition-all"
+                >
+                  CERRAR BITÁCORA
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Header Content */}
       <div className="relative z-10 px-6 pt-12 pb-6">

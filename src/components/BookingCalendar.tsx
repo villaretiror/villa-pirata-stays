@@ -232,7 +232,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 className={`
                                     relative aspect-square md:aspect-[1.1/1] w-full max-w-[50px] mx-auto rounded-full font-bold transition-all flex flex-col items-center justify-center cursor-pointer select-none touch-none
                                     ${!isCurrentMonth ? 'opacity-0 pointer-events-none' : ''}
-                                    ${blocked ? 'text-gray-300 cursor-not-allowed' : 'text-text-main hover:bg-gray-100 shadow-sm'}
+                                    ${blocked ? 'text-gray-300 cursor-not-allowed bg-gray-50/50' : 'text-text-main hover:bg-gray-100 shadow-sm'}
                                     ${isSelected ? 'z-20' : ''}
                                 `}
                             >
