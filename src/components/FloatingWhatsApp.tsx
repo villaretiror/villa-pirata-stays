@@ -19,7 +19,7 @@ const FloatingWhatsApp: React.FC<FloatingWhatsAppProps> = ({ propertyTitle }) =>
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-24 md:bottom-8 left-6 z-[120] bg-secondary text-primary p-4 rounded-full shadow-bunker group border border-primary/30 backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-500 overflow-hidden"
+      className="fixed bottom-52 md:bottom-8 left-6 z-[120] bg-secondary text-primary p-4 rounded-full shadow-bunker group border border-primary/30 backdrop-blur-md hover:scale-110 active:scale-95 transition-all duration-500 overflow-hidden"
       aria-label="Contactar por WhatsApp"
     >
       {/* 🔱 LUXURY GLOW */}
