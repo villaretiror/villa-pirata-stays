@@ -44,11 +44,11 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
   const getBadges = () => {
     return (
-      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10 pointer-events-none">
+      <div className="flex flex-col gap-2 z-10 pointer-events-none mt-2">
         {(property.rating || 0) >= 4.9 && (
-          <div className="bg-primary px-2.5 py-1 rounded-lg text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-secondary shadow-lg flex items-center gap-1.5 ring-1 ring-secondary/5 animate-fade-in opacity-80 group-hover:opacity-100 transition-opacity">
-            <Flame size={10} className="fill-secondary" />
-            Colección Élite
+          <div className="bg-[#B39B59] px-3 py-1.5 rounded-sm text-[9px] font-bold uppercase tracking-[0.25em] text-white shadow-md flex items-center gap-1.5 border border-white/20 animate-fade-in w-fit">
+            <Sparkles size={10} className="text-white" />
+            Reserva Privada
           </div>
         )}
 
@@ -129,14 +129,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
         {/* Gradient Overlay for Legibility */}
         <div className="absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-black/20 to-transparent"></div>
 
-        {/* Real-time viewer count */}
-        <div className="absolute bottom-5 left-5 flex items-center gap-2 bg-black/30 backdrop-blur-md px-3 py-1.5 rounded-full border border-white/10 group/viewer">
-          <div className="relative flex h-2 w-2">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
-          </div>
-          <span className="text-[9px] font-black text-white uppercase tracking-widest">{viewers} mirando ahora</span>
-        </div>
+        {/* Removed floating viewer count to un-obstruct image */}
 
         {/* 🏹 NAV ARROWS: Premium navigation */}
         <div className="absolute inset-0 z-20 flex items-center justify-between px-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -178,6 +171,15 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
       {/* Content */}
       <div className="p-6">
+        {/* Integrated Real-time viewer count */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#B39B59] opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#B39B59]"></span>
+          </div>
+          <span className="text-[10px] font-semibold text-text-light uppercase tracking-[0.2em]">{viewers} personas mirando ahora</span>
+        </div>
+
         <div className="flex justify-between items-start mb-3">
           <h3 className="text-xl font-serif font-black italic tracking-tighter text-text-main mb-1 group-hover:text-primary transition-colors">
             {property.title || 'Estancia De Colección'}

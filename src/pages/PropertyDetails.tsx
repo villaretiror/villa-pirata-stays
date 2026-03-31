@@ -703,7 +703,7 @@ export const PropertyDetails: React.FC = () => {
       <section className="max-w-7xl mx-auto px-6 mt-32 mb-20">
         <div className="flex flex-col items-center text-center space-y-4 mb-12">
           <p className={TAG_STYLE + " text-primary"}>¿Buscas algo diferente?</p>
-          <h2 className="text-4xl font-serif font-black text-text-main">Otras Colecciones de Élite</h2>
+          <h2 className="text-4xl font-serif font-black text-text-main">Otras Reservas Privadas</h2>
           <div className="w-20 h-1.5 bg-primary/20 rounded-full"></div>
         </div>
 
