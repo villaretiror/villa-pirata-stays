@@ -159,7 +159,7 @@ const Navbar: React.FC = () => {
         </AnimatePresence>
 
         <ul 
-          className="pointer-events-auto bg-secondary/95 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] rounded-[1.8rem] px-5 py-1.5 flex items-center justify-between w-full m-0 list-none border border-white/5"
+          className="pointer-events-auto bg-secondary/95 backdrop-blur-3xl shadow-[0_25px_60px_rgba(0,0,0,0.4)] rounded-[1.8rem] px-5 py-4 flex items-center justify-between w-full m-0 list-none border border-white/5"
           style={{ willChange: 'transform, opacity', transform: 'translate3d(0,0,0)' }}
         >
           <li><NavItem path="/" icon={Compass} label="Explorar" currentPath={currentPath} /></li>

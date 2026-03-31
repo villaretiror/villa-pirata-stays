@@ -46,7 +46,8 @@ import {
   Utensils,
   Car,
   GlassWater,
-  CigaretteOff
+  CigaretteOff,
+  Languages
 } from 'lucide-react';
 
 import SectionErrorBoundary from '../components/SectionErrorBoundary';
@@ -674,7 +675,7 @@ export const PropertyDetails: React.FC = () => {
                     onClick={() => toggleTranslation(i)}
                     className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-6 flex items-center gap-2 hover:opacity-70 transition-opacity"
                   >
-                    <span className="material-icons text-[14px]">translate</span>
+                    <Languages size={14} />
                     {translatedReviews[i] ? 'Ver Original' : 'Salty: Traducir al Español'}
                   </button>
                 </div>
@@ -877,7 +878,7 @@ export const PropertyDetails: React.FC = () => {
       }
 
       {/* Mobile Bottom Bar - High Contrast Glass */}
-      <div className="fixed bottom-6 left-6 right-6 lg:hidden z-[60] flex items-center justify-between p-5 bg-black rounded-[2.5rem] shadow-2xl border border-white/20 animate-fade-in-up shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+      <div className="fixed bottom-6 left-4 right-4 lg:hidden z-[60] flex items-center justify-between py-6 px-6 bg-black rounded-[2.5rem] shadow-2xl border border-white/20 animate-fade-in-up shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
         <div className="pl-4">
           <p className="text-[10px] text-white/60 font-semibold uppercase tracking-[0.25em] opacity-80 leading-none mb-1">Inversión Noche</p>
           <div className="flex items-baseline gap-1 text-white">

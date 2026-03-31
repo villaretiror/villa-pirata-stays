@@ -10,7 +10,7 @@ import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, ArrowLeft } from 'lucide-react';
+import { X, ArrowLeft, Calendar as CalendarIcon, Users, Verified, Wallet, Check } from 'lucide-react';
 import { BookingSkeleton } from '../components/Skeleton';
 import UpsellModule, { AVAILABLE_ADDONS } from '../components/UpsellModule';
 import type { TablesInsert } from '../supabase_types';
@@ -351,21 +351,24 @@ const Booking: React.FC = () => {
 
           <div className="flex items-center justify-center gap-2 px-10">
             {[
-              { id: 'dates', icon: 'calendar_month', active: !!(startDate && endDate) },
-              { id: 'details', icon: 'person', active: !!(phone.length > 5) },
-              { id: 'payment', icon: 'account_balance_wallet', active: contractAccepted }
-            ].map((step, idx) => (
-              <React.Fragment key={step.id}>
-                <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${step.active ? 'opacity-100 scale-110' : 'opacity-30'}`}>
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${step.active ? 'bg-primary border-primary text-white shadow-lg' : 'border-gray-400'}`}>
-                    <span className="material-icons text-sm">{step.icon}</span>
+              { id: 'dates', icon: CalendarIcon, active: !!(startDate && endDate) },
+              { id: 'details', icon: Users, active: !!(phone.length > 5) },
+              { id: 'payment', icon: Wallet, active: contractAccepted }
+            ].map((step, idx) => {
+              const StepIcon = step.icon;
+              return (
+                <React.Fragment key={step.id}>
+                  <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${step.active ? 'opacity-100 scale-110' : 'opacity-30'}`}>
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${step.active ? 'bg-primary border-primary text-white shadow-lg' : 'border-gray-400'}`}>
+                      <StepIcon size={14} />
+                    </div>
                   </div>
-                </div>
-                {idx < 2 && (
-                  <div className={`h-[2px] flex-1 max-w-[40px] rounded-full transition-colors duration-500 ${step.active ? 'bg-primary' : 'bg-gray-200'}`} />
-                )}
-              </React.Fragment>
-            ))}
+                  {idx < 2 && (
+                    <div className={`h-[2px] flex-1 max-w-[40px] rounded-full transition-colors duration-500 ${step.active ? 'bg-primary' : 'bg-gray-200'}`} />
+                  )}
+                </React.Fragment>
+              );
+            })}
           </div>
         </header>
 
@@ -377,11 +380,11 @@ const Booking: React.FC = () => {
               <h3 className="font-serif font-bold text-xl text-text-main mb-1">{property.title}</h3>
               <div className="flex items-center gap-4">
                 <div className="flex items-center gap-1 text-xs font-bold text-text-light">
-                  <span className="material-icons text-sm">groups</span>
+                  <Users size={14} className="opacity-60" />
                   {property.guests} máx
                 </div>
                 <div className="flex items-center gap-1 text-xs font-bold text-text-light">
-                  <span className="material-icons text-sm">verified</span>
+                  <Verified size={14} className="text-secondary" />
                   Directo
                 </div>
               </div>
@@ -623,8 +626,10 @@ const Booking: React.FC = () => {
                 initial={{ y: '100%' }}
                 animate={{ y: 0 }}
                 exit={{ y: '100%' }}
-                className="bg-white w-full max-w-6xl rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl relative"
+                className="bg-white w-full max-w-6xl rounded-t-[3rem] sm:rounded-[3rem] p-8 shadow-2xl relative max-h-[95vh] overflow-y-auto flex flex-col no-scrollbar"
               >
+                {/* Handle for mobile pull-down visual */}
+                <div className="w-20 h-1.5 bg-gray-100 rounded-full mx-auto mb-4 sm:hidden"></div>
                 <div className="flex justify-end items-center mb-0 px-2 pt-2">
                   <button 
                     onClick={() => setShowCalendarModal(false)} 

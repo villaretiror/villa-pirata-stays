@@ -121,7 +121,7 @@ const SaltyVoiceButton: React.FC = () => {
     };
 
     return (
-        <div className="fixed bottom-24 md:bottom-28 right-6 md:right-12 z-[3000000] flex flex-col items-center gap-4">
+        <div className="fixed bottom-32 md:bottom-28 right-6 md:right-12 z-[9999999] flex flex-col items-center gap-4">
             
             <AnimatePresence>
                 {(showTooltip || callStatus === 'active') && (

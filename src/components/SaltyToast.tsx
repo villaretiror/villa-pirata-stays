@@ -1,6 +1,19 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { 
+    X, 
+    Volume2, 
+    VolumeX, 
+    Play, 
+    Trash2, 
+    Mic, 
+    Square, 
+    Send,
+    MessageSquare,
+    ChevronDown,
+    Volume1
+} from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface SaltyToastProps {
@@ -345,7 +358,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
     }, [location.pathname, showBubble, startDate, propertyTitle, isExpanded]);
 
     return (
-        <div className="fixed bottom-[8.5rem] md:bottom-28 right-6 md:right-32 z-[1999] flex flex-col items-end gap-5 pointer-events-none transition-all duration-300">
+        <div className="fixed bottom-[10.5rem] md:bottom-28 right-6 md:right-32 z-[9999998] flex flex-col items-end gap-5 pointer-events-none transition-all duration-300">
             <AnimatePresence>
                 {(showBubble || isExpanded) && (
                     <motion.div
@@ -379,11 +392,11 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                 className="p-2 hover:bg-black/10 rounded-full transition-colors group"
                                 title="Silenciar a Salty"
                             >
-                                <span className="material-icons text-xl text-secondary group-hover:scale-110">volume_off</span>
+                                <VolumeX size={20} className="text-secondary group-hover:scale-110" />
                             </button>
                         )}
                         <button onClick={() => setIsExpanded(false)} className="p-2 hover:bg-black/10 rounded-full transition-colors group">
-                            <span className="material-icons text-secondary group-hover:rotate-90 transition-transform">close</span>
+                            <X size={20} className="text-secondary group-hover:rotate-90 transition-transform" />
                         </button>
                     </div>
                 </div>
@@ -426,7 +439,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                         onClick={playPreview}
                                                         className="w-10 h-10 bg-primary text-secondary rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
                                                     >
-                                                        <span className="material-icons">play_arrow</span>
+                                                        <Play size={18} fill="currentColor" />
                                                     </button>
                                                     <div className="flex flex-col">
                                                         <span className="text-[9px] font-black uppercase text-primary/60 tracking-widest">Escuchar Grabación</span>
@@ -440,7 +453,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                         className="w-8 h-8 bg-red-500/20 text-red-400 rounded-lg flex items-center justify-center hover:bg-red-500/30 transition-all"
                                                         title="Borrar Nota"
                                                     >
-                                                        <span className="material-icons text-sm">delete</span>
+                                                        <Trash2 size={14} />
                                                     </button>
                                                     <button 
                                                         onClick={sendRecordedAudio}
@@ -462,7 +475,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     onTouchEnd={stopRecording}
                                                     className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.5)]' : 'bg-secondary text-primary hover:opacity-90'}`}
                                                 >
-                                                    <span className="material-icons text-lg">{isRecording ? 'stop' : 'mic'}</span>
+                                                    {isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={18} />}
                                                 </button>
                                                 {isRecording ? (
                                                     <div className="flex-1 bg-red-50/50 border border-red-200 rounded-xl px-4 flex items-center justify-between h-10 animate-pulse">
@@ -487,7 +500,7 @@ const SaltyToast: React.FC<SaltyToastProps> = ({ propertyId, propertyTitle, amen
                                                     disabled={isTyping || !inputValue.trim()}
                                                     className="w-10 h-10 bg-primary text-secondary rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50 transition-all h-10"
                                                 >
-                                                    <span className="material-icons text-sm">send</span>
+                                                    <Send size={16} />
                                                 </button>
                                             </div>
                                         )}
