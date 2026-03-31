@@ -10,7 +10,7 @@ import BookingCalendar from '../components/BookingCalendar';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { fetchICalData, parseICalData, getNightlyPrice, validatePromoCode, isSeasonalDate } from '../utils';
 import { AnimatePresence, motion } from 'framer-motion';
-import { X, ArrowLeft, Calendar as CalendarIcon, Users, Verified, Wallet, Check } from 'lucide-react';
+import { X, ArrowLeft, Calendar as CalendarIcon, Users, Verified, Wallet, Check, Phone, Anchor, Ticket, Award, MessageCircle } from 'lucide-react';
 import { BookingSkeleton } from '../components/Skeleton';
 import UpsellModule, { AVAILABLE_ADDONS } from '../components/UpsellModule';
 import type { TablesInsert } from '../supabase_types';
@@ -413,7 +413,7 @@ const Booking: React.FC = () => {
                 className="w-full p-8 bg-sand/30 border-2 border-dashed border-primary/20 rounded-[2.5rem] flex flex-col items-center gap-4 group hover:bg-sand/50 transition-all"
               >
                 <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center text-primary shadow-soft group-hover:scale-110 transition-transform">
-                  <span className="material-icons text-2xl">calendar_month</span>
+                  <CalendarIcon size={24} />
                 </div>
                 <div className="text-center">
                   <p className="font-serif font-bold text-lg">Selecciona tus fechas</p>
@@ -441,7 +441,7 @@ const Booking: React.FC = () => {
           <div className="bg-white/40 backdrop-blur-md rounded-[2.5rem] p-6 border border-white/60 shadow-sm mb-8 flex items-center justify-between group hover:shadow-lg transition-all animate-fade-in">
             <div className="flex items-center gap-4">
                <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
-                  <span className="material-icons text-2xl">chat</span>
+                  <MessageCircle size={24} />
                </div>
                <div>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary mb-1 tracking-[0.2em]">Asistencia Signature 🔱</p>
@@ -460,7 +460,7 @@ const Booking: React.FC = () => {
             <h3 className={TAG_STYLE + " text-gray-400"}>2. Detalles del Viaje</h3>
             <div className="space-y-4">
               <div className="relative group">
-                <span className="material-icons absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-primary">phone</span>
+                <Phone size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-primary" />
                 <input
                   type="tel"
                   placeholder="Teléfono (WhatsApp)"
@@ -521,7 +521,7 @@ const Booking: React.FC = () => {
                   <div className="flex justify-between items-center text-sm text-[var(--vrr-gold-dark)] font-bold bg-[var(--vrr-gold-light)]/10 p-3 rounded-xl border border-[var(--vrr-gold)]/30 shadow-sm animate-pulse-gold relative overflow-hidden">
                     <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full animate-[shimmer-effect_2s_infinite]"></div>
                     <span className="flex items-center gap-1.5 relative z-10">
-                      <span className="material-icons text-sm">sailing</span>
+                      <Anchor size={14} />
                       Oferta del Capitán (15%)
                     </span>
                     <span className="font-serif font-black text-lg relative z-10">-${discountAmount.toFixed(2)}</span>
@@ -531,7 +531,7 @@ const Booking: React.FC = () => {
                 {appliedPromo && !isOrphanOffer && (
                   <div className="flex justify-between items-center text-sm text-green-700 font-bold bg-green-50/50 p-2 rounded-xl border border-green-100/50">
                     <span className="flex items-center gap-1">
-                      <span className="material-icons text-xs">confirmation_number</span>
+                      <Ticket size={14} />
                       Descuento ({appliedPromo.discount_percent}%)
                     </span>
                     <span className="font-serif font-black text-lg">-${discountAmount.toFixed(2)}</span>
@@ -569,7 +569,7 @@ const Booking: React.FC = () => {
                 <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
                   contractAccepted ? 'bg-secondary border-secondary text-white' : 'border-gray-300'
                 }`}>
-                  {contractAccepted && <span className="material-icons text-sm">check</span>}
+                  {contractAccepted && <Check size={14} />}
                 </div>
                 <p className="text-xs font-bold text-text-main leading-relaxed">
                   Acepto los términos del contrato de hospedaje y las reglas de la casa.
@@ -581,7 +581,7 @@ const Booking: React.FC = () => {
           {isTooShort && (
             <div className="p-6 bg-[#FFF4ED] border border-primary/20 rounded-[2.5rem] flex items-start gap-5 shadow-sm animate-fade-in mb-8">
               <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center flex-shrink-0">
-                <span className="material-icons text-primary text-2xl animate-pulse">hotel_class</span>
+                <Award size={24} className="text-primary animate-pulse" />
               </div>
               <div>
                 <h4 className="font-serif font-black italic text-[#FF7F3F] text-lg mb-1 leading-none">Concierge Signature 🔱</h4>

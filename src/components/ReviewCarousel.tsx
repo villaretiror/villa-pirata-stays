@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { Tables } from '../supabase_types';
+import { Star, CheckCircle2 } from 'lucide-react';
 
 type ReviewRow = Tables<'reviews'>;
 
@@ -95,14 +96,13 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ propertyId, limit = 8 }
         {/* Stars — dynamic based on rating */}
         <div className="flex gap-1 mb-6">
           {[...Array(5)].map((_, i) => (
-            <span
+            <Star
               key={i}
-              className={`material-icons text-xl ${
-                i < Math.round(current.rating || 0) ? 'text-primary' : 'text-secondary/10'
+              size={20}
+              className={`${
+                i < Math.round(current.rating || 0) ? 'text-primary fill-primary' : 'text-secondary/10'
               }`}
-            >
-              star
-            </span>
+            />
           ))}
         </div>
 
@@ -142,7 +142,7 @@ const ReviewCarousel: React.FC<ReviewCarouselProps> = ({ propertyId, limit = 8 }
             <div className="text-left">
               <p className="font-bold text-text-main text-sm">{current.author}</p>
               <p className="text-[10px] text-text-light uppercase tracking-widest flex items-center gap-1">
-                <span className="material-icons text-[10px]">verified</span>
+                <CheckCircle2 size={12} className="text-primary" />
                 {current.booking_id ? 'Huésped Verificado' : `Huésped Real`} via {displaySource}
                 {displayDate && <> · {displayDate}</>}
               </p>

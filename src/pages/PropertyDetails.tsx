@@ -571,15 +571,17 @@ export const PropertyDetails: React.FC = () => {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                   </span>
-                  <span className="text-[10px] font-black text-red-600 uppercase tracking-widest">
+                  <span className="text-[10px] font-bold text-red-600 uppercase tracking-widest">
                     {p.availability_urgency_msg || `${viewers} personas viendo esta villa`}
                   </span>
                 </div>
                 <p className={TAG_STYLE + " text-gray-400 mb-1"}>Inversión Preferencial</p>
-                <span className="material-icons text-white text-sm">pool</span>
-                <span className="text-[10px] font-semibold uppercase opacity-80 text-white/90">
-                  {(property.amenities || []).length} amenidades exclusivas
-                </span>
+                <div className="flex items-center gap-2 mb-4">
+                  <Waves size={16} className="text-primary" />
+                  <span className="text-[10px] font-semibold uppercase opacity-80 text-secondary/60">
+                    {(property.amenities || []).length} amenidades exclusivas
+                  </span>
+                </div>
                 <div className="flex items-baseline gap-2">
                   <h3 className="text-5xl font-serif font-black text-text-main">
                     {symbols[currency]}{convertedPrice}

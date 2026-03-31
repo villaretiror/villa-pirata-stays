@@ -746,8 +746,8 @@ const Home: React.FC = () => {
       {/* MODALS & STICKY ELEMENTS */}
       {!isSearchOpen && filteredProperties.length > 0 && (
         <StickyBookingBar 
-          villaName={properties[0]?.title || "Villa Retiro R & Pirata Family"} 
-          onAction={() => setIsSearchOpen(true)} // Cambiado para abrir el modal directamente
+          villaName="VILLA RETIRO R LLC" 
+          onAction={() => setIsSearchOpen(true)} 
         />
       )}
 
