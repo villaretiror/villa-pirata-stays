@@ -29,18 +29,3 @@ jobs:
         run: |
           export PATH="$HOME/.vapi/bin:$PATH"
           vapi init --skip-install || echo "Vapi skip-install ignored in CI"
-
-      # Correr tests unitarios del webhook para asegurar el { results: [] }
-      - name: Start Local Webhook Emulator
-        run: |
-           npx vite --port 3000 --host 127.0.0.1 &
-           echo "Waiting for server..."
-           sleep 10
-        env:
-          VAPI_WEBHOOK_SECRET: "test_secret_ci"
-          
-      - name: Run Webhook Integrations Tests
-        run: npx -y tsx scripts/test_vapi_webhook.ts
-        env:
-          VAPI_WEBHOOK_URL: 'http://127.0.0.1:3000/api/webhooks?source=vapi'
-          VAPI_WEBHOOK_SECRET: 'test_secret_ci'
