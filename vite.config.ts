@@ -33,4 +33,4 @@ export default defineConfig({
     host: '0.0.0.0',
   },
 });
-// Build trigger: 2026-03-22T22:15-DEPLOY-FIX-VAPI
+// Build trigger: 2026-03-31T14:24-STRETCH-GO-VAPI-OPS
