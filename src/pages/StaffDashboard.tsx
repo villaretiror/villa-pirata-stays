@@ -158,11 +158,11 @@ const StaffDashboard: React.FC = () => {
                       </h4>
                       
                       <div className="flex flex-wrap gap-2">
-                        {(!booking.addons_breakdown || (Array.isArray(booking.addons_breakdown) && booking.addons_breakdown.length === 0)) ? (
+                        {(!booking.addons_breakdown || (Array.isArray(booking.addons_breakdown) && (booking.addons_breakdown as string[]).length === 0)) ? (
                           <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300 italic">Estadía estándar (sin extras)</p>
                         ) : (
                           Array.isArray(booking.addons_breakdown) ? (
-                            booking.addons_breakdown.map((addon: string) => renderAddonBadge(addon))
+                            (booking.addons_breakdown as string[]).map((addon: string) => renderAddonBadge(addon))
                           ) : null
                         )}
                       </div>
