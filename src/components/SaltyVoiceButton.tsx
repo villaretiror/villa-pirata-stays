@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Phone, PhoneOff, Mic, MicOff, Signal, SignalLow, Activity } from 'lucide-react';
 
 // 🔱 ELITE BYPASS: Usamos el SDK desde el CDN cargado en index.html
 // Esto evita que Rollup falle en Vercel.
@@ -10,6 +12,7 @@ const SaltyVoiceButton: React.FC = () => {
     const [vapiInstance, setVapiInstance] = useState<any>(null);
     const [volume, setVolume] = useState(0);
     const [propertyId, setPropertyId] = useState<string | null>(null);
+    const [showTooltip, setShowTooltip] = useState(false);
 
     // 🔱 DETECT CONTEXT (Property ID from URL)
     useEffect(() => {
@@ -34,13 +37,16 @@ const SaltyVoiceButton: React.FC = () => {
             if (VapiConstructor && typeof VapiConstructor === 'function' && !vapiInstance) {
                 const instance = new VapiConstructor(PUBLIC_KEY);
                 
-                instance.on('call-start', () => setCallStatus('active'));
+                instance.on('call-start', () => {
+                    setCallStatus('active');
+                    setShowTooltip(true);
+                });
                 instance.on('call-end', () => {
                     setCallStatus('inactive');
                     setVolume(0);
+                    setTimeout(() => setShowTooltip(false), 3000);
                 });
                 instance.on('volume-level', (level: number) => {
-                    // level typically ranges from 0 to 1
                     setVolume(level);
                 });
                 instance.on('error', (err: any) => {
@@ -53,7 +59,6 @@ const SaltyVoiceButton: React.FC = () => {
             }
         };
 
-        // Re-intentar si el script no ha cargado aún
         const timer = setInterval(() => {
             if ((window as any).Vapi) {
                 initVapi();
@@ -95,18 +100,15 @@ const SaltyVoiceButton: React.FC = () => {
     };
 
     const toggleCall = async () => {
-        // 🔱 AUTO-RECOVERY: If engine is missing, try one last sync
         let activeInstance = vapiInstance;
         if (!activeInstance) {
             const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
             const VapiConstructor = rawVapi?.default || rawVapi;
-
-            if (VapiConstructor && typeof VapiConstructor === 'function') {
-                console.log('🔱 Salty SOS: Critical engine recovery triggered.');
+            if (VapiConstructor) {
                 activeInstance = new VapiConstructor(PUBLIC_KEY);
                 setVapiInstance(activeInstance);
             } else {
-                alert('Capitán, los motores de voz (Vapi) se están calibrando. Intente de nuevo en 2 segundos. 🔱⚓');
+                alert('Motores calibrándose. Reintentar. 🔱⚓');
                 return;
             }
         }
@@ -117,47 +119,75 @@ const SaltyVoiceButton: React.FC = () => {
             await startVapiCall(activeInstance);
         }
     };
+
     return (
-        <div className="fixed bottom-24 md:bottom-28 right-6 md:right-12 z-[3000000] flex flex-col items-center gap-6 pointer-events-auto scale-90 md:scale-100 origin-right transition-all duration-300">
-            {/* ☎️ VAPI WEB CALL BUTTON (Native Experience) */}
+        <div className="fixed bottom-24 md:bottom-28 right-6 md:right-12 z-[3000000] flex flex-col items-center gap-4">
+            
+            <AnimatePresence>
+                {(showTooltip || callStatus === 'active') && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20, scale: 0.8 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                        className="absolute bottom-full mb-6 whitespace-nowrap"
+                    >
+                        <div className="bg-black/80 backdrop-blur-xl border border-primary/20 rounded-2xl px-5 py-3 shadow-[0_20px_50px_rgba(0,0,0,0.5)] flex flex-col items-center gap-1.5 relative">
+                            {/* Speech Triangle (Pin) */}
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 w-4 h-4 border-l-[8px] border-l-transparent border-r-[8px] border-r-transparent border-t-[8px] border-t-black/80"></div>
+                            
+                            <div className="flex items-center gap-3">
+                                {callStatus === 'active' ? (
+                                    <Activity className="w-3.5 h-3.5 text-red-500 animate-pulse" />
+                                ) : (
+                                    <Signal className="w-3.5 h-3.5 text-[#D4AF37]" />
+                                )}
+                                <span className={`${callStatus === 'active' ? 'text-red-400' : 'text-[#D4AF37]'} text-[10px] font-black uppercase tracking-[0.2em]`}>
+                                    {callStatus === 'active' ? 'Conectado con Salty' : 'Concierge de Voz Directo'}
+                                </span>
+                            </div>
+                            
+                            <div className="flex flex-col items-center border-t border-white/5 pt-1.5 w-full">
+                                <span className="text-[11px] font-bold text-white tracking-widest font-mono">
+                                    209-267-3503
+                                </span>
+                                <span className="text-[7px] font-black text-white/30 uppercase tracking-[0.15em] mt-0.5">
+                                    Vapi Intelligence Engine
+                                </span>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="relative group">
                 {/* 🔱 ELITE GLOW: Reactive to current volume! */}
                 <div 
                     className={`absolute inset-[-15px] bg-primary/20 rounded-full blur-2xl transition-all duration-75 pointer-events-none ${callStatus === 'active' ? 'opacity-100 scale-125' : 'opacity-0 scale-0'}`}
                     style={{ 
-                        transform: `scale(${1 + volume * 1.5})`,
-                        boxShadow: `0 0 ${volume * 50}px ${volume * 20}px rgba(212, 175, 55, 0.4)`
+                        transform: `scale(${1 + volume * 2})`,
+                        boxShadow: `0 0 ${volume * 60}px ${volume * 30}px rgba(212, 175, 55, 0.4)`
                     }}
                 ></div>
 
                 <button
                     onClick={toggleCall}
+                    onMouseEnter={() => setShowTooltip(true)}
+                    onMouseLeave={() => callStatus !== 'active' && setShowTooltip(false)}
                     disabled={callStatus === 'loading'}
                     className={`group relative p-6 rounded-full transition-all duration-500 shadow-2xl border-2 flex items-center justify-center ${
                         callStatus === 'active' 
                             ? 'bg-secondary border-red-500 text-red-500' 
                             : 'bg-primary border-white/20 text-secondary'
                     } ${callStatus === 'loading' ? 'opacity-70 scale-95 cursor-wait' : 'hover:scale-110 active:scale-90 scale-100'}`}
-                    aria-label={callStatus === 'active' ? 'Terminar llamada' : 'Llamar al Concierge Voz'}
                 >
-                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 rounded-full transition-opacity"></div>
-                    
                     {callStatus === 'loading' ? (
                         <div className="w-6 h-6 border-2 border-secondary/30 border-t-secondary rounded-full animate-spin"></div>
                     ) : (
-                        <span className={`material-icons text-3xl transition-all ${callStatus === 'active' ? 'animate-pulse' : ''}`}>
-                            {callStatus === 'active' ? 'call_end' : 'phone_in_talk'}
-                        </span>
+                        callStatus === 'active' ? <PhoneOff className="w-7 h-7" /> : <Phone className="w-7 h-7" />
                     )}
                     
-                    {/* Status Pip - REPOSITIONED & ANCHORED */}
+                    {/* Status Pip */}
                     <div className={`absolute top-0 right-1 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-colors z-20 ${callStatus === 'active' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                    
-                    {/* Floating Label - ALIGNED TO RIGHT FLANK */}
-                    <span className="absolute right-full mr-6 bg-secondary text-primary text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 px-5 py-3 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 transition-all scale-90 group-hover:scale-100 pointer-events-none whitespace-nowrap border border-primary/20 backdrop-blur-md flex flex-col items-end gap-1">
-                        <span>{callStatus === 'active' ? 'Terminar Llamada 📡' : 'Concierge Voz ☎️'}</span>
-                        <span className="text-[8px] text-white/50 border-t border-white/10 pt-1 w-full text-right truncate">DIRECTO: 209-267-3503</span>
-                    </span>
                 </button>
             </div>
         </div>
@@ -165,3 +195,4 @@ const SaltyVoiceButton: React.FC = () => {
 };
 
 export default SaltyVoiceButton;
+
