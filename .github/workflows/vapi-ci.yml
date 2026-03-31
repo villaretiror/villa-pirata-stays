@@ -40,7 +40,7 @@ jobs:
           VAPI_WEBHOOK_SECRET: "test_secret_ci"
           
       - name: Run Webhook Integrations Tests
-        run: npx ts-node scripts/test_vapi_webhook.ts
+        run: npx -y tsx scripts/test_vapi_webhook.ts
         env:
           VAPI_WEBHOOK_URL: 'http://localhost:3000/api/webhooks?source=vapi'
           VAPI_WEBHOOK_SECRET: 'test_secret_ci'
