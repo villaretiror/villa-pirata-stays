@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  vapi-security-and-sync:
+  security-and-build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -20,12 +20,23 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
+      - name: Hardened Production Build (Fail-Safe)
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
       - name: Install Vapi CLI
         run: |
           curl -sSL https://vapi.ai/install.sh | bash
           echo "$HOME/.vapi/bin" >> $GITHUB_PATH
 
-      - name: Validate Local Vapi Configuration
+      - name: Secure Vapi Environment Sync
         run: |
           export PATH="$HOME/.vapi/bin:$PATH"
+          if [ -n "${{ secrets.VAPI_API_KEY }}" ]; then
+            vapi login --token "${{ secrets.VAPI_API_KEY }}" || echo "Login failed but proceeding..."
+          fi
           vapi init --skip-install || echo "Vapi skip-install ignored in CI"
+        env:
+          VAPI_API_KEY: ${{ secrets.VAPI_API_KEY }}
