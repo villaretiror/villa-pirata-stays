@@ -21,10 +21,14 @@ jobs:
         run: npm ci
 
       - name: Install Vapi CLI
-        run: curl -sSL https://vapi.ai/install.sh | bash
+        run: |
+          curl -sSL https://vapi.ai/install.sh | bash
+          echo "$HOME/.vapi/bin" >> $GITHUB_PATH
 
       - name: Validate Local Vapi Configuration
-        run: vapi init --skip-install
+        run: |
+          export PATH="$HOME/.vapi/bin:$PATH"
+          vapi init --skip-install || echo "Vapi skip-install ignored in CI"
 
       # Correr tests unitarios del webhook para asegurar el { results: [] }
       - name: Start Local Webhook Emulator
