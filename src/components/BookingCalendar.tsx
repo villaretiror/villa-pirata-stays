@@ -244,7 +244,7 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                                 <div className={`
                                     relative z-10 w-full h-full flex flex-col items-center justify-center rounded-full border-2 transition-all
                                     ${(isStart || isEnd) ? 'bg-[#D4AF37] border-[#D4AF37] text-[#0A192F] shadow-[0_8px_25px_rgba(212,175,55,0.4)] scale-105' : 'border-transparent'}
-                                    ${blocked && isCurrentMonth ? 'after:content-[""] after:absolute after:w-full after:h-px after:bg-gray-300 after:-rotate-45' : ''}
+                                    ${blocked && isCurrentMonth ? "after:content-[''] after:absolute after:w-full after:h-px after:bg-gray-300/60 after:-rotate-45 after:left-0" : ''}
                                 `}>
                                     <span className={`text-[15px] ${isStart || isEnd ? 'font-black text-secondary' : 'font-bold'} ${blocked ? 'opacity-30' : ''}`}>{day.getDate()}</span>
                                     {price && !blocked && !isBetween && (

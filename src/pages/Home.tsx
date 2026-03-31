@@ -144,7 +144,7 @@ const Home: React.FC = () => {
 
   const filteredProperties = React.useMemo(() => {
     return properties.filter(property => {
-      if (property.isOffline) return false;
+      if (property.is_offline) return false;
       const totalHumans = deferredAdults + deferredChildren;
       const capacity = Number(property.guests) || 1;
       if (capacity < totalHumans) return false;
@@ -193,69 +193,11 @@ const Home: React.FC = () => {
     });
   }, [properties, getOccupiedDatesForProperty, deferredAdults, deferredChildren, deferredPets, deferredCategory, deferredStartDate, deferredEndDate]);
 
-  // Combined Blocks for the Global Search Calendar (Dates where ALL villas are occupied)
-  const globalBlockedDates = React.useMemo(() => {
-    if (properties.length === 0) return [];
-    
-    // 🔱 ELITE LOGIC (Patched): Merge manual dates + actual active bookings + iCal Synced for EACH property.
-    const allBlockedSets = properties.map(property => {
-      if (property.isOffline) return new Set<string>();
-      
-      const propId = String(property.id);
-      
-      // 1. Manual blocks
-      const blocked = new Set<string>((property.blockeddates as string[]) || (property.blockedDates as string[]) || []);
-      
-      // 2. Verified Active Bookings (Direct)
-      const propBookings = bookings.filter(b => b.property_id === propId);
-      propBookings.forEach(b => {
-         let current = new Date(b.check_in + 'T12:00:00');
-         const out = new Date(b.check_out + 'T12:00:00');
-         while (current < out) {
-            blocked.add(current.toISOString().split('T')[0]);
-            current.setDate(current.getDate() + 1);
-         }
-      });
-
-      // 3. iCal Synced Blocks
-      const propSynced = syncedBlocks.filter(b => b.property_id === propId);
-      propSynced.forEach(b => {
-         let current = new Date(b.check_in + 'T12:00:00');
-         const out = new Date(b.check_out + 'T12:00:00');
-         while (current < out) {
-            blocked.add(current.toISOString().split('T')[0]);
-            current.setDate(current.getDate() + 1);
-         }
-      });
-
-      return blocked;
-    });
-
-    const activeVillasSets = allBlockedSets.filter(s => s.size > 0 || true); // Placeholder if needed
-
-    // If a guest searches globally, we ONLY block a date visually on Home if EVERY property is rented/blocked on that date.
-    const commonBlocks = allBlockedSets.length > 0 
-      ? [...allBlockedSets[0]].filter(date => 
-          allBlockedSets.every((set: Set<string>) => set.has(date))
-        )
-      : [];
-
-    return commonBlocks.map(d => new Date(d + 'T12:00:00')); // T12 to avoid timezone shifts
-  }, [properties, bookings, syncedBlocks]);
-
-  // 🛡️ RANGE VALIDATOR: Prevent users from crossing over fully booked dates
+  // Wait to filter availability after user selection rather than preemptively blocking the global search calendar
+  // to avoid confusing users when multiple properties have overlapping legitimate reservations.
   const isRangeAvailable = (start: Date, end: Date) => {
-    let current = new Date(start);
-    while (current <= end) {
-      if (globalBlockedDates.some(bd => 
-        bd.getFullYear() === current.getFullYear() &&
-        bd.getMonth() === current.getMonth() &&
-        bd.getDate() === current.getDate()
-      )) {
-        return false;
-      }
-      current.setDate(current.getDate() + 1);
-    }
+    // Range selection is fully open in the global calendar. 
+    // The "Radar" handles validation when 'Ver Disponibilidad' is clicked.
     return true;
   };
 
@@ -384,7 +326,7 @@ const Home: React.FC = () => {
                             setTimeout(() => setSearchTab('guests'), 400); // Auto-jump
                         }
                       }} 
-                      blockedDates={globalBlockedDates} 
+                      blockedDates={[]} 
                       isRangeAvailable={isRangeAvailable}
                     />
                   </div>

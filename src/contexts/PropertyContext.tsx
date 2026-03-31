@@ -89,8 +89,8 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const fetchPropertiesFromDB = useCallback(async (signal?: AbortSignal) => {
     try {
       const [bookingRes, syncedRes, guideRes, settingsRes] = await Promise.all([
-        supabase.from('bookings').select('*').neq('status', 'cancelled').abortSignal(signal),
-        supabase.from('synced_blocks').select('*').abortSignal(signal),
+        supabase.from('bookings').select('id, property_id, check_in, check_out, status').neq('status', 'cancelled').abortSignal(signal),
+        supabase.from('synced_blocks').select('id, property_id, check_in, check_out, source, sync_hash').abortSignal(signal),
         supabase.from('destination_guides').select('*').eq('is_active', true).order('sort_order', { ascending: true }).abortSignal(signal),
         supabase.from('system_settings').select('key, value').abortSignal(signal)
       ]);
@@ -154,13 +154,13 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
     
     const propertyBookings = bookings.filter(b => 
-      b.property_id === propertyId && 
+      String(b.property_id) === String(propertyId) && 
       BLOCKING_STATUSES.includes(b.status || '') &&
       b.status !== 'cancelled' && 
       b.status !== 'expired'
     );
-    const propertySynced = syncedBlocks.filter(b => b.property_id === propertyId);
-    const property = properties.find(p => p.id === propertyId);
+    const propertySynced = syncedBlocks.filter(b => String(b.property_id) === String(propertyId));
+    const property = properties.find(p => String(p.id) === String(propertyId));
     
     const blockedSet = new Set<string>();
     
