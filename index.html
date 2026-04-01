@@ -101,6 +101,11 @@
   <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" />
 
   <!-- No runtime Tailwind CDN -->
+  <script>
+    window.exports = window.exports || {};
+    window.module = window.module || { exports: {} };
+    // 🔱 SALTY INTEROP: Blindando dependencias legacy contra el crasheo de React.Children
+  </script>
 </head>
 
 <body class="bg-sand text-text-main antialiased h-full selection:bg-primary selection:text-white">
