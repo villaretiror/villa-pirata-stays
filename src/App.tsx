@@ -144,7 +144,6 @@ const App: React.FC = () => {
               <Route path="/host-profile/:id" element={<HostProfile />} />
               <Route path="/host/*" element={<ProtectedRoute><HostDashboard /></ProtectedRoute>} />
               <Route path="/staff-dashboard" element={<StaffDashboard />} />
-              <Route path="/reservation/:id" element={<ReservationDetails />} />
               <Route path="/stay/:id" element={<StayDashboard />} />
               <Route path="/contrato" element={<ContractView />} />
               <Route path="/secret-spots" element={<SecretSpots />} />

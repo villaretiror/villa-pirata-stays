@@ -59,6 +59,8 @@ const Booking: React.FC = () => {
   } = useAvailability(id);
 
   const [phone, setPhone] = useState(new URLSearchParams(location.search).get('phone') || user?.phone || '');
+  const [guestEmail, setGuestEmail] = useState(new URLSearchParams(location.search).get('email') || user?.email || '');
+  const [guestName, setGuestName] = useState(new URLSearchParams(location.search).get('guest_name') || user?.full_name || '');
   const [guestMessage, setGuestMessage] = useState('');
   const [priceMismatch, setPriceMismatch] = useState(false);
   const [contractAccepted, setContractAccepted] = useState(false);
@@ -128,24 +130,26 @@ const Booking: React.FC = () => {
   }
   const isTooShort = nights > 0 && nights < min_nights_req;
 
-  // 🎣 LEAD CAPTURE (Ghost Booking Protocol)
+  // 🎣 LEAD CAPTURE (Ghost Booking Protocol - Anonymous & Global)
   useEffect(() => {
     const timer = setTimeout(async () => {
+      // Capturamos si hay fechas y un contacto (teléfono), incluso si no hay user.id
       if (!startDate || !endDate || !phone || phone.length < 5 || isTooShort || !id) return;
 
       try {
         const payload: any = {
           property_id: id,
-          user_id: user?.id,
+          user_id: user?.id || null, // 🔱 ANONYMOUS ELITE: No requerimos login para salvar el lead
           check_in: format(startDate, 'yyyy-MM-dd'),
           check_out: format(endDate, 'yyyy-MM-dd'),
           total_price: pricing?.total || 0,
-          customer_name: user?.full_name || 'Huésped Interesado (Lead)',
-          status: 'lead', // 🔱 ELITE RESCUE: No bloquea hasta 'Checkout'
+          customer_name: user?.full_name || 'Huésped Interesado (Lead Web)',
+          status: 'lead', 
           source: 'Web Direct (Lead)',
           payment_method: 'pending_selection',
           guests_count: property?.guests || 1,
           cancellation_reason: guestMessage,
+          // Guardamos el teléfono en metadata si no podemos asociar perfil
           hold_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() 
         };
 
@@ -210,9 +214,9 @@ const Booking: React.FC = () => {
     setIsProcessing(true);
 
     const bookingPayload: BookingInsert = {
-      user_id: user.id,
-      customer_name: user.full_name,
-      source: 'Direct Web',
+      user_id: user?.id || null,
+      customer_name: guestName || 'Invitado (Web)',
+      source: 'Direct Web (Anonymous)',
       property_id: id,
       check_in: format(startDate, 'yyyy-MM-dd'),
       check_out: format(endDate, 'yyyy-MM-dd'),
@@ -288,7 +292,7 @@ const Booking: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           type: 'reservation_confirmed',
-          customer: { name: user.full_name, email: user.email, phone: phone },
+          customer: { name: guestName || 'Huésped', email: guestEmail || 'sin-email@stays.com', phone: phone },
           propertyId: property.id,
           bookingId: bookingData.id,
           checkIn: bookingData.check_in,
@@ -308,7 +312,7 @@ const Booking: React.FC = () => {
     navigate('/success', {
       state: {
         bookingData: {
-          guestName: user.full_name,
+          guestName: guestName || 'Huésped',
           propertyName: property.title,
           checkIn: format(startDate, 'dd MMM yyyy'),
           checkOut: format(endDate, 'dd MMM yyyy'),
@@ -388,9 +392,16 @@ const Booking: React.FC = () => {
                   Directo
                 </div>
               </div>
-              <p className="mt-3 text-primary font-black text-lg">
-                ${property.price} <span className="text-[10px] font-sans text-gray-400">USD / NOCHE</span>
-              </p>
+                {startDate && endDate ? (
+                  <div className="text-right">
+                    <p className="text-primary font-black text-2xl animate-fade-in">${finalTotal.toFixed(2)}</p>
+                    <p className="text-[9px] font-sans text-gray-400 uppercase tracking-widest">Total Estimado (Inc. Taxes & Fees)</p>
+                  </div>
+                ) : (
+                  <p className="mt-3 text-primary font-black text-lg">
+                    ${property.price} <span className="text-[10px] font-sans text-gray-400">USD / NOCHE</span>
+                  </p>
+                )}
             </div>
           </div>
 
@@ -459,6 +470,28 @@ const Booking: React.FC = () => {
           <section className="space-y-4">
             <h3 className={TAG_STYLE + " text-gray-400"}>2. Detalles del Viaje</h3>
             <div className="space-y-4">
+              {!user && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in">
+                  <div className="relative group">
+                    <input
+                      type="text"
+                      placeholder="Nombre Completo"
+                      className="w-full px-6 py-5 bg-white border border-black/5 rounded-[2rem] shadow-soft focus:ring-2 ring-primary/10 outline-none font-bold text-sm"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                    />
+                  </div>
+                  <div className="relative group">
+                    <input
+                      type="email"
+                      placeholder="Email de Confirmación"
+                      className="w-full px-6 py-5 bg-white border border-black/5 rounded-[2rem] shadow-soft focus:ring-2 ring-primary/10 outline-none font-bold text-sm"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
               <div className="relative group">
                 <Phone size={20} className="absolute left-5 top-1/2 -translate-y-1/2 text-gray-400 transition-colors group-focus-within:text-primary" />
                 <input

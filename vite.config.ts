@@ -15,15 +15,20 @@ export default defineConfig({
     outDir: 'dist',
     sourcemap: false,
     minify: 'esbuild',
+    chunkSizeWarningLimit: 2000,
+    reportCompressedSize: false,
     rollupOptions: {
       output: {
         entryFileNames: `assets/[name]-[hash].js`,
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
-        manualChunks: {
-          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-          'vendor-framer': ['framer-motion'],
-          'vendor-utils': ['recharts', 'jspdf', '@supabase/supabase-js'],
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('framer-motion')) return 'vendor-ui';
+            if (id.includes('react')) return 'vendor-react';
+            if (id.includes('jspdf') || id.includes('recharts')) return 'vendor-utils';
+            return 'vendor-common';
+          }
         },
       },
     },

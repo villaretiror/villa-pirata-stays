@@ -79,9 +79,9 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
         return blockedDates.some(blocked => isSameDay(blocked, date));
     }, [blockedDates, minDate, maxDate]);
 
+    const [scarcityLevel, setScarcityLevel] = useState<number>(0);
     // Scarcity Checker - Salty Intelligence
     useEffect(() => {
-        let availableWeekendsCount = 0;
         const start = startOfMonth(calMonth);
         const end = endOfMonth(calMonth);
         
@@ -97,13 +97,15 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
             }
             current.setDate(current.getDate() + 1);
         }
+        
+        setScarcityLevel(freeWeekends.size);
 
         if (freeWeekends.size > 0 && freeWeekends.size < 3) {
             window.dispatchEvent(new CustomEvent('salty-push', {
                 detail: { 
                     message: `¡Atención! Quedan pocos fines de semana disponibles este mes en la Villa. ¡No te quedes fuera! ⚓`,
                     type: 'warning',
-                    speak: false // Don't speak this automatically so it's a subtle UI text
+                    speak: false 
                 }
             }));
         }
@@ -193,9 +195,19 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
                         </button>
                     ) : <div className="w-10 h-10" />}
 
-                    <h4 className="font-serif font-black text-2xl capitalize text-text-main tracking-tight">
-                        {format(monthDate, 'MMMM yyyy', { locale: es })}
-                    </h4>
+                    <div className="text-center">
+                        <h4 className="font-serif font-black text-2xl capitalize text-text-main tracking-tight">
+                            {format(monthDate, 'MMMM yyyy', { locale: es })}
+                        </h4>
+                        {scarcityLevel > 0 && scarcityLevel < 4 && (
+                            <div className="flex items-center justify-center gap-1.5 mt-1 animate-pulse">
+                                <span className="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-secondary">
+                                    Solo {scarcityLevel} {scarcityLevel === 1 ? 'fin' : 'fines'} de semana libres
+                                </span>
+                            </div>
+                        )}
+                    </div>
 
                     {index === monthsShown - 1 ? (
                         <button 

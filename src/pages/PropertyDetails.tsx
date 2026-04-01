@@ -358,6 +358,7 @@ export const PropertyDetails: React.FC = () => {
               src={property.images[currentImageIndex]}
               alt={property.title}
               className="w-full h-full object-cover"
+              priority={currentImageIndex === 0}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/40 via-transparent to-secondary/20"></div>
           </motion.div>

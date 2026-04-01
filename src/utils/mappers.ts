@@ -50,11 +50,14 @@ export const mapSupabaseProperty = (
       wifiPass: isAdmin ? (rawPolicies.wifiPass || p.wifi_pass || '') : '********',
       accessCode: isAdmin ? (rawPolicies.accessCode || p.access_code || '') : 'CONFIDENCIAL'
     },
-    blockedDates: p.blockeddates || [],
+    blockedDates: (p.blockeddates as string[]) || [],
     calendarSync: (p.calendarSync as any[]) || [],
     seasonal_prices: (p.seasonal_prices as any[]) || [],
     min_price_floor: Number(p.min_price_floor) || 0,
     max_discount_allowed: Number(p.max_discount_allowed) || 15,
+    tax_rate: Number(p.tax_rate) || 7,
+    airbnb_id: p.airbnb_id || '',
+    airbnb_url: p.airbnb_url || '',
     offers: (p.offers as any) || [],
     reviews_list: (p.reviews_list as any) || [],
     host: (p.host as any) || {

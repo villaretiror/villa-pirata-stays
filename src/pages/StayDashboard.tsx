@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
-import { useBooking } from '../contexts/BookingContext';
+import { useBookingContext } from '../contexts/BookingContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { format, differenceInDays } from 'date-fns';
 import { 
@@ -26,7 +26,7 @@ const StayDashboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const location = useLocation();
-    const { calculateRefund } = useBooking();
+    const { calculateRefund } = useBookingContext();
     const { properties } = useProperty();
     const [booking, setBooking] = useState<any>(null);
     const [loading, setLoading] = useState(true);

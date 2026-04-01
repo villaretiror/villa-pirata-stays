@@ -139,6 +139,11 @@ export const queryPropertyKnowledge = async (
         // For Web Chat, use Gemini for more flexible answers (keeping the prompt strict)
         try {
             const prompt = `Responde como Salty, el Concierge de Élite. Sé profesional, neutro y sofisticado. No uses vocativos (como Capitán).
+            
+            PROTOCOLO "NEVER SAY NO" (VENTA CRUZADA):
+            - Si una villa está ocupada para las fechas consultadas, DEBES buscar disponibilidad en la otra villa (Villa Retiro R vs Pirata Family House) y sugerirla proactivamente.
+            - Si ambas están ocupadas, sugiere el hueco de disponibilidad más cercano.
+            
             Basa tu respuesta únicamente en estos datos de la propiedad:
             Título: ${prop.title}
             Descripción: ${prop.description}
@@ -659,10 +664,16 @@ export const findCalendarGaps = async (propertyId: string, customSupabase?: Supa
 };
 
 // 5. Sentinel Middleware (Sentiment & Guardrail)
-export const handleCrisisAlert = async (full_name: string, message: string, contact: string, severity: number = 1) => {
+export const handleCrisisAlert = async (full_name: string, message: string, contact: string, propertyId?: string, severity: number = 1) => {
     const sentimentScore = severity / 5; // Simplified mapping
     const { error } = await supabase.from('urgent_alerts').insert({
-        full_name, message, contact, status: 'new', severity, sentiment_score: sentimentScore
+        full_name, 
+        message, 
+        contact, 
+        property_id: propertyId,
+        status: 'new', 
+        severity, 
+        sentiment_score: sentimentScore
     });
     return !error;
 };

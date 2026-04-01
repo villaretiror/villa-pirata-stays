@@ -38,7 +38,7 @@ const StickyBookingBar: React.FC<StickyBookingBarProps> = ({ villaName, onAction
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 100, opacity: 0 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-          className="fixed bottom-28 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px] z-[100] md:bottom-10 md:w-[500px]"
+          className="fixed bottom-20 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[400px] z-[100] md:bottom-10 md:w-[500px]"
         >
           <div className="bg-secondary/95 backdrop-blur-3xl rounded-[2.5rem] md:rounded-full py-6 md:py-8 px-6 md:px-10 shadow-bunker border border-white/5 flex items-center justify-between gap-4 md:gap-8">
             <div className="pl-1 md:pl-2 py-1 max-w-[150px] md:max-w-none">
