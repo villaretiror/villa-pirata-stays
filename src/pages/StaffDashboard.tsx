@@ -211,7 +211,13 @@ const StaffDashboard: React.FC = () => {
             <span className="text-[8px] font-black uppercase tracking-widest">Misiones</span>
           </button>
           <div className="w-px h-6 bg-white/10" />
-          <button onClick={() => window.location.href = 'tel:' + (process.env.VITE_HOST_PHONE || '7870000000')} className="flex flex-col items-center gap-1 text-gray-400 px-4 py-2">
+          <button 
+            onClick={() => {
+              const phone = (window as any).process?.env?.VITE_HOST_PHONE || '7870000000';
+              window.location.href = 'tel:' + phone;
+            }} 
+            className="flex flex-col items-center gap-1 text-gray-400 px-4 py-2"
+          >
             <Phone className="w-5 h-5" />
             <span className="text-[8px] font-black uppercase tracking-widest">Host</span>
           </button>

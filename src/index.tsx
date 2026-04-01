@@ -8,6 +8,11 @@ import { PropertyProvider } from './contexts/PropertyContext';
 import { BookingProvider } from './contexts/BookingContext';
 import { AlertTriangle } from 'lucide-react';
 
+// 🔱 0. Global Environment Blindage (The Antidote for Production White-out)
+if (typeof (window as any).process === 'undefined') {
+  (window as any).process = { env: {} };
+}
+
 // 1. Error Boundary Wrapper
 class ErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
   constructor(props: { children: ReactNode }) {

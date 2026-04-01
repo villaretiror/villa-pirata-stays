@@ -9,9 +9,22 @@ import * as GoogleGenAIModule from '@google/genai';
 // 🔱 ROBUST ESM INTEROP: Detect if it's a named export, default export, or a namespace.
 const GoogleGenAIClass: any = (GoogleGenAIModule as any).GoogleGenAI || (GoogleGenAIModule as any).default || GoogleGenAIModule;
 
+// 🛡️ Safe Environment Access for Browser Runtime
+const getSaltyEnv = (key: string): string => {
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[key] || process.env[`VITE_${key}`] || '';
+  }
+  // @ts-ignore
+  if (typeof import.meta !== 'undefined' && import.meta.env) {
+    // @ts-ignore
+    return import.meta.env[`VITE_${key}`] || import.meta.env[key] || '';
+  }
+  return '';
+};
+
 // 🔱 INITIALIZE AI (GEMINI)
 const ai = new GoogleGenAIClass({
-    apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || process.env.VITE_GEMINI_API_KEY || '',
+    apiKey: getSaltyEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getSaltyEnv('GEMINI_API_KEY') || '',
 });
 const SALTY_MODEL = 'gemini-2.0-flash'; // ⚡ Gemini 2.0 Flash
 
