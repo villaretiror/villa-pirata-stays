@@ -248,7 +248,7 @@ const Booking: React.FC = () => {
     if (!startDate || !endDate || !user) return;
     setIsProcessing(true);
 
-    const bookingPayload: BookingInsert = {
+    const bookingPayload: any = {
       user_id: user?.id || null,
       customer_name: guestName || 'Invitado (Web)',
       source: 'Direct Web (Anonymous)',
@@ -267,11 +267,12 @@ const Booking: React.FC = () => {
       cleaning_fee_at_booking: Number(property.cleaning_fee || 0),
       service_fee_at_booking: Number(property.service_fee || 0),
       addons_breakdown: selectedAddons.length > 0 ? selectedAddons : null,
-      policy_snapshot: property?.policies || null,
+      policy_snapshot: (property?.policies as any) || null,
       attribution_source: attributionSource,
       attribution_token: attributionToken
     };
 
+    // 🎣 GHOST UPDATE: Apply attribution to the ghost lead as well
     const isRecovery = recoverData?.booking_id && recoverData?.recover;
 
     const { data: bookingData, error: bookingError } = isRecovery 

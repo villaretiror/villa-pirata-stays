@@ -80,7 +80,29 @@ export default async function handler(req: any, res: any) {
                 }
                 
                 if (name === 'sync' || name === 'automation') {
-                    await NotificationService.sendTelegramAlert(`🔴 🚨 <b>CRON "${name.toUpperCase()}" FAILED</b>\nError: <code>${err.message}</code>`, undefined, false);
+                    // 🛡️ HEARTBEAT REDLINE: Check if this is the second consecutive failure
+                    const { data: recentFailures } = await supabase
+                        .from('cron_heartbeats')
+                        .select('status')
+                        .eq('task_name', name)
+                        .order('created_at', { ascending: false })
+                        .limit(2);
+                    
+                    const isConsecutive = recentFailures && recentFailures.length >= 2 && recentFailures.every(h => h.status === 'error');
+                    
+                    if (isConsecutive) {
+                        await NotificationService.sendTelegramAlert(
+                            `🚨 <b>CRITICAL HEARTBEAT FAILURE: ${name.toUpperCase()}</b>\n` +
+                            `━━━━━━━━━━━━━━━━━━━━\n` +
+                            `⚠️ <b>Estatus:</b> Segundo fallo consecutivo (30 min sin pulso).\n` +
+                            `❌ <b>Error:</b> <code>${err.message}</code>\n\n` +
+                            `🔱 <i>Acción: Intervención manual requerida de inmediato.</i>`, 
+                            undefined, false
+                        );
+                    } else {
+                        // Silent report for the first failure to avoid spam
+                        console.warn(`[Cron Warning] First failure for ${name}. Silent mode activated.`);
+                    }
                 }
             }
         };

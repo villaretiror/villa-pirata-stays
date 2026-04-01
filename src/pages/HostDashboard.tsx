@@ -30,7 +30,7 @@ type ExpenseRow = Tables<'property_expenses'>;
 type LeadRow = Tables<'leads'>;
 type AlertRow = Tables<'urgent_alerts'>;
 type CohostRow = Tables<'property_cohosts'>;
-type TaskRow = Tables<'operation_tasks'>;
+type TaskRow = any; // 'operation_tasks' is missing in some environments, using generic
 
 // Joined types for nested queries
 type BookingWithDetails = BookingRow & {
@@ -99,6 +99,13 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
     review_url: p.review_url || ''
   });
 
+  const calendarSync = p.calendarSync || [];
+  const lastSyncDate = calendarSync.length > 0 
+    ? new Date(Math.max(...calendarSync.map((s: any) => new Date(s.lastSynced || 0).getTime())))
+    : null;
+
+  const isSyncHealthy = calendarSync.every((s: any) => s.syncStatus === 'success');
+
   const handleBlur = () => {
     onSave({ ...p, ...formData });
   };
@@ -130,8 +137,16 @@ function PropertyConversionCard({ p, onSave }: { p: any, onSave: (updated: any) 
 
       <div className="relative z-10">
         <div className="flex justify-between items-center mb-8 pb-4 border-b border-gray-50">
-          <h3 className="font-serif font-black italic text-2xl text-text-main tracking-tight">{p.title}</h3>
-          <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full border border-gray-100">
+          <div>
+            <h3 className="font-serif font-black italic text-2xl text-text-main tracking-tight line-clamp-1">{p.title}</h3>
+            <div className="flex items-center gap-2 mt-1.5 ml-0.5">
+               <div className={`w-1.5 h-1.5 rounded-full ${isSyncHealthy ? 'bg-green-500 animate-pulse' : 'bg-red-400'}`} />
+               <p className="text-[9px] font-black uppercase tracking-[0.1em] text-text-light opacity-60">
+                 {lastSyncDate ? `Sincronizado: ${lastSyncDate.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })}` : 'Sincronía Pendiente'}
+               </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 px-3 py-1 bg-gray-50 rounded-full border border-gray-100 h-fit">
             <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
             <span className="text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 text-text-light">Auto-Optimizer Active</span>
           </div>
@@ -518,11 +533,11 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
       
       if (demand) {
         // ROI Calculation
-        const rescuedMoney = attributionBookings?.reduce((acc, b) => acc + (b.total_price || 0), 0) || 0;
+        const rescuedMoney = (attributionBookings as any[])?.reduce((acc: number, b: any) => acc + (b.total_price || 0), 0) || 0;
         (window as any).saltyROI = rescuedMoney;
 
         // Heatmap logic
-        const heatmap = demand.reduce((acc: any, log: any) => {
+        const heatmap = (demand as any[]).reduce((acc: any, log: any) => {
           if (!log.check_in) return acc;
           const month = new Date(log.check_in).toLocaleString('es-ES', { month: 'short' }).toUpperCase();
           acc[month] = (acc[month] || 0) + 1;
@@ -532,30 +547,30 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
 
         // 🕵️ SALTY TARGETING: Cross-reference demand with gaps
         const allGaps: any[] = [];
-        properties.forEach(p => {
+        properties.forEach((p: any) => {
            const pgaps = getCalendarGaps(p.id);
-           pgaps.forEach(g => allGaps.push({ ...g, property_id: p.id, property_title: p.title }));
+           pgaps.forEach((g: any) => allGaps.push({ ...g, property_id: p.id, property_title: p.title }));
         });
 
-        const candidates = demand.filter(d => 
+        const candidates = (demand as any[]).filter((d: any) => 
            d.lead_email && 
            d.lead_temperature !== 'cold' && // Skip cold leads
-           allGaps.some(g => g.property_id === d.property_id || !d.property_id)
-        ).map(d => {
-           const matchGap = allGaps.find(g => 
+           allGaps.some((g: any) => g.property_id === d.property_id || !d.property_id)
+        ).map((d: any) => {
+           const matchGap = allGaps.find((g: any) => 
               (g.property_id === d.property_id || !d.property_id) && 
               new Date(g.check_in) >= new Date(d.check_in!) && 
               new Date(g.check_out) <= new Date(d.check_out!)
            );
            
-           const rescueAttempts = sent?.filter(s => s.lead_email === d.lead_email).length || 0;
+           const rescueAttempts = (sent as any[])?.filter((s: any) => s.lead_email === d.lead_email).length || 0;
            
            // Fatigue Check (15 days)
-           const lastSent = sent?.filter(s => s.lead_email === d.lead_email).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+           const lastSent = (sent as any[])?.filter((s: any) => s.lead_email === d.lead_email).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
            const isFatigued = lastSent && (Date.now() - new Date(lastSent.created_at).getTime()) < 15 * 24 * 60 * 60 * 1000;
 
            return { ...d, matchGap, isFatigued, rescueAttempts };
-        }).filter(c => c.matchGap && !c.isFatigued);
+        }).filter((c: any) => c.matchGap && !c.isFatigued);
         
         setRescueCandidates(candidates);
       }

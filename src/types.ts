@@ -61,7 +61,8 @@ export interface CalendarSync {
 }
 
 // 🛡️ OMIT ALL FIELDS THAT ARE OVERRIDDEN TO AVOID CONFLICTS
-type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'original_price';
+type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'original_price' | 
+'availability_urgency_msg' | 'exact_lat_long' | 'general_area_map_url' | 'is_cleaning_in_progress';
 
 export interface Property extends Omit<PropertyRow, PropertyOmissions> {
   original_price?: number | null; 
@@ -74,7 +75,7 @@ export interface Property extends Omit<PropertyRow, PropertyOmissions> {
   calendarSync: CalendarSync[];
   seasonal_prices?: SeasonalPrice[];
   isOffline?: boolean; 
-  // Extensiones detectadas en errores de Vercel
+  // Extensiones detectadas en errores de Vercel (Redefining as optional/null to match DB or custom needs)
   availability_urgency_msg?: string | null;
   exact_lat_long?: string | null;
   general_area_map_url?: string | null;

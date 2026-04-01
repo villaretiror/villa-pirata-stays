@@ -1,5 +1,13 @@
 import { supabase } from '../lib/supabase.js';
 
+const getEnvVar = (key: string): string => {
+    if (typeof process !== 'undefined' && process.env[key]) return process.env[key] as string;
+    if (typeof process !== 'undefined' && process.env[`VITE_${key}`]) return process.env[`VITE_${key}`] as string;
+    const meta = (import.meta as any).env;
+    if (meta && meta[`VITE_${key}`]) return meta[`VITE_${key}`];
+    return '';
+};
+
 /**
  * 🛰️ NOTIFICATION SERVICE (Telegram Bot Integration)
  * Architecture: Server-side Alerts for Business & System Health
@@ -85,12 +93,17 @@ export const NotificationService = {
      * Envía una alerta a Telegram al chat del Host.
      */
     async sendTelegramAlert(message: string, keyboard?: any, silent: boolean = false): Promise<boolean> {
-        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-        const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+        const TELEGRAM_TOKEN = getEnvVar('TELEGRAM_BOT_TOKEN');
+        const CHAT_ID = getEnvVar('TELEGRAM_CHAT_ID');
 
         if (!TELEGRAM_TOKEN || !CHAT_ID) {
-            console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
-            return false;
+            const fallbackToken = process.env.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+            const fallbackChatId = process.env.VITE_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+            
+            if (!fallbackToken || !fallbackChatId) {
+                console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
+                return false;
+            }
         }
 
         const payload: any = {
@@ -252,9 +265,9 @@ export const NotificationService = {
             }
 
             const cohostEmails = cohosts.map((c: any) => c.email);
-            const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-            const hostChatId = process.env.TELEGRAM_CHAT_ID;
-            const allChatIds = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId || "").split(',').map((id: string) => id.trim()).filter(Boolean);
+            const TELEGRAM_TOKEN = getEnvVar('TELEGRAM_BOT_TOKEN');
+            const hostChatId = getEnvVar('TELEGRAM_CHAT_ID');
+            const allChatIds = (getEnvVar('ALLOWED_TELEGRAM_CHAT_IDS') || hostChatId || "").split(',').map((id: string) => id.trim()).filter(Boolean);
 
             const emergencyMsg =
                 `🔴 <b>[CO-HOST ALERT] ${propertyName.toUpperCase()}</b>\n\n` +
