@@ -18,22 +18,24 @@ const SmartImage: React.FC<SmartImageProps> = ({
 
     // 🚀 BOUTIQUE OPTIMIZATION: High-Precision Image Resizing & Format Conversion
     let currentSrc = errorCount === 0 ? src : fallbackSrc;
+    // 🚢 DUAL-STRATEGY: Primary (Optimized) vs Secondary (Raw Original)
     let optimizedSrc = currentSrc;
-    
     if (optimizedSrc && optimizedSrc.includes('muscache.com')) {
-        // 🔱 AIRBNB ELITE: Force specific widths and quality. 
-        // 1200 matches our max card width, but for priority (Hero) we might want more.
-        const width = priority ? 1440 : 800; // Efficient sizing for Hero vs Cards
-        optimizedSrc = optimizedSrc.split('?')[0] + `?im_w=${width}`;
+        const width = priority ? 1440 : 800;
+        // BUST-UP: Only transform if we haven't failed yet
+        if (errorCount === 0) {
+            optimizedSrc = optimizedSrc.split('?')[0] + `?im_w=${width}`;
+        }
     } else if (optimizedSrc && optimizedSrc.includes('unsplash.com')) {
         const width = priority ? 1440 : 800;
         optimizedSrc = optimizedSrc.split('?')[0] + `?auto=format,compress&q=80&w=${width}`;
     } else if (optimizedSrc && (optimizedSrc.includes('supabase.co/storage/v1/render/image') || optimizedSrc.includes('supabase.co/storage/v1/object/public'))) {
-        // 🔱 SUPABASE DIRECT: High-speed delivery (Removing /render to avoid 403/404)
-        const width = priority ? 1200 : 800; 
-        optimizedSrc = optimizedSrc.replace('/render/image/public/', '/object/public/');
-        // Not adding transform params that require Image Transformation service
-        optimizedSrc = optimizedSrc.split('?')[0]; 
+        optimizedSrc = optimizedSrc.replace('/render/image/public/', '/object/public/').split('?')[0]; 
+    }
+    
+    // 🔱 CACHE SLAYER: Add timestamp during retry to force a fresh non-cached pull
+    if (errorCount === 1 && optimizedSrc) {
+        optimizedSrc += (optimizedSrc.includes('?') ? '&' : '?') + `v_ref=${Date.now()}`;
     }
 
     return (
@@ -65,12 +67,15 @@ const SmartImage: React.FC<SmartImageProps> = ({
                 className={`w-full h-full object-cover transition-all duration-1000 ease-out ${loaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-md'}`}
                 onLoad={() => setLoaded(true)}
                 onError={() => {
-                    if (errorCount < 1 && fallbackSrc && fallbackSrc !== src) {
-                        // 🚢 RESCUE PROTOCOL: Try the fallback image exactly once
-                        console.warn(`[SmartImage] Primary failed. Attempting Rescue with fallback...`);
-                        setErrorCount(prev => prev + 1);
+                    if (errorCount === 0) {
+                        // 🚢 SECONDARY DEFENSE: Try the raw original URL with a cache buster
+                        console.warn(`[SmartImage] Optimized failed. Reverting to Raw...`);
+                        setErrorCount(1);
+                    } else if (errorCount === 1 && fallbackSrc && fallbackSrc !== src) {
+                        // ⚓ FINAL STAND: Go to Unsplash
+                        console.warn(`[SmartImage] Raw failed. Final Rescue with Unsplash...`);
+                        setErrorCount(2);
                     } else {
-                        // All attempts failed
                         setLoaded(true);
                     }
                 }}
