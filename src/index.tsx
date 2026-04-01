@@ -1,28 +1,3 @@
-// 🔱 EMERGENCY BLACK BOX RECORDER (Bunker Shield v9.0)
-if (typeof window !== 'undefined') {
-  const reportError = (msg: string, err?: any) => {
-    const div = document.createElement('div');
-    div.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:white;color:black;padding:40px;z-index:9999999;font-family:monospace;overflow:auto;display:flex;flex-direction:column;gap:20px;';
-    div.innerHTML = `
-      <h1 style="color:red;font-size:24px;">🔱 SALTY EMERGENCY RESCUE INTERCEPT</h1>
-      <p><b>Error:</b> ${msg}</p>
-      <pre style="background:#eee;padding:20px;border-radius:10px;white-space:pre-wrap;">${err?.stack || JSON.stringify(err, null, 2) || 'No stack trace available'}</pre>
-      <div style="font-size:12px;opacity:0.6;">
-        <p><b>Agent Context:</b> ${navigator.userAgent}</p>
-        <p><b>URL:</b> ${window.location.href}</p>
-        <p><b>Timestamp:</b> ${new Date().toISOString()}</p>
-      </div>
-      <button onclick="window.location.reload(true)" style="padding:15px;background:black;color:white;border:none;border-radius:5px;cursor:pointer;font-weight:bold;">REINTENTAR PURGA (FORCED)</button>
-    `;
-    document.body.appendChild(div);
-    console.error("🔱 Salty Intercept Success:", msg, err);
-  };
-
-  window.addEventListener('error', (e) => reportError(e.message, e.error));
-  window.addEventListener('unhandledrejection', (e) => reportError('Unhandled Promise Rejection', e.reason));
-  console.log('🔱 Salty Emergency Radar: ACTIVE');
-}
-
 import './blindage';
 import React, { Component, ErrorInfo, ReactNode, useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
