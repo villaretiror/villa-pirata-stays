@@ -83,6 +83,11 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     } catch { return []; }
   });
 
+  // 💾 FAVORITES PERSISTENCE: Save to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('favorites', JSON.stringify(favorites));
+  }, [favorites]);
+
   const properties = dbProperties || PROPERTIES;
   const isLoading = !dbProperties && !pError;
 

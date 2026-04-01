@@ -29,10 +29,11 @@ const SmartImage: React.FC<SmartImageProps> = ({
         const width = priority ? 1440 : 800;
         optimizedSrc = optimizedSrc.split('?')[0] + `?auto=format,compress&q=80&w=${width}`;
     } else if (optimizedSrc && (optimizedSrc.includes('supabase.co/storage/v1/render/image') || optimizedSrc.includes('supabase.co/storage/v1/object/public'))) {
-        // 🔱 SUPABASE RENDER: The ultimate high-speed delivery
-        const width = priority ? 1440 : 800;
-        const renderUrl = optimizedSrc.replace('/object/public/', '/render/image/public/');
-        optimizedSrc = renderUrl.split('?')[0] + `?width=${width}&format=webp&quality=80`;
+        // 🔱 SUPABASE DIRECT: High-speed delivery (Removing /render to avoid 403/404)
+        const width = priority ? 1200 : 800; 
+        optimizedSrc = optimizedSrc.replace('/render/image/public/', '/object/public/');
+        // Not adding transform params that require Image Transformation service
+        optimizedSrc = optimizedSrc.split('?')[0]; 
     }
 
     return (
