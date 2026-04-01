@@ -19,6 +19,8 @@ const HostProfile = lazy(() => import('./pages/HostProfile'));
 const SecretSpots = lazy(() => import('./pages/SecretSpots'));
 const StayDashboard = lazy(() => import('./pages/StayDashboard'));
 const StaffDashboard = lazy(() => import('./pages/StaffDashboard'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 
 // Static Components (Keep for fast initial UI)
 import Navbar from './components/Navbar';
@@ -30,6 +32,7 @@ import { useProperty } from './contexts/PropertyContext';
 import { supabase } from './lib/supabase';
 import SaltyVoiceButton from './components/SaltyVoiceButton';
 import CustomCursor from './components/CustomCursor';
+import CookieConsent from './components/CookieConsent';
 
 // ⏳ Shell Loading Component for Suspense (Elite Branding)
 const PageLoader = () => (
@@ -147,6 +150,8 @@ const App: React.FC = () => {
               <Route path="/stay/:id" element={<StayDashboard />} />
               <Route path="/contrato" element={<ContractView />} />
               <Route path="/secret-spots" element={<SecretSpots />} />
+              <Route path="/terms/:id?" element={<TermsOfService />} />
+              <Route path="/privacy/:id?" element={<PrivacyPolicy />} />
               {/* 🔱 ELITE RESCUE PROTOCOL: Redirect to Home if path is not found */}
               <Route path="*" element={<Home />} />
             </Routes>
@@ -160,6 +165,7 @@ const App: React.FC = () => {
       <Footer />
       {showNavbar && <Navbar />}
       <CustomCursor />
+      <CookieConsent />
     </div>
   );
 };

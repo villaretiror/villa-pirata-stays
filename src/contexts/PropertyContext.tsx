@@ -40,6 +40,8 @@ interface PropertyContextType {
   refreshProperties: () => Promise<void>;
   isRefreshing: boolean;
   getOccupiedDatesForProperty: (propertyId: string) => Date[];
+  logSearch: (data: { propertyId?: string, check_in?: Date, check_out?: Date, guests?: number, isAvailable: boolean, lead_email?: string, metadata?: any }) => Promise<void>;
+  getCalendarGaps: (propertyId: string) => Array<{ check_in: string, check_out: string, nights: number }>;
 }
 
 const PropertyContext = createContext<PropertyContextType | undefined>(undefined);
@@ -270,6 +272,54 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setIsRefreshing(true);
       await Promise.all([mutateProperties(), fetchPropertiesFromDB()]); 
       setIsRefreshing(false);
+    },
+    logSearch: async (data) => {
+      // 🔱 SALTY RADAR: Capture search intent for Revenue BI
+      try {
+        let email = data.lead_email;
+        if (!email) {
+          const { data: { user } } = await supabase.auth.getUser();
+          email = user?.email || undefined;
+        }
+
+        await supabase.from('demand_logs').insert({
+          property_id: data.propertyId,
+          check_in: data.check_in?.toISOString().split('T')[0],
+          check_out: data.check_out?.toISOString().split('T')[0],
+          guests: data.guests,
+          is_available: data.isAvailable,
+          lead_email: email,
+          metadata: data.metadata,
+          session_id: localStorage.getItem('vrr_session_id') || undefined
+        });
+      } catch (e) {
+        console.error("Demand Log Error:", e);
+      }
+    },
+    getCalendarGaps: (propertyId) => {
+      // 🕵️ GAP DETECTOR: Find orphaned nights between bookings
+      const occupied = getOccupiedDatesForProperty(propertyId).map(d => d.toISOString().split('T')[0]).sort();
+      if (occupied.length < 2) return [];
+
+      const gaps: Array<{ check_in: string, check_out: string, nights: number }> = [];
+      for (let i = 0; i < occupied.length - 1; i++) {
+        const current = new Date(occupied[i]);
+        const next = new Date(occupied[i+1]);
+        const diffTime = Math.abs(next.getTime() - current.getTime());
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) - 1;
+
+        if (diffDays > 0 && diffDays <= 3) {
+          const gapStart = new Date(current);
+          gapStart.setDate(gapStart.getDate() + 1);
+          const gapEnd = new Date(next);
+          gaps.push({
+             check_in: gapStart.toISOString().split('T')[0],
+             check_out: gapEnd.toISOString().split('T')[0],
+             nights: diffDays
+          });
+        }
+      }
+      return gaps;
     }
   };
 

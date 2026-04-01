@@ -55,7 +55,7 @@ import {
   LayoutDashboard, User as UserIcon, AlertTriangle, Bell, Check, Trash2, Download,
   Plus, Tag, CheckCheck, DollarSign, GripHorizontal, RefreshCcw, UserX, ClipboardCheck,
   ListPlus, PlusCircle, HelpCircle, Printer, Anchor, ShieldCheck, Waves, Heart,
-  Save, Quote, ChevronDown, AlertCircle
+  Save, Quote, ChevronDown, AlertCircle, Target
 } from 'lucide-react';
 
 const CustomToast = () => {
@@ -497,7 +497,71 @@ const ImportModal = ({ onClose, onImport }: { onClose: () => void, onImport: (ur
 
 const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId, onFilterChange }: { bookings: BookingRow[], expenses: ExpenseRow[], properties: Property[], selectedPropertyId: string, onFilterChange: (id: string) => void }) => {
   const [viewMode, setViewMode] = useState<'gross' | 'net'>('gross');
-  const [showOrigin, setShowOrigin] = useState(false);
+  const [demandData, setDemandData] = useState<any[]>([]);
+  const [rescueCandidates, setRescueCandidates] = useState<any[]>([]);
+  const { getCalendarGaps } = useProperty();
+
+  // 🔱 SALTY BRAIN: Fetch Demand Heatmap & Rescue Candidates & ROI
+  useEffect(() => {
+    const fetchDemand = async () => {
+      const [
+        { data: demand }, 
+        { data: sent }, 
+        { data: attributionBookings },
+        { data: funnelLogs }
+      ] = await Promise.all([
+        supabase.from('demand_logs').select('*').order('created_at', { ascending: false }).limit(200),
+        supabase.from('rescue_emails_sent').select('*'),
+        supabase.from('bookings').select('total_price, attribution_source').eq('attribution_source', 'salty_rescue').eq('status', 'confirmed'),
+        supabase.from('checkout_abandonment_logs').select('*')
+      ]);
+      
+      if (demand) {
+        // ROI Calculation
+        const rescuedMoney = attributionBookings?.reduce((acc, b) => acc + (b.total_price || 0), 0) || 0;
+        (window as any).saltyROI = rescuedMoney;
+
+        // Heatmap logic
+        const heatmap = demand.reduce((acc: any, log: any) => {
+          if (!log.check_in) return acc;
+          const month = new Date(log.check_in).toLocaleString('es-ES', { month: 'short' }).toUpperCase();
+          acc[month] = (acc[month] || 0) + 1;
+          return acc;
+        }, {});
+        setDemandData(Object.entries(heatmap).map(([name, value]) => ({ name, value })));
+
+        // 🕵️ SALTY TARGETING: Cross-reference demand with gaps
+        const allGaps: any[] = [];
+        properties.forEach(p => {
+           const pgaps = getCalendarGaps(p.id);
+           pgaps.forEach(g => allGaps.push({ ...g, property_id: p.id, property_title: p.title }));
+        });
+
+        const candidates = demand.filter(d => 
+           d.lead_email && 
+           d.lead_temperature !== 'cold' && // Skip cold leads
+           allGaps.some(g => g.property_id === d.property_id || !d.property_id)
+        ).map(d => {
+           const matchGap = allGaps.find(g => 
+              (g.property_id === d.property_id || !d.property_id) && 
+              new Date(g.check_in) >= new Date(d.check_in!) && 
+              new Date(g.check_out) <= new Date(d.check_out!)
+           );
+           
+           const rescueAttempts = sent?.filter(s => s.lead_email === d.lead_email).length || 0;
+           
+           // Fatigue Check (15 days)
+           const lastSent = sent?.filter(s => s.lead_email === d.lead_email).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0];
+           const isFatigued = lastSent && (Date.now() - new Date(lastSent.created_at).getTime()) < 15 * 24 * 60 * 60 * 1000;
+
+           return { ...d, matchGap, isFatigued, rescueAttempts };
+        }).filter(c => c.matchGap && !c.isFatigued);
+        
+        setRescueCandidates(candidates);
+      }
+    };
+    fetchDemand();
+  }, [properties]);
 
   const selectedProperty = properties.find(p => p.id === selectedPropertyId);
   const creationDate = selectedProperty?.created_at ? new Date(selectedProperty.created_at) : null;
@@ -617,41 +681,207 @@ const AnalysisDashboard = ({ bookings, expenses, properties, selectedPropertyId,
         </button>
       </div>
 
-      <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-soft">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h3 className="text-2xl font-serif font-black italic text-text-main tracking-tighter">Análisis de Desempeño 🔱</h3>
-            <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Métricas Consolidadas de los últimos 6 meses</p>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-soft">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h3 className="text-2xl font-serif font-black italic text-text-main tracking-tighter">Análisis de Desempeño 🔱</h3>
+              <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Métricas Consolidadas de los últimos 6 meses</p>
+            </div>
+            <div className="flex flex-col items-end gap-1">
+              <span className="text-[10px] font-black text-primary uppercase tracking-widest">Margen Operativo</span>
+              <span className="text-2xl font-serif font-black italic">{margin}%</span>
+            </div>
           </div>
-          <div className="flex flex-col items-end gap-1">
-            <span className="text-[10px] font-black text-primary uppercase tracking-widest">Margen Operativo</span>
-            <span className="text-2xl font-serif font-black italic">{margin}%</span>
+
+          <div className="h-64 w-full" style={{ minHeight: '300px' }}>
+            <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl border border-dashed border-gray-100 flex items-center justify-center text-[10px] font-semibold uppercase opacity-80 text-gray-300">Cargando Gráficas...</div>}>
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={stats}>
+                  <defs>
+                    <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
+                  <YAxis hide />
+                  <Tooltip
+                    contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                  />
+                  <Area type="monotone" dataKey="Total" stroke="#CBB28A" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={3} />
+                  <Area type="monotone" dataKey="Profit" stroke="#2D5A27" fillOpacity={0} strokeWidth={4} />
+                  <Area type="monotone" dataKey="Gastos" stroke="#EE4E4E" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </Suspense>
           </div>
         </div>
 
-        <div className="h-64 w-full" style={{ minHeight: '300px' }}>
-          <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl border border-dashed border-gray-100 flex items-center justify-center text-[10px] font-semibold uppercase opacity-80 text-gray-300">Cargando Gráficas...</div>}>
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats}>
-                <defs>
-                  <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#CBB28A" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#CBB28A" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 900 }} />
-                <YAxis hide />
-                <Tooltip
-                  contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
-                />
-                <Area type="monotone" dataKey="Total" stroke="#CBB28A" fillOpacity={1} fill="url(#colorProfit)" strokeWidth={3} />
-                <Area type="monotone" dataKey="Profit" stroke="#2D5A27" fillOpacity={0} strokeWidth={4} />
-                <Area type="monotone" dataKey="Gastos" stroke="#EE4E4E" fillOpacity={0} strokeWidth={2} strokeDasharray="5 5" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </Suspense>
+        {/* 🔱 SALTY REVENUE RADAR: Predictive Heatmap & ROI */}
+        <div className="bg-gradient-to-br from-primary/5 to-secondary/5 p-8 rounded-[3rem] border border-primary/10 shadow-soft relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:rotate-12 transition-transform duration-700">
+             <Star className="w-24 h-24 text-primary" />
+          </div>
+          
+          <div className="relative z-10">
+            <div className="flex justify-between items-start mb-8">
+               <div>
+                  <h3 className="text-xl font-serif font-black italic text-text-main tracking-tighter mb-1">Mapa de Calor (Demanda IA)</h3>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80">Volumen de interés detectado</p>
+               </div>
+               <div className="text-right">
+                  <p className="text-[10px] font-black text-primary uppercase tracking-widest">Dinero Rescatado</p>
+                  <p className="text-2xl font-serif font-black italic text-primary">${((window as any).saltyROI || 0).toLocaleString()}</p>
+               </div>
+            </div>
+            
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={demandData}>
+                  <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 9, fontWeight: 900 }} />
+                  <Tooltip />
+                  <Area type="monotone" dataKey="value" stroke="#D4AF37" fill="#D4AF37" fillOpacity={0.1} strokeWidth={3} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            
+            {/* 🤖 SALTY PREDICTION BRIDGE */}
+            <div className="mt-6 p-5 bg-white/50 backdrop-blur-md rounded-2xl border border-primary/20">
+               <div className="flex gap-3 items-start">
+                  <Sparkles className="w-5 h-5 text-primary mt-1" />
+                  <div>
+                    <p className="text-[11px] font-black uppercase text-primary tracking-widest">Sugerencia de Salty</p>
+                    <p className="text-xs font-medium text-text-main opacity-80 leading-relaxed mt-1">
+                      "Master, veo un pico de interés del 40% para Julio. El inventario está al 20%. Sugiero subir el precio un 12% para maximizar el Yield de temporada."
+                    </p>
+                  </div>
+               </div>
+            </div>
+          </div>
         </div>
+      </div>
+
+      {/* 🕵️ SALTY RESCUE PROTOCOL: El Cerrador */}
+      <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-soft">
+         <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+               <Target className="w-6 h-6 text-red-500" />
+               <div>
+                  <h3 className="text-xl font-serif font-black italic text-text-main tracking-tighter">Salty Rescue: Centro de Mando</h3>
+                  <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-[0.25em] opacity-80 mt-1">Leads esperando una oportunidad (Cruze de Intención vs Gaps)</p>
+               </div>
+            </div>
+            <div className="bg-red-50 text-red-600 px-4 py-1.5 rounded-full text-[10px] font-bold uppercase tracking-widest border border-red-100">
+               {rescueCandidates.length} Objetivos Identificados
+            </div>
+         </div>
+         
+         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {rescueCandidates.length === 0 ? (
+               <div className="col-span-full py-12 text-center bg-gray-50/50 rounded-3xl border border-dashed border-gray-100">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-gray-300">Radar despejado. No hay coincidencias de alta relevancia hoy.</p>
+               </div>
+            ) : rescueCandidates.map((c, idx) => (
+               <div key={idx} className="p-6 bg-white rounded-[2rem] border border-gray-100 shadow-sm hover:shadow-soft transition-all group">
+                  <div className="flex justify-between items-start mb-6">
+                     <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-sand rounded-full flex items-center justify-center font-bold text-sm">
+                           {c.lead_email.charAt(0).toUpperCase()}
+                        </div>
+                        <div>
+                           <p className="text-sm font-bold text-text-main truncate max-w-[200px]">{c.lead_email}</p>
+                           <div className="flex items-center gap-2 mt-1">
+                              <p className="text-[9px] font-semibold uppercase text-text-light opacity-50">Buscó: {c.check_in}</p>
+                              <div className="w-1 h-1 bg-gray-300 rounded-full" />
+                              <p className="text-[9px] font-black uppercase text-red-400">Intento {c.rescueAttempts + 1}/2</p>
+                           </div>
+                        </div>
+                     </div>
+                     <div className="bg-green-50 text-green-600 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-widest border border-green-100">Match Directo</div>
+                  </div>
+                  
+                  <div className="p-4 bg-sand/30 rounded-2xl mb-6">
+                     <p className="text-[10px] font-bold text-text-main uppercase tracking-widest">Oportunidad Liberada:</p>
+                     <p className="text-xs font-medium text-text-light mt-1">
+                        {c.matchGap.property_title} • {c.matchGap.check_in} al {c.matchGap.check_out}
+                     </p>
+                  </div>
+                  
+                  <button 
+                     onClick={async () => {
+                        showToast(`Alineando artillería para ${c.lead_email}... 🚀`);
+                        try {
+                           const res = await fetch('/api/send', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                 type: 'gap_rescue',
+                                 customerEmail: c.lead_email,
+                                 propertyTitle: c.matchGap.property_title,
+                                 propertyId: c.matchGap.property_id,
+                                 check_in: c.matchGap.check_in,
+                                 check_out: c.matchGap.check_out,
+                                 discount: '10%',
+                                 code: 'SALTYRESCUE',
+                                 style: 'luxury',
+                                 token: `RSQ_${c.id.split('-')[0]}`
+                              })
+                           });
+                           if (res.ok) {
+                              // If it's the second attempt, mark as cold
+                              if (c.rescueAttempts >= 1) {
+                                 await supabase.from('demand_logs').update({ lead_temperature: 'cold' }).eq('id', c.id);
+                              } else {
+                                 await supabase.from('demand_logs').update({ rescue_attempts: c.rescueAttempts + 1 }).eq('id', c.id);
+                              }
+
+                              await supabase.from('rescue_emails_sent').insert({
+                                 lead_email: c.lead_email,
+                                 property_id: c.matchGap.property_id,
+                                 check_in: c.matchGap.check_in,
+                                 check_out: c.matchGap.check_out
+                              });
+                              showToast("¡Misil enviado con éxito! 🔱");
+                              setRescueCandidates(prev => prev.filter(cand => cand.lead_email !== c.lead_email));
+                           }
+                        } catch (e) {
+                           showToast("Error en el disparo.");
+                        }
+                     }}
+                     className="w-full py-4 bg-black text-white rounded-2xl text-[10px] font-black uppercase tracking-[0.2em] shadow-xl hover:bg-primary transition-all active:scale-95 flex items-center justify-center gap-2"
+                  >
+                     <Zap className="w-4 h-4 text-yellow-400 group-hover:animate-pulse" />
+                     Aprobar y Enviar (Fire!)
+                  </button>
+               </div>
+            ))}
+         </div>
+      </div>
+
+      {/* 🕵️ PROTOCOLO DE GAP-FILLER */}
+      <div className="bg-white p-8 rounded-[3rem] border border-gray-100 shadow-soft">
+         <div className="flex items-center gap-3 mb-8">
+            <Zap className="w-5 h-5 text-yellow-500" />
+            <h3 className="text-xl font-serif font-black italic text-text-main tracking-tighter">Detector de Huecos (Gap-Filler)</h3>
+         </div>
+         
+         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {properties.map(p => {
+               const gaps = getCalendarGaps(p.id);
+               if (gaps.length === 0) return null;
+               
+               return gaps.map((gap, idx) => (
+                  <div key={`${p.id}-${idx}`} className="p-6 bg-sand/30 rounded-[2rem] border border-primary/10 group hover:bg-black transition-all">
+                     <p className="text-[8px] font-black uppercase tracking-widest text-primary mb-2 group-hover:text-primary-light">{p.title}</p>
+                     <p className="text-sm font-bold text-text-main group-hover:text-white">{gap.nights} Noches Huérfanas</p>
+                     <p className="text-[10px] text-text-light group-hover:text-white/40 mt-1">{gap.check_in} al {gap.check_out}</p>
+                     <button className="mt-4 w-full py-2 bg-primary text-white rounded-xl text-[9px] font-black uppercase tracking-widest group-hover:bg-white group-hover:text-black transition-all">Generar Cupón de Rescate</button>
+                  </div>
+               ));
+            })}
+         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

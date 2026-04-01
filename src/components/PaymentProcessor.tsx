@@ -13,9 +13,10 @@ interface PaymentProcessorProps {
     onSuccess: (status: string, proofUrl?: string, method?: string) => void;
     isProcessing: boolean;
     user: any;
+    isTermsAccepted?: boolean;
 }
 
-const CheckoutForm: React.FC<{ onSuccess: any, total: number, isProcessing: boolean }> = ({ onSuccess, total, isProcessing }) => {
+const CheckoutForm: React.FC<{ onSuccess: any, total: number, isProcessing: boolean, isTermsAccepted?: boolean }> = ({ onSuccess, total, isProcessing, isTermsAccepted = true }) => {
     const stripe = useStripe();
     const elements = useElements();
     const [localProcessing, setLocalProcessing] = useState(false);
@@ -95,8 +96,8 @@ const CheckoutForm: React.FC<{ onSuccess: any, total: number, isProcessing: bool
 
             <button
                 type="submit"
-                disabled={!stripe || isProcessing || localProcessing}
-                className={`w-full font-black text-xs tracking-[0.2em] py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 uppercase disabled:opacity-70 disabled:scale-100 ${
+                disabled={!stripe || isProcessing || localProcessing || !isTermsAccepted}
+                className={`w-full font-black text-xs tracking-[0.2em] py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 uppercase disabled:opacity-30 disabled:scale-100 disabled:cursor-not-allowed ${
                      localProcessing || isProcessing 
                      ? 'bg-secondary/80 text-primary cursor-wait' 
                      : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20 hover:shadow-primary/20'
@@ -127,7 +128,7 @@ const CheckoutForm: React.FC<{ onSuccess: any, total: number, isProcessing: bool
     );
 };
 
-const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, onSuccess, isProcessing, user }) => {
+const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, onSuccess, isProcessing, user, isTermsAccepted }) => {
     const [paymentMethod, setPaymentMethod] = useState<'stripe' | 'ath_movil' | 'paypal'>('stripe');
     const [screenshot, setScreenshot] = useState<File | null>(null);
     const [isUploading, setIsUploading] = useState(false);
@@ -299,7 +300,12 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
                         paymentMethodCreation: 'manual'
                     }}
                 >
-                    <CheckoutForm onSuccess={onSuccess} total={total} isProcessing={isProcessing} />
+                    <CheckoutForm 
+                        onSuccess={onSuccess} 
+                        total={total} 
+                        isProcessing={isProcessing} 
+                        isTermsAccepted={isTermsAccepted} 
+                    />
                 </Elements>
             )}
 
@@ -375,8 +381,8 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
 
                     <button
                         onClick={handleManualConfirm}
-                        disabled={isProcessing || isUploading || !screenshot}
-                        className={`w-full font-black text-xs tracking-widest py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 mt-5 ${isProcessing || isUploading || !screenshot ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20'}`}
+                        disabled={isProcessing || isUploading || !screenshot || !isTermsAccepted}
+                        className={`w-full font-black text-xs tracking-widest py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 mt-5 ${isProcessing || isUploading || !screenshot || !isTermsAccepted ? 'bg-gray-100 text-gray-400 cursor-not-allowed opacity-30 shadow-none' : 'bg-secondary text-primary hover:scale-[1.02] active:scale-95 border border-primary/20'}`}
                     >
                         {isProcessing || isUploading ? (
                             <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
@@ -392,7 +398,7 @@ const PaymentProcessor: React.FC<PaymentProcessorProps> = ({ total, bookingId, o
 
             {paymentMethod === 'paypal' && (
                 <div className="animate-fade-in p-2 bg-white/40 rounded-[2.5rem] border border-primary/10 shadow-soft">
-                    <div className="p-4">
+                    <div className={!isTermsAccepted ? 'opacity-20 pointer-events-none grayscale' : ''}>
                         <PayPalPayment
                             amount={total}
                             onSuccess={(details) => onSuccess('confirmed', undefined, 'paypal')}

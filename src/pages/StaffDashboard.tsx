@@ -63,7 +63,6 @@ const StaffDashboard: React.FC = () => {
       console.error('Error updating task:', error);
       alert('Error al actualizar tarea. Reintente.');
     } else {
-      // Optimistic update
       setTasks(prev => prev.map(t => t.id === taskId ? { ...t, done: newDone, status: newStatus } : t));
     }
     setIsUpdating(null);
@@ -80,6 +79,26 @@ const StaffDashboard: React.FC = () => {
       departures: bookings.filter(b => b.check_out === today)
     };
   }, [bookings]);
+
+  const renderAddonBadge = (addon: string) => {
+    const config: Record<string, { icon: any, label: string, color: string }> = {
+      'early_checkin': { icon: Clock, label: 'Early Check-in (1:00 PM)', color: 'bg-amber-100 text-amber-700 border-amber-200' },
+      'late_checkout': { icon: LogOut, label: 'Late Check-out (2:00 PM)', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' },
+      'romance_pkg': { icon: Heart, label: 'Romance Package (Champaña + Pétalos)', color: 'bg-rose-100 text-rose-700 border-rose-200' },
+      'breakfast_bundle': { icon: Coffee, label: 'Desayuno Premium', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+    };
+
+    const item = config[addon];
+    if (!item) return <span key={addon} className="px-3 py-1 rounded-full text-[10px] font-bold bg-gray-100 text-gray-600 border border-gray-200">{addon}</span>;
+
+    const Icon = item.icon;
+    return (
+      <div key={addon} className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border ${item.color} shadow-sm animate-pulse`}>
+        <Icon className="w-3.5 h-3.5" />
+        <span className="text-[10px] font-black uppercase tracking-wider">{item.label}</span>
+      </div>
+    );
+  };
 
   if (isLoading) {
     return (
@@ -111,7 +130,7 @@ const StaffDashboard: React.FC = () => {
       </header>
 
       <main className="max-w-4xl mx-auto space-y-12">
-        {/* TASKS SECTION - ACTIONABLE */}
+        {/* TASKS SECTION */}
         <section>
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center shadow-inner">
@@ -151,75 +170,73 @@ const StaffDashboard: React.FC = () => {
                       <h4 className={`font-serif font-black italic text-lg ${task.done ? 'line-through text-gray-400' : 'text-[#1a1a1a]'}`}>
                         {task.text}
                       </h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Home className="w-3 h-3 text-gray-400" />
-                        <span className="text-[9px] font-bold uppercase tracking-widest text-gray-400">{task.property || 'General'}</span>
-                      </div>
                     </div>
                   </div>
-                  {task.priority === 'high' && !task.done && (
-                    <div className="bg-rose-100 text-rose-600 px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter animate-pulse">
-                      Urgente
-                    </div>
-                  )}
                 </motion.div>
               ))
             )}
           </div>
         </section>
 
-        {/* ARRIVALS / DEPARTURES CONTEXT */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 py-8 border-t border-gray-100">
-           <div>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-600 mb-4">Entradas Hoy</h3>
-              {categorizedBookings.arrivals.length === 0 ? (
-                <p className="text-[10px] font-bold text-gray-300">Sin entradas</p>
-              ) : (
-                <div className="space-y-4">
-                  {categorizedBookings.arrivals.map(b => (
-                    <div key={b.id} className="bg-white/50 p-4 rounded-2xl border border-gray-100">
-                      <p className="font-serif font-black italic text-sm">{b.customer_name || 'Huésped Elite'}</p>
-                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Pin: {b.property_id}</p>
+        {/* ARRIVALS WITH ADDONS */}
+        <section>
+          <div className="flex items-center gap-3 mb-6">
+            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center shadow-inner">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-serif font-black italic text-xl tracking-tight">Llegadas & Add-ons</h2>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-gray-400">Atención a servicios especiales</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {categorizedBookings.arrivals.length === 0 ? (
+              <p className="text-[10px] font-bold text-gray-300 text-center">Sin entradas próximamente</p>
+            ) : (
+              categorizedBookings.arrivals.map(booking => (
+                <div key={booking.id} className="bg-white rounded-[2rem] p-8 shadow-xl border border-gray-100 flex flex-col md:flex-row justify-between gap-6 relative overflow-hidden group">
+                  {isToday(parseISO(booking.check_in)) && (
+                    <div className="absolute top-0 right-0 bg-[#D4AF37] text-white px-4 py-1 rounded-bl-2xl font-black text-[8px] uppercase tracking-widest animate-pulse">
+                      HOY
                     </div>
-                  ))}
-                </div>
-              )}
-           </div>
-           <div>
-              <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-600 mb-4">Salidas Hoy</h3>
-              {categorizedBookings.departures.length === 0 ? (
-                <p className="text-[10px] font-bold text-gray-300">Sin salidas</p>
-              ) : (
-                <div className="space-y-4">
-                  {categorizedBookings.departures.map(b => (
-                    <div key={b.id} className="bg-white/50 p-4 rounded-2xl border border-gray-100">
-                      <p className="font-serif font-black italic text-sm">{b.customer_name || 'Check-out 11AM'}</p>
-                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Prop: {b.property_id}</p>
+                  )}
+                  
+                  <div>
+                    <h3 className="font-serif font-black italic text-xl tracking-tight mb-2">{booking.customer_name || 'Huésped Elite'}</h3>
+                    <div className="flex items-center gap-3 text-gray-400">
+                      <Home className="w-3.5 h-3.5" />
+                      <span className="text-[10px] font-black uppercase tracking-widest">Propiedad #{booking.property_id}</span>
                     </div>
-                  ))}
+                  </div>
+
+                  <div className="flex flex-wrap gap-2 md:max-w-[50%]">
+                    {(!booking.addons_breakdown || (Array.isArray(booking.addons_breakdown) && booking.addons_breakdown.length === 0)) ? (
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-300 italic opacity-50">Estadía Estándar</p>
+                    ) : (
+                      Array.isArray(booking.addons_breakdown) ? (
+                        (booking.addons_breakdown as string[]).map((addon: string) => renderAddonBadge(addon))
+                      ) : null
+                    )}
+                  </div>
                 </div>
-              )}
-           </div>
+              ))
+            )}
+          </div>
         </section>
       </main>
 
-      {/* Floating Bottom Navigation */}
+      {/* Footer Nav */}
       <footer className="fixed bottom-6 left-1/2 -translate-x-1/2 w-[90%] max-w-sm z-50">
         <div className="bg-black/90 backdrop-blur-xl border border-white/10 p-2 rounded-full shadow-2xl flex justify-around items-center">
           <button className="flex flex-col items-center gap-1 text-[#D4AF37] px-4 py-2">
             <CheckSquare className="w-5 h-5" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Misiones</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Panel</span>
           </button>
           <div className="w-px h-6 bg-white/10" />
-          <button 
-            onClick={() => {
-              const phone = (window as any).process?.env?.VITE_HOST_PHONE || '7870000000';
-              window.location.href = 'tel:' + phone;
-            }} 
-            className="flex flex-col items-center gap-1 text-gray-400 px-4 py-2"
-          >
+          <button onClick={() => window.location.href = 'tel:7870000000'} className="flex flex-col items-center gap-1 text-gray-400 px-4 py-2">
             <Phone className="w-5 h-5" />
-            <span className="text-[8px] font-black uppercase tracking-widest">Host</span>
+            <span className="text-[8px] font-black uppercase tracking-widest">Contactar</span>
           </button>
         </div>
       </footer>

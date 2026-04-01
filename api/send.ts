@@ -215,7 +215,7 @@ export default async function handler(req: any, res: any) {
         emailOptions.push({ 
           from: fromAddress, 
           to: customerEmail, 
-          subject: `🏝️ ¿Aún pensando en el paraíso, ${firstName}?`, 
+          subject: `🏝️ Solo falta un paso para tu refugio en ${p.name}`, 
           html 
         });
         break;

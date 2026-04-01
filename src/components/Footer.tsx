@@ -25,6 +25,11 @@ const Footer: React.FC = () => {
         {/* Secondary Info & Copyright */}
         <div className="pt-12 border-t border-white/5 w-full flex flex-col md:flex-row justify-between items-center gap-6 text-center md:text-left">
           <div className="space-y-1">
+            <div className="flex gap-4 mb-2 justify-center md:justify-start">
+              <a href="/terms" className="text-[9px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary transition-colors">Términos</a>
+              <span className="text-[9px] text-white/10">•</span>
+              <a href="/privacy" className="text-[9px] uppercase font-bold tracking-widest text-primary/40 hover:text-primary transition-colors">Privacidad</a>
+            </div>
             <p className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white">
               Villa Retiro LLC © 2026
             </p>

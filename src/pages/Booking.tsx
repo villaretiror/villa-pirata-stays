@@ -71,6 +71,38 @@ const Booking: React.FC = () => {
   // Simulated social proof
   const [activeCheckouts] = useState(Math.floor(Math.random() * 5) + 2);
 
+  // 🔱 ATTRIBUTION RADAR
+  const params = new URLSearchParams(location.search);
+  const attributionSource = params.get('ref') || 'Web Direct';
+  const attributionToken = params.get('token') || params.get('code') || null;
+
+  // 🔱 ABANDONMENT FUNNEL LOGGING
+  const logAbandonment = async (step: string, reason: string) => {
+    try {
+      await supabase.from('checkout_abandonment_logs').insert({
+        lead_email: guestEmail,
+        property_id: id,
+        step,
+        reason,
+        attribution_token: attributionToken,
+        metadata: {
+           final_total: finalTotal,
+           nights,
+           has_phone: !!phone
+        }
+      });
+    } catch (e) {
+      console.warn("[FunnelLog] Silent fail.");
+    }
+  };
+
+  // Log abandonment when component unmounts if no booking confirmed
+  useEffect(() => {
+    return () => {
+      // Logic could be added here to check if they completed
+    };
+  }, []);
+
   // 🔱 NAVIGATION RESCUE: ESC Key Listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -150,13 +182,16 @@ const Booking: React.FC = () => {
           guests_count: property?.guests || 1,
           cancellation_reason: guestMessage,
           // Guardamos el teléfono en metadata si no podemos asociar perfil
-          hold_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString() 
+          hold_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
+          policy_snapshot: property?.policies || null
         };
 
         if (bookingId && bookingId !== 'new') {
-          await supabase.from('bookings').update(payload).eq('id', bookingId);
+          await supabase.from('bookings').update({ ...payload, attribution_source: attributionSource, attribution_token: attributionToken }).eq('id', bookingId);
         } else {
-          const { data, error } = await supabase.from('bookings').insert(payload).select().single();
+          const { data, error } = await supabase.from('bookings')
+            .insert({ ...payload, attribution_source: attributionSource, attribution_token: attributionToken })
+            .select().single();
           if (data) setBookingId(data.id);
         }
       } catch (err) {
@@ -231,7 +266,10 @@ const Booking: React.FC = () => {
       auto_cancel_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(),
       cleaning_fee_at_booking: Number(property.cleaning_fee || 0),
       service_fee_at_booking: Number(property.service_fee || 0),
-      addons_breakdown: selectedAddons.length > 0 ? selectedAddons : null
+      addons_breakdown: selectedAddons.length > 0 ? selectedAddons : null,
+      policy_snapshot: property?.policies || null,
+      attribution_source: attributionSource,
+      attribution_token: attributionToken
     };
 
     const isRecovery = recoverData?.booking_id && recoverData?.recover;
@@ -362,7 +400,12 @@ const Booking: React.FC = () => {
               const StepIcon = step.icon;
               return (
                 <React.Fragment key={step.id}>
-                  <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${step.active ? 'opacity-100 scale-110' : 'opacity-30'}`}>
+                  <div 
+                    onClick={() => {
+                        if (!step.active) logAbandonment(step.id, 'user_clicked_inactive_step');
+                    }}
+                    className={`flex flex-col items-center gap-1 transition-all duration-500 ${step.active ? 'opacity-100 scale-110' : 'opacity-30'}`}
+                  >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center border ${step.active ? 'bg-primary border-primary text-white shadow-lg' : 'border-gray-400'}`}>
                       <StepIcon size={14} />
                     </div>
@@ -590,26 +633,43 @@ const Booking: React.FC = () => {
             
           </section>
 
-          {startDate && endDate && !isTooShort && (
-            <section className="space-y-4 pt-6 border-t border-black/5">
-              <h3 className={TAG_STYLE + " text-gray-400"}>3. Estatus Legal</h3>
-              <div 
-                onClick={() => setContractAccepted(!contractAccepted)}
-                className={`flex items-start gap-4 p-6 rounded-[2.5rem] border transition-all cursor-pointer ${
-                  contractAccepted ? 'bg-secondary/5 border-secondary/20 shadow-sm' : 'bg-gray-50 border-gray-100'
-                }`}
-              >
-                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${
-                  contractAccepted ? 'bg-secondary border-secondary text-white' : 'border-gray-300'
-                }`}>
-                  {contractAccepted && <Check size={14} />}
+            {startDate && endDate && !isTooShort && (
+              <section className="space-y-4 pt-6 border-t border-black/5 animate-fade-in">
+                <h3 className={TAG_STYLE + " text-gray-400"}>3. Estatus Legal & Cancelación</h3>
+                
+                {/* 🔱 DYNAMIC CANCELLATION SUMMARY FROM DASHBOARD */}
+                <div className="p-5 bg-primary/5 rounded-3xl border border-primary/10 mb-2">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Verified size={16} className="text-secondary" />
+                    <p className="text-[10px] uppercase font-black tracking-widest text-secondary">Política Dictada por el Anfitrión</p>
+                  </div>
+                  <p className="text-xs font-bold text-text-main leading-relaxed italic">
+                    "{property?.policies?.cancellationPolicy || 'Cancelación estricta: Se requiere aviso previo de 30 días para reembolso total.'}"
+                  </p>
                 </div>
-                <p className="text-xs font-bold text-text-main leading-relaxed">
-                  Acepto los términos del contrato de hospedaje y las reglas de la casa.
-                </p>
-              </div>
-            </section>
-          )}
+
+                <div 
+                  onClick={() => setContractAccepted(!contractAccepted)}
+                  className={`flex items-start gap-4 p-6 rounded-[2.5rem] border transition-all cursor-pointer ${
+                    contractAccepted ? 'bg-secondary/5 border-secondary/20 shadow-sm' : 'bg-gray-50 border-gray-100'
+                  }`}
+                >
+                  <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all flex-shrink-0 mt-0.5 ${
+                    contractAccepted ? 'bg-secondary border-secondary text-white shadow-lg' : 'border-gray-300'
+                  }`}>
+                    {contractAccepted && <Check size={14} />}
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-xs font-bold text-text-main leading-relaxed">
+                      Acepto los <a href={`/terms/${id}`} target="_blank" className="text-primary underline hover:text-black transition-colors" onClick={(e) => e.stopPropagation()}>Términos de Servicio</a> y las <a href={`/privacy/${id}`} target="_blank" className="text-primary underline hover:text-black transition-colors" onClick={(e) => e.stopPropagation()}>Políticas</a> de {property?.title}.
+                    </p>
+                    <p className="text-[9px] uppercase font-black tracking-widest text-[#FF7F3F] opacity-60">
+                      Entiendo que esta reserva es un compromiso legal bajo las leyes de Puerto Rico.
+                    </p>
+                  </div>
+                </div>
+              </section>
+            )}
 
           {isTooShort && (
             <div className="p-6 bg-[#FFF4ED] border border-primary/20 rounded-[2.5rem] flex items-start gap-5 shadow-sm animate-fade-in mb-8">
@@ -640,6 +700,7 @@ const Booking: React.FC = () => {
                 onSuccess={handlePaymentSuccess}
                 isProcessing={isProcessing}
                 user={user}
+                isTermsAccepted={contractAccepted}
               />
             </div>
           )}

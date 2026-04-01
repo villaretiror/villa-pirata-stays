@@ -125,7 +125,8 @@ export default async function handler(req: any, res: any) {
                                     wifiName: p.wifi_name,
                                     wifiPass: p.wifi_pass,
                                     propertyId: b.property_id,
-                                    bookingId: b.id
+                                    bookingId: b.id,
+                                    isAutomation: true // Signal for pre-arrival template
                                 })
                             });
                             await supabase.from('bookings').update({ instructions_sent_at: new Date().toISOString() } as any).eq('id', b.id);
@@ -159,9 +160,9 @@ export default async function handler(req: any, res: any) {
                 }
 
                 // C3. SALTY RECOVERY (Cart Recovery: Email + SMS Fallback)
-                const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString();
+                const twoHoursAgo = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
                 const { data: abandonedLeads } = await supabase.from('leads').select('*').eq('status', 'new')
-                    .filter('tags', 'cs', '{"abandonment"}').lt('created_at', threeHoursAgo);
+                    .filter('tags', 'cs', '{"abandonment"}').lt('created_at', twoHoursAgo);
 
                 if (abandonedLeads) {
                     for (const lead of abandonedLeads) {
@@ -171,7 +172,12 @@ export default async function handler(req: any, res: any) {
                         await fetch(`${SITE_URL}/api/send`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ type: 'lead_recovery', customerName: lead.name || 'Viajero', customerEmail: lead.email, propertyId: propId })
+                            body: JSON.stringify({ 
+                                type: 'lead_recovery', 
+                                customerName: lead.name || 'Viajero', 
+                                customerEmail: lead.email, 
+                                propertyId: propId 
+                            })
                         });
 
                         // Action 2: Recovery SMS (Dual Strike)

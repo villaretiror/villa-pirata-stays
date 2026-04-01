@@ -16,25 +16,23 @@ const SmartImage: React.FC<SmartImageProps> = ({
     const [errorCount, setErrorCount] = useState(0);
     const [loaded, setLoaded] = useState(false);
 
-    // 🚀 BOUTIQUE OPTIMIZATION: Handle Airbnb (muscache) and Unsplash resizing
-    // We try 'src' first, then 'fallbackSrc' if 'src' fails.
+    // 🚀 BOUTIQUE OPTIMIZATION: High-Precision Image Resizing & Format Conversion
     let currentSrc = errorCount === 0 ? src : fallbackSrc;
     let optimizedSrc = currentSrc;
     
     if (optimizedSrc && optimizedSrc.includes('muscache.com')) {
-        // Append im_w to Airbnb images for optimized loading (720 is ideal for 1x cards)
-        optimizedSrc = optimizedSrc.includes('?') 
-            ? `${optimizedSrc}&im_w=1200` 
-            : `${optimizedSrc}?im_w=1200`;
-    } else if (optimizedSrc && optimizedSrc.includes('unsplash.com') && !optimizedSrc.includes('auto=format')) {
-        optimizedSrc += optimizedSrc.includes('?') ? '&auto=format' : '?auto=format';
-    } else if (optimizedSrc && optimizedSrc.includes('supabase.co/storage/v1/render/image')) {
-        // Supabase already using render endpoint, just ensure width/format
-        if (!optimizedSrc.includes('width=')) optimizedSrc += `&width=1201&format=webp&quality=80`;
-    } else if (optimizedSrc && optimizedSrc.includes('supabase.co/storage/v1/object/public')) {
-        // 🔱 SALTY TRANSFORMATION: Convert raw Public URL to Render URL for WebP delivery
-        optimizedSrc = optimizedSrc.replace('/object/public/', '/render/image/public/') + 
-                        (optimizedSrc.includes('?') ? '&' : '?') + 'width=1201&format=webp&quality=80';
+        // 🔱 AIRBNB ELITE: Force specific widths and quality. 
+        // 1200 matches our max card width, but for priority (Hero) we might want more.
+        const width = priority ? 1440 : 800; // Efficient sizing for Hero vs Cards
+        optimizedSrc = optimizedSrc.split('?')[0] + `?im_w=${width}`;
+    } else if (optimizedSrc && optimizedSrc.includes('unsplash.com')) {
+        const width = priority ? 1440 : 800;
+        optimizedSrc = optimizedSrc.split('?')[0] + `?auto=format,compress&q=80&w=${width}`;
+    } else if (optimizedSrc && (optimizedSrc.includes('supabase.co/storage/v1/render/image') || optimizedSrc.includes('supabase.co/storage/v1/object/public'))) {
+        // 🔱 SUPABASE RENDER: The ultimate high-speed delivery
+        const width = priority ? 1440 : 800;
+        const renderUrl = optimizedSrc.replace('/object/public/', '/render/image/public/');
+        optimizedSrc = renderUrl.split('?')[0] + `?width=${width}&format=webp&quality=80`;
     }
 
     return (

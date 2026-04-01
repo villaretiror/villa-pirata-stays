@@ -147,12 +147,19 @@ export const PropertyDetails: React.FC = () => {
       updateMeta('og:image:height', '630', true);
       updateMeta('theme-color', '#D4AF37');
 
-      // 3. Privacy Protection (SEO/Robots)
-      if (property.isOffline) {
-        updateMeta('robots', 'noindex');
-      } else {
-        updateMeta('robots', 'index, follow');
-      }
+      // 4. 🔱 VISUAL VELOCITY: Preload the Hero image for <1.2s LCP
+      const link = document.createElement('link');
+      link.rel = 'preload';
+      link.as = 'image';
+      link.href = property.images[0].includes('muscache.com') 
+          ? property.images[0].split('?')[0] + `?im_w=1440`
+          : property.images[0];
+      link.setAttribute('fetchpriority', 'high');
+      document.head.appendChild(link);
+
+      return () => {
+        document.head.removeChild(link);
+      };
     }
   }, [property]);
 
@@ -358,7 +365,7 @@ export const PropertyDetails: React.FC = () => {
               src={property.images[currentImageIndex]}
               alt={property.title}
               className="w-full h-full object-cover"
-              priority={currentImageIndex === 0}
+              priority={currentImageIndex === 0} // 🔱 LCP: Priority for the first impression
             />
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/40 via-transparent to-secondary/20"></div>
           </motion.div>

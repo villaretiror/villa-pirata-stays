@@ -77,7 +77,9 @@ export type Database = {
           end_date: string
           id: string
           is_blocked: boolean | null
+          last_synced_at: string | null
           min_nights: number | null
+          origin_type: string | null
           price_override: number | null
           property_id: string | null
           reason: string | null
@@ -85,6 +87,7 @@ export type Database = {
           restricted_checkin_days: Json | null
           restricted_checkout_days: Json | null
           start_date: string
+          sync_last_hash: string | null
           updated_at: string | null
         }
         Insert: {
@@ -95,7 +98,9 @@ export type Database = {
           end_date: string
           id?: string
           is_blocked?: boolean | null
+          last_synced_at?: string | null
           min_nights?: number | null
+          origin_type?: string | null
           price_override?: number | null
           property_id?: string | null
           reason?: string | null
@@ -103,6 +108,7 @@ export type Database = {
           restricted_checkin_days?: Json | null
           restricted_checkout_days?: Json | null
           start_date: string
+          sync_last_hash?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -113,7 +119,9 @@ export type Database = {
           end_date?: string
           id?: string
           is_blocked?: boolean | null
+          last_synced_at?: string | null
           min_nights?: number | null
+          origin_type?: string | null
           price_override?: number | null
           property_id?: string | null
           reason?: string | null
@@ -121,6 +129,7 @@ export type Database = {
           restricted_checkin_days?: Json | null
           restricted_checkout_days?: Json | null
           start_date?: string
+          sync_last_hash?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -131,10 +140,25 @@ export type Database = {
             referencedRelation: "properties"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "availability_rules_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "availability_rules_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "vw_active_threads"
+            referencedColumns: ["property_id"]
+          },
         ]
       }
       bookings: {
         Row: {
+          addons_breakdown: Json | null
           applied_policy: Json | null
           auto_cancel_at: string | null
           cancellation_reason: string | null
@@ -144,6 +168,7 @@ export type Database = {
           cleaning_fee_at_booking: number | null
           contract_signed: boolean | null
           created_at: string | null
+          customer_email: string | null
           customer_name: string | null
           email_sent: boolean | null
           email_sent_feedback: boolean | null
@@ -157,6 +182,7 @@ export type Database = {
           notified_external_at: string | null
           payment_method: string | null
           payment_proof_url: string | null
+          policy_snapshot: Json | null
           property_id: string | null
           service_fee_at_booking: number | null
           source: string | null
@@ -165,12 +191,11 @@ export type Database = {
           stripe_payment_intent_id: string | null
           sync_last_hash: string | null
           total_paid_at_booking: number | null
-          total_price: number | null
-          updated_at: string | null
+          total_price: number
           user_id: string | null
-          addons_breakdown: Json | null
         }
         Insert: {
+          addons_breakdown?: Json | null
           applied_policy?: Json | null
           auto_cancel_at?: string | null
           cancellation_reason?: string | null
@@ -180,6 +205,7 @@ export type Database = {
           cleaning_fee_at_booking?: number | null
           contract_signed?: boolean | null
           created_at?: string | null
+          customer_email?: string | null
           customer_name?: string | null
           email_sent?: boolean | null
           email_sent_feedback?: boolean | null
@@ -193,17 +219,20 @@ export type Database = {
           notified_external_at?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
+          policy_snapshot?: Json | null
           property_id?: string | null
           service_fee_at_booking?: number | null
           source?: string | null
           status?: string | null
+          stripe_client_secret?: string | null
+          stripe_payment_intent_id?: string | null
           sync_last_hash?: string | null
           total_paid_at_booking?: number | null
           total_price: number
           user_id?: string | null
-          addons_breakdown?: Json | null
         }
         Update: {
+          addons_breakdown?: Json | null
           applied_policy?: Json | null
           auto_cancel_at?: string | null
           cancellation_reason?: string | null
@@ -213,6 +242,7 @@ export type Database = {
           cleaning_fee_at_booking?: number | null
           contract_signed?: boolean | null
           created_at?: string | null
+          customer_email?: string | null
           customer_name?: string | null
           email_sent?: boolean | null
           email_sent_feedback?: boolean | null
@@ -226,15 +256,17 @@ export type Database = {
           notified_external_at?: string | null
           payment_method?: string | null
           payment_proof_url?: string | null
+          policy_snapshot?: Json | null
           property_id?: string | null
           service_fee_at_booking?: number | null
           source?: string | null
           status?: string | null
+          stripe_client_secret?: string | null
+          stripe_payment_intent_id?: string | null
           sync_last_hash?: string | null
           total_paid_at_booking?: number | null
           total_price?: number
           user_id?: string | null
-          addons_breakdown?: Json | null
         }
         Relationships: [
           {
@@ -243,6 +275,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bookings_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "vw_active_threads"
+            referencedColumns: ["property_id"]
           },
           {
             foreignKeyName: "fk_bookings_user_id"
@@ -335,27 +381,27 @@ export type Database = {
         Row: {
           created_at: string | null
           email: string
+          full_name: string
           id: string
           message: string
-          name: string
           phone: string | null
           status: string | null
         }
         Insert: {
           created_at?: string | null
           email: string
+          full_name: string
           id?: string
           message: string
-          name: string
           phone?: string | null
           status?: string | null
         }
         Update: {
           created_at?: string | null
           email?: string
+          full_name?: string
           id?: string
           message?: string
-          name?: string
           phone?: string | null
           status?: string | null
         }
@@ -557,6 +603,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "emergency_tickets_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_tickets_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "vw_active_threads"
+            referencedColumns: ["property_id"]
+          },
+          {
             foreignKeyName: "emergency_tickets_provider_id_fkey"
             columns: ["provider_id"]
             isOneToOne: false
@@ -570,10 +630,10 @@ export type Database = {
           created_at: string | null
           date_of_interest: string | null
           email: string
+          full_name: string
           id: string
           interest: string | null
           message: string
-          name: string
           phone: string | null
           status: string | null
           tags: string[] | null
@@ -582,10 +642,10 @@ export type Database = {
           created_at?: string | null
           date_of_interest?: string | null
           email: string
+          full_name: string
           id?: string
           interest?: string | null
           message: string
-          name: string
           phone?: string | null
           status?: string | null
           tags?: string[] | null
@@ -594,10 +654,10 @@ export type Database = {
           created_at?: string | null
           date_of_interest?: string | null
           email?: string
+          full_name?: string
           id?: string
           interest?: string | null
           message?: string
-          name?: string
           phone?: string | null
           status?: string | null
           tags?: string[] | null
@@ -624,44 +684,6 @@ export type Database = {
           text?: string
         }
         Relationships: []
-      }
-      operation_tasks: {
-        Row: {
-          assigned_to: string | null
-          completed_at: string | null
-          created_at: string | null
-          description: string
-          id: string
-          is_completed: boolean | null
-          property_id: string
-        }
-        Insert: {
-          assigned_to?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          description: string
-          id?: string
-          is_completed?: boolean | null
-          property_id: string
-        }
-        Update: {
-          assigned_to?: string | null
-          completed_at?: string | null
-          created_at?: string | null
-          description?: string
-          id?: string
-          is_completed?: boolean | null
-          property_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operation_tasks_property_id_fkey"
-            columns: ["property_id"]
-            isOneToOne: false
-            referencedRelation: "properties"
-            referencedColumns: ["id"]
-          },
-        ]
       }
       pending_bookings: {
         Row: {
@@ -802,6 +824,7 @@ export type Database = {
           airbnb_id: string | null
           airbnb_url: string | null
           amenities: string[] | null
+          availability_urgency_msg: string | null
           baths: number | null
           bedrooms: number | null
           beds: number | null
@@ -813,16 +836,19 @@ export type Database = {
           created_at: string | null
           description: string | null
           email: string | null
+          exact_lat_long: string | null
           featuredamenity: string | null
-          featuredAmenity: string | null
           fees: Json | null
+          general_area_map_url: string | null
           google_maps_url: string | null
           guests: number | null
+          guidebook_url: string | null
           host: Json | null
           host_id: string | null
           house_rules: string[] | null
           id: string
           images: string[] | null
+          images_backup: string[] | null
           is_offline: boolean | null
           location: string | null
           location_coords: string | null
@@ -835,6 +861,7 @@ export type Database = {
           price: number
           property_features: Json | null
           rating: number | null
+          review_url: string | null
           reviews: number | null
           reviews_count: number | null
           reviews_list: Json | null
@@ -858,6 +885,7 @@ export type Database = {
           airbnb_id?: string | null
           airbnb_url?: string | null
           amenities?: string[] | null
+          availability_urgency_msg?: string | null
           baths?: number | null
           bedrooms?: number | null
           beds?: number | null
@@ -869,16 +897,19 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string | null
+          exact_lat_long?: string | null
           featuredamenity?: string | null
-          featuredAmenity?: string | null
           fees?: Json | null
+          general_area_map_url?: string | null
           google_maps_url?: string | null
           guests?: number | null
+          guidebook_url?: string | null
           host?: Json | null
           host_id?: string | null
           house_rules?: string[] | null
           id?: string
           images?: string[] | null
+          images_backup?: string[] | null
           is_offline?: boolean | null
           location?: string | null
           location_coords?: string | null
@@ -891,6 +922,7 @@ export type Database = {
           price: number
           property_features?: Json | null
           rating?: number | null
+          review_url?: string | null
           reviews?: number | null
           reviews_count?: number | null
           reviews_list?: Json | null
@@ -914,6 +946,7 @@ export type Database = {
           airbnb_id?: string | null
           airbnb_url?: string | null
           amenities?: string[] | null
+          availability_urgency_msg?: string | null
           baths?: number | null
           bedrooms?: number | null
           beds?: number | null
@@ -925,16 +958,19 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           email?: string | null
+          exact_lat_long?: string | null
           featuredamenity?: string | null
-          featuredAmenity?: string | null
           fees?: Json | null
+          general_area_map_url?: string | null
           google_maps_url?: string | null
           guests?: number | null
+          guidebook_url?: string | null
           host?: Json | null
           host_id?: string | null
           house_rules?: string[] | null
           id?: string
           images?: string[] | null
+          images_backup?: string[] | null
           is_offline?: boolean | null
           location?: string | null
           location_coords?: string | null
@@ -947,6 +983,7 @@ export type Database = {
           price?: number
           property_features?: Json | null
           rating?: number | null
+          review_url?: string | null
           reviews?: number | null
           reviews_count?: number | null
           reviews_list?: Json | null
@@ -1028,6 +1065,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_expenses_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "property_expenses_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "vw_active_threads"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -1120,7 +1171,7 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          learned_text: string
+          learned_text?: string
           property_id?: string | null
           session_id?: string | null
         }
@@ -1131,6 +1182,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "properties"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_salty_memories_property"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_salty_memories_property"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "vw_active_threads"
+            referencedColumns: ["property_id"]
           },
         ]
       }
@@ -1209,6 +1274,75 @@ export type Database = {
         }
         Relationships: []
       }
+      sms_logs: {
+        Row: {
+          booking_id: string | null
+          content: string
+          created_at: string | null
+          id: string
+          phone: string
+          property_id: string | null
+          resend_id: string | null
+          status: string | null
+        }
+        Insert: {
+          booking_id?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          phone: string
+          property_id?: string | null
+          resend_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          booking_id?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          phone?: string
+          property_id?: string | null
+          resend_id?: string | null
+          status?: string | null
+        }
+        Relationships: []
+      }
+      synced_blocks: {
+        Row: {
+          check_in: string
+          check_out: string
+          created_at: string | null
+          id: string
+          property_id: string
+          source: string
+          sync_hash: string | null
+          sync_session_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          check_in: string
+          check_out: string
+          created_at?: string | null
+          id?: string
+          property_id: string
+          source: string
+          sync_hash?: string | null
+          sync_session_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          check_in?: string
+          check_out?: string
+          created_at?: string | null
+          id?: string
+          property_id?: string
+          source?: string
+          sync_hash?: string | null
+          sync_session_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       system_health: {
         Row: {
           consecutive_failures: number | null
@@ -1240,8 +1374,35 @@ export type Database = {
           latency_ms?: number | null
           metadata?: Json | null
           property_id?: string | null
-          service_name: string
-          status: string
+          service_name?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      system_logs: {
+        Row: {
+          created_at: string | null
+          id: string
+          level: string
+          message: string
+          meta: Json | null
+          service: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          level: string
+          message: string
+          meta?: Json | null
+          service: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          level?: string
+          message?: string
+          meta?: Json | null
+          service?: string
         }
         Relationships: []
       }
@@ -1257,7 +1418,7 @@ export type Database = {
           value?: Json | null
         }
         Update: {
-          key?: string
+          key: string
           updated_at?: string | null
           value?: Json | null
         }
@@ -1303,9 +1464,10 @@ export type Database = {
         Row: {
           contact: string
           created_at: string | null
+          full_name: string
           id: string
           message: string
-          name: string
+          property_id: string | null
           sentiment_score: number | null
           severity: number | null
           status: string | null
@@ -1313,9 +1475,10 @@ export type Database = {
         Insert: {
           contact: string
           created_at?: string | null
+          full_name: string
           id?: string
           message: string
-          name: string
+          property_id?: string | null
           sentiment_score?: number | null
           severity?: number | null
           status?: string | null
@@ -1323,24 +1486,181 @@ export type Database = {
         Update: {
           contact?: string
           created_at?: string | null
+          full_name?: string
           id?: string
           message?: string
-          name?: string
+          property_id?: string | null
           sentiment_score?: number | null
           severity?: number | null
           status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "urgent_alerts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "urgent_alerts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "property_listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "urgent_alerts_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "vw_active_threads"
+            referencedColumns: ["property_id"]
+          },
+        ]
+      }
+      vapi_calls: {
+        Row: {
+          call_id: string
+          created_at: string | null
+          duration_seconds: number | null
+          ended_at: string | null
+          id: string
+          recording_url: string | null
+          started_at: string | null
+          success_evaluation: string | null
+          summary: string | null
+          transcript: string | null
+        }
+        Insert: {
+          call_id: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          recording_url?: string | null
+          started_at?: string | null
+          success_evaluation?: string | null
+          summary?: string | null
+          transcript?: string | null
+        }
+        Update: {
+          call_id?: string
+          created_at?: string | null
+          duration_seconds?: number | null
+          ended_at?: string | null
+          id?: string
+          recording_url?: string | null
+          started_at?: string | null
+          success_evaluation?: string | null
+          summary?: string | null
+          transcript?: string | null
         }
         Relationships: []
       }
     }
     Views: {
-      [_ in never]: never
+      property_listings: {
+        Row: {
+          address: string | null
+          amenities: string[] | null
+          baths: number | null
+          bedrooms: number | null
+          beds: number | null
+          category: string | null
+          cleaning_fee: number | null
+          description: string | null
+          guests: number | null
+          id: string | null
+          images: string[] | null
+          location: string | null
+          original_price: number | null
+          price: number | null
+          rating: number | null
+          reviews_count: number | null
+          service_fee: number | null
+          subtitle: string | null
+          tax_rate: number | null
+          title: string | null
+        }
+        Insert: {
+          address?: string | null
+          amenities?: string[] | null
+          baths?: number | null
+          bedrooms?: number | null
+          beds?: number | null
+          category?: string | null
+          cleaning_fee?: number | null
+          description?: string | null
+          guests?: number | null
+          id?: string | null
+          images?: string[] | null
+          location?: string | null
+          original_price?: number | null
+          price?: number | null
+          rating?: number | null
+          reviews_count?: number | null
+          service_fee?: number | null
+          subtitle?: string | null
+          tax_rate?: number | null
+          title?: string | null
+        }
+        Update: {
+          address?: string | null
+          amenities?: string[] | null
+          baths?: number | null
+          bedrooms?: number | null
+          beds?: number | null
+          category?: string | null
+          cleaning_fee?: number | null
+          description?: string | null
+          guests?: number | null
+          id?: string | null
+          images?: string[] | null
+          location?: string | null
+          original_price?: number | null
+          price?: number | null
+          rating?: number | null
+          reviews_count?: number | null
+          service_fee?: number | null
+          subtitle?: string | null
+          tax_rate?: number | null
+          title?: string | null
+        }
+        Relationships: []
+      }
+      vw_active_threads: {
+        Row: {
+          booking_status: string | null
+          check_in: string | null
+          check_out: string | null
+          guest_avatar: string | null
+          guest_name: string | null
+          human_takeover_until: string | null
+          is_host_typing: boolean | null
+          last_interaction: string | null
+          last_sentiment: string | null
+          message_count: number | null
+          property_id: string | null
+          property_image: string | null
+          property_title: string | null
+          session_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_holds: { Args: never; Returns: undefined }
       get_booking_access_level: {
         Args: { p_booking_id: string }
         Returns: number
+      }
+      get_host_dashboard_bundle: {
+        Args: { target_email: string }
+        Returns: Json
+      }
+      get_property_availability_bundle: {
+        Args: { target_property_id: string }
+        Returns: Json
       }
       get_secure_property_details: {
         Args: { p_booking_id: string }

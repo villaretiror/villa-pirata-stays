@@ -39,7 +39,7 @@ type Category = 'todo' | 'piscina' | 'playa' | 'mascotas';
 
 const Home: React.FC = () => {
   const navigate = useNavigate();
-  const { properties, bookings, syncedBlocks, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData, getOccupiedDatesForProperty } = useProperty();
+  const { properties, bookings, syncedBlocks, favorites, isLoading, isRefreshing, toggleFavorite, siteContent, localGuideData, getOccupiedDatesForProperty, logSearch } = useProperty();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -114,10 +114,20 @@ const Home: React.FC = () => {
     setIsChecking(true);
     window.dispatchEvent(new CustomEvent('salty-push', { detail: { message: "Salty está verificando el radar de Villa Retiro R... ⚓", speak: false } }));
     
-    setTimeout(() => {
+    setTimeout(async () => {
       setIsChecking(false);
+      const isAvailable = filteredProperties.length > 0;
       
-      if (filteredProperties.length === 0) {
+      // 🔱 SALTY RADAR: Log the search intent (Success or Failed)
+      logSearch({
+        check_in: startDate || undefined,
+        check_out: endDate || undefined,
+        guests: adults + children,
+        isAvailable,
+        metadata: { category: activeCategory }
+      });
+      
+      if (!isAvailable) {
         setIsOccupiedModalOpen(true);
       } else {
         setIsSearchOpen(false);
@@ -616,7 +626,7 @@ const Home: React.FC = () => {
                   <PropertyCard
                     property={property}
                     index={index}
-                    priority={index === 0}
+                    priority={index === 0} // 🔱 LCP OPTIMIZATION
                     onClick={(id) => navigate(`/property/${id}`, { 
                       state: { startDate, endDate, adults, children, pets } 
                     })}
