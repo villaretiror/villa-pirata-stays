@@ -12,8 +12,7 @@ export default defineConfig({
     },
   },
   define: {
-    // 🔱 ELITE SHIELD: Prevenir fallos catastróficos en producción
-    global: 'window',
+    // 🔱 ELITE SHIELD: Surgical process.env protection only
     'process.env': {},
   },
   build: {
@@ -27,14 +26,6 @@ export default defineConfig({
         entryFileNames: `assets/[name]-[hash].js`,
         chunkFileNames: `assets/[name]-[hash].js`,
         assetFileNames: `assets/[name]-[hash].[ext]`,
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('framer-motion')) return 'vendor-ui';
-            if (id.includes('react')) return 'vendor-react';
-            if (id.includes('jspdf') || id.includes('recharts')) return 'vendor-utils';
-            return 'vendor-common';
-          }
-        },
       },
     },
   },
