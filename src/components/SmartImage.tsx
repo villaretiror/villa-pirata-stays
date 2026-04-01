@@ -50,6 +50,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
                             }
                             className="w-full h-full object-cover scale-110 opacity-40 blur-lg"
                             alt="loading-luxury-placeholder"
+                            referrerPolicy="no-referrer"
                         />
                     )}
                 </div>
@@ -60,6 +61,7 @@ const SmartImage: React.FC<SmartImageProps> = ({
                 alt={alt}
                 loading={priority ? "eager" : "lazy"}
                 fetchPriority={priority ? "high" : "auto"}
+                referrerPolicy="no-referrer"
                 className={`w-full h-full object-cover transition-all duration-1000 ease-out ${loaded ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-105 blur-md'}`}
                 onLoad={() => setLoaded(true)}
                 onError={() => {
