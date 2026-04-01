@@ -13,7 +13,9 @@ export default defineConfig({
   },
   envPrefix: ['VITE_', 'SUPABASE_'],
   define: {
-    // 🔱 ELITE SHIELD: Unblock production environment variables from being wiped
+    // 🔱 ELITE SHIELD: Force-injection of Vercel secrets into the client bundle
+    'process.env.SUPABASE_URL': JSON.stringify(process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL),
+    'process.env.SUPABASE_ANON_KEY': JSON.stringify(process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY),
     'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
   },
   build: {
