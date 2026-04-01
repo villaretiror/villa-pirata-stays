@@ -4,8 +4,9 @@ import { Phone, PhoneOff, Mic, MicOff, Signal, SignalLow, Activity } from 'lucid
 
 // 🔱 ELITE BYPASS: Usamos el SDK desde el CDN cargado en index.html
 // Esto evita que Rollup falle en Vercel.
-const SALTY_ASSISTANT_ID = '280fb186-f436-4b9b-ac30-48badafd3a0d';
-const PUBLIC_KEY = '816607fa-e7f9-4fdf-879c-f00a5d1c8b1c';
+// 🔱 SMART ENGINE: Dynamic lookup with Hardcoded Fallbacks (Pocket Keys)
+const SALTY_ASSISTANT_ID = import.meta.env.VITE_VAPI_ID || '280fb186-f436-4b9b-ac30-48badafd3a0d';
+const PUBLIC_KEY = import.meta.env.VITE_VAPI_PUBLIC_KEY || '816607fa-e7f9-4fdf-879c-f00a5d1c8b1c';
 
 const SaltyVoiceButton: React.FC = () => {
     const [callStatus, setCallStatus] = useState<'inactive' | 'loading' | 'active'>('inactive');

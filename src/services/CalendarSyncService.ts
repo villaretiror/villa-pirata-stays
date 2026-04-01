@@ -193,7 +193,7 @@ export const CalendarSyncService = {
         try {
             const isFrontend = typeof window !== 'undefined';
             const fetchUrl = isFrontend 
-                ? `/api/proxy-ical?url=${encodeURIComponent(url)}`
+                ? `/api/calendar/export?url=${encodeURIComponent(url)}`
                 : url;
 
             const response = await fetch(fetchUrl);

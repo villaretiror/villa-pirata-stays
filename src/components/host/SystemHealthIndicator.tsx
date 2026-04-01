@@ -24,8 +24,8 @@ const SystemHealthIndicator: React.FC = () => {
     const fetchHealth = async (triggerSync = false) => {
         if (triggerSync) {
             try {
-                // Llamada al endpoint de backend para sincronizar iCals y DB
-                await fetch('/api/health-check');
+                // 🛰️ MASTER SENTINEL HEALTH CHECK
+                await fetch('/api/master?task=health');
                 setLastSync(new Date());
             } catch (e) {
                 console.error("Health sync failed:", e);

@@ -12,14 +12,29 @@ const CRON_SECRET = process.env.CRON_SECRET || 'salty_cron_2026_secret';
  */
 export default async function handler(req: any, res: any) {
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
-    
-    // 1. ELITE SECURITY GUARD (STRICT CRON_SECRET ONLY)
+    const { secret: querySecret, manual } = req.query;
     const authHeader = req.headers['authorization'];
-    const querySecret = req.query?.secret;
-    const isCronAuthorized = authHeader === `Bearer ${CRON_SECRET}` || querySecret === CRON_SECRET;
+    
+    // 🔱 DUAL-GATE SECURITY (Manual vs Auto)
+    let isAuthorized = false;
+    let userEmail = 'automated_cron';
 
-    if (!isCronAuthorized) {
-        return res.status(401).json({ error: 'Unauthorized: CRON_SECRET Required' });
+    if (manual === 'true') {
+        const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+        if (token) {
+            const { data: { user } } = await supabase.auth.getUser(token);
+            const ALLOWED_EMAILS = ['villaretiror.pr@gmail.com', 'villaretiror@gmail.com', 'villaretiror.stays@gmail.com'];
+            if (user && (ALLOWED_EMAILS.includes(user.email || '') || user.user_metadata?.role === 'host')) {
+                isAuthorized = true;
+                userEmail = user.email || 'host';
+            }
+        }
+    } else {
+        isAuthorized = authHeader === `Bearer ${CRON_SECRET}` || querySecret === CRON_SECRET;
+    }
+
+    if (!isAuthorized) {
+        return res.status(401).json({ error: 'Bunker Access Denied: Unauthorized Sync Attempt' });
     }
 
     const startTime = Date.now();
@@ -99,29 +114,29 @@ export default async function handler(req: any, res: any) {
 
                         results.synced_blocks += blocks.length;
                         results.log.push(`✅ ${prop.title} (${feed.platform}): Synced ${blocks.length} blocks with Atomic Vision.`);
-                    } else {
-                        /**
-                         * 🛡️ FAIL-SAFE SHIELD (Bunker 6.0)
-                         * If a feed returns 0 blocks, it's highly suspicious (a property usually has past or future blocks).
-                         * We DO NOT wipe the calendar automatically to prevent 'Ghost Availability' during API glitches.
-                         */
-                        const { count } = await supabase
-                            .from('synced_blocks')
-                            .select('*', { count: 'exact', head: true })
-                            .eq('property_id', prop.id)
-                            .eq('source', feed.platform);
 
-                        if ((count || 0) > 0) {
-                            const warnMsg = `⚠️ ${prop.title} (${feed.platform}): Feed empty. Shield active: kept ${count} existing blocks to prevent potential wipeout.`;
-                            console.warn(`[Sync-iCal] ${warnMsg}`);
-                            results.log.push(warnMsg);
-                        } else {
-                            results.log.push(`ℹ️ ${prop.title} (${feed.platform}): Feed empty (no previous blocks).`);
-                        }
+                        // 🔱 DASHBOARD SYNC (Metadatos en Caliente)
+                        const { data: updatedProp } = await supabase.from('properties').select('calendarSync').eq('id', prop.id).single();
+                        const feeds = (updatedProp?.calendarSync || []).map((f: any) => {
+                            if (f.platform === feed.platform) return { ...f, lastSynced: new Date().toISOString(), syncStatus: 'success', events_found: blocks.length };
+                            return f;
+                        });
+                        await supabase.from('properties').update({ calendarSync: feeds, updated_at: new Date().toISOString() }).eq('id', prop.id);
+
+                    } else {
+                        // Fail-safe check
+                        const { count } = await supabase.from('synced_blocks').select('*', { count: 'exact', head: true }).eq('property_id', prop.id).eq('source', feed.platform);
+                        if ((count || 0) > 0) results.log.push(`⚠️ ${prop.title} (${feed.platform}): Feed empty. Prot. Shield.`);
                     }
                 } catch (feedErr: any) {
                     console.error(`[Sync-iCal] Error for ${prop.title} (${feed.platform}):`, feedErr.message);
                     results.errors.push(`${prop.title} (${feed.platform}): ${feedErr.message}`);
+                    const { data: updatedProp } = await supabase.from('properties').select('calendarSync').eq('id', prop.id).single();
+                    const feeds = (updatedProp?.calendarSync || []).map((f: any) => {
+                        if (f.platform === feed.platform) return { ...f, syncStatus: 'error', lastError: feedErr.message };
+                        return f;
+                    });
+                    await supabase.from('properties').update({ calendarSync: feeds }).eq('id', prop.id);
                 }
             }
             results.synced_properties++;

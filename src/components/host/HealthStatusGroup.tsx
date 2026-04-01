@@ -23,7 +23,8 @@ const HealthStatusGroup: React.FC = () => {
     const fetchHealth = async (triggerSync = false) => {
         if (triggerSync) {
             try {
-                await fetch('/api/health-check');
+                // 🛰️ MASTER SENTINEL HEALTH
+                await fetch('/api/master?task=health');
             } catch (e) {
                 console.error("Health sync failed:", e);
             }

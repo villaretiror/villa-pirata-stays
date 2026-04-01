@@ -9,13 +9,34 @@ export default async function handler(req: any, res: any) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    const { id } = req.query; // villa id
-
-    if (!id) {
-        return res.status(400).json({ error: 'Villa ID is required' });
-    }
+    const { id, url: proxyUrl } = req.query; // villa id or target url
 
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+    // 🛡️ MODE A: ICAL PROXY (Consolidated)
+    if (proxyUrl && proxyUrl.startsWith('http')) {
+        try {
+            const bustCacheUrl = proxyUrl + (proxyUrl.includes('?') ? '&' : '?') + 'nocache=' + Date.now();
+            const response = await fetch(bustCacheUrl, { headers: { 'User-Agent': 'VillaRetiro-iCal-Proxy/2.0' }, signal: AbortSignal.timeout(8000) });
+            
+            if (response.ok) {
+                const text = await response.text();
+                // Async Cache Update (Don't await to minimize latency)
+                supabase.from('ical_cache').upsert({ url: proxyUrl, content: text, updated_at: new Date().toISOString() }).then(null, () => {});
+                return res.status(200).json({ contents: text });
+            }
+            throw new Error(`Platform server error: ${response.status}`);
+        } catch (err: any) {
+            console.error('[Consolidated Proxy Fallback]:', err.message);
+            const { data } = await supabase.from('ical_cache').select('content').eq('url', proxyUrl).maybeSingle();
+            if (data?.content) return res.status(200).json({ contents: data.content, is_cached: true });
+            return res.status(503).json({ error: 'Server Down & No Cache' });
+        }
+    }
+
+    if (!id) {
+        return res.status(400).json({ error: 'Villa ID or Proxy URL is required' });
+    }
 
     try {
         // 1. Fetch Bookings and Property Config (Blocked Dates)

@@ -220,8 +220,30 @@ export default async function handler(req: any, res: any) {
             }));
         }
 
-        // Final Wait for all background tasks
-        await Promise.allSettled(taskPromises);
+        // D. System Health Check (Sentinel Vision)
+        if (task === 'health') {
+            return res.status(200).json(await runTask('health', async () => {
+                const results_health: any = { status: 'healthy', services: [] };
+                const dbStart = Date.now();
+                const { error: dbError } = await supabase.from('properties').select('id').limit(1);
+                results_health.services.push({ name: 'Supabase_DB', status: dbError ? 'error' : 'healthy', latency: Date.now() - dbStart });
+                const { data: recentSyncs } = await supabase.from('cron_heartbeats').select('*').order('created_at', { ascending: false }).limit(5);
+                results_health.sync_history = recentSyncs;
+                return results_health;
+            }));
+        }
+
+        // E. Telegram Life Signal (Test Bot)
+        if (task === 'test_bot') {
+            return res.status(200).json(await runTask('test_bot', async () => {
+                const message = `🔱 <b>Prueba de Vida del Búnker</b>\n━━━━━━━━━━━━━━━━━━━━\n🚀 El Sentinel está operativo.\n🛸 <b>Modo:</b> Diagnóstico Manual.\n\n<i>Salty: "Los sistemas de alerta están despejados, mi Capitán."</i>`;
+                const sent = await NotificationService.sendTelegramAlert(message, undefined, false);
+                return { success: sent, message: sent ? 'Alerta enviada' : 'Fallo en Telegram' };
+            }));
+        }
+
+        // Final Wait for all background tasks (if global cron)
+        if (!task) await Promise.allSettled(taskPromises);
 
         // --- Weekly Strategy Report ---
         if (task === 'weekly_report') {

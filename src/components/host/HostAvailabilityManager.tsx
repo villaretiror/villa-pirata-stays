@@ -134,10 +134,9 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
       const { data: { session } } = await supabase.auth.getSession();
       const token = session?.access_token;
 
-      const response = await fetch('/api/host/sync-manual', { 
-        method: 'POST',
+      const response = await fetch('/api/cron/sync-ical?manual=true', { 
+        method: 'GET',
         headers: { 
-          'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       });

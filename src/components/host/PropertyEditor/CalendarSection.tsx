@@ -93,11 +93,10 @@ export default function CalendarSection({ form, setForm, monthsCount = 1, onRefr
     setIsSyncing(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      const response = await fetch('/api/host/sync-manual', { 
-        method: 'POST',
+      const response = await fetch('/api/cron/sync-ical?manual=true', { 
+        method: 'GET',
         headers: { 
-          'Authorization': `Bearer ${session?.access_token}`,
-          'Content-Type': 'application/json'
+          'Authorization': `Bearer ${session?.access_token}`
         }
       });
       
