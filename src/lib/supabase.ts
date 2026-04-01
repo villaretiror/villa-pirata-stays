@@ -3,23 +3,24 @@ import { Database } from '../supabase_types.js'; // Asegúrate de que la ruta se
 
 // 🛡️ Safe Environment Access
 const getEnv = (key: string): string => {
-  if (typeof process !== 'undefined' && process.env) {
-    return process.env[key] || process.env[`VITE_${key}`] || '';
-  }
   // @ts-ignore
   if (typeof import.meta !== 'undefined' && import.meta.env) {
     // @ts-ignore
     return import.meta.env[`VITE_${key}`] || import.meta.env[key] || '';
   }
+  if (typeof process !== 'undefined' && process.env) {
+    return process.env[`VITE_${key}`] || process.env[key] || '';
+  }
   return '';
 };
 
-const SUPABASE_URL = getEnv('SUPABASE_URL');
-const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY');
+export const SUPABASE_URL = getEnv('SUPABASE_URL');
+export const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY');
+export const GEMINI_API_KEY = getEnv('GEMINI_API_KEY');
 export const SITE_URL = getEnv('SITE_URL') || 'https://villaretiror.com';
 
 // 🔱 THE SOVEREIGNTY HANDSHAKE (No simulation in production)
-export const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
+export const isConfigured = SUPABASE_URL.length > 10 && SUPABASE_ANON_KEY.length > 10;
 
 // --- MOCK CLIENT (Para cuando no hay conexión) ---
 const mockResponse = (data: any = []) => ({
@@ -31,6 +32,8 @@ const mockResponse = (data: any = []) => ({
 });
 
 const createMockClient = () => {
+  console.warn("🔱 SENTINEL RADAR: Switched to SIMULATED MODE (Missing Keys). UI Shield Active.");
+  
   const handler: any = {
     select: () => handler,
     insert: () => handler,
@@ -38,15 +41,22 @@ const createMockClient = () => {
     upsert: () => handler,
     delete: () => handler,
     eq: () => handler,
+    neq: () => handler,
+    in: () => handler,
     or: () => handler,
     order: () => handler,
     limit: () => handler,
+    gt: () => handler,
+    lt: () => handler,
+    on: () => handler,
     single: () => Promise.resolve(mockResponse(null)),
     maybeSingle: () => Promise.resolve(mockResponse(null)),
     then: (resolve: any) => resolve(mockResponse([])),
   };
+
   return {
     from: () => handler,
+    rpc: () => Promise.resolve(mockResponse([])),
     auth: { 
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
@@ -54,23 +64,22 @@ const createMockClient = () => {
         data: { 
           user: { 
             id: 'mock-user-123', 
-            email: email || 'viajero@salty.com',
-            user_metadata: { name: 'Salty Guest (Simulado)' },
-            created_at: new Date().toISOString()
+            email: email || 'host@villa.com',
+            user_metadata: { role: 'host', name: 'Salty Host (Simulado)' },
+            role: 'host'
           } 
         }, 
         error: null 
       }),
       signOut: () => Promise.resolve({ error: null }),
     },
-    channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),
+    channel: () => handler,
     removeChannel: () => Promise.resolve(),
     removeAllChannels: () => Promise.resolve(),
   } as any;
 };
 
 // --- EL ENCHUFE REAL ---
-// Aquí pasamos <Database> para que todo el proyecto sepa qué tablas existen
 export const supabase = isConfigured
   ? createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
@@ -87,5 +96,5 @@ export const supabase = isConfigured
 if (!isConfigured) {
   console.warn("⚠️ Supabase MOCK MODE: Las llaves no están configuradas en el .env");
 } else {
-  console.log("🚀 Supabase REAL MODE: Enchufado y con tipos sincronizados");
+  console.log("🚀 Supabase REAL MODE: Enchufado y con soberanía total.");
 }
