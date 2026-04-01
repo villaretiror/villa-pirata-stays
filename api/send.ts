@@ -11,7 +11,7 @@ import { ContactConfirmationTemplate } from '../src/components/emails/ContactCon
 import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate.js';
 import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate.js';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
 
 const contactLeadSchema = z.object({
   name: z.string().min(2),
@@ -33,7 +33,7 @@ export default async function handler(req: any, res: any) {
   // 🛡️ SECURITY: Verify request source (Supabase Internal or Admin Local)
   const authHeader = req.headers['authorization'];
   const isLocal = req.headers['host']?.includes('localhost');
-  const sharedSecret = process.env.API_SECRET_KEY || process.env.RESEND_API_KEY;
+  const sharedSecret = process.env.API_SECRET_KEY || process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
 
   let isAuthorized = isLocal;
   let triggerSource = 'api_direct';
@@ -61,7 +61,7 @@ export default async function handler(req: any, res: any) {
   }
 
   if (!isAuthorized) {
-    console.warn('[SECURITY] Unauthorized email trigger attempt');
+    console.warn('[SECURITY] Unauthorized email trigger attempt | host:', req.headers['host'], '| hasAuth:', !!authHeader);
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -222,7 +222,12 @@ export default async function handler(req: any, res: any) {
       }
 
       case 'cohost_invitation': {
-        const inviteUrl = `${process.env.VITE_SITE_URL}/login?invite=true${rest.token ? `&token=${rest.token}` : ''}`;
+        const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
+        const inviteToken = rest.token || '';
+        const invitePropId = propertyId || '';
+        // Build a direct invite URL: /login?invite=true&token=TOKEN&property=PROPERTY_ID
+        const inviteUrl = `${siteUrl}/login?invite=true${inviteToken ? `&token=${inviteToken}` : ''}${invitePropId ? `&property=${invitePropId}` : ''}`;
+        console.log(`[Cohost Invitation] Sending to: ${customerEmail} | URL: ${inviteUrl}`);
         const html = await render(React.createElement(CohostInvitationTemplate, {
           propertyName: p.name,
           logoUrl: p.logo,

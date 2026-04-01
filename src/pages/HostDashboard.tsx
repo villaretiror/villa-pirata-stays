@@ -681,6 +681,7 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
   const [newCohostEmail, setNewCohostEmail] = useState('');
   const [cohosts, setCohosts] = useState<CohostRow[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [sendingResend, setSendingResend] = useState<string | null>(null); // tracks which cohost id is sending
   const [showEliteView, setShowEliteView] = useState(false);
 
   // --- Task Management (Unified) ---
@@ -768,23 +769,53 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
   };
 
   const handleResendInvitation = async (ch: CohostRow) => {
+    if (sendingResend) return; // prevent double-click
+    setSendingResend(ch.id);
+    onShowToast(`Enviando invitación a ${ch.email}... ✉️`);
+
     try {
-      await fetch('/api/send', {
+      // 1. Get current session JWT so the API auth guard passes
+      const { data: { session } } = await supabase.auth.getSession();
+      const jwt = session?.access_token || '';
+
+      // 2. Ensure we have a valid token — regenerate if missing
+      let token = ch.invitation_token;
+      if (!token) {
+        token = crypto.randomUUID();
+        await supabase
+          .from('property_cohosts')
+          .update({ invitation_token: token })
+          .eq('id', ch.id);
+      }
+
+      // 3. Call the API with proper Authorization header
+      const res = await fetch('/api/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${jwt}`
+        },
         body: JSON.stringify({
           type: 'cohost_invitation',
           customerEmail: ch.email,
           email: ch.email,
           propertyName: propertyName,
           propertyId: propertyId,
-          token: ch.invitation_token
+          token
         })
       });
-      onShowToast(`Invitación reenviada a ${ch.email} ✨`);
-    } catch (e) {
-      console.error("Resend error:", e);
-      onShowToast("Error al reenviar invitación.");
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `HTTP ${res.status}`);
+      }
+
+      onShowToast(`✅ Invitación reenviada a ${ch.email}`);
+    } catch (e: any) {
+      console.error('[Resend Invite Error]', e);
+      onShowToast(`❌ Error al enviar: ${e.message || 'Intenta de nuevo'}`);
+    } finally {
+      setSendingResend(null);
     }
   };
 
@@ -908,7 +939,19 @@ const CohostManager = ({ propertyId, propertyName, onShowToast }: { propertyId: 
                 <span className={`text-[8px] font-semibold uppercase tracking-[0.25em] opacity-80 px-2 py-0.5 rounded-full ${ch.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-sand text-primary'}`}>
                   {ch.status === 'active' ? 'Activo' : 'Pendiente'}
                 </span>
-                {ch.status === 'pending' && <button onClick={() => handleResendInvitation(ch)} className="ml-2 text-[8px] text-gray-400 hover:text-black font-black uppercase">Reenviar</button>}
+                {ch.status === 'pending' && (
+                  <button
+                    onClick={() => handleResendInvitation(ch)}
+                    disabled={sendingResend === ch.id}
+                    className={`ml-2 text-[8px] font-black uppercase transition-all ${
+                      sendingResend === ch.id
+                        ? 'text-primary animate-pulse cursor-not-allowed'
+                        : 'text-gray-400 hover:text-black'
+                    }`}
+                  >
+                    {sendingResend === ch.id ? 'Enviando...' : 'Reenviar'}
+                  </button>
+                )}
               </div>
               <button onClick={() => handleRemoveCohost(ch.id)} className="p-2 text-red-300 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"><Trash2 className="w-4 h-4" /></button>
             </div>
@@ -2344,6 +2387,20 @@ const HostDashboard: React.FC = () => {
   const renderPayments = () => {
     const totalPendingVal = pendingPayments.reduce((acc, p: any) => acc + (Number(p.total_price) || 0), 0);
 
+    // --- Stripe Live Metrics (from real bookings) ---
+    const stripeBookings = realBookings.filter(
+      (b: any) => b.payment_method === 'stripe' || b.payment_method === 'stripe_checkout'
+    );
+    const stripeTotalProcessed = stripeBookings.reduce((acc: number, b: any) => acc + (Number(b.total_price) || 0), 0);
+    const stripeLastPayment = stripeBookings.length > 0
+      ? stripeBookings.sort((a: any, b: any) =>
+          new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+        )[0].created_at
+      : null;
+    const stripeLastDateLabel = stripeLastPayment
+      ? new Date(stripeLastPayment).toLocaleDateString('es-PR', { month: 'short', day: 'numeric' })
+      : '—';
+
     return (
       <div className="space-y-10 animate-fade-in pb-32">
         {/* Header Específico de Pagos (Payment Hub) */}
@@ -2372,16 +2429,35 @@ const HostDashboard: React.FC = () => {
             </div>
           </div>
 
-          <div className="bg-black p-6 rounded-[2.5rem] text-white relative overflow-hidden group border border-white/5 shadow-2xl">
+          <div className="bg-black p-6 rounded-[2.5rem] text-white relative overflow-hidden group border border-green-500/20 shadow-2xl">
             <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
-              <ShieldCheck className="w-16 h-16 text-primary" />
+              <ShieldCheck className="w-16 h-16 text-green-400" />
             </div>
-            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-primary/50 to-transparent" />
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-green-500/60 to-transparent" />
             <p className="text-[9px] font-semibold uppercase tracking-[0.25em] opacity-80 text-white/40 mb-2">Automatización (Stripe)</p>
             <h3 className="text-xl font-serif font-black italic text-white tracking-tighter mb-1 flex items-center gap-2">
-              Stripe Pay <span className="text-[8px] bg-primary px-2 py-0.5 rounded-full not-italic tracking-widest uppercase">Próximamente</span>
+              Stripe Pay{' '}
+              <span className="flex items-center gap-1.5 text-[8px] bg-green-500 text-white px-2 py-0.5 rounded-full not-italic tracking-widest uppercase font-black shadow-[0_0_10px_rgba(34,197,94,0.4)]">
+                <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping inline-block" />
+                EN LÍNEA
+              </span>
             </h3>
             <p className="text-[10px] font-medium text-white/30 uppercase tracking-widest mt-1 italic">Cero Intervención Manual</p>
+            {/* Live Stripe Metrics */}
+            <div className="mt-4 pt-4 border-t border-white/10 grid grid-cols-3 gap-3">
+              <div>
+                <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-0.5">Procesado</p>
+                <p className="text-sm font-serif font-black text-green-400 tracking-tight">${stripeTotalProcessed.toLocaleString()}</p>
+              </div>
+              <div>
+                <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-0.5">Transacciones</p>
+                <p className="text-sm font-serif font-black text-white tracking-tight">{stripeBookings.length}</p>
+              </div>
+              <div>
+                <p className="text-[7px] font-black text-white/30 uppercase tracking-widest mb-0.5">Último Pago</p>
+                <p className="text-sm font-serif font-black text-white/70 tracking-tight">{stripeLastDateLabel}</p>
+              </div>
+            </div>
           </div>
         </div>
 
