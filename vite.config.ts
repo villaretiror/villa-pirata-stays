@@ -11,6 +11,11 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    // 🔱 ELITE SHIELD: Prevenir fallos catastróficos en producción
+    global: 'window',
+    'process.env': {},
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
