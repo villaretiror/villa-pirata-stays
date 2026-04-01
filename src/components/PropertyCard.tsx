@@ -45,7 +45,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   const getBadges = () => {
     return (
       <div className="flex flex-col gap-2 z-10 pointer-events-none mt-2">
-        {(property.rating || 0) >= 4.9 && (
+        {(property.rating || 0) >= 4.5 && (
           <div className="bg-[#B39B59] px-3 py-1.5 rounded-sm text-[9px] font-bold uppercase tracking-[0.25em] text-white shadow-md flex items-center gap-1.5 border border-white/20 animate-fade-in w-fit">
             <Sparkles size={10} className="text-white" />
             Reserva Privada

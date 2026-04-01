@@ -1,0 +1,465 @@
+import { supabase } from '../lib/supabase.js';
+/**
+ * 🛰️ NOTIFICATION SERVICE (Telegram Bot Integration)
+ * Architecture: Server-side Alerts for Business & System Health
+ */
+// 🔱 GLOBAL MESSAGE QUEUE (Serializes Telegram requests to prevent 429s)
+let telegramQueue = Promise.resolve();
+export const NotificationService = {
+    /**
+     * 🔱 SALTY DISPATCHER (THE SHIELD)
+     * Internal robust delivery engine with Retry + Backoff + DB Audit + Sequential Queue
+     */
+    async _dispatchWithRetry(token, chatId, payload, retries = 5) {
+        // Enforce sequential processing by chaining to the global promise
+        const currentExecution = telegramQueue.then(async () => {
+            let attempt = 0;
+            let lastError = '';
+            while (attempt < retries) {
+                try {
+                    // Ensure text is concise and sanitized
+                    if (payload.text)
+                        payload.text = payload.text.substring(0, 4000);
+                    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await response.json();
+                    if (data.ok) {
+                        if (attempt > 0)
+                            console.log(`[NotificationService] Success after ${attempt} retries for ${chatId}.`);
+                        // Wait 1s between successful messages as a grace period for Telegram limits
+                        await new Promise(r => setTimeout(r, 1000));
+                        return true;
+                    }
+                    // 🚨 429: Too Many Requests (Rate Limit)
+                    if (response.status === 429 || data.error_code === 429) {
+                        const retryAfter = data.parameters?.retry_after || Math.pow(2, attempt + 1);
+                        console.warn(`[NotificationService] Telegram Rate Limit (429). Waiting ${retryAfter}s...`);
+                        await new Promise(r => setTimeout(r, retryAfter * 1000));
+                        attempt++;
+                        continue;
+                    }
+                    lastError = data.description || 'Unknown Telegram Error';
+                    if (lastError.includes('blocked') || lastError.includes('not found'))
+                        break;
+                    attempt++;
+                    await new Promise(r => setTimeout(r, 1000 * attempt));
+                }
+                catch (err) {
+                    lastError = `Fetch Error: ${err.message}`;
+                    attempt++;
+                    await new Promise(r => setTimeout(r, 2000));
+                }
+            }
+            // 🔱 PROTOCOL ANTIGRAVITY: Log failure to Bunker
+            console.error(`[NotificationService] CRITICAL FAILURE after ${attempt} attempts for ${chatId}.`);
+            await supabase.from('system_logs').insert({
+                level: 'error',
+                service: 'NotificationService',
+                message: `Telegram Delivery Failure: ${lastError}`,
+                meta: {
+                    chat_id: chatId,
+                    attempts: attempt,
+                    message_preview: payload.text?.substring(0, 100)
+                }
+            }).catch((dbErr) => console.error("[NotificationService] DB Audit Failure:", dbErr.message));
+            return false;
+        });
+        telegramQueue = currentExecution;
+        const result = await currentExecution;
+        return !!result;
+    },
+    /**
+     * Envía una alerta a Telegram al chat del Host.
+     */
+    async sendTelegramAlert(message, keyboard, silent = false) {
+        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const CHAT_ID = process.env.TELEGRAM_CHAT_ID;
+        if (!TELEGRAM_TOKEN || !CHAT_ID) {
+            console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
+            return false;
+        }
+        const payload = {
+            chat_id: CHAT_ID,
+            text: message,
+            parse_mode: 'HTML',
+            disable_notification: silent
+        };
+        if (keyboard) {
+            payload.reply_markup = keyboard;
+            if (keyboard.inline_keyboard) {
+                const urls = keyboard.inline_keyboard.flat().map((b) => b?.url).filter(Boolean);
+                if (urls.length > 0)
+                    console.log("[NotificationService] Outbound URLs:", urls);
+            }
+        }
+        return this._dispatchWithRetry(TELEGRAM_TOKEN, CHAT_ID, payload);
+    },
+    /**
+     * Enviar mensaje directo a un Chat ID específico
+     */
+    async sendDirectTelegramMessage(chatId, message, keyboard, silent = false) {
+        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        if (!TELEGRAM_TOKEN) {
+            console.warn("[NotificationService] Telegram Token faltante.");
+            return false;
+        }
+        const payload = {
+            chat_id: chatId,
+            text: message,
+            parse_mode: 'HTML',
+            disable_notification: silent
+        };
+        if (keyboard)
+            payload.reply_markup = keyboard;
+        return this._dispatchWithRetry(TELEGRAM_TOKEN, chatId, payload);
+    },
+    /**
+     * 🏨 RESERVAS: Nueva Reservación Confirmada
+     */
+    async notifyNewReservation(bookingId, guestName, property, checkIn, checkOut, price, source = 'Directo', syncHash) {
+        if (syncHash && bookingId) {
+            const { data: existing } = await supabase
+                .from('bookings')
+                .select('sync_last_hash, notified_external_at')
+                .eq('id', bookingId)
+                .single();
+            if (existing?.sync_last_hash === syncHash && existing?.notified_external_at) {
+                console.log(`[NotificationService] Skipping redundant alert for booking ${bookingId} (Hash matched).`);
+                return true;
+            }
+        }
+        const branding = {
+            'Airbnb': '🔴 <b>Airbnb</b>',
+            'Booking.com': '🔵 <b>Booking.com</b>',
+            'Directo': '🟢 <b>Web Directa</b>',
+            'Salty AI': '🧠 <b>Salty AI</b>'
+        };
+        const sourceLabel = branding[source] || branding['Directo'];
+        const message = `
+💰 <b>¡Nueva Reserva Confirmada!</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Origen:</b> ${sourceLabel}
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Fechas:</b> 📅 ${checkIn} a ${checkOut}
+<b>Total:</b> 💵 $${price} USD
+
+🚀 <i>Salty: Registrado en calendario y base de datos.</i>`;
+        // 💰 Reservas son High Urgency -> Loud
+        const sent = await this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_booking_${bookingId}` }]]
+        }, false);
+        if (sent && bookingId) {
+            await supabase.from('bookings').update({
+                notified_external_at: new Date().toISOString(),
+                sync_last_hash: syncHash || null
+            }).eq('id', bookingId);
+        }
+        return sent;
+    },
+    /**
+     * 🔑 CHECK-IN: Recordatorio
+     */
+    async notifyCheckInReminder(guestName, property, time) {
+        const message = `
+🔵 <b>Logística: Check-In Hoy</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Hora:</b> ⏰ ${time}
+
+✨ <i>Salty: Códigos de acceso verificados y activos.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_ci` }]]
+        }, false);
+    },
+    /**
+     * 🧹 CHECK-OUT: Salida y Limpieza
+     */
+    async notifyCheckOutAlert(guestName, property) {
+        const message = `
+🔵 <b>Logística: Check-Out (Salida)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+
+🧼 <i>Salty: Coordinando limpieza para el próximo huésped.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: `ack_co` }]]
+        }, false);
+    },
+    /**
+     * 🆘 TEAM ALERT: Delega emergencias
+     */
+    async notifyEmergencyToCohosts(propertyId, propertyName, issueType, description, severity, resolvedGuestName, resolvedPhone) {
+        try {
+            const { data: cohosts } = await supabase
+                .from('property_cohosts')
+                .select('email, status')
+                .eq('property_id', propertyId)
+                .eq('status', 'active');
+            if (!cohosts || cohosts.length === 0) {
+                console.log(`[NotificationService] No active co-hosts for property ${propertyId}.`);
+                return;
+            }
+            const cohostEmails = cohosts.map((c) => c.email);
+            const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+            const hostChatId = process.env.TELEGRAM_CHAT_ID;
+            const allChatIds = (process.env.ALLOWED_TELEGRAM_CHAT_IDS || hostChatId || "").split(',').map((id) => id.trim()).filter(Boolean);
+            const emergencyMsg = `🔴 <b>[CO-HOST ALERT] ${propertyName.toUpperCase()}</b>\n\n` +
+                `🚨 <b>Severidad:</b> ${severity.toUpperCase()}\n` +
+                `🔧 <b>Tipo:</b> ${issueType}\n\n` +
+                `👤 <b>Huésped:</b> ${resolvedGuestName}\n` +
+                `📞 <b>Celular:</b> ${resolvedPhone}\n\n` +
+                `📋 <b>Descripción:</b> ${description}\n\n` +
+                `<i>Alerta delegada por Salty. El Host principal ya fue notificado.</i>`;
+            const secondaryIds = allChatIds.filter((id) => id !== hostChatId);
+            await Promise.allSettled(secondaryIds.map((chatId) => fetch(`https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: chatId,
+                    text: emergencyMsg,
+                    parse_mode: 'HTML',
+                    disable_notification: false // Emergencias son LOUD
+                })
+            }).catch(e => console.error(`[Co-Host Alert] Failed for chatId ${chatId}:`, e))));
+            await supabase.from('ai_insights').insert({
+                type: 'pattern',
+                content: {
+                    event: 'cohost_emergency_alert',
+                    property_id: propertyId,
+                    cohosts_notified: cohostEmails,
+                    issue_type: issueType,
+                    severity
+                },
+                impact_score: severity === 'critical' ? 10 : severity === 'high' ? 7 : 4,
+                status: 'resolved'
+            }).catch(() => { });
+        }
+        catch (err) {
+            console.error('[NotificationService] notifyEmergencyToCohosts error:', err.message);
+        }
+    },
+    /**
+     * 🤝 CO-HOSTS: Nueva Invitación Enviada
+     */
+    async notifyCohostInvitation(email, property) {
+        const message = `
+🟡 <b>Nueva Invitación de Co-host</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Email:</b> ${email}
+<b>Propiedad:</b> ${property}
+📬 <i>Estatus: Pendiente de aceptación.</i>`;
+        return this.sendTelegramAlert(message);
+    },
+    /**
+     * 📝 CO-HOST ACTION: Edición de Propiedad
+     */
+    async notifyCohostAction(cohostEmail, propertyName, action) {
+        const message = `
+⚪ <b>Acción de Co-host</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Anfitrión:</b> ${cohostEmail}
+<b>Propiedad:</b> ${propertyName}
+<b>Acción:</b> ${action}
+✅ <i>Cambio reflejado en Supabase.</i>`;
+        return this.sendTelegramAlert(message, undefined, true); // Acciones rutinarias son SILENT
+    },
+    /**
+     * ⭐ REVIEWS: Nuevo Comentario
+     */
+    async notifyNewReview(guestName, property, rating, platform) {
+        const stars = "⭐".repeat(rating);
+        const message = `
+🟢 <b>Reputación: Nueva Reseña (${platform})</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Propiedad:</b> 🏠 ${property}
+<b>Huésped:</b> 👤 ${guestName}
+<b>Calificación:</b> ${stars}
+
+💬 <i>Salty: Mejora el SEO respondiendo en el Dashboard.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_review" }]]
+        }, false);
+    },
+    /**
+     * 👥 LEADS: Nuevo Interés en Propiedad
+     */
+    async notifyNewLead(guestName, property, checkIn, checkOut, phone) {
+        const message = `
+🟠 <b>Salty: Nuevo Lead Interesado</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Fechas:</b> 📅 ${checkIn} al ${checkOut}
+<b>Teléfono:</b> 📞 ${phone}
+
+🛎️ <i>Estatus: En fase de cotización/intento de reserva.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_lead" }]]
+        }, false);
+    },
+    /**
+     * 💰 ATH MÓVIL: Comprobante Recibido
+     */
+    async notifyPaymentProof(guestName, property, proofUrl) {
+        const message = `
+🟠 <b>Acción Requerida: Pago ATH Móvil</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> 👤 ${guestName}
+<b>Propiedad:</b> 🏠 ${property}
+<b>Comprobante:</b> <a href="${proofUrl}">Ver Imagen 🖼️</a>
+
+🔎 <i>Acción: Valida en ATH Móvil y aprueba en el Dashboard.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_payment" }]]
+        }, false);
+    },
+    /**
+     * 🛰️ SYSTEM: Alerta de Error Crítico
+     */
+    async notifySystemError(context, error) {
+        const message = `
+🔴 <b>SYSTEM ERROR DETECTED</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Contexto:</b> ${context}
+<b>Error:</b> <code>${error.slice(0, 100)}</code>
+🛠 <i>Acción: Revisa los logs de Vercel de inmediato.</i>`;
+        return this.sendTelegramAlert(message, undefined, false); // Errores técnicos son LOUD
+    },
+    /**
+     * 👥 LEADS: Notificar Expiración
+     */
+    async notifyLeadExpired(guestName, property, dates) {
+        const message = `
+⚪ <b>Lead Expirado (Sin Pago)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Huésped:</b> ${guestName}
+<b>Propiedad:</b> ${property}
+<b>Fechas:</b> ${dates}
+🏷️ <i>Acción: Las fechas han sido liberadas en el calendario.</i>`;
+        return this.sendTelegramAlert(message, undefined, true); // Expiraciones son SILENT
+    },
+    /**
+     * 🆘 EMERGENCIA: Nueva Alerta Directa
+     */
+    async notifyNewEmergency(property, guest, issue, severity) {
+        const icon = severity === 'critical' ? '🚨' : '🆘';
+        const message = `
+🔴 🚨 <b>EMERGENCIA CRÍTICA: ${severity.toUpperCase()}</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Propiedad:</b> 🏠 ${property}
+<b>Huésped:</b> 👤 ${guest}
+<b>Problema:</b> 📢 ${issue}
+
+🔱 <i>Orden del Jefe: Intervención inmediata requerida.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_emergency" }]]
+        }, false);
+    },
+    /**
+     * 🏠 HOME HEALTH: Reporte Matutino
+     */
+    async notifyHomeHealth(stats) {
+        const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
+        const message = `
+⚪ 🏠 <b>ESTADO DE LA CASA - VILLA RETIRO R</b>
+━━━━━━━━━━━━━━━━━━━━
+📅 <b>Sincronización:</b> ${stats.syncStatus}
+${stats.syncDetails}
+
+🧹 <b>Limpieza:</b> ${stats.purgedItems} elementos purgados y liberados.
+
+👥 <b>Leads Activos:</b> ${stats.activeLeadsCount} personas hablando con Salty ahora.
+
+✨ <i>El metrónomo de tu negocio late al ritmo correcto.</i>`;
+        const baseUrl = siteUrl.replace(/\/$/, '');
+        const safeSecret = encodeURIComponent(stats.secret || '');
+        const row1 = [
+            { text: "🚀 Ver Dashboard", url: `${baseUrl}/host` }
+        ];
+        if (stats.secret) {
+            row1.push({ text: "🔄 Forzar Sync", url: `${baseUrl}/api/master-cron?task=sync&secret=${safeSecret}` });
+        }
+        const keyboard = {
+            inline_keyboard: [
+                row1,
+                [{ text: "✅ Recibido", callback_data: "ack_health" }]
+            ]
+        };
+        return this.sendTelegramAlert(message, keyboard, true); // Reportes diarios son SILENT
+    },
+    /**
+     * 📧 EMAIL: Notificar Rebote (Bounce)
+     */
+    async notifyEmailBounce(guestEmail, subject, reason) {
+        const message = `
+🔴 ⚠️ <b>BLOQUEO DE EMAIL (BOUNCE)</b>
+━━━━━━━━━━━━━━━━━━━━
+<b>Destinatario:</b> <code>${guestEmail}</code>
+<b>Asunto:</b> ${subject}
+<b>Razón:</b> <i>${reason}</i>
+
+❌ <i>Acción: Contacta al huésped vía WhatsApp de inmediato.</i>`;
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [[{ text: "✅ Enterado", callback_data: "ack_bounce" }]]
+        }, false); // Bounces son LOUD
+    },
+    /**
+     * 🔱 CAPTAIN ALERT: Notificación Directa desde Salty Voice (Vapi)
+     */
+    async notifyCaptainFromVoiceCall(params) {
+        // 🧼 MILITARY-GRADE DATA SANITIZATION
+        const email = (params.email || '').trim().toLowerCase();
+        const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        const phoneDigits = (params.phone || '').replace(/\D/g, '');
+        const phoneOk = phoneDigits.length >= 10;
+        const emailLink = emailOk ? `<a href="mailto:${email}">${email}</a>` : 'No provisto';
+        const message = `
+🔱 <b>¡Salty acaba de cerrar un trato!</b> 🎙️
+━━━━━━━━━━━━━━━━━━━━
+👤 <b>Huésped:</b> ${params.guestName}
+🏠 <b>Propiedad:</b> ${params.property}
+📅 <b>Estancia:</b> ${params.checkIn} al ${params.checkOut}
+💵 <b>Inversión:</b> $${params.total} USD
+━━━━━━━━━━━━━━━━━━━━
+📞 <b>Teléfono:</b> <code>${params.phone}</code>
+📧 <b>Email:</b> ${emailLink}
+━━━━━━━━━━━━━━━━━━━━
+🆔 <b>Call ID:</b> <code>${params.callId || 'N/A'}</code>
+
+🚀 <i>Salty: "Le dije que lo contactarías por WhatsApp. Es momento de abordar."</i>`;
+        // 🧼 BUTTONS (ONLY HTTPS - NO MAILTO FOR RELIABILITY)
+        const row1 = [];
+        if (phoneOk) {
+            row1.push({ text: "📲 WhatsApp", url: `https://wa.me/${phoneDigits}` });
+        }
+        return this.sendTelegramAlert(message, {
+            inline_keyboard: [
+                row1,
+                [{ text: "✅ Enterado Mi Capitán", callback_data: `ack_vapi_${params.callId || 'new'}` }]
+            ]
+        }, false); // Alertas del Capitán son LOUD
+    },
+    /**
+     * 📅 SYNC SUMMARY: Reporte de Sincronización Masiva
+     */
+    async notifySyncSummary(totalImported, details) {
+        if (totalImported === 0 && !details.includes('❌'))
+            return true; // No molestar si no hay cambios y no hay errores
+        const message = `
+🔄 <b>Salty: Resumen de Sincronización</b>
+━━━━━━━━━━━━━━━━━━━━
+${details.slice(0, 3000)} ${details.length > 3000 ? '...' : ''}
+
+<b>Total Nuevos Bloqueos:</b> +${totalImported} 🔱
+━━━━━━━━━━━━━━━━━━━━
+✨ <i>Tu calendario ahora está perfectamente alineado.</i>`;
+        return this.sendTelegramAlert(message, undefined, true); // Resumen silencioso
+    }
+};
+//# sourceMappingURL=NotificationService.js.map

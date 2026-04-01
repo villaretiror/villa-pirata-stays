@@ -1,0 +1,59 @@
+{
+  "name": "villa-pirata-stays",
+  "private": true,
+  "version": "1.1.2-SALTY",
+  "engines": {
+    "node": "20.x"
+  },
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "lint": "tsc --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@google/genai": "^1.46.0",
+    "@js-temporal/polyfill": "^0.5.1",
+    "@paypal/react-paypal-js": "^9.0.1",
+    "@react-email/components": "^1.0.10",
+    "@react-email/render": "^2.0.4",
+    "@stripe/react-stripe-js": "^6.0.0",
+    "@stripe/stripe-js": "^9.0.0",
+    "@supabase/supabase-js": "^2.100.1",
+    "@vapi-ai/server-sdk": "^0.11.0",
+    "canvas-confetti": "^1.9.4",
+    "date-fns": "^3.6.0",
+    "dotenv": "^17.3.1",
+    "framer-motion": "^12.35.0",
+    "ical-generator": "^10.0.0",
+    "jspdf": "^4.2.0",
+    "lucide-react": "^0.344.0",
+    "node-ical": "^0.25.5",
+    "openai": "^6.32.0",
+    "react": "18.2.0",
+    "react-datepicker": "^9.1.0",
+    "react-dom": "18.2.0",
+    "react-router-dom": "^7.13.1",
+    "recharts": "^3.8.0",
+    "resend": "^3.5.0",
+    "stripe": "^21.0.1",
+    "swr": "^2.4.1",
+    "twilio": "^5.13.0",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/node": "^22.14.0",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^5.0.0",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "supabase": "^2.78.1",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.8.2",
+    "vite": "^6.2.0"
+  }
+}
