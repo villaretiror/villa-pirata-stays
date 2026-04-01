@@ -1,41 +1,31 @@
-# 🔱 ANTIGRAVITY v6.0: MANUAL DE OPERACIONES DEL BÚNKEL (Villa Retiro R) 🔱
+# 🔱 FLEET COMMAND v7.0: PROTOCOLO DE ALTA DISPONIBILIDAD (Salty Stays) 🔱
 
-## 🚨 ESTÁNDAR DE "LLAVE EN MANO" (ZERO MOCKS)
-- **Zero Latency Experience (Hidratación Híbrida):** Supabase es la Fuente de Verdad Absoluta para datos dinámicos. Las constantes (`constants.ts`) definen la estructura de fallback obligatoria para evitar pantallas blancas (SSR/Hydration).
-- **Prohibición de Datos de "Relleno":** Si Supabase no responde y no hay fallback en constantes, se muestra estado de carga real, NUNCA datos inventados. No se permiten placeholders en producción.
-- **Responsabilidad de Flujo 360:** Cada nueva funcionalidad debe ser entregada con sus 4 pilares:
-  1. **DB:** SQL ALTERS/RPCs verificados en Supabase.
-  2. **API:** Routes en `/api/` optimizados para Edge Runtime (imports `.js` obligatorios).
-  3. **UI:** Hooks reactivos + Framer Motion + Estados de Carga/Error chic.
-  4. **Notificación:** Registro en `urgent_alerts` (Supabase) y alerta Telegram/Resend.
+## 🚀 ESTRATEGIA DE CONSTRUCCIÓN ULTRA-RÁPIDA (SRE)
+- **Construcción Quirúrgica:** El build en Vercel DEBE ser < 3 minutos. Prohibido el uso de importaciones circulares en `vite.config.ts`.
+- **Segmentación Dinámica:** Usa `manualChunks` asistido por funciones para evitar Deadlocks de memoria en Rollup. Si el bundle excede 2MB, subdivide por funcionalidad.
+- **Hydration Shield:** Las constantes (`constants.ts`) son la ley de fallback. Ninguna falla de red en Supabase puede causar una pantalla blanca. Si no hay data, se muestra el esqueleto estético del búnker.
 
-## 💎 JERARQUÍA DE DATOS Y ESCALABILIDAD (FLEET 1:N)
-- **Identidad Blindada (Airbnb IDs):** Las propiedades usan IDs de Airbnb (ej: 1081171030449673920) como **TEXT (not integer)**. Esta es la clave de bóveda para la sincronía iCal.
-- **Escalabilidad de Flota:** El código DEBE ser agnóstico a la propiedad. Añadir una nueva villa (ej: futura adquisición) debe ser un proceso de **inserción de datos en Supabase**, no de reescritura de lógica en el frontend.
-- **Soberanía del Host:** El sistema sincroniza vía iCal (Atomic Vision Sync), pero el Host mantiene el control manual absoluto desde el Dashboard para bloqueos ("Búnker Ocupado") y precios.
+## 💰 VENTAS DE TIBURÓN Y CAPTURA DE LEADS (CRO)
+- **Captura de Leads Anónimos:** Todo input de email o teléfono en el checkout debe persistir en la tabla `leads` inmediatamente vía `onBlur`. No esperamos al clic de "Reservar" para asegurar el contacto.
+- **Transparencia Total de Checkout:** Prohibido ocultar impuestos (IVU/Tax) o cargos de limpieza. El precio final debe ser visible y desglosado desde el primer segundo.
+- **Escasez Real (FOMO):** El componente `BookingCalendar` debe inyectar dinámicamente badges de "Solo queda 1 fecha disponible" basados en la ocupación real de Supabase.
 
-## 🛡️ GESTIÓN DE ESQUEMA Y RUNTIME SAFEGUARDS
-- **SQL-First:** Antes de programar, el esquema (DB) debe instalarse. Generar SQL ALTER primero.
-- **Sincronía de Tipos:** Cada cambio en la DB obliga a actualizar `src/supabase_types.ts` o interfaces locales. El código debe reconocer columnas nuevas (ej: `piscina_climatizada`) inmediatamente.
-- **Zero-Regression Policy:** Prohibido refactorizar o borrar funciones de "fallback" que ya aseguran la estabilidad en producción. Si funciona y es crítico para la conversión, NO SE TOCA sin plan de contingencia.
-- **Impacto Financiero:** Antes de cada commit, evalúa: "¿Este cambio puede romper el botón de Reserva o el enlace de WhatsApp?". Si la respuesta es "Sí", se requiere validación doble.
+## 🛡️ FORTIFICACIÓN DEL PERÍMETRO (SECURITY WARDEN)
+- **Privilegio Mínimo:** Prohibido hacer `SELECT *` en la tabla `properties`. Utiliza la vista `property_listings` para el tráfico público. Columnas sensibles (`access_code`, `wifi_pass`, `tax_rate`) solo son accesibles bajo JWT de Host/Staff.
+- **Aislamiento de Propiedad (Tenant Isolation):** Cada insert en `urgent_alerts` o `tasks` DEBE incluir el `property_id`. Un co-anfitrión jamás debe ver alertas de una villa que no gestiona.
+- **Inmutabilidad de Log:** Todo acceso administrativo debe quedar registrado en `security_audit_logs`.
 
-## 🎨 ESTÁNDARES DE LUJO UX (IRMARIS IDENTITY)
-- **Estética de "Reserva Privada":** Uso exclusivo de la paleta Matte Gold (#B39B59), Sand (#F5F2ED) y Deep Blue/Green. Tipografía Serif en títulos para transmitir exclusividad.
-- **Social Proof Orgánico:** El contador de "Personas mirando ahora" debe estar integrado en el Grid de Propiedades sin obstruir la fotografía.
-- **Arquitectura de Capas Móviles (<640px):**
-  1. **Z-Base:** Navegación base (Explorar, Favoritos).
-  2. **Z-Sticky (bottom-20):** StickyBookingBar ("RESERVAR AHORA").
-  3. **Z-Float (bottom-64):** Botones circulares (WhatsApp, Salty Voice).
-  *Regla: Prohibido cualquier solapamiento que impida el clic quirúrgico en dispositivos móviles.*
+## 🧹 OPERATIVIDAD DE STAFF (ACTIONABLE DASHBOARDS)
+- **Zero Read-Only Policy:** Ningún dashboard puede ser meramente informativo. Todo panel (Host/Staff) debe permitir acciones inmediatas (CRUD) con feedback visual de carga/éxito.
+- **Task Loop:** El `StaffDashboard` es el centro de misiones. El personal debe poder marcar tareas como "Completadas" con impacto inmediato en la disponibilidad de la villa.
 
-## 🧠 INTELIGENCIA CONTEXTUAL DE SALTY
-- **Salty Proactivo:** El AI Concierge no espera. Si detecta interés en el chat, usa `get_available_slots` y sugiere fechas libres u ofertas de "Escapes de Élite".
-- **Memoria de Búnker:** Usa `sessionId` persistente y `salty_memories` en DB para evitar amnesia entre sesiones. Salty debe recordar que el usuario ya preguntó por "Villa Retiro R".
+## 🧠 SALTY AI 7.0 (THE CLOSER)
+- **Salty Vendedor:** Salty ya no solo informa; Salty Cierra. Si una villa está ocupada, ejecuta automáticamente el "Protocolo de Cross-Selling" ofreciendo la otra propiedad de la flota con link directo.
+- **Panic Trigger:** El botón de Emergencia en el chat debe disparar `handleCrisisAlert` con severidad crítica (Level 5) y persistencia en `urgent_alerts`.
 
-## ⚖️ PROTOCOLO DE EJECUCIÓN
-- **Prioridad Visual (UI-First):** La interfaz debe ser funcional y estética ANTES del blindaje de DB. No se permiten colapsos visuales en nombre de la integridad de datos.
-- **Validación iCal:** Si la lógica de fechas falla, la tarea es **FALLIDA**. Revisa siempre la relación entre Airbnb ID y el filtrado de Supabase.
+## 🎨 LUJO VISUAL Y PERFORMANCE (IRMARIS IDENTITY)
+- **LCP Priority:** Las imágenes Hero de las villas deben llevar el flag `priority={true}` por decreto de marca. El impacto visual debe ser instantáneo (<1.5s).
+- **Estética Matte Gold (#B39B59):** Mantén el contraste tipográfico Serif/Sans. El diseño debe respirar exclusividad y minimalismo de búnker.
 
-"En Villa Retiro R, la tecnología es invisible, la elegancia es constante y la conversión es absoluta."
-🔱⚓🎙️🚢
+"En esta flota, el código es la ley, la IA es el cerrador y la conversión es el único norte."
+⚓🛡️🚀🛳️🔥🔱

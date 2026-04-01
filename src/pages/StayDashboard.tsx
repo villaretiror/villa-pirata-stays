@@ -21,6 +21,8 @@ import {
   Receipt
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { handleCrisisAlert } from '../aiServices';
+import { HOST_PHONE } from '../constants';
 
 const StayDashboard: React.FC = () => {
     const { id } = useParams<{ id: string }>();
@@ -33,6 +35,7 @@ const StayDashboard: React.FC = () => {
     const [showCancelModal, setShowCancelModal] = useState(false);
     const [isCancelling, setIsCancelling] = useState(false);
     const [timeLeft, setTimeLeft] = useState<string | null>(null);
+    const [isReportingCrisis, setIsReportingCrisis] = useState(false);
 
     useEffect(() => {
         if (!booking || (booking.status !== 'pending' && booking.status !== 'pending_payment')) return;
@@ -76,6 +79,27 @@ const StayDashboard: React.FC = () => {
         loadBooking();
     }, [id]);
 
+    const triggerPanic = async () => {
+        if (!confirm("¿Desea activar el Botón de Emergencia? Salty notificará de inmediato al anfitrión y equipo de seguridad.")) return;
+        
+        setIsReportingCrisis(true);
+        try {
+            await handleCrisisAlert(
+                booking.customer_name || "Huésped Elite",
+                "⚠️ BOTÓN DE PÁNICO ACTIVADO DESDE STAY DASHBOARD",
+                booking.customer_email || booking.customer_phone || "N/A",
+                booking.property_id,
+                5 // Vital severity
+            );
+            alert("Salty ha activado el protocolo de emergencia. El equipo está en camino o contactándole ahora mismo.");
+        } catch (err) {
+            console.error("Error triggerPanic:", err);
+            window.location.href = `tel:${HOST_PHONE}`;
+        } finally {
+            setIsReportingCrisis(false);
+        }
+    };
+
     if (loading) return (
         <div className="min-h-screen bg-[#0a0a0a] flex flex-col items-center justify-center">
             <div className="w-16 h-16 border-b-2 border-primary rounded-full animate-spin mb-4"></div>
@@ -101,7 +125,6 @@ const StayDashboard: React.FC = () => {
     const isCheckinDay = format(now, 'yyyy-MM-dd') === booking.check_in;
     const hoursPostCheckOut = (now.getTime() - checkOutDate.getTime()) / (1000 * 3600);
     
-    // 🔒 TRIPLE LOCK GOVERNANCE: Tiered Access Chronology
     let accessLevel = 1; 
     if (diffDays <= 7) accessLevel = 2; // Bronze: Guide & Location
     if (isPaid && isSigned && (isCheckinDay || (diffDays >= 0 && diffDays <= 1))) accessLevel = 3; // Gold: Entry Code & WiFi Pass
@@ -120,7 +143,6 @@ const StayDashboard: React.FC = () => {
 
     return (
         <div className="min-h-screen bg-[#0a0a0a] text-white selection:bg-primary selection:text-white font-sans overflow-x-hidden">
-            {/* Header / Hero Section with Parallax Vibe */}
             <header className="relative h-[40vh] overflow-hidden">
                 <motion.img 
                     initial={{ scale: 1.2, opacity: 0 }}
@@ -139,7 +161,17 @@ const StayDashboard: React.FC = () => {
                         <p className="text-primary font-bold tracking-[0.4em] uppercase text-[9px] mb-2 flex items-center gap-2">
                              <span className="w-2 h-2 bg-primary rounded-full animate-pulse" /> Su Refugio Privado
                         </p>
-                        <h1 className="text-4xl font-serif font-black leading-tight tracking-tight">{prop?.title || 'Villa Retiro'}</h1>
+                        <div className="flex justify-between items-end gap-4">
+                           <h1 className="text-4xl font-serif font-black leading-tight tracking-tight">{prop?.title || 'Villa Retiro'}</h1>
+                           <button 
+                             onClick={triggerPanic}
+                             disabled={isReportingCrisis}
+                             className="bg-rose-500/10 border border-rose-500/20 px-4 py-3 rounded-2xl flex items-center gap-2 hover:bg-rose-500/20 active:scale-95 transition-all mb-1 shrink-0"
+                           >
+                             <div className="w-2 h-2 bg-rose-500 rounded-full animate-ping" />
+                             <span className="text-rose-500 font-black text-[9px] uppercase tracking-widest">Pánico</span>
+                           </button>
+                        </div>
                     </motion.div>
                 </div>
                 
@@ -152,11 +184,8 @@ const StayDashboard: React.FC = () => {
             </header>
 
             <main className="px-6 -mt-6 relative z-10 pb-32 space-y-8">
-                
-                {/* 🔒 ACCESS MODULE: The Crown Jewel */}
                 <section className="bg-white/5 border border-white/10 rounded-[2.5rem] backdrop-blur-3xl p-8 shadow-2xl overflow-hidden relative group">
                     <div className="absolute -right-20 -top-20 w-40 h-40 bg-primary/20 rounded-full blur-3xl group-hover:bg-primary/30 transition-all duration-1000" />
-                    
                     <div className="flex items-center justify-between mb-8 relative z-10">
                         <div>
                             <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-white/50 mb-1">Acceso a la Villa</h2>
@@ -168,7 +197,6 @@ const StayDashboard: React.FC = () => {
                     </div>
 
                     <div className="space-y-6 relative z-10">
-                        {/* Door Code */}
                         <div className={`p-6 rounded-3xl border transition-all duration-700 ${accessLevel >= 3 ? 'bg-primary/10 border-primary/30 shadow-inner' : 'bg-white/5 border-white/5 grayscale'}`}>
                             <div className="flex justify-between items-center mb-2">
                                 <p className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Código de Entrada</p>
@@ -186,7 +214,6 @@ const StayDashboard: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Progress Stepper */}
                         <div className="grid grid-cols-3 gap-2 py-4 border-y border-white/5">
                             <div className="text-center">
                                 <span className={`mb-1 ${isPaid ? 'text-primary' : 'text-white/20'}`}>{isPaid ? <CheckCircle size={14} /> : <Circle size={14} />}</span>
@@ -203,9 +230,9 @@ const StayDashboard: React.FC = () => {
                         </div>
 
                         {accessLevel < 3 && (
-                            <div className="bg-secondary/40/30 border border-primary/20 p-4 rounded-2xl flex gap-3 items-center">
+                            <div className="bg-white/5 border border-white/10 p-4 rounded-2xl flex gap-3 items-center">
                                 <Info size={16} className="text-primary" />
-                                <p className="text-[10px] text-primary/60/80 leading-snug">
+                                <p className="text-[10px] text-white/60 leading-snug">
                                     Complete el pago y firme su contrato para revelar el código {diffDays > 0 ? `el día ${booking.check_in}` : 'hoy'}.
                                 </p>
                             </div>
@@ -213,7 +240,6 @@ const StayDashboard: React.FC = () => {
                     </div>
                 </section>
 
-                {/* 📶 WIFI MODULE: One-Touch Connection */}
                 <section className="grid gap-4">
                     <a 
                         href={accessLevel >= 3 ? `WIFI:S:${wifiNetwork};T:WPA;P:${wifiPass};;` : '#'}
@@ -242,7 +268,6 @@ const StayDashboard: React.FC = () => {
                     )}
                 </section>
 
-                {/* 🗺️ LOCATION HUB: Smart Navigation */}
                 <section className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 space-y-6">
                     <div>
                         <h2 className="text-xs font-bold uppercase tracking-widest text-primary mb-1">Mapa & GPS</h2>
@@ -281,7 +306,6 @@ const StayDashboard: React.FC = () => {
                     </div>
                 </section>
 
-                {/* 🐆 SALTY VIP CONCIERGE: Direct AI Actions */}
                 <section className="relative p-8 rounded-[2.5rem] bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] border border-white/5 shadow-2xl overflow-hidden">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-primary/10 rounded-full blur-3xl -mr-16 -mt-16" />
                     <div className="relative z-10">
@@ -302,14 +326,10 @@ const StayDashboard: React.FC = () => {
                             >
                                 💬 Preguntar algo a Salty <ArrowRight size={14} />
                             </button>
-                            <p className="text-[9px] text-center text-white/30 italic">
-                                "Salty conoce cada detalle de esta propiedad, desde el A/C hasta la cafetera."
-                            </p>
                         </div>
                     </div>
                 </section>
 
-                {/* Express Checkout: Only visible on departure day */}
                 {isCheckinDay && (
                      <section className="pt-8 border-t border-white/5">
                         <button 
@@ -326,18 +346,11 @@ const StayDashboard: React.FC = () => {
                      </section>
                 )}
 
-                {/* Footer Credits */}
                 <footer className="pt-12 text-center pb-8 border-t border-white/5">
                     <p className="text-[9px] font-bold text-white/20 uppercase tracking-[0.5em] mb-4">Villa & Pirata Stays Exclusive Experience</p>
-                    <div className="flex justify-center gap-6 text-white/40">
-                         <span className="material-icons text-sm">verified_user</span>
-                         <span className="material-icons text-sm">wifi_protected_setup</span>
-                         <span className="material-icons text-sm">support_agent</span>
-                    </div>
                 </footer>
             </main>
 
-            {/* Cancel Modal (Keep existing logic but styled) */}
             <AnimatePresence>
                 {showCancelModal && (
                     <motion.div 
@@ -353,21 +366,12 @@ const StayDashboard: React.FC = () => {
                             className="bg-[#1a1a1a] w-full max-w-lg rounded-t-[3rem] sm:rounded-[3rem] p-10 border-t sm:border border-white/10 shadow-2xl"
                         >
                             <h3 className="text-3xl font-serif font-black text-white mb-4">Cancelar Estancia</h3>
-                            <p className="text-white/40 text-sm leading-relaxed mb-8">
-                                Lamentamos que deba irse. Se procesará un reembolso según las políticas de cancelación activas para su reserva.
-                            </p>
-                            
                             <div className="space-y-4">
                                 <button 
                                     onClick={() => setShowCancelModal(false)}
                                     className="w-full bg-white text-black py-6 rounded-3xl font-semibold uppercase tracking-[0.25em] opacity-80 text-[10px]"
                                 >
                                     Mantener mi Reserva
-                                </button>
-                                <button 
-                                    className="w-full py-4 text-red-400 font-bold uppercase tracking-widest text-[9px]"
-                                >
-                                    Confirmar Cancelación
                                 </button>
                             </div>
                         </motion.div>
