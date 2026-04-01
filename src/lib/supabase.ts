@@ -18,6 +18,7 @@ const SUPABASE_URL = getEnv('SUPABASE_URL');
 const SUPABASE_ANON_KEY = getEnv('SUPABASE_ANON_KEY');
 export const SITE_URL = getEnv('SITE_URL') || 'https://villaretiror.com';
 
+// 🔱 THE SOVEREIGNTY HANDSHAKE (No simulation in production)
 export const isConfigured = SUPABASE_URL.length > 0 && SUPABASE_ANON_KEY.length > 0;
 
 // --- MOCK CLIENT (Para cuando no hay conexión) ---

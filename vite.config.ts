@@ -11,9 +11,10 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  envPrefix: ['VITE_', 'SUPABASE_'],
   define: {
-    // 🔱 ELITE SHIELD: Surgical process.env protection only
-    'process.env': {},
+    // 🔱 ELITE SHIELD: Unblock production environment variables from being wiped
+    'process.env.NODE_ENV': JSON.stringify(process.env.NODE_ENV || 'production'),
   },
   build: {
     outDir: 'dist',
