@@ -49,7 +49,17 @@ const createMockClient = () => {
     auth: { 
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      signInWithPassword: () => Promise.resolve({ data: { user: null }, error: null }),
+      signInWithPassword: ({ email }: { email: string }) => Promise.resolve({ 
+        data: { 
+          user: { 
+            id: 'mock-user-123', 
+            email: email || 'viajero@salty.com',
+            user_metadata: { name: 'Salty Guest (Simulado)' },
+            created_at: new Date().toISOString()
+          } 
+        }, 
+        error: null 
+      }),
       signOut: () => Promise.resolve({ error: null }),
     },
     channel: () => ({ on: () => ({ subscribe: () => ({ unsubscribe: () => {} }) }) }),

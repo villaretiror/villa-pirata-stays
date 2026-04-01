@@ -177,6 +177,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const { data, error } = response;
 
       if (error) throw error;
+      if (!data?.user) throw new Error("No se pudo recuperar la información del usuario.");
 
       const { profile, extra } = await getExtendedProfile(data.user.id);
       const mappedUser = mapSupabaseUser(data.user, profile, extra);
