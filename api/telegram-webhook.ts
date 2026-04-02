@@ -1,12 +1,12 @@
 import { z } from 'zod';
-import { NotificationService } from '../src/services/NotificationService';
-import { supabase } from '../src/lib/SupabaseService';
+import { NotificationService } from '../src/services/NotificationService.js';
+import { supabase } from '../src/lib/SupabaseService.js';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { GoogleGenAI, Type } from '@google/genai';
-import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge';
-import { PROPERTIES } from '../src/constants';
-import { SECRETS_DATA } from '../src/constants/secrets_data';
+import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge.js';
+import { PROPERTIES } from '../src/constants/index.js';
+import { SECRETS_DATA } from '../src/constants/secrets_data.js';
 import {
     checkAvailabilityWithICal,
     findCalendarGaps,
@@ -17,7 +17,7 @@ import {
     blockDates,
     assignCleaning,
     generatePaymentLink
-} from '../src/aiServices';
+} from '../src/aiServices.js';
 
 export const config = {
     maxDuration: 30,

@@ -1,14 +1,14 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import { HOST_PHONE } from '../src/constants';
+import { HOST_PHONE } from '../src/constants/index.js';
 import {
     checkAvailabilityWithICal,
     findCalendarGaps,
     applyAIQuote,
     resolvePropertyId,
     getSaltyPrompt,
-    } from '../src/aiServices';
+    } from '../src/aiServices.js';
 
 export const config = {
     runtime: 'edge',
@@ -23,7 +23,7 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-const SALTY_MODEL = 'gemini-2.0-flash-exp';
+const SALTY_MODEL = 'gemini-1.5-flash';
 
 const chatRequestSchema = z.object({
     messages: z.array(z.any()),
