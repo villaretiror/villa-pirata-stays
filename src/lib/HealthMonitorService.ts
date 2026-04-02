@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import ical from 'node-ical';
-import { NotificationService } from '../services/NotificationService';
+import { NotificationService } from '../services/NotificationService.js';
 
 /**
  * 🛠️ HEALTH MONITOR SERVICE (BACKEND)

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '../lib/SupabaseService';
+import { supabase } from '../lib/SupabaseService.js';
 
 /**
  * 🛰️ USE AVAILABILITY HOOK (DB-FIRST RELIABILITY)

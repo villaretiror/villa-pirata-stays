@@ -1,4 +1,4 @@
-import { User } from '../types';
+import { User } from '../types/index.js';
 
 const USERS_KEY = 'vp_users_db';
 const CURRENT_USER_KEY = 'vp_current_session';

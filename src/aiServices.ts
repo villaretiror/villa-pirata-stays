@@ -1,9 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from './lib/SupabaseService';
-import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils';
-import { FinanceService } from './services/FinanceService';
-import { PromoCode, SeasonalPrice, Booking } from './types';
-import { VILLA_KNOWLEDGE } from './constants/villa_knowledge';
+import { supabase } from './lib/SupabaseService.js';
+import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
+import { FinanceService } from './services/FinanceService.js';
+import { PromoCode, SeasonalPrice, Booking } from './types/index.js';
+import { VILLA_KNOWLEDGE } from './constants/villa_knowledge.js';
 import * as GoogleGenAIModule from '@google/genai';
 
 // 🔱 ROBUST ESM INTEROP: Detect if it's a named export, default export, or a namespace.
@@ -26,7 +26,7 @@ const getSaltyEnv = (key: string): string => {
 const ai = new GoogleGenAIClass({
     apiKey: getSaltyEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getSaltyEnv('GEMINI_API_KEY') || '',
 });
-export const SALTY_MODEL = 'gemini-1.5-flash'; // ⚡ Motor de Élite (Unified & Stable)
+export const SALTY_MODEL = 'gemini-2.5-flash'; // ⚡ Frontier Model (2026 Sovereign Edition)
 
 import type { Tables } from './types/supabase';
 

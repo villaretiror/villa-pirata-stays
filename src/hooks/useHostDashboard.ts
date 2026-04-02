@@ -1,14 +1,14 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
-import { useProperty } from '../contexts/PropertyContext';
-import { mapSupabaseProperty } from '../utils/mappers';
-import { showToast } from '../utils/toast';
+import { supabase } from '../lib/supabase.js';
+import { useAuth } from '../contexts/AuthContext.js';
+import { useProperty } from '../contexts/PropertyContext.js';
+import { mapSupabaseProperty } from '../utils/mappers.js';
+import { showToast } from '../utils/toast.js';
 import { 
   BookingWithDetails, ExpenseRow, LeadRow, 
   AlertRow, HostTab 
-} from '../types/host';
-import { Property, Review } from '../types';
+} from '../types/host.js';
+import { Property, Review } from '../types/index.js';
 
 /**
  * 🔱 USE HOST DASHBOARD (Master Intelligence Hook)

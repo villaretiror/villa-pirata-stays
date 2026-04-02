@@ -1,4 +1,4 @@
-import { Property, LocalGuideCategory } from '../types';
+import { Property, LocalGuideCategory } from '../types/index.js';
 
 export const HOST_PHONE = "17873560895";
 

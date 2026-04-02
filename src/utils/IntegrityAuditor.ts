@@ -1,4 +1,4 @@
-import { Property } from '../types';
+import { Property } from '../types/index.js';
 
 /**
  * 🔱 INTEGRITY AUDITOR: Elite Standard Verification

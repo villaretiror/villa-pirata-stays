@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/supabase.js';
 
 const getEnvVar = (key: string): string => {
     if (typeof process !== 'undefined' && process.env[key]) return process.env[key] as string;

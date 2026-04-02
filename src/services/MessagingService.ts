@@ -1,6 +1,6 @@
 import { Resend } from 'resend';
-import { supabase } from '../lib/supabase';
-import { NotificationService } from './NotificationService';
+import { supabase } from '../lib/supabase.js';
+import { NotificationService } from './NotificationService.js';
 import twilio from 'twilio';
 
 const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);

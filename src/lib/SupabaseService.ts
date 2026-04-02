@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '../types/supabase'; // Asegúrate de que la ruta sea correcta según tu carpeta
+import { Database } from '../types/supabase.js'; // Asegúrate de que la ruta sea correcta según tu carpeta
 
 // 🛡️ Safe Environment Access
 const getEnv = (key: string): string => {
@@ -33,7 +33,7 @@ const mockResponse = (data: any = []) => ({
 
 const createMockClient = () => {
   console.warn("🔱 SENTINEL RADAR: Switched to SIMULATED MODE (Missing Keys). UI Shield Active.");
-  
+
   const handler: any = {
     select: () => handler,
     insert: () => handler,
@@ -57,19 +57,19 @@ const createMockClient = () => {
   return {
     from: () => handler,
     rpc: () => Promise.resolve(mockResponse([])),
-    auth: { 
+    auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      signInWithPassword: ({ email }: { email: string }) => Promise.resolve({ 
-        data: { 
-          user: { 
-            id: 'mock-user-123', 
+      onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => { } } } }),
+      signInWithPassword: ({ email }: { email: string }) => Promise.resolve({
+        data: {
+          user: {
+            id: 'mock-user-123',
             email: email || 'host@villa.com',
             user_metadata: { role: 'host', name: 'Salty Host (Simulado)' },
             role: 'host'
-          } 
-        }, 
-        error: null 
+          }
+        },
+        error: null
       }),
       signOut: () => Promise.resolve({ error: null }),
     },

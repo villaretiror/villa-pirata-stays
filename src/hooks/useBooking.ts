@@ -1,9 +1,9 @@
 import { useState, useCallback, useMemo } from 'react';
-import { Property, PromoCode } from '../types';
-import { FinanceService } from '../services/FinanceService';
-import { supabase } from '../lib/SupabaseService';
+import { Property, PromoCode } from '../types/index.js';
+import { FinanceService } from '../services/FinanceService.js';
+import { supabase } from '../lib/SupabaseService.js';
 import { differenceInDays, format, subDays, addDays } from 'date-fns';
-import { useProperty } from '../contexts/PropertyContext';
+import { useProperty } from '../contexts/PropertyContext.js';
 
 export function useBooking(property?: Property) {
   const { getOccupiedDatesForProperty } = useProperty();
