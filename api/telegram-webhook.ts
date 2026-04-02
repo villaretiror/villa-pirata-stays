@@ -17,16 +17,16 @@ const SUPABASE_URL = getEnv('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_API_KEY = getEnv('GEMINI_API_KEY') || getEnv('GOOGLE_GENERATIVE_AI_API_KEY');
 
-// 🛡️ IA ENGINE INITIALIZATION
-const GoogleGenAIClass: any = (GoogleGenAIModule as any).GoogleGenAI || (GoogleGenAIModule as any).default || GoogleGenAIModule;
-const ai = new GoogleGenAIClass({ apiKey: GEMINI_API_KEY });
+// 🛡️ IA ENGINE INITIALIZATION (Official Gemini 3 Skill Syntax)
+const GoogleGenAI: any = (GoogleGenAIModule as any).GoogleGenAI || (GoogleGenAIModule as any).default || GoogleGenAIModule;
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const supabaseServiceRole = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: { persistSession: false, autoRefreshToken: false }
 });
 
 export default async function handler(req: any, res: any) {
-    if (req.method !== 'POST') return res.status(200).send('OK'); // Always return OK to Telegram
+    if (req.method !== 'POST') return res.status(200).send('OK');
 
     try {
         const update = req.body;
@@ -41,7 +41,6 @@ export default async function handler(req: any, res: any) {
         const ALLOWED_CHATS = ['-5184291508', '2085187904', '1182255799'];
         const isOwner = ['Villaretiror', 'brian', 'Villaretiro_Alerts_Bot'].includes(username);
         
-        // Auto-whitelist for the Captain
         if (isOwner && !ALLOWED_CHATS.includes(String(chatId))) {
             ALLOWED_CHATS.push(String(chatId));
         }
@@ -50,9 +49,9 @@ export default async function handler(req: any, res: any) {
         const isMentioned = text.includes('@Villaretiro_bot') || update.message.chat.type === 'private' || isOwner;
 
         if (!isWhitelisted && !isOwner) return res.status(200).send('Unauthorized ID');
-        if (!isMentioned) return res.status(200).send('Ignoring unmentioned message');
+        if (!isMentioned) return res.status(200).send('No mentioned');
 
-        // 🧠 CONTEXT MEMORY (Aligned with REAL Schema: session_id, text, sender)
+        // 🧠 CONTEXT MEMORY (session_id, text, sender)
         const { data: chatContext } = await (supabaseServiceRole as any)
             .from('ai_chat_logs')
             .select('*')
@@ -60,28 +59,21 @@ export default async function handler(req: any, res: any) {
             .order('created_at', { ascending: false })
             .limit(10);
 
-        // 🛠️ EXECUTIVE TOOLS (Ready but silent for now)
-        const toolExecutors: Record<string, Function> = {
-            force_calendar_sync: async () => {
-                const stats = await CalendarSyncService.syncAll(supabaseServiceRole);
-                return { success: true, stats };
-            }
-        };
-
-        // 🔱 IA ORACLE CONSULTATION
+        // 🔱 IA ORACLE CONSULTATION (Gemini 3 Flash Preview)
         const role = isOwner ? 'host' : 'guest';
         const historyJSON = JSON.stringify(chatContext || []);
         const agentSystemPrompt = (getSaltyPrompt as any)(role, { userName: user.first_name, source: 'Telegram' }, historyJSON);
 
         const result = await (ai as any).models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: [
                 { role: 'user', parts: [{ text: `${agentSystemPrompt}\n\nMensaje: ${text}` }] }
             ],
             config: { temperature: 0.1, maxOutputTokens: 1000 }
         });
 
-        const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Misión cumplida, Capitán. Todo está en orden.";
+        // 🔱 SKILL SYNTAX FIX: Using result.text as per SKILL.md
+        const responseText = result.text || "Lo lamento, Capitán, pero mi conexión con el oráculo ha fallado momentáneamente.";
 
         // 💾 LOG INTERACTION (session_id, text, sender)
         await (supabaseServiceRole as any).from('ai_chat_logs').insert([

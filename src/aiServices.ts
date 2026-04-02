@@ -26,7 +26,7 @@ const getSaltyEnv = (key: string): string => {
 const ai = new GoogleGenAIClass({
     apiKey: getSaltyEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getSaltyEnv('GEMINI_API_KEY') || '',
 });
-export const SALTY_MODEL = 'gemini-2.5-flash'; // ⚡ Frontier Model (2026 Sovereign Edition)
+export const SALTY_MODEL = 'gemini-3-flash-preview'; // ⚡ Frontier Model (2026 Sovereign Edition)
 
 import type { Tables } from './types/supabase';
 
@@ -898,9 +898,7 @@ export const generateOnboardingDraft = async (
             contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: { temperature: 0.4 }
         });
-        const text = response.candidates?.[0]?.content?.parts
-            ?.map((p: any) => p.text || '')
-            .join('') || '';
+        const text = response.text || '';
         return text.trim();
     } catch (e) {
         console.error("Error generating draft:", e);
