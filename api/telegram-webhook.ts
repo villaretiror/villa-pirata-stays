@@ -25,12 +25,6 @@ const GEMINI_API_KEY = getEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getEnv('GEMINI_
 // 🛡️ IA ENGINE INITIALIZATION
 const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
-const memorySchema = z.object({
-    learned_text: z.string().min(3),
-    category: z.enum(['logistics', 'policy', 'guest_preference', 'business_event']),
-    importance: z.number().min(1).max(5)
-});
-
 const supabaseServiceRole = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
         persistSession: false,
@@ -120,12 +114,12 @@ export default async function handler(req: any, res: any) {
             { chat_id: String(chatId), content: responseText, role: 'ai' }
         ]);
 
-        // 🔱 AQUÍ ESTABA EL ERROR (LÍNEA 207 APROX):
-        await NotificationService.sendTelegramAlert(responseText, String(chatId));
+        // 🔱 DESPACHO DIRECTO (2 Argumentos: ChatId, Mensaje)
+        await NotificationService.sendDirectTelegramMessage(String(chatId), responseText);
 
         return res.status(200).send('OK');
     } catch (error: any) {
         console.error("[Salty Error]:", error.message);
-        return res.status(200).send('Error but OK for Telegram');
+        return res.status(200).send('Error');
     }
 }
