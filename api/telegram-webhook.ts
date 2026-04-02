@@ -48,21 +48,15 @@ export default async function handler(req: any, res: any) {
         const chatId = update.message.chat.id;
         const text = update.message.text || '';
         const user = update.message.from;
-        const messageId = update.message.message_id;
 
-        // 🛡️ SECURITY GATE (White List)
         const ALLOWED_CHATS = ['-5184291508', '2085187904', '1182255799'];
-        if (!ALLOWED_CHATS.includes(String(chatId))) {
-            console.warn(`[Security] Unauthorized access from Chat: ${chatId}`);
-            return res.status(200).send('Unauthorized');
-        }
+        if (!ALLOWED_CHATS.includes(String(chatId))) return res.status(200).send('Unauthorized');
 
         const isOwner = ['Villaretiror', 'brian'].includes(user.username || '');
         const isMentioned = text.includes('@SaltyConciergeBot') || update.message.chat.type === 'private';
 
         if (!isMentioned && !isOwner) return res.status(200).send('Not mentioned');
 
-        // 🧠 PERSISTENT MEMORY MODULE
         const { data: chatContext } = await supabaseServiceRole
             .from('ai_chat_logs')
             .select('*')
@@ -80,122 +74,25 @@ export default async function handler(req: any, res: any) {
                 }
             },
             {
-                name: 'fetch_business_metrics',
-                description: 'Consulta métricas clave: tasa de ocupación, ingresos proyectados y ADR.',
-                parameters: { type: Type.OBJECT, properties: {} }
-            },
-            {
-                name: 'search_guest_intelligence',
-                description: 'Busca en el CRM historial de un huésped por nombre o email.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: { query: { type: Type.STRING } },
-                    required: ['query']
-                }
-            },
-            {
-                name: 'report_ground_activity',
-                description: 'Consulta reportes de mantenimiento o limpieza recientes.',
-                parameters: { type: Type.OBJECT, properties: {} }
-            },
-            {
-                name: 'update_business_rule',
-                description: 'Modifica reglas del negocio como estancia mínima o precios base.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        key: { type: Type.STRING },
-                        value: { type: Type.STRING }
-                    },
-                    required: ['key', 'value']
-                }
-            },
-            {
                 name: 'force_calendar_sync',
                 description: 'Fuerza una sincronización inmediata con Airbnb y Booking.com para todos los calendarios.',
                 parameters: { type: Type.OBJECT, properties: {} }
-            },
-            {
-                name: 'dispatch_outbound_comms',
-                description: 'Envía comunicaciones externas (SMS/Email) a huéspedes o equipo.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        channel: { type: Type.STRING },
-                        to: { type: Type.STRING },
-                        message: { type: Type.STRING }
-                    }
-                }
-            },
-            {
-                name: 'check_calendar_master',
-                description: 'Consulta la bitácora maestra de disponibilidad real de las villas.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        propertyId: { type: Type.STRING },
-                        startDate: { type: Type.STRING }
-                    }
-                }
-            },
-            {
-                name: 'market_research',
-                description: 'Búsqueda web en tiempo real sobre tendencias, eventos o competencia.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: { searchQuery: { type: Type.STRING } }
-                }
             }
         ];
 
         const toolExecutors: Record<string, Function> = {
             force_calendar_sync: async () => {
-                try {
-                    const stats = await CalendarSyncService.syncAll(supabaseServiceRole);
-                    return { success: true, stats, msg: '⚓ Sincronización de Soberanía completada con éxito.' };
-                } catch (e: any) {
-                    return { success: false, error: e.message };
-                }
+                const stats = await CalendarSyncService.syncAll(supabaseServiceRole);
+                return { success: true, stats, msg: '⚓ Sincronización completada.' };
             },
             fetch_daily_ops: async (args: any) => {
                 const queryDate = args.date || new Date().toISOString().split('T')[0];
                 const { data: arrivals } = await supabaseServiceRole.from('bookings').select('*, profiles(full_name), properties(title)').eq('check_in', queryDate).eq('status', 'confirmed');
                 const { data: departures } = await supabaseServiceRole.from('bookings').select('*, profiles(full_name), properties(title)').eq('check_out', queryDate).eq('status', 'confirmed');
                 return { arrivals: arrivals || [], departures: departures || [], summaryDate: queryDate };
-            },
-            fetch_business_metrics: async () => {
-                const { data: bookings } = await supabaseServiceRole.from('bookings').select('total_price').eq('status', 'confirmed');
-                const totalRevenue = bookings?.reduce((acc, curr) => acc + (curr.total_price || 0), 0) || 0;
-                return { projected_revenue: totalRevenue, currency: 'USD', status: 'Healthy' };
-            },
-            search_guest_intelligence: async (args: any) => {
-                const { data: guests } = await supabaseServiceRole.from('profiles').select('*').ilike('full_name', `%${args.query}%`);
-                return { matches: guests || [] };
-            },
-            report_ground_activity: async () => {
-                const { data: tasks } = await supabaseServiceRole.from('maintenance_tasks').select('*').order('created_at', { ascending: false }).limit(5);
-                return { recent_tasks: tasks || [] };
-            },
-            update_business_rule: async (args: any) => {
-                const { error } = await supabaseServiceRole.from('business_rules').upsert({ key: args.key, value: args.value, updated_by: 'SaltyAI' });
-                return { success: !error, msg: error ? error.message : 'Regla actualizada en el búnker.' };
-            },
-            dispatch_outbound_comms: async (args: any) => {
-                return { sent: true, channel: args.channel, msg: `Comunicación despachada a ${args.to}` };
-            },
-            check_calendar_master: async (args: any) => {
-                const start = args.startDate || new Date().toISOString().split('T')[0];
-                let p_id = '1081171030449673920';
-                if (args.propertyId?.toLowerCase().includes('pirata')) p_id = '44837583';
-                const { data: bookings } = await supabaseServiceRole.from('bookings').select('check_in, check_out, status').eq('property_id', p_id).gte('check_out', start).neq('status', 'cancelled');
-                return { property: p_id, activeBookings: bookings || [], msg: '⚓ Consultando ocupación real.' };
-            },
-            market_research: async (args: any) => {
-                return { results: [], msg: 'Búsqueda de mercado simulada (Se requiere Integration activa).' };
             }
         };
 
-        // 🔱 AI ORACLE CONSULTATION
         const model = (ai as any).getGenerativeModel({ model: "gemini-1.5-flash" });
         const chat = model.startChat({
             history: (chatContext || []).map((log: any) => ({
@@ -208,7 +105,6 @@ export default async function handler(req: any, res: any) {
         const result = await chat.sendMessage([prompt, `Mensaje del Capitán: ${text}`]);
         let responseText = result.response.text();
 
-        // 🔱 TOOL EXECUTION LOOP
         const call = result.response.functionCalls()?.[0];
         if (call) {
             const executor = toolExecutors[call.name];
@@ -219,18 +115,17 @@ export default async function handler(req: any, res: any) {
             }
         }
 
-        // 💾 LOG INTERACTION
         await supabaseServiceRole.from('ai_chat_logs').insert([
             { chat_id: String(chatId), content: text, role: 'user', user_id: String(user.id) },
             { chat_id: String(chatId), content: responseText, role: 'ai' }
         ]);
 
-        // 🔱 TELEGRAM RESPONSE
+        // 🔱 AQUÍ ESTABA EL ERROR (LÍNEA 207 APROX):
         await NotificationService.sendTelegramAlert(responseText, String(chatId));
 
         return res.status(200).send('OK');
     } catch (error: any) {
         console.error("[Salty Error]:", error.message);
-        return res.status(200).send('Internal Error But Handled'); // Mantener 200 para Telegram
+        return res.status(200).send('Error but OK for Telegram');
     }
 }
