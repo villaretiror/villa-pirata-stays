@@ -5,6 +5,7 @@ import { supabase, isConfigured } from '../lib/SupabaseService';
 import { mapSupabaseProperty } from '../utils/mappers';
 import { Database } from '../types/supabase';
 import useSWR from 'swr';
+import { showToast } from '../utils/toast';
 
 type PropertyRow = Database['public']['Tables']['properties']['Row'];
 type SettingRow = Database['public']['Tables']['system_settings']['Row'];
@@ -261,12 +262,20 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [fetchPropertiesFromDB]);
 
   const saveSiteContent = useCallback(async (content: SiteContent) => {
-    await supabase.from('system_settings').upsert({ key: 'site_content', value: content as any, updated_at: new Date().toISOString() });
+    const { error } = await supabase.from('system_settings').upsert({ key: 'site_content', value: content as any, updated_at: new Date().toISOString() });
+    if (error) {
+      showToast(`Error al guardar contenido: ${error.message}`);
+      throw error;
+    }
     fetchPropertiesFromDB();
   }, [fetchPropertiesFromDB]);
 
   const saveVillaKnowledge = useCallback(async (knowledge: VillaKnowledge) => {
-    await supabase.from('system_settings').upsert({ key: 'villa_knowledge', value: knowledge as any, updated_at: new Date().toISOString() });
+    const { error } = await supabase.from('system_settings').upsert({ key: 'villa_knowledge', value: knowledge as any, updated_at: new Date().toISOString() });
+    if (error) {
+      showToast(`Error al guardar conocimiento: ${error.message}`);
+      throw error;
+    }
     fetchPropertiesFromDB();
   }, [fetchPropertiesFromDB]);
 

@@ -72,9 +72,15 @@ export const CohostManager: React.FC<CohostManagerProps> = ({
 
       if (!error) {
         // 🛰️ UNIFIED NOTIFICATION: Email + Telegram
+        const { data: { session } } = await supabase.auth.getSession();
+        const jwt = session?.access_token || '';
+
         await fetch('/api/send', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${jwt}`
+          },
           body: JSON.stringify({
             type: 'cohost_invitation',
             customerEmail: trimmedEmail,

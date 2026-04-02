@@ -216,17 +216,22 @@ export const useHostDashboard = () => {
   const saveProperty = async (updated: Property) => {
     setIsSaving(true);
     try {
+      // 🛡️ DATA SANITIZATION: Omit frontend-only or join fields
+      const { host, isOffline, ...dbPayload } = updated as any;
+
       const { error: updateError } = await supabase.from('properties')
-        .update({ ...updated, updated_at: new Date().toISOString() })
+        .update({ ...dbPayload, updated_at: new Date().toISOString() })
         .eq('id', updated.id);
 
       if (updateError) throw updateError;
       
       showToast("Sincronización Completa ✅");
       onUpdateProperties(properties.map(p => p.id === updated.id ? updated : p));
+      await fetchData(); // Force re-sync of all stats
     } catch (err: any) {
       setError(err.message);
-      showToast("Error crítico al guardar.");
+      showToast(`Error: ${err.message}`);
+      console.error("[saveProperty] Error:", err);
     } finally {
       setIsSaving(false);
     }

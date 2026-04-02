@@ -3,6 +3,7 @@ import { SiteContent, VillaKnowledge } from '../../types';
 import { useProperty } from '../../contexts/PropertyContext';
 import { supabase } from '../../lib/SupabaseService';
 import SecuritySettings from './SecuritySettings';
+import { showToast } from '../../utils/toast';
 
 const SiteSettingsManager: React.FC = () => {
   const { properties, siteContent, villaKnowledge, saveSiteContent, saveVillaKnowledge } = useProperty();
@@ -26,9 +27,9 @@ const SiteSettingsManager: React.FC = () => {
           .eq('id', prop.id);
         if (error) throw error;
       }
-      alert("Límites de gobernanza actualizados con éxito.");
-    } catch (error) {
-      alert("Error al guardar gobernanza: " + (error as any).message);
+      showToast("Límites de gobernanza actualizados ✨");
+    } catch (error: any) {
+      showToast(`Error de Gobernanza: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -56,9 +57,9 @@ const SiteSettingsManager: React.FC = () => {
     setIsSaving(true);
     try {
       await saveSiteContent(siteForm);
-      alert("Configuración de marca guardada con éxito.");
-    } catch (error) {
-      alert("Error al guardar: " + (error as any).message);
+      showToast("Configuración de marca guardada ✨");
+    } catch (error: any) {
+      showToast(`Error al guardar: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -68,9 +69,9 @@ const SiteSettingsManager: React.FC = () => {
     setIsSaving(true);
     try {
       await saveVillaKnowledge(knowledgeForm);
-      alert("Base de conocimientos de Salty actualizada.");
-    } catch (error) {
-      alert("Error al actualizar Salty: " + (error as any).message);
+      showToast("Cerebro de Salty actualizado 🧠");
+    } catch (error: any) {
+      showToast(`Error al actualizar: ${error.message}`);
     } finally {
       setIsSaving(false);
     }

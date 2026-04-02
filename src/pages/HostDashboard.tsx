@@ -61,7 +61,7 @@ const HostDashboard: React.FC = () => {
     totalRevenue, monthlyRevenue, chartData, propertyPerformance, globalExpenses,
     realBookings, guideData,
     isLoading, isSaving, error, fetchData, approvePayment, rejectPayment,
-    resolveNotification, saveProperty, addTag, saltyBriefing
+    resolveNotification, saveProperty, addTag, saltyBriefing, setError
   } = useHostDashboard();
 
   const authUser = user as any;
@@ -127,12 +127,6 @@ const HostDashboard: React.FC = () => {
   const renderToday = () => (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-8 pb-32">
       {/* ⚠️ Unified Error Display */}
-      {error && (
-        <div className="bg-red-50 border border-red-100 p-4 rounded-3xl flex items-center gap-3 animate-shake">
-          <span className="material-icons text-red-500">error_outline</span>
-          <p className="text-[10px] font-black uppercase tracking-widest text-red-600">{error}</p>
-        </div>
-      )}
 
       {/* Salty AI Card */}
       <motion.div className="bg-gradient-to-br from-[#0A0D14] to-[#1A1F2B] p-10 rounded-[3.5rem] text-white shadow-2xl relative overflow-hidden border border-white/5">
@@ -261,6 +255,16 @@ const HostDashboard: React.FC = () => {
         <HostNavbar activeTab={activeTab} onNavigateHome={() => onNavigate('home')} />
         
         <main className="px-6 mt-4 max-w-5xl mx-auto min-h-[70vh]">
+          {/* ⚠️ Global Error Radar: Visible across all tab transitions */}
+          {error && (
+            <div className="mb-6 bg-red-50 border border-red-100 p-4 rounded-3xl flex items-center gap-3 animate-shake shadow-sm relative">
+              <span className="material-icons text-red-500">error_outline</span>
+              <p className="text-[10px] font-black uppercase tracking-widest text-red-600 flex-1">{error}</p>
+              <button onClick={() => setError(null)} className="p-2 hover:bg-red-100 rounded-full transition-colors text-red-400">
+                <span className="material-icons text-sm">close</span>
+              </button>
+            </div>
+          )}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeTab}
