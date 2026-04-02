@@ -45,7 +45,14 @@ const memorySchema = z.object({
 
 const supabaseServiceRole = createClient(
     getEnv('SUPABASE_URL'),
-    getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY')
+    getEnv('SUPABASE_SERVICE_ROLE_KEY') || getEnv('SUPABASE_ANON_KEY'),
+    {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        }
+    }
 );
 
 export default async function handler(req: any, res: any) {
@@ -182,8 +189,14 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
         ? `(Nota: Hablas con ${isIsrael ? 'Israel' : 'Brian'}, Dueño de Villa Retiro LLC. Tienen autoridad total. Si recibes una imagen, actúa como experto en mantenimiento y hospitalidad de alto nivel).` 
         : "(Hablas con un miembro del equipo estratégico).";
 
-    const masterPrompt = getSaltyPrompt('host', { activePropertyName: 'Villas Retiro & Pirata' });
-    const VILLA_CONCIERGE_PROMPT = `${masterPrompt}\n\n${authorityContext}`;
+    const masterPrompt = getSaltyPrompt('host', { activePropertyName: "Villas Retiro & Pirata Stays" });
+    const prTimeStr = new Intl.DateTimeFormat('es-ES', { 
+        weekday: 'long', day: 'numeric', month: 'long', 
+        hour: '2-digit', minute: '2-digit', year: 'numeric', 
+        timeZone: 'America/Puerto_Rico' 
+    }).format(new Date());
+
+    const VILLA_CONCIERGE_PROMPT = `${masterPrompt}\n\n${authorityContext}\n📅 TIEMPO ACTUAL (PR): ${prTimeStr}\n⚠️ INSTRUCCIÓN: Solo el Capitán Brian y el Capitán Rojas tienen acceso a este canal. Responde con lealtad y precisión operativa.`;
 
     const functionDeclarations: any[] = [
         {
@@ -247,20 +260,21 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
                 model: SALTY_MODEL,
                 contents: contents,
                 config: { 
-                    systemInstruction: VILLA_CONCIERGE_PROMPT, 
+                    systemInstruction: { role: 'system', parts: [{ text: VILLA_CONCIERGE_PROMPT }] }, 
                     tools: [{ functionDeclarations }], 
                     temperature: 0.4 
                 }
-            });
+            } as any);
 
-            const content = result.candidates?.[0]?.content;
+            const candidate = (result as any).candidates?.[0];
+            const content = candidate?.content;
             if (!content) break;
             contents.push(content);
 
-            const textParts = content.parts?.filter(p => p.text).map(p => p.text) || [];
+            const textParts = content.parts?.filter((p: any) => p.text).map((p: any) => p.text) || [];
             if (textParts.length > 0) finalResponse += textParts.join("");
 
-            const calls = content.parts?.filter(p => p.functionCall).map(p => p.functionCall) || [];
+            const calls = content.parts?.filter((p: any) => p.functionCall).map((p: any) => p.functionCall) || [];
             if (calls.length === 0) break;
 
             const toolResults = [];
