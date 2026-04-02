@@ -1,5 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { NotificationService } from './NotificationService';
+import { NotificationService } from './NotificationService.js';
 
 export const CalendarSyncService = {
     async syncAll(supabase: SupabaseClient) {
