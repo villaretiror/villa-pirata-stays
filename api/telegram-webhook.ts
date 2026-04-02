@@ -83,10 +83,15 @@ export default async function handler(req: any, res: any) {
         const allowedIdsStr = getEnv('ALLOWED_TELEGRAM_CHAT_IDS');
         const allowedIds = allowedIdsStr.split(',').map(id => id.trim()).filter(id => id !== '');
         
-        // Hardcoded backup for owners to prevent lockouts
+        // Hardcoded backup for owners and groups to prevent lockouts
         const owners = ["9395794184", "2085187904"]; 
+        const authorizedGroups = ["-5184291508"]; // VillaRetirorLLC Group
 
-        const isAuthorized = allowedIds.includes(chatId) || allowedIds.includes(senderId) || owners.includes(senderId);
+        const isOwner = owners.includes(senderId);
+        const isAuthorized = allowedIds.includes(chatId) || 
+                            allowedIds.includes(senderId) || 
+                            isOwner || 
+                            authorizedGroups.includes(chatId);
 
         if (!isAuthorized) {
             console.warn(`[Telegram Security] Forbidden access from ChatID: ${chatId} / SenderID: ${senderId}`);
@@ -94,9 +99,9 @@ export default async function handler(req: any, res: any) {
             await supabase.from('system_logs').insert({
                 level: 'warning',
                 service: 'TelegramWebhook',
-                message: `Acceso Denegado: ChatID ${chatId} / Sender ${senderId} no está en la lista blanca.`,
+                message: `Acceso Denegado: ChatID ${chatId} / Sender ${senderId} no en lista blanca. (Update ID: ${update.update_id})`,
                 meta: { chat_id: chatId, sender: msg.from?.first_name, text_preview: text.substring(0, 50) }
-            });
+            }).catch(() => {});
             
             return res.status(200).send('OK');
         }
@@ -168,7 +173,7 @@ export default async function handler(req: any, res: any) {
         else if (msg.reply_to_message) {
             await handleReply(chatId, msg, text);
         }
-        else if (text.toLowerCase().includes('salty') || text.startsWith('/') || msg.chat.type === 'private' || imagePart) {
+        else if (isOwner || text.toLowerCase().includes('salty') || text.startsWith('/') || msg.chat.type === 'private' || imagePart) {
             await handleAIConsultation(chatId, text, msg.from, imagePart);
         }
 

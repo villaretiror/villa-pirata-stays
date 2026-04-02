@@ -1,15 +1,15 @@
 import { Resend } from 'resend';
-import { supabase } from '../src/lib/supabase';
-import { NotificationService } from '../src/services/NotificationService';
+import { supabase } from '../src/lib/supabase.js';
+import { NotificationService } from '../src/services/NotificationService.js';
 import { z } from 'zod';
 import { render } from '@react-email/render';
 import React from 'react';
 
 // Import Templates
-import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate';
-import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate';
-import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate';
-import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate';
+import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate.js';
+import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate.js';
+import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate.js';
+import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate.js';
 
 const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
 
