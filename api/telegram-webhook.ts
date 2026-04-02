@@ -2,21 +2,12 @@ import { NotificationService } from '../src/services/NotificationService.js';
 import { supabase } from '../src/lib/SupabaseService.js';
 import { createClient } from '@supabase/supabase-js';
 import { CalendarSyncService } from '../src/services/CalendarSyncService.js';
-import { GoogleGenerativeAI, Part } from '@google/generative-ai';
+import { GoogleGenAI, Type } from '@google/genai';
 import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge.js';
 import { PROPERTIES } from '../src/constants/index.js';
 import { SECRETS_DATA } from '../src/constants/secrets_data.js';
 import { getSaltyPrompt } from '../src/aiServices.js';
 import { z } from 'zod';
-
-// 🔱 Definición de Tipos para Herramientas Operativas
-enum Type {
-    STRING = "STRING",
-    NUMBER = "NUMBER",
-    BOOLEAN = "BOOLEAN",
-    OBJECT = "OBJECT",
-    ARRAY = "ARRAY"
-}
 
 /**
  * 🔱 ROBUST ENV LOADER
@@ -32,7 +23,7 @@ const SUPABASE_SERVICE_ROLE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_API_KEY = getEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getEnv('GEMINI_API_KEY');
 
 // 🛡️ IA ENGINE INITIALIZATION
-const ai = new GoogleGenerativeAI(GEMINI_API_KEY);
+const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
 
 const memorySchema = z.object({
     learned_text: z.string().min(3),
@@ -205,8 +196,9 @@ export default async function handler(req: any, res: any) {
         };
 
         // 🔱 AI ORACLE CONSULTATION
-        const chat = ai.getGenerativeModel({ model: "gemini-1.5-flash" }).startChat({
-            history: (chatContext || []).map(log => ({
+        const model = (ai as any).getGenerativeModel({ model: "gemini-1.5-flash" });
+        const chat = model.startChat({
+            history: (chatContext || []).map((log: any) => ({
                 role: log.role === 'ai' ? 'model' : 'user',
                 parts: [{ text: log.content }]
             }))
@@ -234,7 +226,7 @@ export default async function handler(req: any, res: any) {
         ]);
 
         // 🔱 TELEGRAM RESPONSE
-        await NotificationService.sendTelegramAlert(responseText, String(chatId), false);
+        await NotificationService.sendTelegramAlert(responseText, String(chatId));
 
         return res.status(200).send('OK');
     } catch (error: any) {
