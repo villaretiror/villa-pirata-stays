@@ -83,9 +83,9 @@ const createMockClient = () => {
 export const supabase = isConfigured
   ? createClient<Database>(SUPABASE_URL, SUPABASE_ANON_KEY, {
     auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true,
+      autoRefreshToken: typeof window !== 'undefined',
+      persistSession: typeof window !== 'undefined',
+      detectSessionInUrl: typeof window !== 'undefined',
       storageKey: 'sb-auth-token',
       flowType: 'pkce'
     }
