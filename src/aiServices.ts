@@ -26,7 +26,7 @@ const getSaltyEnv = (key: string): string => {
 const ai = new GoogleGenAIClass({
     apiKey: getSaltyEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getSaltyEnv('GEMINI_API_KEY') || '',
 });
-export const SALTY_MODEL = 'gemini-1.5-flash-latest'; // ⚡ Gemini 1.5 Flash (Unified)
+export const SALTY_MODEL = 'gemini-2.0-flash-exp'; // ⚡ Motor de Élite (Unified)
 
 import type { Tables } from './types/supabase';
 

@@ -35,6 +35,13 @@ export interface SeasonalPrice {
 export interface PromoCode extends Partial<PromoCodeRow> {
   code: string;
   discount_percent: number;
+  active?: boolean;
+  valid_from?: string;
+  valid_to?: string;
+  max_uses?: number;
+  current_uses?: number;
+  min_stay_nights?: number;
+  allow_on_seasonal_prices?: boolean;
 }
 
 export type FeeStructure = Record<string, number>;
