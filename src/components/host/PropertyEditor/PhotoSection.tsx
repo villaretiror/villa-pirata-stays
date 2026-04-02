@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Property } from '../../../types';
-import { PropertyImage } from '../../../types/property';
+import { Property, PropertyImage } from '../../../types';
 import { supabase } from '../../../lib/SupabaseService';
 import { showToast } from '../../../utils/toast';
 

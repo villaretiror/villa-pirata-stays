@@ -1,6 +1,10 @@
 import { Database } from './supabase';
-import { PropertyImage } from './property';
-export * from './property';
+export interface PropertyImage {
+  url: string;
+  category: string;
+  description?: string;
+}
+
 export type ViewState = 'guest' | 'host';
 
 // 🔱 EXPLICIT ACCESS TO SUPABASE ROWS
