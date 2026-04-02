@@ -2,7 +2,7 @@ import { NotificationService } from '../src/services/NotificationService.js';
 import { supabase } from '../src/lib/SupabaseService.js';
 import { createClient } from '@supabase/supabase-js';
 import { CalendarSyncService } from '../src/services/CalendarSyncService.js';
-import { GoogleGenAI, Type } from '@google/genai';
+import * as GoogleGenAIModule from '@google/genai';
 import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge.js';
 import { PROPERTIES } from '../src/constants/index.js';
 import { SECRETS_DATA } from '../src/constants/secrets_data.js';
@@ -22,8 +22,9 @@ const SUPABASE_URL = getEnv('SUPABASE_URL');
 const SUPABASE_SERVICE_ROLE_KEY = getEnv('SUPABASE_SERVICE_ROLE_KEY');
 const GEMINI_API_KEY = getEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getEnv('GEMINI_API_KEY');
 
-// 🛡️ IA ENGINE INITIALIZATION
-const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
+// 🛡️ IA ENGINE INITIALIZATION (Compatible with local project structure)
+const GoogleGenAIClass: any = (GoogleGenAIModule as any).GoogleGenAI || (GoogleGenAIModule as any).default || GoogleGenAIModule;
+const ai = new GoogleGenAIClass({ apiKey: GEMINI_API_KEY });
 
 const supabaseServiceRole = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
     auth: {
@@ -58,46 +59,21 @@ export default async function handler(req: any, res: any) {
             .order('created_at', { ascending: false })
             .limit(10);
 
-        const toolExecutors: Record<string, Function> = {
-            force_calendar_sync: async () => {
-                const stats = await CalendarSyncService.syncAll(supabaseServiceRole);
-                return { success: true, stats, msg: '⚓ Sincronización completada.' };
-            },
-            fetch_daily_ops: async (args: any) => {
-                const queryDate = args.date || new Date().toISOString().split('T')[0];
-                const { data: arrivals } = await (supabaseServiceRole as any).from('bookings').select('*, profiles(full_name), properties(title)').eq('check_in', queryDate).eq('status', 'confirmed');
-                const { data: departures } = await (supabaseServiceRole as any).from('bookings').select('*, profiles(full_name), properties(title)').eq('check_out', queryDate).eq('status', 'confirmed');
-                return { arrivals: arrivals || [], departures: departures || [], summaryDate: queryDate };
-            }
-        };
-
-        const model = (ai as any).getGenerativeModel({ model: "gemini-1.5-flash" });
-        const chat = model.startChat({
-            history: (chatContext || []).map((log: any) => ({
-                role: log.role === 'ai' ? 'model' : 'user',
-                parts: [{ text: log.content }]
-            }))
-        });
-
-        // 🔱 RADICAL FIX: Correcting getSaltyPrompt arguments (Role, Context, History)
+        // 🔱 IA ORACLE CONSULTATION (Local SDK Syntax: models.generateContent)
         const role = isOwner ? 'host' : 'guest';
         const context = { userName: user.first_name, source: 'Telegram' };
         const historyJSON = JSON.stringify(chatContext || []);
-        
         const prompt = (getSaltyPrompt as any)(role, context, historyJSON);
-        
-        const result = await chat.sendMessage([prompt, `Mensaje del Capitán: ${text}`]);
-        let responseText = result.response.text();
 
-        const call = result.response.functionCalls()?.[0];
-        if (call) {
-            const executor = toolExecutors[call.name];
-            if (executor) {
-                const toolResult = await executor(call.args);
-                const secondResult = await chat.sendMessage([{ functionResponse: { name: call.name, response: toolResult } }]);
-                responseText = secondResult.response.text();
-            }
-        }
+        const result = await (ai as any).models.generateContent({
+            model: 'gemini-1.5-flash',
+            contents: [
+                { role: 'user', parts: [{ text: `${prompt}\n\nMensaje del Capitán: ${text}` }] }
+            ],
+            config: { temperature: 0.1, maxOutputTokens: 1000 }
+        });
+
+        let responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Lo lamento, Capitán, pero mi conexión con el oráculo ha fallado momentáneamente.";
 
         await (supabaseServiceRole as any).from('ai_chat_logs').insert([
             { chat_id: String(chatId), content: text, role: 'user', user_id: String(user.id) },
@@ -109,7 +85,7 @@ export default async function handler(req: any, res: any) {
 
         return res.status(200).send('OK');
     } catch (error: any) {
-        console.error("[Salty Error]:", error.message);
-        return res.status(200).send('OK');
+        console.error("[Salty Webhook Error]:", error.message);
+        return res.status(200).send('Handled Error');
     }
 }
