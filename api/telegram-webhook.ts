@@ -201,7 +201,7 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
         timeZone: 'America/Puerto_Rico' 
     }).format(new Date());
 
-    const VILLA_CONCIERGE_PROMPT = `${masterPrompt}\n\n${authorityContext}\n📅 TIEMPO ACTUAL (PR): ${prTimeStr}\n⚠️ INSTRUCCIÓN: Solo el Capitán Brian y el Capitán Rojas tienen acceso a este canal. Responde con lealtad y precisión operativa.`;
+    const VILLA_CONCIERGE_PROMPT = `${masterPrompt}\n\n${authorityContext}\n📅 TIEMPO ACTUAL (PR): ${prTimeStr}\n🔱 ESTATUS: Eres el VICEPRESIDENTE DE OPERACIONES de Villa Retiro LLC. Trabajas directamente para el CEO (Brian/Israel). Eres sus ojos y oídos en el negocio. Tienes autoridad para gestionar todo el búnker de datos. Tu comunicación debe ser eficiente, asertiva y orientada a resultados. NO eres un asistente, eres un COMANDANTE estratégico. Si se te pide información operativa o financiera, usa tus herramientas (BI, Inteligencia de Huéspedes) para dar respuestas de alto nivel que impulsen el crecimiento de la empresa.`;
 
     const functionDeclarations: any[] = [
         {
@@ -243,10 +243,61 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
                 },
                 required: ['propertyId', 'amount', 'reason']
             }
+        },
+        {
+            name: 'fetch_daily_ops',
+            description: 'Obtiene el manifiesto de llegadas y salidas de HOY para todas las propiedades. Úsalo cuando el Capitán pida resúmenes diarios o llegadas.',
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    date: { type: Type.STRING, description: 'Fecha en formato YYYY-MM-DD' }
+                }
+            }
+        },
+        {
+            name: 'fetch_business_metrics',
+            description: 'Resumen de salud del negocio: Ingresos recientes, ocupación actual y leads activos. Úsalo para preguntas estratégicas del CEO.',
+            parameters: { type: Type.OBJECT, properties: {} }
+        },
+        {
+            name: 'search_guest_intelligence',
+            description: 'Busca el historial completo, etiquetas de interés y comportamiento de un huésped por su nombre o correo.',
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    query: { type: Type.STRING, description: 'Nombre o email del huésped' }
+                }
+            }
+        },
+        {
+            name: 'report_ground_activity',
+            description: 'Estado actual de mantenimiento, limpiezas y proveedores de servicio en el terreno.',
+            parameters: { type: Type.OBJECT, properties: {} }
         }
     ];
 
     const toolExecutors: Record<string, Function> = {
+        fetch_daily_ops: async (args: any) => {
+            const queryDate = args.date || new Date().toISOString().split('T')[0];
+            const { data: arrivals } = await supabaseServiceRole.from('bookings').select('*, properties(title)').eq('check_in', queryDate).eq('status', 'confirmed');
+            const { data: departures } = await supabaseServiceRole.from('bookings').select('*, properties(title)').eq('check_out', queryDate).eq('status', 'confirmed');
+            return { arrivals: arrivals || [], departures: departures || [], summaryDate: queryDate };
+        },
+        fetch_business_metrics: async () => {
+            const { data: rev } = await supabaseServiceRole.from('bookings').select('total_price').eq('status', 'confirmed');
+            const { count: leads } = await supabaseServiceRole.from('leads').select('*', { count: 'exact', head: true }).eq('status', 'new');
+            const totalRevenue = (rev || []).reduce((acc, curr) => acc + Number(curr.total_price), 0);
+            return { totalConfirmedRevenue: totalRevenue, activeLeads: leads || 0, pulse: 'Excelente' };
+        },
+        search_guest_intelligence: async (args: any) => {
+            const { data: guest } = await supabaseServiceRole.from('profiles').select('*, bookings(*)').or(`full_name.ilike.%${args.query}%,email.ilike.%${args.query}%`).limit(1);
+            return { profile: guest || 'No encontrado' };
+        },
+        report_ground_activity: async () => {
+            const { data: issues } = await supabaseServiceRole.from('emergency_tickets').select('*, properties(title)').neq('status', 'resolved');
+            const { data: providers } = await supabaseServiceRole.from('service_providers').select('*').eq('is_active', true);
+            return { openIssues: issues || [], activeStaff: (providers || []).length };
+        },
         block_dates: async (args: any) => await blockDates(args.propertyId, args.startDate, args.endDate, args.reason),
         assign_cleaning: async (args: any) => await assignCleaning(args.propertyId, args.date, args.notes),
         generate_payment_link: async (args: any) => await generatePaymentLink(args.propertyId, args.amount, args.reason)
