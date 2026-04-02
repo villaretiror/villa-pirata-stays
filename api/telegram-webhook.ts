@@ -44,9 +44,10 @@ export default async function handler(req: any, res: any) {
         }
 
         const chatId = update.message.chat.id;
-        const text = (update.message.text || '').toLowerCase();
+        const text = (update.message.text || update.message.caption || '').toLowerCase();
         const user = update.message.from;
         const username = user.username || '';
+        const photo = update.message.photo;
 
         // 🛡️ SECURITY SHIELD (Owner Verification)
         const ALLOWED_CHATS = ['-5184291508', '2085187904', '1182255799'];
@@ -54,12 +55,34 @@ export default async function handler(req: any, res: any) {
         
         if (!ALLOWED_CHATS.includes(String(chatId)) && !isOwner) return res.status(200).send('Unauthorized Access');
         const isMentioned = text.includes('@villaretiro_bot') || update.message.chat.type === 'private' || isOwner;
-        if (!isMentioned) return res.status(200).send('No mention');
+        if (!isMentioned && !photo) return res.status(200).send('No mention');
+
+        // 🔱 VISUAL SENSOR (Multimodal Processing)
+        let visualData: any = null;
+        if (photo && photo.length > 0) {
+            const fileId = photo[photo.length - 1].file_id; // Get highest resolution
+            const BOT_TOKEN = getEnv('TELEGRAM_BOT_TOKEN');
+            
+            const fileRes = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${fileId}`);
+            const fileData = await fileRes.json();
+            
+            if (fileData.ok) {
+                const filePath = fileData.result.file_path;
+                const imgRes = await fetch(`https://api.telegram.org/file/bot${BOT_TOKEN}/${filePath}`);
+                const buffer = await imgRes.arrayBuffer();
+                visualData = {
+                    inlineData: {
+                        data: Buffer.from(buffer).toString('base64'),
+                        mimeType: 'image/jpeg'
+                    }
+                };
+            }
+        }
 
         // 🔱 SYSTEM HEALTH CHECK (Captain only)
         if (isOwner && text === 'status') {
             const { error: dbError } = await supabase.from('system_health').select('status').limit(1).single();
-            const statusMsg = `⚓ **SALTY STATUS REPORT** 🔱\n━━━━━━━━━━━━━━━━━━━━\n📡 **Radio:** En línea\n🔌 **Base de Datos:** ${dbError ? '⚠️ Fricción detectada' : '✅ Enchufada'}\n🧠 **Oráculo Gemini:** ✅ Conectado\n🤖 **Bot:** @Villaretiro_bot\n━━━━━━━━━━━━━━━━━━━━\n*Capitán, el búnker está bajo control.*`;
+            const statusMsg = `⚓ **SALTY STATUS REPORT** 🔱\n━━━━━━━━━━━━━━━━━━━━\n📡 **Radio:** En línea\n🔌 **Base de Datos:** ${dbError ? '⚠️ Fricción detectada' : '✅ Enchufada'}\n🧠 **Oráculo Gemini:** ✅ Conectado\n🤖 **Bot:** @Villaretiro_bot\n🖼️ **Visión:** ✅ Activa\n━━━━━━━━━━━━━━━━━━━━\n*Capitán, el búnker está bajo control.*`;
             await NotificationService.sendDirectTelegramMessage(String(chatId), statusMsg);
             return res.status(200).send('OK');
         }
@@ -68,6 +91,11 @@ export default async function handler(req: any, res: any) {
         const { data: businessData } = isOwner ? await supabase.from('business_activity_logs').select('*').order('date', { ascending: false }).limit(5) : { data: null };
         const { data: chatContext } = await supabase.from('ai_chat_logs').select('*').eq('session_id', String(chatId)).order('created_at', { ascending: false }).limit(10);
         
+        // 🛰️ CALENDAR RADAR (Current Month)
+        const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+        const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
+        const { data: activeBookings } = isOwner ? await supabase.from('bookings').select('property_id, check_in, check_out, source, status').gte('check_in', startOfMonth).lte('check_in', endOfMonth) : { data: null };
+
         const role = isOwner ? 'host' : 'guest';
         const rawHistory = (chatContext || []).map((msg: any) => `${msg.sender}: ${msg.text}`).reverse().join('\n');
         
@@ -77,26 +105,30 @@ export default async function handler(req: any, res: any) {
         ### 👑 PROTOCOLO DE PAZ MENTAL (Soberano):
         1. Eres el Vicepresidente de Operaciones con PODER TOTAL pero RESPONSABILIDAD ABSOLUTA.
         2. No inventes nada. Usa la Fuente de Verdad: ${JSON.stringify(PROPERTIES)}
-        3. Para el Capitán: Sé su reporte inteligente de ${JSON.stringify(businessData)}.
-        4. ACCIONES: Siempre usa botones de confirmación para sincronizar o modificar.
-        5. No hables por hablar, aporta valor operativo en cada respuesta.
+        3. RADAR DE RESERVAS (ESTRICTAMENTE REAL): ${JSON.stringify(activeBookings)}
+        4. Para el Capitán: Sé su reporte inteligente basado en ${JSON.stringify(businessData)}.
+        5. ACCIONES: Siempre usa botones de confirmación para sincronizar o modificar.
+        6. VISIÓN: Si recibes una imagen, descríbela técnicamente bajo el prisma de la operación (eficiencia, mantenimiento o finanzas).
         
         ### 🕵️ CONTEXTO ESTRATÉGICO:
         ${rawHistory}
         `.trim();
 
-        // 🔱 IA ORACLE (Gemini 3 Flash Preview)
+        // 🔱 IA ORACLE (Gemini 3 Flash Preview - Multimodal)
+        const parts: any[] = [{ text: `${systemPrompt}\n\nSOLICITUD ACTUAL: ${text}` }];
+        if (visualData) parts.push(visualData);
+
         const result = await (ai as any).models.generateContent({
             model: 'gemini-3-flash-preview',
-            contents: [ { role: 'user', parts: [{ text: `${systemPrompt}\n\nREPORTE ACTUAL: ${text}` }] } ],
-            config: { temperature: 0.2 } // Ultra-stable for safety
+            contents: [ { role: 'user', parts } ],
+            config: { temperature: 0.2 } 
         });
 
         const responseText = result.text || "Capitán, mis registros están estáticos. Reintente.";
 
         // 💾 LOG INTERACTION
         await supabase.from('ai_chat_logs').insert([
-            { session_id: String(chatId), text: text, sender: role },
+            { session_id: String(chatId), text: text || "[IMAGEN ENVIADA]", sender: role },
             { session_id: String(chatId), text: responseText, sender: 'ai' }
         ]);
 
