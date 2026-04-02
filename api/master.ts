@@ -43,7 +43,7 @@ export default async function handler(req: any, res: any) {
          * 🔱 DYNAMIC CONCIERGE RESOLUTION
          * Fetch all properties to avoid hardcoding titles.
          */
-        const { data: properties, error: propertiesError } = await supabase.from('properties').select('id, title, access_code, wifi_name, wifi_pass, logo_url');
+        const { data: properties, error: propertiesError } = await supabase.from('properties').select('id, title, access_code, wifi_name, wifi_pass');
         if (propertiesError) throw new Error(`Failed to fetch properties: ${propertiesError.message}`);
 
         const propertyMap: Record<string, any> = {};

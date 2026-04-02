@@ -128,7 +128,7 @@ export const NotificationService = {
      * Enviar mensaje directo a un Chat ID específico
      */
     async sendDirectTelegramMessage(chatId: string, message: string, keyboard?: any, silent: boolean = false): Promise<boolean> {
-        const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+        const TELEGRAM_TOKEN = getEnvVar('TELEGRAM_BOT_TOKEN');
 
         if (!TELEGRAM_TOKEN) {
             console.warn("[NotificationService] Telegram Token faltante.");
