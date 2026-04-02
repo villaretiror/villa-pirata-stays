@@ -121,28 +121,27 @@ export default async function handler(req: any, res: any) {
                 }
             };
 
-            // --- SENTNEL EXECUTION PIPELINE (Parallel for Speed) ---
+            // --- 🔱 SENTINEL EXECUTION PIPELINE ---
             const taskPromises = [];
 
-            // A. iCal Sync (Proprietary Vision)
-            if (task === 'sync' || !task) {
+            // A. iCal Sync (Airbnb Sovereignty)
+            if (task === 'sync' || task === 'all' || !task) {
                 taskPromises.push(runTask('sync', () => CalendarSyncService.syncAll(supabase)));
             }
 
             // B. Maintenance & Cleanup
-            if (task === 'cleanup' || !task) {
+            if (task === 'cleanup' || task === 'all' || !task) {
                 taskPromises.push(runTask('cleanup', () => taskCleanup(supabase, propertyMap)));
             }
 
-            // C. Intelligent Automations (Revenue & Hospitalty)
-            if (task === 'automation' || !task) {
+            // C. Intelligent Automations (Revenue & Hospitality)
+            if (task === 'automation' || task === 'all' || !task) {
                 taskPromises.push(runTask('automation', async () => {
                     const results_auto = { checkins: 0, reviews: 0, recovery: 0 };
                     
                     // C1. Check-in Instructions (T-Minus 24h)
                     const tomorrow = format(new Date(Date.now() + 24 * 60 * 60 * 1000), 'yyyy-MM-dd');
                     const { data: checkinSoon } = await supabase.from('bookings').select('*, profiles(*)').eq('check_in', tomorrow).is('instructions_sent_at', null).eq('status', 'confirmed');
-
                     if (checkinSoon) {
                         for (const b of checkinSoon) {
                             const p = propertyMap[String(b.property_id)];
@@ -150,22 +149,12 @@ export default async function handler(req: any, res: any) {
                                 await fetch(`${SITE_URL}/api/send`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                        type: 'reservation_confirmed',
-                                        customerName: b.profiles?.full_name || b.customer_name || 'Huésped',
-                                        customerEmail: b.profiles?.email || b.customer_email || 'reservas@villaretiror.com',
-                                        propertyName: p.title || 'Villa Retiro',
-                                        checkIn: b.check_in,
-                                        checkOut: b.check_out,
-                                        accessCode: p.access_code,
-                                        wifiName: p.wifi_name,
-                                        wifiPass: p.wifi_pass,
-                                        propertyId: b.property_id,
-                                        bookingId: b.id,
-                                        isAutomation: true // Signal for pre-arrival template
+                                    body: JSON.stringify({ 
+                                        type: 'checkin_instruction', 
+                                        booking: b, 
+                                        property: p 
                                     })
-                                }).catch(e => console.error("[Automation] Fetch failed for internal notification:", e.message));
-                                
+                                }).catch(e => console.error("[Automation] Check-in notification failed:", e.message));
                                 await supabase.from('bookings').update({ instructions_sent_at: new Date().toISOString() } as any).eq('id', b.id);
                                 results_auto.checkins++;
                             }
@@ -235,6 +224,9 @@ export default async function handler(req: any, res: any) {
                     return results_auto;
                 }));
             }
+
+            // Esperar a que el equipo termine su labor antes de reportar al CEO
+            await Promise.allSettled(taskPromises);
 
             // D. System Health Check (Sentinel Vision)
             if (task === 'health') {
