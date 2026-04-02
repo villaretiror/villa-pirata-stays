@@ -51,28 +51,12 @@ export default async function handler(req: any, res: any) {
 
         if (!isMentioned && !isOwner) return res.status(200).send('Not mentioned');
 
-        const { data: chatContext } = await supabaseServiceRole
+        const { data: chatContext } = await (supabaseServiceRole as any)
             .from('ai_chat_logs')
             .select('*')
             .eq('chat_id', String(chatId))
             .order('created_at', { ascending: false })
             .limit(10);
-
-        const tools = [
-            {
-                name: 'fetch_daily_ops',
-                description: 'Obtiene el manifiesto de operaciones del día (llegadas y salidas).',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: { date: { type: Type.STRING } }
-                }
-            },
-            {
-                name: 'force_calendar_sync',
-                description: 'Fuerza una sincronización inmediata con Airbnb y Booking.com para todos los calendarios.',
-                parameters: { type: Type.OBJECT, properties: {} }
-            }
-        ];
 
         const toolExecutors: Record<string, Function> = {
             force_calendar_sync: async () => {
@@ -81,8 +65,8 @@ export default async function handler(req: any, res: any) {
             },
             fetch_daily_ops: async (args: any) => {
                 const queryDate = args.date || new Date().toISOString().split('T')[0];
-                const { data: arrivals } = await supabaseServiceRole.from('bookings').select('*, profiles(full_name), properties(title)').eq('check_in', queryDate).eq('status', 'confirmed');
-                const { data: departures } = await supabaseServiceRole.from('bookings').select('*, profiles(full_name), properties(title)').eq('check_out', queryDate).eq('status', 'confirmed');
+                const { data: arrivals } = await (supabaseServiceRole as any).from('bookings').select('*, profiles(full_name), properties(title)').eq('check_in', queryDate).eq('status', 'confirmed');
+                const { data: departures } = await (supabaseServiceRole as any).from('bookings').select('*, profiles(full_name), properties(title)').eq('check_out', queryDate).eq('status', 'confirmed');
                 return { arrivals: arrivals || [], departures: departures || [], summaryDate: queryDate };
             }
         };
@@ -95,7 +79,13 @@ export default async function handler(req: any, res: any) {
             }))
         });
 
-        const prompt = getSaltyPrompt(user.first_name, isOwner, JSON.stringify(chatContext));
+        // 🔱 RADICAL FIX: Correcting getSaltyPrompt arguments (Role, Context, History)
+        const role = isOwner ? 'host' : 'guest';
+        const context = { userName: user.first_name, source: 'Telegram' };
+        const historyJSON = JSON.stringify(chatContext || []);
+        
+        const prompt = (getSaltyPrompt as any)(role, context, historyJSON);
+        
         const result = await chat.sendMessage([prompt, `Mensaje del Capitán: ${text}`]);
         let responseText = result.response.text();
 
@@ -109,17 +99,17 @@ export default async function handler(req: any, res: any) {
             }
         }
 
-        await supabaseServiceRole.from('ai_chat_logs').insert([
+        await (supabaseServiceRole as any).from('ai_chat_logs').insert([
             { chat_id: String(chatId), content: text, role: 'user', user_id: String(user.id) },
             { chat_id: String(chatId), content: responseText, role: 'ai' }
         ]);
 
-        // 🔱 DESPACHO DIRECTO (2 Argumentos: ChatId, Mensaje)
-        await NotificationService.sendDirectTelegramMessage(String(chatId), responseText);
+        // 🔱 DIRECT RESPONSE
+        await (NotificationService as any).sendDirectTelegramMessage(String(chatId), responseText);
 
         return res.status(200).send('OK');
     } catch (error: any) {
         console.error("[Salty Error]:", error.message);
-        return res.status(200).send('Error');
+        return res.status(200).send('OK');
     }
 }

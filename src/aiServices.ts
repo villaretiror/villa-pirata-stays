@@ -764,7 +764,7 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
 /**
  * 🔱 MASTER PERSONALITY ENGINE (UNIFIED)
  */
-export const getSaltyPrompt = (role: 'guest' | 'host', context?: any): string => {
+export const getSaltyPrompt = (role: 'guest' | 'host', context?: any, history?: string): string => {
     if (role === 'host') {
         return `
 ### 🔱 LIDERAZGO DE SALTY (CHIEF OF STAFF / VP OF OPERATIONS):
