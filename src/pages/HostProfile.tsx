@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import { Property } from '../types';
-import { Database } from '../supabase_types';
+import { Database } from '../types/supabase';
 import SmartImage from '../components/SmartImage';
 
 type ProfileRow = Database['public']['Tables']['profiles']['Row'];

@@ -1,9 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { supabase } from './lib/supabase.js';
-import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils.js';
-import { FinanceService } from './services/FinanceService.js';
-import { PromoCode, SeasonalPrice, Booking } from './types.js';
-import { VILLA_KNOWLEDGE } from './constants/villa_knowledge.js';
+import { supabase } from './lib/SupabaseService';
+import { parseICalData, getNightlyPrice, isSeasonalDate, validatePromoCode } from './utils';
+import { FinanceService } from './services/FinanceService';
+import { PromoCode, SeasonalPrice, Booking } from './types';
+import { VILLA_KNOWLEDGE } from './constants/villa_knowledge';
 import * as GoogleGenAIModule from '@google/genai';
 
 // 🔱 ROBUST ESM INTEROP: Detect if it's a named export, default export, or a namespace.
@@ -26,9 +26,9 @@ const getSaltyEnv = (key: string): string => {
 const ai = new GoogleGenAIClass({
     apiKey: getSaltyEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getSaltyEnv('GEMINI_API_KEY') || '',
 });
-const SALTY_MODEL = 'gemini-2.0-flash'; // ⚡ Gemini 2.0 Flash
+export const SALTY_MODEL = 'gemini-1.5-flash-latest'; // ⚡ Gemini 1.5 Flash (Unified)
 
-import type { Tables } from './supabase_types.js';
+import type { Tables } from './types/supabase';
 
 type ProfileRow = Tables<'profiles'>;
 type GivenConcession = { date: string; type: string; discount: number };
@@ -761,6 +761,90 @@ export const applyAIQuote = async (propertyId: string, checkIn: string, checkOut
     }
 };
 
+/**
+ * 🔱 MASTER PERSONALITY ENGINE (UNIFIED)
+ */
+export const getSaltyPrompt = (role: 'guest' | 'host', context?: any): string => {
+    if (role === 'host') {
+        return `
+### 🔱 LIDERAZGO DE SALTY (CHIEF OF STAFF / VP OF OPERATIONS):
+Eres la inteligencia maestra y el Director de Operaciones de Villa Retiro R & Pirata Family House. Este es el CANAL INTERNO EXCLUSIVO para los dueños (Host). 
+Tu misión es la eficiencia operativa, el control total del negocio y la rentabilidad del paraíso.
+
+### 👔 PERSONALIDAD 'SOCIOS DE ÉLITE':
+- **Tono:** Ejecutivo, transparente, leal y con un 10% de la calidez del Caballero Caribeño. Hablas como un socio que cuida cada detalle del refugio.
+- **Transparencia Total:** Reporta ingresos, gastos e identidades sin filtros. Eres el CFO técnico.
+- **Acción Ejecutiva:** Tienes autoridad para bloquear fechas, asignar limpiezas y generar cobros. No esperas órdenes; sugieres soluciones.
+- **Formato:** Firma siempre con 🔱. No uses negritas (**).
+
+### 🛠️ CAPACIDADES DE MANDO:
+- Puedes bloquear fechas para mantenimiento.
+- Puedes asignar tareas al equipo terrestre (limpieza).
+- Puedes generar links de pago (ATH Móvil) para cargos extras.
+
+🏠 CONTEXTO ACTUAL: ${context?.activePropertyName || 'Nuestras Villas'}
+📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' })}
+`.trim();
+    }
+
+    return `
+### 🔱 LIDERAZGO DE SALTY (ANFITRIÓN SUPREMO):
+Eres Salty, el **Concierge de Élite y Alma de Villa Retiro R & Pirata Family House**. No eres un bot; eres un Caballero Caribeño, sofisticado, masculino, cálido y profundamente orgulloso de Puerto Rico.
+
+### 🎭 PERSONALIDAD 'CARIBEÑO CHIC' (ESTRICTA):
+- **Tono:** Caballero sofisticado. Masculino, profesional y cálido.
+- **Identidad:** Eres el alma anfitriona. No uses términos místicos como 'santuario' o 'templo'. Eres un Concierge de Élite.
+- **Formato:** RESPONDE SIEMPRE EN TEXTO PLANO. NUNCA uses markdown (asteriscos, listas, etc). Limpieza absoluta.
+- **Emojis:** Máximo uno (1) por mensaje (⚓ o ✨).
+
+### 🧠 PROTOCOLO DE RESERVA:
+- Tu objetivo es la reserva directa. Sé proactivo sugiriendo fechas.
+`.trim();
+};
+
+/**
+ * 🛠️ EXECUTIVE TOOLS (ONLY FOR HOST)
+ */
+
+export const blockDates = async (propertyId: string, startDate: string, endDate: string, reason: string = 'Bloqueo Manual Host') => {
+    const finalId = await resolvePropertyId(propertyId, supabase);
+    const { error } = await supabase.from('availability_rules').insert({
+        property_id: finalId,
+        start_date: startDate,
+        end_date: endDate,
+        is_blocked: true,
+        reason: `[SALTY VP] ${reason}`,
+        origin_type: 'manual'
+    });
+    return { ok: !error, message: error ? error.message : `Fechas bloqueadas en ${finalId} del ${startDate} al ${endDate}.` };
+};
+
+export const assignCleaning = async (propertyId: string, date: string, notes: string = 'Limpieza estándar') => {
+    const finalId = await resolvePropertyId(propertyId, supabase);
+    const { error } = await supabase.from('tasks').insert({
+        property_id: finalId,
+        text: `🧹 LIMPIEZA: ${notes}`,
+        status: 'pending',
+        priority: 'high',
+        assigned_to: 'CLEANING_TEAM'
+    });
+    return { ok: !error, message: error ? error.message : `Tarea de limpieza asignada para ${finalId} el día ${date}.` };
+};
+
+export const generatePaymentLink = async (propertyId: string, amount: number, reason: string) => {
+    const finalId = await resolvePropertyId(propertyId, supabase);
+    const athMovilMsg = `⚓ Salty: Se ha generado una orden de pago por $${amount}.00 USD.\nConcepto: ${reason}\n\nFavor de completar vía ATH Móvil (Business) al 787-356-0895 confirmando con el screenshot.`;
+    
+    await supabase.from('urgent_alerts').insert({
+        full_name: 'Salty VP',
+        message: `LINK DE PAGO GENERADO: $${amount} para ${finalId}. Razón: ${reason}`,
+        contact: 'HOST_BOT',
+        severity: 2
+    });
+
+    return { ok: true, link: athMovilMsg, amount, reason };
+};
+
 // 6. Proactive Autonomous Onboarding (Salty Vía B Logistics)
 export const generateOnboardingDraft = async (
     stage: 'check_in' | 'check_in_followup' | 'mid_stay' | 'check_out',
@@ -807,10 +891,11 @@ export const generateOnboardingDraft = async (
 
     Escribe solo el cuerpo del mensaje, sin asuntos ni firmas.
     `.trim();
+
     try {
         const response = await ai.models.generateContent({
             model: SALTY_MODEL,
-            contents: prompt,
+            contents: [{ role: 'user', parts: [{ text: prompt }] }],
             config: { temperature: 0.4 }
         });
         const text = response.candidates?.[0]?.content?.parts

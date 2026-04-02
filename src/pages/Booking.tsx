@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { useProperty } from '../contexts/PropertyContext';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import SmartImage from '../components/SmartImage';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -13,7 +13,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X, ArrowLeft, Calendar as CalendarIcon, Users, Verified, Wallet, Check, Phone, Anchor, Ticket, Award, MessageCircle } from 'lucide-react';
 import { BookingSkeleton } from '../components/Skeleton';
 import UpsellModule, { AVAILABLE_ADDONS } from '../components/UpsellModule';
-import type { TablesInsert } from '../supabase_types';
+import type { TablesInsert } from '../types/supabase';
 
 type BookingInsert = TablesInsert<'bookings'>;
 

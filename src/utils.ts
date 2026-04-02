@@ -1,6 +1,6 @@
-import { CalendarSyncService } from './services/CalendarSyncService.js';
-import { FinanceService } from './services/FinanceService.js';
-import { SeasonalPrice } from './types.js';
+import { CalendarSyncService } from './services/CalendarSyncService';
+import { FinanceService } from './services/FinanceService';
+import { SeasonalPrice } from './types';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 

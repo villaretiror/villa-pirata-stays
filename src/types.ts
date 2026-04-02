@@ -1,4 +1,4 @@
-import { Database } from './supabase_types';
+import { Database } from './types/supabase';
 
 export type ViewState = 'guest' | 'host';
 

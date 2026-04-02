@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useParams } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 
 const TermsOfService: React.FC = () => {
     const { id } = useParams<{ id: string }>();

@@ -17,6 +17,7 @@ interface BaseLayoutProps {
   previewText: string;
   logoUrl: string;
   accentColor: string;
+  theme?: 'light' | 'dark';
   children: React.ReactNode;
 }
 
@@ -24,8 +25,15 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({
   previewText, 
   logoUrl, 
   accentColor, 
+  theme = 'light',
   children 
 }) => {
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? '#050A18' : '#FDFCFB';
+  const containerBg = isDark ? '#0A1229' : '#ffffff';
+  const textColor = isDark ? '#ffffff' : '#2C2B29';
+  const borderColor = isDark ? 'rgba(212,175,55,0.2)' : '#f0f0f0';
+
   return (
     <Html lang="es">
       <Head>
@@ -36,44 +44,47 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({
           fontStyle="italic"
         />
         <Font
-          fontFamily="Inter"
+          fontFamily="Outfit"
           fallbackFontFamily="sans-serif"
           fontWeight={400}
           fontStyle="normal"
         />
       </Head>
       <Preview>{previewText}</Preview>
-      <Body style={mainStyle}>
-        <Container style={containerStyle}>
+      <Body style={mainStyle(bgColor)}>
+        <Container style={containerStyle(containerBg, borderColor)}>
           {/* Header */}
-          <Section style={headerSection(accentColor)}>
+          <Section style={headerSection(isDark, bgColor, accentColor)}>
             <Img
               src={logoUrl}
-              width="140"
-              alt="Villa Retiro Logo"
+              width="130"
+              alt="Logo"
               style={logoStyle}
             />
+            {isDark && (
+              <Text style={darkBadgeStyle(accentColor)}>Bunker Experience | Salty Concierge</Text>
+            )}
           </Section>
 
           {/* Body Content */}
-          <Section style={contentSection}>
+          <Section style={contentSection(isDark)}>
             {children}
           </Section>
 
           {/* Footer */}
           <Section style={footerSection}>
-            <Hr style={hrStyle} />
+            <Hr style={hrStyle(borderColor)} />
             <Section style={ctaSection}>
               <Link 
                 href="https://wa.me/17873560895" 
                 style={whatsappButtonStyle}
               >
-                📲 Hablar con el Host
+                📲 Concierge Directo
               </Link>
             </Section>
-            <Text style={footerText}>
-              Operado por Villa Retiro LLC • Cabo Rojo, PR<br />
-              Este es un email automático de Salty Concierge
+            <Text style={footerText(isDark)}>
+              <strong style={{ color: accentColor }}>VILLA RETIRO R</strong> • Cabo Rojo, Puerto Rico<br />
+              Este es un canal de comunicación seguro operado por Salty AI.
             </Text>
           </Section>
         </Container>
@@ -83,66 +94,79 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({
 };
 
 // Styles
-const mainStyle: React.CSSProperties = {
-  backgroundColor: '#FDFCFB',
-  fontFamily: 'Inter, "Helvetica Neue", Helvetica, Arial, sans-serif',
+const mainStyle = (bgColor: string): React.CSSProperties => ({
+  backgroundColor: bgColor,
+  fontFamily: 'Outfit, "Helvetica Neue", Helvetica, Arial, sans-serif',
   margin: '0',
-  padding: '20px 0',
-};
+  padding: '40px 0',
+});
 
-const containerStyle: React.CSSProperties = {
-  backgroundColor: '#ffffff',
+const containerStyle = (bgColor: string, borderColor: string): React.CSSProperties => ({
+  backgroundColor: bgColor,
   maxWidth: '600px',
   margin: '0 auto',
-  borderRadius: '40px',
+  borderRadius: '48px',
   overflow: 'hidden',
-  boxShadow: '0 20px 50px rgba(0,0,0,0.05)',
-  border: '1px solid #f0f0f0',
-};
+  boxShadow: '0 40px 100px rgba(0,0,0,0.2)',
+  border: `1px solid ${borderColor}`,
+});
 
-const headerSection = (accentColor: string): React.CSSProperties => ({
-  backgroundColor: '#FDFCFB',
-  padding: '50px 40px',
+const headerSection = (isDark: boolean, bgColor: string, accentColor: string): React.CSSProperties => ({
+  backgroundColor: isDark ? '#050A18' : bgColor,
+  padding: '60px 40px',
   textAlign: 'center' as const,
-  borderBottom: `2px dashed ${accentColor}20`,
+  borderBottom: isDark ? `1px solid ${accentColor}20` : `2px dashed ${accentColor}20`,
+});
+
+const darkBadgeStyle = (accentColor: string): React.CSSProperties => ({
+  color: accentColor,
+  fontSize: '9px',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '5px',
+  marginTop: '20px',
+  fontWeight: 'bold',
+  opacity: 0.8,
 });
 
 const logoStyle: React.CSSProperties = {
-  margin: '0 auto 0px',
+  margin: '0 auto',
 };
 
-const contentSection: React.CSSProperties = {
-  padding: '40px',
-};
+const contentSection = (isDark: boolean): React.CSSProperties => ({
+  padding: '50px 50px 30px',
+  color: isDark ? '#ffffff' : '#2C2B29',
+});
 
 const footerSection: React.CSSProperties = {
-  padding: '0 40px 40px',
+  padding: '0 50px 50px',
   textAlign: 'center' as const,
 };
 
-const hrStyle: React.CSSProperties = {
-  borderTop: '1px solid #f0f0f0',
-  margin: '20px 0',
-};
+const hrStyle = (borderColor: string): React.CSSProperties => ({
+  borderTop: `1px solid ${borderColor}`,
+  margin: '30px 0',
+});
 
 const ctaSection: React.CSSProperties = {
-  margin: '20px 0',
+  margin: '25px 0',
 };
 
 const whatsappButtonStyle: React.CSSProperties = {
   backgroundColor: '#25D366',
   color: '#ffffff',
-  padding: '12px 24px',
-  borderRadius: '12px',
+  padding: '16px 32px',
+  borderRadius: '16px',
   textDecoration: 'none',
   fontWeight: 'bold',
   fontSize: '14px',
   display: 'inline-block',
+  boxShadow: '0 10px 25px rgba(37, 211, 102, 0.2)',
 };
 
-const footerText: React.CSSProperties = {
+const footerText = (isDark: boolean): React.CSSProperties => ({
   fontSize: '11px',
-  color: '#999',
-  marginTop: '20px',
-  lineHeight: '1.5',
-};
+  color: isDark ? 'rgba(255,255,255,0.4)' : '#999',
+  marginTop: '25px',
+  lineHeight: '1.6',
+  letterSpacing: '0.5px',
+});

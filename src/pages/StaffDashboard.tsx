@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../lib/supabase';
-import { Tables } from '../supabase_types';
+import { supabase } from '../lib/SupabaseService';
+import { Tables } from '../types/supabase';
 import { 
   Calendar, Clock, CheckCircle2, AlertCircle, 
   Sparkles, Coffee, Heart,

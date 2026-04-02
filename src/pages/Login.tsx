@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { supabase, SITE_URL } from '../lib/supabase';
+import { supabase, SITE_URL } from '../lib/SupabaseService';
 import { useLocation } from 'react-router-dom';
 
 const Login: React.FC = () => {

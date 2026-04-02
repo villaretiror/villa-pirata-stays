@@ -6,7 +6,7 @@ import { useAvailability } from '../../../hooks/useAvailability';
 import { Property, CalendarSync } from '../../../types';
 import { ChevronLeft, ChevronRight, Calendar, RefreshCcw, X, ShieldCheck, Lock, Unlock, DollarSign, CalendarSearch } from 'lucide-react';
 import { showToast } from '../../../utils/toast';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../../lib/SupabaseService';
 
 interface CalendarSectionProps {
   form: any;

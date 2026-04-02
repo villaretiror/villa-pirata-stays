@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import { useBookingContext } from '../contexts/BookingContext';
 import { useProperty } from '../contexts/PropertyContext';
 import { format, differenceInDays } from 'date-fns';

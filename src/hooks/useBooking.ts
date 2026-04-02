@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo } from 'react';
 import { Property, PromoCode } from '../types';
 import { FinanceService } from '../services/FinanceService';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import { differenceInDays, format, subDays, addDays } from 'date-fns';
 import { useProperty } from '../contexts/PropertyContext';
 

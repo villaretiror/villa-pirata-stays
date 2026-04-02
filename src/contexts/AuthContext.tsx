@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { User } from '../types';
-import { supabase } from '../lib/supabase';
-import { Tables } from '../supabase_types';
+import { supabase } from '../lib/SupabaseService';
+import { Tables } from '../types/supabase';
 
 type ProfileRow = Tables<'profiles'>;
 

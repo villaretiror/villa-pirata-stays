@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { Property, User as UserType } from '../../types';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/SupabaseService';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import SystemHealthIndicator from './SystemHealthIndicator';

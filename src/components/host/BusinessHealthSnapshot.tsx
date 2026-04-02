@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/SupabaseService';
 import { TrendingUp, ShieldCheck, Activity, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 

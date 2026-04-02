@@ -1,9 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import OpenAI from 'openai';
 import { differenceInDays, parseISO, addDays, isValid } from 'date-fns';
-import { MessagingService } from '../src/services/MessagingService.js';
-import { NotificationService } from '../src/services/NotificationService.js';
-import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable, queryPropertyKnowledge, findNextAvailability } from '../src/aiServices.js';
+import { MessagingService } from '../src/services/MessagingService';
+import { NotificationService } from '../src/services/NotificationService';
+import { checkAvailabilityWithICal, applyAIQuote, resolvePropertyId, findAlternatePropertyAvailable, queryPropertyKnowledge, findNextAvailability } from '../src/aiServices';
 
 const getEnvVar = (key: string): string => {
   return process.env[key] || process.env[`VITE_${key}`] || "";

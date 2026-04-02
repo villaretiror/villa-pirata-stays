@@ -29,7 +29,7 @@ import SaltyToast from './components/SaltyToast';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
-import { supabase } from './lib/supabase';
+import { supabase } from './lib/SupabaseService';
 import SaltyVoiceButton from './components/SaltyVoiceButton';
 import CustomCursor from './components/CustomCursor';
 import CookieConsent from './components/CookieConsent';

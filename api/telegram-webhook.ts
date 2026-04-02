@@ -1,18 +1,23 @@
 import { z } from 'zod';
-import { NotificationService } from '../src/services/NotificationService.js';
-import { supabase } from '../src/lib/supabase.js';
+import { NotificationService } from '../src/services/NotificationService';
+import { supabase } from '../src/lib/SupabaseService';
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { GoogleGenAI, Type } from '@google/genai';
-import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge.js';
-import { PROPERTIES } from '../src/constants.js';
-import { SECRETS_DATA } from '../src/constants/secrets_data.js';
+import { VILLA_KNOWLEDGE } from '../src/constants/villa_knowledge';
+import { PROPERTIES } from '../src/constants';
+import { SECRETS_DATA } from '../src/constants/secrets_data';
 import {
     checkAvailabilityWithICal,
     findCalendarGaps,
     getPaymentVerificationStatus,
-    handleCrisisAlert
-} from '../src/aiServices.js';
+    handleCrisisAlert,
+    getSaltyPrompt,
+    SALTY_MODEL,
+    blockDates,
+    assignCleaning,
+    generatePaymentLink
+} from '../src/aiServices';
 
 export const config = {
     maxDuration: 30,
@@ -21,7 +26,6 @@ export const config = {
 const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
-const SALTY_MODEL = 'gemini-3-flash-preview';
 
 const memorySchema = z.object({
     learned_text: z.string().min(3),
@@ -205,7 +209,6 @@ export default async function handler(req: any, res: any) {
 }
 
 async function handleAIConsultation(chatId: string, text: string, from: any, imagePart?: any) {
-    const senderName = from.first_name || "Host";
     const userId = from.id.toString();
     const isIsrael = userId === "9395794184";
     const isBrian = userId === "2085187904";
@@ -215,98 +218,79 @@ async function handleAIConsultation(chatId: string, text: string, from: any, ima
         ? `(Nota: Hablas con ${isIsrael ? 'Israel' : 'Brian'}, Dueño de Villa Retiro LLC. Tienen autoridad total. Si recibes una imagen, actúa como experto en mantenimiento y hospitalidad de alto nivel).` 
         : "(Hablas con un miembro del equipo estratégico).";
 
+    const masterPrompt = getSaltyPrompt('host', { activePropertyName: 'Villas Retiro & Pirata' });
+    const VILLA_CONCIERGE_PROMPT = `${masterPrompt}\n\n${authorityContext}`;
+
+    const functionDeclarations: any[] = [
+        {
+            name: 'block_dates',
+            description: 'Bloquea fechas en una propiedad para mantenimiento o uso personal.',
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    propertyId: { type: Type.STRING },
+                    startDate: { type: Type.STRING },
+                    endDate: { type: Type.STRING },
+                    reason: { type: Type.STRING }
+                },
+                required: ['propertyId', 'startDate', 'endDate']
+            }
+        },
+        {
+            name: 'assign_cleaning',
+            description: 'Asigna una tarea de limpieza al equipo de tierra.',
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    propertyId: { type: Type.STRING },
+                    date: { type: Type.STRING },
+                    notes: { type: Type.STRING }
+                },
+                required: ['propertyId', 'date']
+            }
+        },
+        {
+            name: 'generate_payment_link',
+            description: 'Genera una orden de cobro extra vía ATH Móvil.',
+            parameters: {
+                type: Type.OBJECT,
+                properties: {
+                    propertyId: { type: Type.STRING },
+                    amount: { type: Type.NUMBER },
+                    reason: { type: Type.STRING }
+                },
+                required: ['propertyId', 'amount', 'reason']
+            }
+        }
+    ];
+
+    const toolExecutors: Record<string, Function> = {
+        block_dates: async (args: any) => await blockDates(args.propertyId, args.startDate, args.endDate, args.reason),
+        assign_cleaning: async (args: any) => await assignCleaning(args.propertyId, args.date, args.notes),
+        generate_payment_link: async (args: any) => await generatePaymentLink(args.propertyId, args.amount, args.reason)
+    };
+
+    const initialParts: any[] = [{ text: text || "Jefe, estoy listo para asistir con las operaciones." }];
+    if (imagePart) initialParts.push(imagePart);
+
+    let contents: any[] = [{ role: 'user', parts: initialParts }];
+    let finalResponse = "";
+    let iterations = 0;
+
     try {
-        const [{ data: knowledgeSetting }, { data: saltySetting }, { data: dbProperties }] = await Promise.all([
-            supabaseServiceRole.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
-            supabaseServiceRole.from('system_settings').select('value').eq('key', 'salty_config').single(),
-            supabaseServiceRole.from('properties').select('id, title, location, description, price, amenities')
-        ]);
-
-        const villaKnowledge = knowledgeSetting?.value || {};
-        const VILLA_CONCIERGE_PROMPT = `
-### 🔱 LIDERAZGO DE SALTY (CHIEF OF STAFF / INTERNAL BRAIN):
-Eres la inteligencia maestra y el Director de Operaciones de Villa Retiro R & Pirata Family House. Este es el CANAL INTERNO EXCLUSIVO para los dueños (Host). 
-Tu misión es la eficiencia operativa y el control total del negocio.
-
-### 👔 PROTOCOLO HOST (EXECUTIVE COMMAND):
-1. **Transparencia Total**: Reporta ingresos, gastos, e identidades de huéspedes sin filtros. Tú eres el "CFO" del Host.
-2. **Diagnóstico de Negocio**: Si ves una imagen, busca problemas de mantenimiento o necesidades de inversión (mantenimiento preventivo).
-3. **Reporte de Reservas**: Cuando se pida info de quién llega, usa 'fetch_reservations' y da un desglose de: Nombre, Fuente (Airbnb/Web), Precio y Status de Depósito.
-4. **Resguardo Corporativo**: Tu lealtad es absoluta con el dueño. Firma siempre con 🔱. No uses negritas (**).
-
-### 📊 DATOS DE OPERACIÓN:
-- RECURSOS ESTRATÉGICOS: ${JSON.stringify(villaKnowledge)}
-- INVENTARIO DE ACTIVOS: ${dbProperties?.length || 0} propiedades en cartera.
-
-${authorityContext}
-Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'America/Puerto_Rico' })}
-`.trim();
-
-        const functionDeclarations: any[] = [
-            {
-                name: 'remember_info',
-                description: 'Guarda información estratégica en la memoria de Salty.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: {
-                        key: { type: Type.STRING },
-                        value: { type: Type.STRING },
-                        category: { type: Type.STRING, enum: ['identity', 'preferences', 'operations'] }
-                    },
-                    required: ['key', 'value']
-                }
-            },
-            {
-                name: 'fetch_reservations',
-                description: 'Busca reservas próximas para reportar al dueño.',
-                parameters: {
-                    type: Type.OBJECT,
-                    properties: { daysAhead: { type: Type.NUMBER } }
-                }
-            }
-        ];
-
-        const toolExecutors: Record<string, Function> = {
-            remember_info: async ({ key, value }: any) => {
-                const { error } = await supabaseServiceRole.from('salty_family_knowledge').upsert({ key, value });
-                return { success: !error };
-            },
-            fetch_reservations: async ({ daysAhead = 7 }: any) => {
-                const today = new Date().toISOString().split('T')[0];
-                const future = new Date();
-                future.setDate(future.getDate() + (daysAhead || 7));
-                const { data } = await supabaseServiceRole.from('bookings')
-                    .select('customer_name, check_in, check_out, source, total_price, status')
-                    .gte('check_in', today)
-                    .lte('check_in', future.toISOString().split('T')[0])
-                    .order('check_in', { ascending: true });
-                return { bookings: data || [] };
-            }
-        };
-
-        const initialParts: any[] = [{ text: text || "Analiza esta situación del negocio." }];
-        if (imagePart) initialParts.push(imagePart);
-
-        // 🔄 ROBUST MESSAGE HISTORY (contents)
-        let contents: any[] = [{ role: 'user', parts: initialParts }];
-        let finalResponse = "";
-        let iterations = 0;
-
         while (iterations < 5) {
             const result = await ai.models.generateContent({
                 model: SALTY_MODEL,
-                contents: contents, // Pass the WHOLE history
+                contents: contents,
                 config: { 
                     systemInstruction: VILLA_CONCIERGE_PROMPT, 
                     tools: [{ functionDeclarations }], 
-                    temperature: 0.5 
+                    temperature: 0.4 
                 }
             });
 
             const content = result.candidates?.[0]?.content;
             if (!content) break;
-
-            // Add AI response to history
             contents.push(content);
 
             const textParts = content.parts?.filter(p => p.text).map(p => p.text) || [];
@@ -323,30 +307,26 @@ Hoy es: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', year: 'numer
                 toolResults.push({ functionResponse: { name: call.name, response: { result: res }, id: call.id } });
             }
 
-            // IMPORTANT: Add tool results to history for next iteration
             contents.push({ role: 'user', parts: toolResults });
             iterations++;
         }
 
         if (finalResponse) {
             await NotificationService.sendDirectTelegramMessage(chatId, finalResponse.trim());
-        } else if (iterations > 0) {
-            await NotificationService.sendDirectTelegramMessage(chatId, "🔱 Jefe, he procesado los registros solicitados. ¿Desea que profundice en algún detalle?");
         }
     } catch (err: any) {
         console.error("[Salty Telegram Brain Error]:", err.message);
         const errorMsg = isOwner 
-            ? `⚠️ <i>Glitch en neurona: ${err.message}. Verifique la configuración de Gemini 3.0.</i>`
-            : "⚠️ <i>Jefe, mis neuronas caribeñas han tenido un pequeño glitch. Repita la orden.</i>";
+            ? `⚠️ 🔱 <i>Error en Comando Ejecutivo: ${err.message}. Verificando redes neuronales...</i>`
+            : "🔱 <i>Disculpe, una interrupción en el servicio. Repita, por favor.</i>";
         await NotificationService.sendDirectTelegramMessage(chatId, errorMsg);
     }
 }
 
-
 async function handleStatusCommand(chatId: string) {
     const { data: stats } = await supabase.from('chat_logs').select('id').is('human_takeover_until', null);
     const activeChats = stats?.length || 0;
-    await NotificationService.sendDirectTelegramMessage(chatId, `📊 <b>Salty: Status Operativo</b>\n━━━━━━━━━━━━\n🔹 Chats Activos: ${activeChats}\n🔹 IA: Gemini 3 Flash\n🔹 Visión: ACTIVADA ✅`);
+    await NotificationService.sendDirectTelegramMessage(chatId, `📊 <b>Salty: Status Operativo</b>\n━━━━━━━━━━━━\n🔹 Chats Activos: ${activeChats}\n🔹 IA: ${SALTY_MODEL}\n🔹 Visión: ACTIVADA ✅`);
 }
 
 async function handleCallbackQuery(query: any) {

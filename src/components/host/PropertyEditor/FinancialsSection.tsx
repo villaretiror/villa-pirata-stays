@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Property } from '../../../types';
-import { supabase } from '../../../lib/supabase';
+import { supabase } from '../../../lib/SupabaseService';
 import { showToast } from '../../../utils/toast';
 
 interface FinancialsSectionProps {

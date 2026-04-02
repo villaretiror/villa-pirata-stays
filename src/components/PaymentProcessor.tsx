@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import { HOST_PHONE } from '../constants';
 import PayPalPayment from './PayPalPayment';
 

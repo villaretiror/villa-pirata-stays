@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase.js';
+import { supabase } from '../lib/supabase';
 
 const getEnvVar = (key: string): string => {
     if (typeof process !== 'undefined' && process.env[key]) return process.env[key] as string;
@@ -30,7 +30,7 @@ export const NotificationService = {
             while (attempt < retries) {
                 try {
                     // Ensure text is concise and sanitized
-                    if (payload.text) payload.text = payload.text.substring(0, 4000); 
+                    if (payload.text) payload.text = payload.text.substring(0, 4000);
 
                     const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
                         method: 'POST',
@@ -74,8 +74,8 @@ export const NotificationService = {
                 level: 'error',
                 service: 'NotificationService',
                 message: `Telegram Delivery Failure: ${lastError}`,
-                meta: { 
-                    chat_id: chatId, 
+                meta: {
+                    chat_id: chatId,
                     attempts: attempt,
                     message_preview: payload.text?.substring(0, 100)
                 }
@@ -99,7 +99,7 @@ export const NotificationService = {
         if (!TELEGRAM_TOKEN || !CHAT_ID) {
             const fallbackToken = process.env.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
             const fallbackChatId = process.env.VITE_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
-            
+
             if (!fallbackToken || !fallbackChatId) {
                 console.error("[NotificationService] CRITICAL: Telegram configuration missing.");
                 return false;

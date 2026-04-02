@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/SupabaseService';
 import { ShieldCheck, Lock, Smartphone, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { showToast } from '../../utils/toast';
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Property, CalendarSync, Offer, SeasonalPrice } from '../../types';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/SupabaseService';
 import { useAvailability } from '../../hooks/useAvailability';
 import { showToast } from '../../utils/toast'; // Global toast service
 

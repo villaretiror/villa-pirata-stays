@@ -5,7 +5,7 @@ import PropertyCard from '../components/PropertyCard';
 import GuideCard from '../components/GuideCard';
 import ReviewCarousel from '../components/ReviewCarousel';
 import { useProperty } from '../contexts/PropertyContext';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import { PropertyCardSkeleton } from '../components/Skeleton';
 import BookingCalendar from '../components/BookingCalendar';
 import { 

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { NotificationService } from '../src/services/NotificationService.js';
+import { NotificationService } from '../src/services/NotificationService';
 
 export default async function handler(req: any, res: any) {
     if (req.method !== 'POST') {

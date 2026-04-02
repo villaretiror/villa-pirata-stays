@@ -2,7 +2,7 @@ import React, { createContext, useContext } from 'react';
 import { differenceInHours, differenceInDays, parseISO } from 'date-fns';
 import { Temporal } from '@js-temporal/polyfill';
 import { CancellationPolicyType, Property, Booking } from '../types';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 
 interface RefundCalculation {
   refundAmount: number;

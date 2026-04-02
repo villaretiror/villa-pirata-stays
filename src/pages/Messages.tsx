@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 import PayPalPayment from '../components/PayPalPayment';
 import PaymentProcessor from '../components/PaymentProcessor';
 import { useProperty } from '../contexts/PropertyContext';

@@ -1,5 +1,5 @@
 import { Property, Review, Offer, CalendarSync, SeasonalPrice } from '../types';
-import { Tables } from '../supabase_types';
+import { Tables } from '../types/supabase';
 
 /**
  * Mappers to centralize data transformation between Supabase and Frontend.

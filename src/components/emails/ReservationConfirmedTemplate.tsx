@@ -6,6 +6,7 @@ import {
   Column,
   Row,
   Container,
+  Img,
 } from '@react-email/components';
 import { BaseLayout } from './BaseLayout';
 
@@ -25,6 +26,8 @@ interface ReservationConfirmedProps {
   stayPortalUrl: string;
   isWithin24h: boolean;
   guidebookUrl?: string | null;
+  propertyImage?: string;
+  weatherNote?: string;
 }
 
 export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> = ({
@@ -43,7 +46,12 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
   stayPortalUrl,
   isWithin24h,
   guidebookUrl,
+  propertyImage,
+  weatherNote,
 }) => {
+  const theme = isWithin24h ? 'dark' : 'light';
+  const isDark = theme === 'dark';
+  
   const welcomeHeader = isReturning
     ? `¡Bienvenido de vuelta, es un honor tenerte en casa otra vez!`
     : `Tu experiencia Caribe Chic en ${propertyName} comienza ahora.`;
@@ -53,51 +61,60 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
       previewText={isReturning ? `🌊 ¡Bienvenido de vuelta a ${propertyName}!` : `🏝️ ¡Confirmado! Tu refugio en ${propertyName} está listo`}
       logoUrl={logoUrl}
       accentColor={accentColor}
+      theme={theme}
     >
+      {propertyImage && (
+        <Section style={heroImageSection}>
+          <Img src={propertyImage} width="100%" style={heroImageStyle} alt={propertyName} />
+        </Section>
+      )}
+
       <Section style={mainSectionStyle}>
-        <Text style={h1Style}>¡Hola, {firstName}!</Text>
+        <Text style={isDark ? h1StyleDark : h1Style}>¡Hola, {firstName}!</Text>
         <Text style={badgeStyle(accentColor)}>{welcomeHeader}</Text>
         
-        <Text style={pStyle}>
+        <Text style={pStyle(isDark)}>
           {isReturning ? 'Nos alegra verte de nuevo. ' : ''}
           Soy <strong>Salty</strong>, tu concierge digital. La brisa de Cabo Rojo ya te espera y yo he preparado cada detalle para que tu estancia sea legendaria.
         </Text>
 
-        <Container style={infoBoxStyle}>
-          <Text style={infoBoxLabel(accentColor)}>Protocolo de Acceso</Text>
+        <Container style={infoBoxStyle(isDark, accentColor)}>
+          <Text style={infoBoxLabel(accentColor)}>
+            {isWithin24h ? '🛡️ Protocolo de Acceso Activo' : '🔑 Tu Acceso Seguro'}
+          </Text>
           
           {isWithin24h ? (
             <Section>
-              <Text style={accessLabel}>Código Seguro:</Text>
-              <Text style={accessCodeStyle}>{accessCode}</Text>
-              <Section style={dividerMiniStyle} />
+              <Text style={accessLabel}>Código Maestro:</Text>
+              <Text style={accessCodeStyle(accentColor)}>{accessCode}</Text>
+              <Section style={dividerMiniStyle(isDark)} />
               <Row>
                 <Column>
-                  <Text style={wifiInfo}>📡 <b>WF:</b> {wifiName}</Text>
+                  <Text style={wifiInfo}>📡 <b>WiFi:</b> {wifiName}</Text>
                 </Column>
                 <Column>
-                  <Text style={wifiInfo}>🔑 <b>Pass:</b> {wifiPass}</Text>
+                  <Text style={wifiInfo}>🔐 <b>Pass:</b> {wifiPass}</Text>
                 </Column>
               </Row>
             </Section>
           ) : (
             <Section>
-              <Text style={secureLabel}>🔑 Tu acceso es digital y seguro.</Text>
+              <Text style={secureLabel(isDark)}>Tu acceso es 100% digital y sin contacto.</Text>
               <Text style={pendingAccessStyle(accentColor)}>
-                Los códigos de acceso y WiFi se revelarán automáticamente en tu Portal de Estadía 24 horas antes de tu check-in.
+                Revelaremos tus códigos automáticamente 24 horas antes de tu llegada.
               </Text>
-              <Section style={dividerMiniStyle} />
-              <Text style={locationInfo}>📍 Ubicación: {propertyName}</Text>
-              <Text style={dateInfo}>Check-in: {checkIn}</Text>
+              <Section style={dividerMiniStyle(isDark)} />
+              <Text style={locationInfo(isDark)}>📍 Propiedad: <b>{propertyName}</b></Text>
+              <Text style={dateInfo(isDark)}>Check-in: {checkIn}</Text>
             </Section>
           )}
         </Container>
 
         <Section style={navigationSection}>
-          <Text style={navLabel}>¿Cómo llegar al paraíso?</Text>
+          <Text style={navLabel}>Rutas al Paraíso</Text>
           <Row>
             <Column style={navCol}>
-              <Link href={mapsUrl} style={navButtonLight}>📍 Google Maps</Link>
+              <Link href={mapsUrl} style={isDark ? navButtonDark : navButtonLight}>📍 Google Maps</Link>
             </Column>
             <Column style={navSeparator} />
             <Column style={navCol}>
@@ -107,19 +124,27 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
         </Section>
 
         <Section style={mainCtaSection}>
-          <Link href={stayPortalUrl} style={mainCtaButton}>
-            🔑 Gestionar Mi Estancia
+          <Link href={stayPortalUrl} style={mainCtaButton(accentColor)}>
+            🔱 Gestionar Mi Estancia
           </Link>
           {guidebookUrl && (
-            <Section style={guideSection}>
-              <Text style={guideText}>🎁 <b>Bonus:</b> He adjuntado tu "Golden Welcome Pack" con los mejores secretos locales.</Text>
-              <Link href={guidebookUrl} style={guideButton}>✨ Descargar Guía VIP (PDF)</Link>
+            <Section style={guideSection(isDark)}>
+              <Text style={guideText(isDark)}><b>Golden Welcome Pack:</b> He adjuntado para ti los secretos mejor guardados de la zona.</Text>
+              <Link href={guidebookUrl} style={guideButton(accentColor)}>✨ Descargar Guía VIP (PDF)</Link>
             </Section>
           )}
         </Section>
 
-        <Text style={saltySignature}>
-          "En la Villa, el tiempo se mide en olas y sonrisas. Nos vemos pronto." — Salty
+        {weatherNote && (
+          <Section style={weatherNoteSection(isDark)}>
+            <Text style={weatherTitle(accentColor)}>🎙️ Nota del Concierge</Text>
+            <Text style={weatherText(isDark)}>{weatherNote}</Text>
+          </Section>
+        )}
+
+        <Text style={saltySignature(isDark)}>
+          "En la Villa, el tiempo se mide en olas y sonrisas. Nos vemos pronto." <br />
+          — <b>Salty</b>
         </Text>
       </Section>
     </BaseLayout>
@@ -127,71 +152,90 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
 };
 
 // Styles
+const heroImageSection: React.CSSProperties = {
+  margin: '-50px -50px 40px -50px',
+  borderRadius: '0 0 40px 40px',
+  overflow: 'hidden',
+};
+
+const heroImageStyle: React.CSSProperties = {
+  maxHeight: '300px',
+  objectFit: 'cover',
+};
+
 const mainSectionStyle: React.CSSProperties = {
   textAlign: 'center' as const,
 };
 
 const h1Style: React.CSSProperties = {
-  fontSize: '32px',
+  fontSize: '36px',
   color: '#2C2B29',
   margin: '0',
-  fontFamily: 'serif',
+  fontFamily: 'Playfair Display, serif',
+  fontStyle: 'italic',
+};
+
+const h1StyleDark: React.CSSProperties = {
+  ...h1Style,
+  color: '#ffffff',
 };
 
 const badgeStyle = (accentColor: string): React.CSSProperties => ({
   color: accentColor,
   fontWeight: 'bold',
   textTransform: 'uppercase' as const,
-  letterSpacing: '3px',
+  letterSpacing: '4px',
   fontSize: '10px',
   marginTop: '15px',
+  marginBottom: '35px',
+});
+
+const pStyle = (isDark: boolean): React.CSSProperties => ({
+  fontSize: '17px',
+  color: isDark ? 'rgba(255,255,255,0.8)' : '#4A4A4A',
+  lineHeight: '1.8',
   marginBottom: '30px',
 });
 
-const pStyle: React.CSSProperties = {
-  fontSize: '16px',
-  color: '#4A4A4A',
-  lineHeight: '1.8',
-  marginBottom: '25px',
-};
-
-const infoBoxStyle: React.CSSProperties = {
-  backgroundColor: '#2C2B29',
-  padding: '35px',
-  borderRadius: '25px',
-  margin: '30px 0',
+const infoBoxStyle = (isDark: boolean, accentColor: string): React.CSSProperties => ({
+  backgroundColor: isDark ? '#111A35' : '#F9F6F2',
+  padding: '40px',
+  borderRadius: '32px',
+  margin: '35px 0',
   textAlign: 'left' as const,
-};
+  border: `1px solid ${accentColor}20`,
+});
 
 const infoBoxLabel = (accentColor: string): React.CSSProperties => ({
   color: accentColor,
-  fontSize: '11px',
+  fontSize: '12px',
   textTransform: 'uppercase' as const,
   letterSpacing: '2px',
   marginBottom: '20px',
+  fontWeight: 'bold',
   margin: '0',
 });
 
 const accessLabel: React.CSSProperties = {
   color: '#ffffff',
   fontSize: '14px',
-  opacity: 0.8,
-  margin: '10px 0 5px',
+  opacity: 0.7,
+  margin: '15px 0 5px',
 };
 
-const accessCodeStyle: React.CSSProperties = {
-  fontSize: '32px',
-  color: '#ffffff',
+const accessCodeStyle = (accentColor: string): React.CSSProperties => ({
+  fontSize: '42px',
+  color: accentColor,
   fontWeight: 'bold',
-  letterSpacing: '4px',
-  margin: '0',
-};
+  letterSpacing: '6px',
+  margin: '5px 0 20px',
+});
 
-const dividerMiniStyle: React.CSSProperties = {
+const dividerMiniStyle = (isDark: boolean): React.CSSProperties => ({
   marginTop: '20px',
   paddingTop: '20px',
-  borderTop: '1px solid rgba(255,255,255,0.1)',
-};
+  borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)'}`,
+});
 
 const wifiInfo: React.CSSProperties = {
   color: '#ffffff',
@@ -199,11 +243,12 @@ const wifiInfo: React.CSSProperties = {
   margin: '5px 0',
 };
 
-const secureLabel: React.CSSProperties = {
-  color: '#ffffff',
-  fontSize: '14px',
+const secureLabel = (isDark: boolean): React.CSSProperties => ({
+  color: isDark ? '#ffffff' : '#2C2B29',
+  fontSize: '15px',
+  fontWeight: 'bold',
   margin: '10px 0',
-};
+});
 
 const pendingAccessStyle = (accentColor: string): React.CSSProperties => ({
   fontSize: '11px',
@@ -212,29 +257,32 @@ const pendingAccessStyle = (accentColor: string): React.CSSProperties => ({
   textTransform: 'uppercase' as const,
   letterSpacing: '1px',
   margin: '15px 0',
+  lineHeight: '1.5',
 });
 
-const locationInfo: React.CSSProperties = {
-  color: '#ffffff',
-  fontSize: '14px',
-  margin: '5px 0',
-};
+const locationInfo = (isDark: boolean): React.CSSProperties => ({
+  color: isDark ? 'rgba(255,255,255,0.9)' : '#2C2B29',
+  fontSize: '15px',
+  margin: '10px 0 5px',
+});
 
-const dateInfo: React.CSSProperties = {
-  color: '#ffffff',
-  fontSize: '11px',
-  opacity: 0.6,
+const dateInfo = (isDark: boolean): React.CSSProperties => ({
+  color: isDark ? 'rgba(255,255,255,0.5)' : '#888',
+  fontSize: '12px',
   margin: '5px 0',
-};
+});
 
 const navigationSection: React.CSSProperties = {
-  margin: '35px 0',
+  margin: '40px 0',
 };
 
 const navLabel: React.CSSProperties = {
   fontSize: '13px',
   color: '#888',
-  marginBottom: '15px',
+  marginBottom: '18px',
+  textTransform: 'uppercase',
+  letterSpacing: '2px',
+  fontWeight: 'bold',
 };
 
 const navCol: React.CSSProperties = {
@@ -248,9 +296,22 @@ const navSeparator: React.CSSProperties = {
 const navButtonLight: React.CSSProperties = {
   backgroundColor: '#ffffff',
   color: '#2C2B29',
-  border: '1px solid #ddd',
-  padding: '15px 10px',
-  borderRadius: '12px',
+  border: '1px solid #e0e0e0',
+  padding: '18px 10px',
+  borderRadius: '16px',
+  textDecoration: 'none',
+  fontWeight: 'bold',
+  fontSize: '11px',
+  display: 'block',
+  textAlign: 'center' as const,
+};
+
+const navButtonDark: React.CSSProperties = {
+  backgroundColor: '#111A35',
+  color: '#ffffff',
+  border: '1px solid rgba(255,255,255,0.1)',
+  padding: '18px 10px',
+  borderRadius: '16px',
   textDecoration: 'none',
   fontWeight: 'bold',
   fontSize: '11px',
@@ -261,56 +322,86 @@ const navButtonLight: React.CSSProperties = {
 const navButtonBlue: React.CSSProperties = {
   backgroundColor: '#33CCFF',
   color: '#ffffff',
-  padding: '15px 10px',
-  borderRadius: '12px',
+  padding: '18px 10px',
+  borderRadius: '16px',
   textDecoration: 'none',
   fontWeight: 'bold',
   fontSize: '11px',
   display: 'block',
   textAlign: 'center' as const,
+  boxShadow: '0 10px 20px rgba(51, 204, 255, 0.2)',
 };
 
 const mainCtaSection: React.CSSProperties = {
-  margin: '40px 0',
+  margin: '50px 0',
 };
 
-const mainCtaButton: React.CSSProperties = {
-  background: 'linear-gradient(135deg, #FF7F3F 0%, #E05A2B 100%)',
+const mainCtaButton = (accentColor: string): React.CSSProperties => ({
+  backgroundColor: accentColor,
   color: '#ffffff',
-  padding: '18px 35px',
-  borderRadius: '18px',
+  padding: '22px 50px',
+  borderRadius: '24px',
   textDecoration: 'none',
   fontWeight: 'bold',
-  fontSize: '16px',
+  fontSize: '17px',
   display: 'inline-block',
-  boxShadow: '0 10px 20px rgba(255,127,63,0.2)',
-};
+  boxShadow: `0 20px 40px ${accentColor}30`,
+});
 
-const saltySignature: React.CSSProperties = {
-  fontSize: '14px',
-  color: '#666',
+const saltySignature = (isDark: boolean): React.CSSProperties => ({
+  fontSize: '15px',
+  color: isDark ? 'rgba(255,255,255,0.5)' : '#888',
   fontStyle: 'italic',
   textAlign: 'center' as const,
-  marginTop: '40px',
-};
+  marginTop: '50px',
+  lineHeight: '1.6',
+});
 
-const guideSection: React.CSSProperties = {
-  marginTop: '25px',
-  padding: '20px',
-  backgroundColor: '#f9f9f9',
-  borderRadius: '15px',
-  border: '1px dashed #ddd',
-};
+const guideSection = (isDark: boolean): React.CSSProperties => ({
+  marginTop: '35px',
+  padding: '30px',
+  backgroundColor: isDark ? 'rgba(255,255,255,0.03)' : '#F9F9F9',
+  borderRadius: '24px',
+  border: '1px dashed rgba(128,128,128,0.2)',
+});
 
-const guideText: React.CSSProperties = {
+const guideText = (isDark: boolean): React.CSSProperties => ({
+  fontSize: '13px',
+  color: isDark ? 'rgba(255,255,255,0.7)' : '#666',
+  marginBottom: '15px',
+  lineHeight: '1.6',
+});
+
+const guideButton = (accentColor: string): React.CSSProperties => ({
   fontSize: '12px',
-  color: '#666',
-  marginBottom: '10px',
-};
-
-const guideButton: React.CSSProperties = {
-  fontSize: '11px',
-  color: '#FF7F3F',
+  color: accentColor,
   fontWeight: 'bold',
-  textDecoration: 'underline',
-};
+  textDecoration: 'none',
+  borderBottom: `1px solid ${accentColor}`,
+});
+
+const weatherNoteSection = (isDark: boolean): React.CSSProperties => ({
+  backgroundColor: isDark ? 'rgba(212,175,55,0.05)' : '#FFFAF0',
+  padding: '25px',
+  borderRadius: '24px',
+  borderLeft: `4px solid #D4AF37`,
+  textAlign: 'left' as const,
+  margin: '40px 0',
+});
+
+const weatherTitle = (accentColor: string): React.CSSProperties => ({
+  fontSize: '10px',
+  textTransform: 'uppercase' as const,
+  letterSpacing: '2px',
+  fontWeight: 'bold',
+  color: accentColor,
+  margin: '0 0 10px 0',
+});
+
+const weatherText = (isDark: boolean): React.CSSProperties => ({
+  fontSize: '14px',
+  color: isDark ? '#ffffff' : '#2C2B29',
+  fontStyle: 'italic',
+  lineHeight: '1.6',
+  margin: '0',
+});

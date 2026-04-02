@@ -1,9 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Property, LocalGuideCategory, SiteContent, VillaKnowledge } from '../types';
 import { INITIAL_LOCAL_GUIDE, DEFAULT_SITE_CONTENT, DEFAULT_VILLA_KNOWLEDGE, PROPERTIES } from '../constants';
-import { supabase, isConfigured } from '../lib/supabase';
+import { supabase, isConfigured } from '../lib/SupabaseService';
 import { mapSupabaseProperty } from '../utils/mappers';
-import { Database } from '../supabase_types';
+import { Database } from '../types/supabase';
 import useSWR from 'swr';
 
 type PropertyRow = Database['public']['Tables']['properties']['Row'];

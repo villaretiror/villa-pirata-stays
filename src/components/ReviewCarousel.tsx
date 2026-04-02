@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { Tables } from '../supabase_types';
+import { supabase } from '../lib/SupabaseService';
+import { Tables } from '../types/supabase';
 import { Star, CheckCircle2 } from 'lucide-react';
 
 type ReviewRow = Tables<'reviews'>;

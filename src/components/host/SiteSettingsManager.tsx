@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { SiteContent, VillaKnowledge } from '../../types';
 import { useProperty } from '../../contexts/PropertyContext';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/SupabaseService';
 import SecuritySettings from './SecuritySettings';
 
 const SiteSettingsManager: React.FC = () => {

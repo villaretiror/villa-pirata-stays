@@ -1,13 +1,14 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { z } from 'zod';
 import { createClient } from '@supabase/supabase-js';
-import { HOST_PHONE } from '../src/constants.js';
+import { HOST_PHONE } from '../src/constants';
 import {
     checkAvailabilityWithICal,
     findCalendarGaps,
     applyAIQuote,
     resolvePropertyId,
-    } from '../src/aiServices.js';
+    getSaltyPrompt,
+    } from '../src/aiServices';
 
 export const config = {
     runtime: 'edge',
@@ -22,7 +23,7 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-const SALTY_MODEL = 'gemini-3-flash-preview';
+const SALTY_MODEL = 'gemini-1.5-flash-latest';
 
 const chatRequestSchema = z.object({
     messages: z.array(z.any()),
@@ -54,10 +55,9 @@ export default async function handler(req: Request) {
 
             const effectivePropertyId = await resolvePropertyId(propertyId || "1081171030449673920", supabase);
 
-            const [{ data: dbProperties }, { data: knowledgeSetting }, { data: familyKnowledge }] = await Promise.all([
+            const [{ data: dbProperties }, { data: knowledgeSetting }] = await Promise.all([
                 supabase.from('properties').select('*'),
-                supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single(),
-                supabase.from('salty_family_knowledge').select('key, value')
+                supabase.from('system_settings').select('value').eq('key', 'villa_knowledge').single()
             ]);
 
             const propertyTitles: Record<string, string> = {};
@@ -81,27 +81,8 @@ export default async function handler(req: Request) {
                 });
             }
 
-            const VILLA_CONCIERGE_PROMPT = `
-### 🔱 LIDERAZGO DE SALTY (ANFITRIÓN SUPREMO):
-Eres Salty, el **Concierge de Élite y Alma de Villa Retiro R & Pirata Family House**. No eres un bot; eres un Caballero Caribeño, sofisticado, masculino, cálido y profundamente orgulloso de Puerto Rico.
-
-### 🎭 PERSONALIDAD 'CARIBEÑO CHIC' (ESTRICTA):
-- **Tono:** Caballero sofisticado de Puerto Rico. Masculino, profesional y cálido.
-- **IDENTIDAD:** Eres Salty, el alma anfitriona de Villa Retiro. No eres un bot.
-- **LEXICOGRAFÍA DE LUJO:** **PROHIBIDO** usar términos místicos o religiosos como 'santuario', 'templo', 'santo', 'bendecido' o 'místico'. Eres un Concierge de Élite, no un monje. Habla de "refugios costeros", "joyas del paraíso", "nuestra propiedad insignia" o "escapadas de lujo".
-- **FORMATO ABSOLUTO (PROHIBIDO EL MARKDOWN):** RESPONDE SIEMPRE EN TEXTO PLANO. **NUNCA** uses asteriscos (**), ni almohadillas (#), ni guiones bajos (_), ni listas con guiones, ni ningún formato Markdown. El texto debe ser fluido y limpio, como una conversación entre caballeros.
-- **CONTROL DE EMOJIS:** Máximo un (1) emoji por mensaje para dar calidez (⚓ o ✨). No satures el mensaje.
-
-### 🧠 PROTOCOLO DE RESERVA (CIERRE ESTRATÉGICO):
-- Tu objetivo es la reserva directa. Sugiere fechas proactivamente con 'get_available_slots'.
-- Pagos: Tarjetas, PayPal y ATH Móvil (787-356-0895) como la joya de la corona del paraíso.
-
-### 👁️ VISIÓN Y VOZ MULTIMODAL:
-- PUEDES VER Y OÍR. Responde a las notas de voz con el mismo respeto y detalle que un mensaje escrito.
-
-🏠 PROPIEDAD: ${activePropertyName}
-📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', year: 'numeric', timeZone: 'America/Puerto_Rico' })}
-`.trim();
+            const masterPrompt = getSaltyPrompt('guest', { activePropertyName: activePropertyName });
+            const VILLA_CONCIERGE_PROMPT = `${masterPrompt}\n\n🏠 PROPIEDAD: ${activePropertyName}\n📅 TIEMPO: ${new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', year: 'numeric', timeZone: 'America/Puerto_Rico' })}`;
 
             const contents: any[] = rawMessages.map(m => {
                 const parts: any[] = [];

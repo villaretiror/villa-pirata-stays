@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import SmartImage from '../components/SmartImage';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/SupabaseService';
 
 const Profile: React.FC = () => {
   const { user, logout, updateUser } = useAuth();

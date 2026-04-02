@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../lib/supabase';
+import { supabase } from '../../lib/SupabaseService';
 import { ShieldCheck, RefreshCcw, DollarSign, Search, Tag, Zap, Radio } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CalendarSection from './PropertyEditor/CalendarSection';
