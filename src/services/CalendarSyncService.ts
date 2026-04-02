@@ -36,6 +36,13 @@ export const CalendarSyncService = {
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
                     const icsText = await response.text();
+
+                    // 🛡️ CIRCUIT BREAKER: Evitar wipes catastróficos si el feed externo falla o viene vacío
+                    const linesCount = icsText.split(/\r?\n/).length;
+                    if (linesCount < 10 || !icsText.includes('BEGIN:VCALENDAR')) {
+                        throw new Error(`Feed malformado (${linesCount} líneas). Abortando sync para proteger datos existentes.`);
+                    }
+
                     const blocks = this.parseIcsToBlocks(icsText, prop.id);
                     
                     const { inserted, deleted } = await this.syncBlocksWithDb(supabase, prop.id, prop.title, blocks, feed.platform);

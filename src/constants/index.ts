@@ -5,7 +5,7 @@ export const HOST_PHONE = "17873560895";
 // Origen: Sector Samán, F 11 C. 5, Cabo Rojo, 00622
 // Google Maps origin param: 18.0636,-67.1569
 const MAPS_ORIGIN = '18.0636,-67.1569';
-const mapRoute = (dest: string) => `https://www.google.com/maps/dir/${MAPS_ORIGIN}/${encodeURIComponent(dest)}`;
+const mapRoute = (dest: string) => `https://www.google.com/maps/dir/?api=1&origin=${MAPS_ORIGIN}&destination=${encodeURIComponent(dest)}`;
 export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
   {
     id: 'beaches',
