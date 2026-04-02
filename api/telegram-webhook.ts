@@ -38,7 +38,7 @@ export default async function handler(req: any, res: any) {
             
             if (data === 'force_sync_all') {
                 const stats = await CalendarSyncService.syncAll(supabase);
-                await NotificationService.sendDirectTelegramMessage(String(chatId), `🔱 **ORDEN CUMPLIDA, CAPITÁN.**\nLos calendarios han sido alineados globalmente.\nResumen: +${stats.totalInserted} nuevos bloqueos detectados.`);
+                await NotificationService.sendDirectTelegramMessage(String(chatId), `🔱 **ORDEN CUMPLIDA, CAPITÁN.**\nLos calendarios han sido alineados globalmente.\nResumen: +${stats.total} nuevos bloqueos detectados.`);
             }
             return res.status(200).send('OK');
         }
