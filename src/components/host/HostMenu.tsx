@@ -28,7 +28,8 @@ import {
   Search,
   Check,
   BookOpen,
-  Eye
+  Eye,
+  Calendar
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -586,14 +587,16 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
         </button>
       </div>
 
-      {/* Quick Settings Grid */}
       <div className="grid items-start grid-cols-2 md:grid-cols-3 gap-6">
         {[
+          { id: 'messages', icon: Send, label: 'Mensajes', color: 'blue' },
           { id: 'cohost', icon: Users, label: 'Equipo', color: 'purple' },
+          { id: 'availability', icon: Calendar, label: 'Calendario', color: 'teal' },
           { id: 'payouts', icon: DollarSign, label: 'Pagos', color: 'blue' },
           { id: 'alerts', icon: Bell, label: 'Alertas', color: 'orange' },
           { id: 'protocol', icon: BookOpen, label: 'Protocolo', color: 'green' },
           { id: 'concierge', icon: Eye, label: 'Tracking', color: 'blue' },
+          { id: 'insights', icon: Sparkles, label: 'Insights', color: 'primary' },
           { id: 'exit', icon: Power, label: 'Salir', color: 'red' }
         ].map(btn => (
           <button
@@ -603,14 +606,20 @@ const HostMenu: React.FC<HostMenuProps> = ({ properties, onNavigate, onGoToProto
               if (btn.id === 'protocol') return onGoToProtocol && onGoToProtocol();
               if (btn.id === 'cohost') return onGoToTeam && onGoToTeam();
               if (btn.id === 'concierge') return onGoToConcierge && onGoToConcierge();
+              
+              // Direct navigation for new Sovereign Bridges
+              if (['messages', 'insights', 'availability'].includes(btn.id)) {
+                return onNavigate && onNavigate(btn.id);
+              }
+              
               setActiveModal(btn.id as ModalType);
             }}
-            className={`bg-white p-8 rounded-[2.5rem] shadow-soft border border-gray-50 flex flex-col items-center gap-5 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden`}
+            className={`bg-white p-6 md:p-8 rounded-[2.5rem] shadow-soft border border-gray-50 flex flex-col items-center gap-4 hover:shadow-md transition-all active:scale-95 group relative overflow-hidden`}
           >
-            <div className={`w-16 h-16 bg-${btn.color}-50 text-${btn.color}-600 rounded-full flex items-center justify-center group-hover:bg-${btn.color}-100 transition-colors`}>
-              <btn.icon strokeWidth={1.5} className="w-7 h-7" />
+            <div className={`w-14 h-14 md:w-16 md:h-16 bg-${btn.color === 'primary' ? 'primary/10' : `${btn.color}-50`} text-${btn.color === 'primary' ? 'primary' : `${btn.color}-600`} rounded-full flex items-center justify-center group-hover:bg-opacity-100 transition-colors`}>
+              <btn.icon strokeWidth={1.5} className="w-6 h-6 md:w-7 md:h-7" />
             </div>
-            <span className="text-[9px] font-bold uppercase tracking-[0.2em] text-text-light group-hover:text-primary transition-colors">{btn.label}</span>
+            <span className="text-[7px] md:text-[9px] font-bold uppercase tracking-[0.2em] text-text-light group-hover:text-primary transition-colors">{btn.label}</span>
           </button>
         ))}
       </div>

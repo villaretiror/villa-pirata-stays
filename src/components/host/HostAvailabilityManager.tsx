@@ -23,9 +23,9 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
     const { data } = await supabase
         .from('security_audit_logs')
         .select('*')
-        .eq('category', 'BUSINESS')
+        .in('category', ['BUSINESS', 'SYSTEM'])
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(8);
     if (data) setAuditLogs(data);
   };
 
@@ -481,14 +481,21 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
                  ) : (
                     <div className="space-y-2">
                        {localForm.calendarSync?.map((sync: any) => (
-                           <div key={sync.id || sync.platform} className="flex justify-between items-center p-3 bg-gray-50 rounded-2xl border border-gray-100 hover:border-primary/20 transition-all cursor-default group">
-                              <div className="flex items-center gap-2">
-                                 <div className={`w-1.5 h-1.5 rounded-full ${sync.syncStatus === 'success' ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500 animate-pulse'}`} />
-                                 <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
+                           <div key={sync.id || sync.platform} className="flex flex-col gap-2 p-4 bg-gray-50 rounded-2xl border border-gray-100 hover:border-primary/20 transition-all cursor-default group">
+                              <div className="flex justify-between items-center">
+                                 <div className="flex items-center gap-2">
+                                    <div className={`w-1.5 h-1.5 rounded-full ${sync.syncStatus === 'success' || !sync.syncStatus ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]' : 'bg-red-500 animate-pulse'}`} />
+                                    <span className="text-[10px] font-black text-text-main uppercase tracking-widest">{sync.platform}</span>
+                                 </div>
+                                 <span className="text-[7px] font-bold text-gray-400 uppercase bg-white px-2 py-1 rounded-lg">
+                                    {getRelativeTime(sync.lastSynced)}
+                                 </span>
                               </div>
-                              <span className="text-[7px] font-bold text-gray-400 uppercase bg-white px-2 py-1 rounded-lg">
-                                 {getRelativeTime(sync.lastSynced)}
-                              </span>
+                              {sync.syncStatus === 'error' && (
+                                <p className="text-[8px] font-bold text-red-500 uppercase tracking-tighter bg-red-50 p-2 rounded-lg border border-red-100">
+                                  ⚠️ Falla: {sync.errorMessage || 'Error de conexión externa'}
+                                </p>
+                              )}
                            </div>
                        ))}
                     </div>

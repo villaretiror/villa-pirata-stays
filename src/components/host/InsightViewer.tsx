@@ -14,18 +14,17 @@ interface AIInsight {
   created_at: string;
 }
 
-interface SaltyMemory {
-  id: string;
-  learned_text: string;
-  created_at: string;
-  session_id: string | null;
+interface InsightViewerProps {
+  onNavigate?: (tab: any) => void;
+  onCreateTask?: (description: string) => void;
 }
 
 import BusinessHealthSnapshot from './BusinessHealthSnapshot';
+import { MessageSquare, Calendar, Wand2, ArrowRightCircle, CheckCircle2 } from 'lucide-react';
 
-const InsightViewer: React.FC = () => {
+const InsightViewer: React.FC<InsightViewerProps> = ({ onNavigate, onCreateTask }) => {
   const [insights, setInsights] = useState<AIInsight[]>([]);
-  const [memories, setMemories] = useState<SaltyMemory[]>([]);
+  const [memories, setMemories] = useState<any[]>([]); // Using any for flex
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'pending' | 'all'>('pending');
 
@@ -144,19 +143,47 @@ const InsightViewer: React.FC = () => {
                 </p>
               </div>
 
-              <div className="flex gap-2 pt-4 border-t border-gray-50">
-                <button 
-                  onClick={() => handleAction(insight.id, 'applied')}
-                  className="flex-1 py-2.5 bg-text-main text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:scale-105 active:scale-95 transition-all"
-                >
-                  Aprobar
-                </button>
-                <button 
-                  onClick={() => handleAction(insight.id, 'archived')}
-                  className="flex-1 py-2.5 bg-gray-50 text-text-light rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-gray-100 transition-all"
-                >
-                  Ignorar
-                </button>
+              <div className="flex flex-col gap-2 pt-4 border-t border-gray-50">
+                {/* ⚡ SMART ACTION TRIGGERS */}
+                {insight.type === 'pattern' && (
+                   <button 
+                     onClick={() => onNavigate && onNavigate('messages')}
+                     className="w-full py-3 bg-blue-50 text-blue-600 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-blue-100 transition-all"
+                   >
+                     <MessageSquare className="w-3.5 h-3.5" /> Ver Chat del Huésped
+                   </button>
+                )}
+                {insight.type === 'proposal' && (
+                   <button 
+                     onClick={() => onNavigate && onNavigate('menu')}
+                     className="w-full py-3 bg-purple-50 text-purple-600 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-purple-100 transition-all"
+                   >
+                     <Wand2 className="w-3.5 h-3.5" /> Gestionar Tarea
+                   </button>
+                )}
+                {insight.type === 'trend' && (
+                   <button 
+                     onClick={() => onNavigate && onNavigate('availability')}
+                     className="w-full py-3 bg-teal-50 text-teal-600 rounded-xl text-[9px] font-black uppercase tracking-widest flex items-center justify-center gap-2 hover:bg-teal-100 transition-all"
+                   >
+                     <Calendar className="w-3.5 h-3.5" /> Precio Maestro
+                   </button>
+                )}
+
+                <div className="flex gap-2 mt-2">
+                  <button 
+                    onClick={() => handleAction(insight.id, 'applied')}
+                    className="flex-1 py-3 bg-black text-white rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-primary transition-all flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Resolver
+                  </button>
+                  <button 
+                    onClick={() => handleAction(insight.id, 'archived')}
+                    className="px-4 py-3 bg-gray-50 text-text-light rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-gray-100 transition-all"
+                  >
+                    Ignorar
+                  </button>
+                </div>
               </div>
             </motion.div>
           ))}

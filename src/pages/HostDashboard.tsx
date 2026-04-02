@@ -39,8 +39,9 @@ import {
   Plus 
 } from 'lucide-react';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { showToast } from '../utils/toast';
+import HostMenu from '../components/host/HostMenu';
 
 // Lazy Loaded Recharts
 const ResponsiveContainer = lazy(() => import('recharts').then(m => ({ default: m.ResponsiveContainer })));
@@ -253,146 +254,159 @@ const HostDashboard: React.FC = () => {
   );
 
   return (
-    <div className="bg-sand min-h-screen pb-24 font-display text-text-main">
+    <div className="bg-sand min-h-screen pb-24 font-display text-text-main relative overflow-x-hidden">
       <Suspense fallback={<LoadingSpinner />}>
         {(isLoading || isSaving) && <LoadingSpinner />}
         <CustomToast />
         <HostNavbar activeTab={activeTab} onNavigateHome={() => onNavigate('home')} />
         
-        <main className="px-6 mt-4 max-w-5xl mx-auto">
-          {activeTab === 'today' && renderToday()}
-          {activeTab === 'listings' && (
-            <div className="space-y-8 pb-32">
-              <div className="flex justify-between items-center px-2">
-                 <h2 className="text-3xl font-serif font-black italic tracking-tighter">Tu Flota de Autor</h2>
-                 <button onClick={() => setShowImportModal(true)} className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-primary transition-all active:scale-90"><Plus /></button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 {properties.map(p => (
-                   <div key={p.id} className="bg-white rounded-[3rem] shadow-soft border border-gray-100 overflow-hidden">
-                     {/* Property Card Header */}
-                     <div className="p-6 flex gap-6 group">
-                       <div className="w-32 h-32 rounded-[2rem] overflow-hidden shadow-inner flex-shrink-0">
-                         <img
-                           src={((p.images_meta as unknown as PropertyImage[])?.find((m: PropertyImage) => m.category === 'piscina') || (p.images_meta as unknown as PropertyImage[])?.[0])?.url || p.images?.[0]}
-                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                           alt="Villa"
-                         />
-                       </div>
-                       <div className="flex-1 flex flex-col justify-between py-1">
-                         <div>
-                           <h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main line-clamp-1">{p.title}</h3>
-                           <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-1">Ref: {p.id.slice(0, 5)}</p>
-                           {Array.isArray(p.images_meta) && (
-                             <p className="text-[9px] font-bold text-primary/60 uppercase tracking-widest mt-1">
-                               {(p.images_meta as unknown as PropertyImage[]).length} fotos organizadas
-                             </p>
-                           )}
+        <main className="px-6 mt-4 max-w-5xl mx-auto min-h-[70vh]">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.3 }}
+            >
+              {activeTab === 'today' && renderToday()}
+              {activeTab === 'listings' && (
+                <div className="space-y-8 pb-32">
+                  <div className="flex justify-between items-center px-2">
+                     <h2 className="text-3xl font-serif font-black italic tracking-tighter">Tu Flota de Autor</h2>
+                     <button onClick={() => setShowImportModal(true)} className="w-12 h-12 bg-black text-white rounded-full flex items-center justify-center shadow-2xl hover:bg-primary transition-all active:scale-90"><Plus /></button>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                     {properties.map(p => (
+                       <div key={p.id} className="bg-white rounded-[3rem] shadow-soft border border-gray-100 overflow-hidden">
+                         {/* Property Card Header */}
+                         <div className="p-6 flex gap-6 group">
+                           <div className="w-32 h-32 rounded-[2rem] overflow-hidden shadow-inner flex-shrink-0">
+                             <img
+                               src={((p.images_meta as unknown as PropertyImage[])?.find((m: PropertyImage) => m.category === 'piscina') || (p.images_meta as unknown as PropertyImage[])?.[0])?.url || p.images?.[0]}
+                               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                               alt="Villa"
+                             />
+                           </div>
+                           <div className="flex-1 flex flex-col justify-between py-1">
+                             <div>
+                               <h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main line-clamp-1">{p.title}</h3>
+                               <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-1">Ref: {p.id.slice(0, 5)}</p>
+                               {Array.isArray(p.images_meta) && (
+                                 <p className="text-[9px] font-bold text-primary/60 uppercase tracking-widest mt-1">
+                                   {(p.images_meta as unknown as PropertyImage[]).length} fotos organizadas
+                                 </p>
+                               )}
+                             </div>
+                             <div className="flex gap-2 mt-4">
+                               <button
+                                 onClick={() => setIsEditing(p.id)}
+                                 className="flex-1 bg-gray-50 text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm"
+                               >
+                                 Editar
+                               </button>
+                               {Array.isArray(p.images_meta) && (p.images_meta as unknown as PropertyImage[]).length > 0 && (
+                                 <button
+                                   onClick={() => setGalleryPropertyId(galleryPropertyId === p.id ? null : p.id)}
+                                   className={`flex-1 text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all shadow-sm ${
+                                     galleryPropertyId === p.id
+                                       ? 'bg-primary text-white'
+                                       : 'bg-secondary/10 text-secondary hover:bg-secondary/20'
+                                   }`}
+                                 >
+                                   {galleryPropertyId === p.id ? '▲ Cerrar' : '📸 Galería'}
+                                 </button>
+                               )}
+                             </div>
+                           </div>
                          </div>
-                         <div className="flex gap-2 mt-4">
-                           <button
-                             onClick={() => setIsEditing(p.id)}
-                             className="flex-1 bg-gray-50 text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm"
-                           >
-                             Editar
-                           </button>
-                           {Array.isArray(p.images_meta) && (p.images_meta as unknown as PropertyImage[]).length > 0 && (
-                             <button
-                               onClick={() => setGalleryPropertyId(galleryPropertyId === p.id ? null : p.id)}
-                               className={`flex-1 text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all shadow-sm ${
-                                 galleryPropertyId === p.id
-                                   ? 'bg-primary text-white'
-                                   : 'bg-secondary/10 text-secondary hover:bg-secondary/20'
-                               }`}
-                             >
-                               {galleryPropertyId === p.id ? '▲ Cerrar' : '📸 Galería'}
-                             </button>
-                           )}
-                         </div>
-                       </div>
-                     </div>
 
-                     {/* Expandable Gallery Panel */}
-                     {galleryPropertyId === p.id && Array.isArray(p.images_meta) && (p.images_meta as unknown as PropertyImage[]).length > 0 && (
-                       <div className="border-t border-gray-50 px-6 pb-6 pt-4">
-                         <FilteredGallery
-                           images_meta={p.images_meta as unknown as PropertyImage[]}
-                           images={p.images || []}
-                           title={p.title}
-                           compact={true}
-                         />
+                         {/* Expandable Gallery Panel */}
+                         {galleryPropertyId === p.id && Array.isArray(p.images_meta) && (p.images_meta as unknown as PropertyImage[]).length > 0 && (
+                           <div className="border-t border-gray-50 px-6 pb-6 pt-4">
+                             <FilteredGallery
+                               images_meta={p.images_meta as unknown as PropertyImage[]}
+                               images={p.images || []}
+                               title={p.title}
+                               compact={true}
+                             />
+                           </div>
+                         )}
                        </div>
-                     )}
+                     ))}
+                  </div>
+                </div>
+              )}
+              {activeTab === 'analytics' && <AnalysisDashboard bookings={realBookings as any} expenses={globalExpenses} properties={properties} selectedPropertyId={analyticsFilter} onFilterChange={setAnalyticsFilter} />}
+              {activeTab === 'payments' && (
+                <div className="space-y-8 pb-32">
+                   <div className="bg-black p-10 rounded-[3rem] text-white shadow-2xl"><h2 className="text-3xl font-serif font-black italic tracking-tighter mb-2">Pasarela de Pagos</h2><p className="text-[10px] font-medium text-white/30 uppercase tracking-widest">Auditoría Financiera y Conciliación Multi-Canal</p></div>
+                   <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {pendingPayments.map(p => (
+                        <div key={p.id} className="bg-white p-8 rounded-[3.5rem] shadow-soft border border-gray-100 hover:border-primary/20 transition-all">
+                           <div className="flex items-center gap-4 mb-8">
+                              <img src={p.profiles?.avatar_url || "https://i.pravatar.cc/100"} className="w-14 h-14 rounded-full border-4 border-white shadow-float" alt="U" />
+                              <div><h4 className="font-black text-xl italic font-serif leading-none">{p.profiles?.full_name}</h4><p className="text-2xl font-serif font-black text-green-600 mt-2 tracking-tighter">${p.total_price}</p></div>
+                           </div>
+                           <div className="aspect-video bg-gray-50 rounded-[2.5rem] border border-gray-100 overflow-hidden mb-8 shadow-inner"><img src={p.payment_proof_url || undefined} alt="Proof" className="w-full h-full object-contain p-4 transition-transform hover:scale-105 duration-700" /></div>
+                           <div className="grid grid-cols-2 gap-4">
+                              <button onClick={() => approvePayment(p.id)} className="bg-black text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-xl active:scale-95"><CheckCircle2 className="w-4 h-4 text-primary" /> Confirmar</button>
+                              <button onClick={() => rejectPayment(p.id, "Comprobante no válido")} className="bg-white border border-gray-100 text-red-500 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-50 transition-all">Rechazar</button>
+                           </div>
+                        </div>
+                      ))}
+                      {pendingPayments.length === 0 && <div className="col-span-full py-24 text-center bg-white/50 rounded-[4rem] border-2 border-dashed border-gray-100"><p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em]">Flujo de caja conciliado</p></div>}
                    </div>
-                 ))}
-              </div>
-            </div>
-          )}
-          {activeTab === 'analytics' && <AnalysisDashboard bookings={realBookings as any} expenses={globalExpenses} properties={properties} selectedPropertyId={analyticsFilter} onFilterChange={setAnalyticsFilter} />}
-          {activeTab === 'reviews' && (
-             <div className="space-y-12 pb-32">
-                <div className="bg-black p-12 rounded-[3.5rem] text-white shadow-2xl flex justify-between items-center">
-                   <div><h2 className="text-4xl font-serif font-black italic tracking-tighter">Legado de Prestigio</h2><p className="text-[9px] font-medium text-white/30 uppercase tracking-[0.4em] mt-4">Gestión de Testimonios Salty Elite</p></div>
-                   <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 animate-pulse"><Star className="w-10 h-10 text-primary" /></div>
                 </div>
-                {properties.map(p => (
-                  <ReviewManager key={p.id} property={p} onAddReview={(id, r) => saveProperty({ ...p, reviews_list: [r, ...(p.reviews_list || [])] } as any)} onUpdateStats={(id, r, c) => saveProperty({ ...p, rating: r, reviews_count: c } as any)} />
-                ))}
-             </div>
-          )}
-          {activeTab === 'team' && (
-             <div className="space-y-12 pb-32">
-                {properties.map(p => (
-                   <div key={p.id} className="space-y-6">
-                      <h3 className="font-serif font-black text-2xl italic tracking-tighter px-4 border-l-4 border-primary ml-2">{p.title}</h3>
-                      <CohostManager propertyId={p.id} propertyName={p.title} onShowToast={showToast} />
+              )}
+              {activeTab === 'leads' && (
+                <div className="space-y-8 pb-32">
+                   <div className="bg-black p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden"><h2 className="text-3xl font-serif font-black italic tracking-tighter">Base CRM Salty Intelligence</h2><p className="text-[10px] uppercase tracking-widest text-white/30 mt-2">Fidelización y Marketing de Proximidad</p></div>
+                   <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-soft overflow-hidden">
+                      {leads.map((l: any, i) => (
+                        <div key={i} className="p-6 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                           <div className="flex items-center gap-4">
+                              <div className="w-12 h-12 bg-sand rounded-full flex items-center justify-center font-black text-secondary border border-white shadow-sm">{l.full_name?.charAt(0)}</div>
+                              <div><p className="font-black text-sm text-text-main">{l.full_name}</p><p className="text-[9px] font-bold text-primary uppercase opacity-60 tracking-widest leading-none mt-1">{l.email}</p></div>
+                           </div>
+                           <button onClick={() => { const newTag = window.prompt("Nueva Etiqueta:"); if(newTag) addTag('lead', l.id, [...(l.tags || []), newTag]); }} className="p-3 bg-gray-50 rounded-full hover:bg-primary/10 transition-all"><Tag className="w-4 h-4 text-gray-300" /></button>
+                        </div>
+                      ))}
                    </div>
-                ))}
-             </div>
-          )}
-          {activeTab === 'leads' && (
-             <div className="space-y-8 pb-32">
-                <div className="bg-black p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden"><h2 className="text-3xl font-serif font-black italic tracking-tighter">Base CRM Salty Intelligence</h2><p className="text-[10px] uppercase tracking-widest text-white/30 mt-2">Fidelización y Marketing de Proximidad</p></div>
-                <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-soft overflow-hidden">
-                   {leads.map((l: any, i) => (
-                     <div key={i} className="p-6 border-b border-gray-50 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
-                        <div className="flex items-center gap-4">
-                           <div className="w-12 h-12 bg-sand rounded-full flex items-center justify-center font-black text-secondary border border-white shadow-sm">{l.full_name?.charAt(0)}</div>
-                           <div><p className="font-black text-sm text-text-main">{l.full_name}</p><p className="text-[9px] font-bold text-primary uppercase opacity-60 tracking-widest leading-none mt-1">{l.email}</p></div>
-                        </div>
-                        <button onClick={() => { const newTag = window.prompt("Nueva Etiqueta:"); if(newTag) addTag('lead', l.id, [...(l.tags || []), newTag]); }} className="p-3 bg-gray-50 rounded-full hover:bg-primary/10 transition-all"><Tag className="w-4 h-4 text-gray-300" /></button>
-                     </div>
-                   ))}
                 </div>
-             </div>
-          )}
-          {activeTab === 'payments' && (
-             <div className="space-y-8 pb-32">
-                <div className="bg-black p-10 rounded-[3rem] text-white shadow-2xl"><h2 className="text-3xl font-serif font-black italic tracking-tighter mb-2">Pasarela de Pagos</h2><p className="text-[10px] font-medium text-white/30 uppercase tracking-widest">Auditoría Financiera y Conciliación Multi-Canal</p></div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   {pendingPayments.map(p => (
-                     <div key={p.id} className="bg-white p-8 rounded-[3.5rem] shadow-soft border border-gray-100 hover:border-primary/20 transition-all">
-                        <div className="flex items-center gap-4 mb-8">
-                           <img src={p.profiles?.avatar_url || "https://i.pravatar.cc/100"} className="w-14 h-14 rounded-full border-4 border-white shadow-float" alt="U" />
-                           <div><h4 className="font-black text-xl italic font-serif leading-none">{p.profiles?.full_name}</h4><p className="text-2xl font-serif font-black text-green-600 mt-2 tracking-tighter">${p.total_price}</p></div>
-                        </div>
-                        <div className="aspect-video bg-gray-50 rounded-[2.5rem] border border-gray-100 overflow-hidden mb-8 shadow-inner"><img src={p.payment_proof_url || undefined} alt="Proof" className="w-full h-full object-contain p-4 transition-transform hover:scale-105 duration-700" /></div>
-                        <div className="grid grid-cols-2 gap-4">
-                           <button onClick={() => approvePayment(p.id)} className="bg-black text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-xl active:scale-95"><CheckCircle2 className="w-4 h-4 text-primary" /> Confirmar</button>
-                           <button onClick={() => rejectPayment(p.id, "Comprobante no válido")} className="bg-white border border-gray-100 text-red-500 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-50 transition-all">Rechazar</button>
-                        </div>
-                     </div>
-                   ))}
-                   {pendingPayments.length === 0 && <div className="col-span-full py-24 text-center bg-white/50 rounded-[4rem] border-2 border-dashed border-gray-100"><p className="text-[10px] font-black uppercase text-gray-300 tracking-[0.4em]">Flujo de caja conciliado</p></div>}
+              )}
+              
+              {/* Orphaned Portals Re-Connected via Command Hub State */}
+              {activeTab === 'reviews' && (
+                <div className="space-y-12 pb-32">
+                    <div className="bg-black p-12 rounded-[3.5rem] text-white shadow-2xl flex justify-between items-center">
+                      <div><h2 className="text-4xl font-serif font-black italic tracking-tighter">Legado de Prestigio</h2><p className="text-[9px] font-medium text-white/30 uppercase tracking-[0.4em] mt-4">Gestión de Testimonios Salty Elite</p></div>
+                      <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center border border-primary/20 animate-pulse"><Star className="w-10 h-10 text-primary" /></div>
+                    </div>
+                    {properties.map(p => (
+                      <ReviewManager key={p.id} property={p} onAddReview={(id, r) => saveProperty({ ...p, reviews_list: [r, ...(p.reviews_list || [])] } as any)} onUpdateStats={(id, r, c) => saveProperty({ ...p, rating: r, reviews_count: c } as any)} />
+                    ))}
                 </div>
-             </div>
-          )}
-          {activeTab === 'guidebook' && <ExperienceManager guideData={guideData} />}
-          {activeTab === 'settings' && renderSettings()}
-          {activeTab === 'messages' && <HostMessageCenter hostAvatar={user?.avatar_url} onNavigate={(tab: any) => setActiveTab(tab)} />}
-          {activeTab === 'concierge' && <DigitalConcierge />}
-          {activeTab === 'insights' && <InsightViewer />}
-          {activeTab === 'availability' && <HostAvailabilityManager properties={properties} />}
+              )}
+              {activeTab === 'team' && (
+                 <div className="space-y-12 pb-32">
+                    {properties.map(p => (
+                       <div key={p.id} className="space-y-6">
+                          <h3 className="font-serif font-black text-2xl italic tracking-tighter px-4 border-l-4 border-primary ml-2">{p.title}</h3>
+                          <CohostManager propertyId={p.id} propertyName={p.title} onShowToast={showToast} />
+                       </div>
+                    ))}
+                 </div>
+              )}
+              {activeTab === 'guidebook' && <ExperienceManager guideData={guideData} />}
+              {activeTab === 'messages' && <HostMessageCenter hostAvatar={authUser?.avatar_url} onNavigate={(tab: any) => setActiveTab(tab)} />}
+              {activeTab === 'concierge' && <DigitalConcierge />}
+              {activeTab === 'insights' && <InsightViewer onNavigate={(view: any) => setActiveTab(view)} />}
+              {activeTab === 'availability' && <HostAvailabilityManager properties={properties} onRefresh={fetchData} />}
+              {activeTab === 'menu' && <HostMenu properties={properties} onNavigate={(view: any) => setActiveTab(view)} onGoToProtocol={() => setActiveTab('guidebook')} onGoToTeam={() => setActiveTab('team')} onGoToConcierge={() => setActiveTab('concierge')} />}
+              {activeTab === 'settings' && renderSettings()}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
         {/* Global Overlays */}
@@ -402,23 +416,46 @@ const HostDashboard: React.FC = () => {
         {isEditing && properties.find(p => p.id === isEditing) && <PropertyEditorModal property={properties.find(p => p.id === isEditing) as any} realBookings={hotCheckins as any} onSave={saveProperty as any} onCancel={() => setIsEditing(null)} isSaving={isSaving} onRefresh={fetchData} />}
         {showImportModal && <ImportModal onClose={() => setShowImportModal(false)} onImport={handleImport} />}
         
-        {/* Navigation Hub */}
-        <nav className="fixed bottom-0 w-full bg-black border-t border-white/10 pb-safe pt-4 shadow-2xl z-40 overflow-x-auto no-scrollbar">
-           <div className="flex justify-around items-center px-4 pb-2 min-w-max gap-8 font-black uppercase text-[8px] tracking-[0.4em] text-white/40">
+        {/* 🔱 THE SOVEREIGN ORB: Radical Command Hub Trigger */}
+        <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-50">
+           <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setActiveTab('menu')}
+              className="w-16 h-16 bg-black rounded-full flex items-center justify-center shadow-[0_20px_50px_rgba(0,0,0,0.3)] border border-white/20 group relative"
+           >
+              <div className="absolute inset-0 bg-primary/20 rounded-full blur-xl group-hover:bg-primary/40 transition-all"></div>
+              <Anchor className="w-6 h-6 text-primary group-hover:rotate-12 transition-transform duration-500 relative z-10" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 border-2 border-black rounded-full animate-pulse z-20"></div>
+           </motion.button>
+        </div>
+
+        {/* 🗺️ STRATEGIC NAVIGATION HUB */}
+        <nav className="fixed bottom-0 w-full bg-sand/80 backdrop-blur-2xl border-t border-gray-100/50 pb-safe pt-4 shadow-[0_-10px_40px_rgba(0,0,0,0.05)] z-40 overflow-hidden">
+           <div className="flex justify-between items-center px-8 relative max-w-lg mx-auto">
               {[
                 { id: 'today', icon: Zap, label: 'Hoy' },
                 { id: 'listings', icon: Home, label: 'Villas' },
+                { id: 'spacer', icon: null, label: null }, // Space for the Orb
                 { id: 'analytics', icon: BarChart3, label: 'Intel' },
-                { id: 'payments', icon: CreditCard, label: 'Pagos' },
-                { id: 'leads', icon: Users, label: 'CRM' },
-                { id: 'reviews', icon: Star, label: 'Reviews' },
-                { id: 'settings', icon: Sparkles, label: 'Config' }
-              ].map(item => (
-                <button key={item.id} onClick={() => setActiveTab(item.id as HostTab)} className={`flex flex-col items-center gap-2 transition-all ${activeTab === item.id ? 'text-white scale-110' : 'hover:text-white'}`}>
-                   <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-primary' : ''}`} />
-                   <span>{item.label}</span>
-                </button>
-              ))}
+                { id: 'leads', icon: Users, label: 'CRM' }
+              ].map((item, idx) => {
+                if (item.id === 'spacer') return <div key={idx} className="w-16" />;
+                const Icon = item.icon as any;
+                return (
+                  <button 
+                    key={item.id} 
+                    onClick={() => setActiveTab(item.id as HostTab)} 
+                    className={`flex flex-col items-center gap-1.5 transition-all relative ${activeTab === item.id ? 'text-text-main py-1' : 'text-gray-300 hover:text-gray-400'}`}
+                  >
+                    {activeTab === item.id && (
+                      <motion.div layoutId="navActive" className="absolute -top-4 w-1 h-1 bg-primary rounded-full shadow-[0_0_10px_#CBB28A]" />
+                    )}
+                    <Icon className={`w-5 h-5 transition-transform ${activeTab === item.id ? 'scale-110' : ''}`} />
+                    <span className="text-[7px] font-black uppercase tracking-[0.3em] font-display">{item.label}</span>
+                  </button>
+                );
+              })}
            </div>
         </nav>
       </Suspense>
