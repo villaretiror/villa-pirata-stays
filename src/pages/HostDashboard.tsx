@@ -6,6 +6,9 @@ import { HostTab } from '../types/host';
 import { HOST_PHONE } from '../constants';
 import { formatDateLong, generateWhatsAppLink, getHostInstructionMessage, importPropertyFromUrl } from '../utils';
 import { supabase } from '../lib/supabase';
+import FilteredGallery from '../components/FilteredGallery';
+import { PropertyImage } from '../types';
+
 
 // Shared Host Components
 import HostNavbar from '../components/host/HostNavbar';
@@ -70,6 +73,7 @@ const HostDashboard: React.FC = () => {
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [showSmartValidation, setShowSmartValidation] = useState<any | null>(null);
   const [analyticsFilter, setAnalyticsFilter] = useState<string>('all');
+  const [galleryPropertyId, setGalleryPropertyId] = useState<string | null>(null);
 
   const onNavigate = (path: string) => {
     if (path === 'home') navigate('/');
@@ -265,12 +269,60 @@ const HostDashboard: React.FC = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  {properties.map(p => (
-                   <div key={p.id} className="bg-white rounded-[3rem] p-6 shadow-soft border border-gray-100 flex gap-6 hover:translate-y-[-6px] transition-all duration-500 overflow-hidden relative group">
-                      <div className="w-32 h-32 rounded-[2rem] overflow-hidden shadow-inner flex-shrink-0"><img src={p.images?.[0]} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="Villa" /></div>
-                      <div className="flex-1 flex flex-col justify-between py-1">
-                        <div><h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main line-clamp-1">{p.title}</h3><p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-1">Ref: {p.id.slice(0, 5)}</p></div>
-                        <div className="flex justify-between items-center mt-4"><p className="text-xl font-serif font-black italic text-primary">${p.price}</p><button onClick={() => setIsEditing(p.id)} className="bg-gray-50 text-[9px] font-black uppercase tracking-widest px-6 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm">Master</button></div>
-                      </div>
+                   <div key={p.id} className="bg-white rounded-[3rem] shadow-soft border border-gray-100 overflow-hidden">
+                     {/* Property Card Header */}
+                     <div className="p-6 flex gap-6 group">
+                       <div className="w-32 h-32 rounded-[2rem] overflow-hidden shadow-inner flex-shrink-0">
+                         <img
+                           src={((p.images_meta as unknown as PropertyImage[])?.find((m: PropertyImage) => m.category === 'piscina') || (p.images_meta as unknown as PropertyImage[])?.[0])?.url || p.images?.[0]}
+                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                           alt="Villa"
+                         />
+                       </div>
+                       <div className="flex-1 flex flex-col justify-between py-1">
+                         <div>
+                           <h3 className="font-serif font-black italic text-xl tracking-tighter text-text-main line-clamp-1">{p.title}</h3>
+                           <p className="text-[9px] font-bold text-gray-300 uppercase tracking-widest mt-1">Ref: {p.id.slice(0, 5)}</p>
+                           {Array.isArray(p.images_meta) && (
+                             <p className="text-[9px] font-bold text-primary/60 uppercase tracking-widest mt-1">
+                               {(p.images_meta as unknown as PropertyImage[]).length} fotos organizadas
+                             </p>
+                           )}
+                         </div>
+                         <div className="flex gap-2 mt-4">
+                           <button
+                             onClick={() => setIsEditing(p.id)}
+                             className="flex-1 bg-gray-50 text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl hover:bg-black hover:text-white transition-all shadow-sm"
+                           >
+                             Editar
+                           </button>
+                           {Array.isArray(p.images_meta) && (p.images_meta as unknown as PropertyImage[]).length > 0 && (
+                             <button
+                               onClick={() => setGalleryPropertyId(galleryPropertyId === p.id ? null : p.id)}
+                               className={`flex-1 text-[9px] font-black uppercase tracking-widest px-4 py-3 rounded-2xl transition-all shadow-sm ${
+                                 galleryPropertyId === p.id
+                                   ? 'bg-primary text-white'
+                                   : 'bg-secondary/10 text-secondary hover:bg-secondary/20'
+                               }`}
+                             >
+                               {galleryPropertyId === p.id ? '▲ Cerrar' : '📸 Galería'}
+                             </button>
+                           )}
+                         </div>
+                       </div>
+                     </div>
+
+                     {/* Expandable Gallery Panel */}
+                     {galleryPropertyId === p.id && Array.isArray(p.images_meta) && (p.images_meta as unknown as PropertyImage[]).length > 0 && (
+                       <div className="border-t border-gray-50 px-6 pb-6 pt-4">
+                         <FilteredGallery
+                           images_meta={p.images_meta as unknown as PropertyImage[]}
+                           images={p.images || []}
+                           title={p.title}
+                           compact={true}
+                         />
+                       </div>
+                     )}
                    </div>
                  ))}
               </div>

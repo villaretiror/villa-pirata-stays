@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useProperty } from '../contexts/PropertyContext';
 import { motion, AnimatePresence, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import SmartImage from '../components/SmartImage';
+import FilteredGallery from '../components/FilteredGallery';
 import { HOST_PHONE } from '../constants';
 import { PropertyDetailsSkeleton } from '../components/Skeleton';
 import { useAvailability } from '../hooks/useAvailability';
 import BookingCalendar from '../components/BookingCalendar';
 import { format } from 'date-fns';
+import { Property, Review, PropertyImage } from '../types';
 
 import { 
   Users, 
@@ -192,12 +194,23 @@ export const PropertyDetails: React.FC = () => {
   // Local constant to satisfy TS
   const p = property;
 
+  // 🔱 Fase #3: Hero Images — pool photos first (from images_meta), then rest
+  const heroImages = useMemo(() => {
+    const meta = property.images_meta as unknown as PropertyImage[];
+    if (meta && meta.length > 0) {
+      const poolPhotos = meta.filter(m => m.category === 'piscina').map(m => m.url);
+      const otherPhotos = meta.filter(m => m.category !== 'piscina').map(m => m.url);
+      return [...poolPhotos, ...otherPhotos];
+    }
+    return property.images;
+  }, [property.images_meta, property.images]);
+
   const handleNextImage = () => {
-    setCurrentImageIndex((prev: number) => (prev + 1) % property.images.length);
+    setCurrentImageIndex((prev: number) => (prev + 1) % heroImages.length);
   };
 
   const handlePrevImage = () => {
-    setCurrentImageIndex((prev: number) => (prev - 1 + property.images.length) % property.images.length);
+    setCurrentImageIndex((prev: number) => (prev - 1 + heroImages.length) % heroImages.length);
   };
 
   const handleShare = async () => {
@@ -362,17 +375,31 @@ export const PropertyDetails: React.FC = () => {
             transition={shouldReduceMotion ? { duration: 0.3 } : { duration: 0.8, ease: "circOut" }}
           >
             <SmartImage
-              src={property.images[currentImageIndex]}
+              src={heroImages[currentImageIndex]}
               alt={property.title}
               className="w-full h-full object-cover"
-              priority={currentImageIndex === 0} // 🔱 LCP: Priority for the first impression
+              priority={currentImageIndex === 0}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-secondary/40 via-transparent to-secondary/20"></div>
+            {/* Pool badge on first image */}
+            {currentImageIndex === 0 && (
+              <div className="absolute top-20 left-6">
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6, duration: 0.5 }}
+                  className="flex items-center gap-2 bg-white/10 backdrop-blur-xl border border-white/20 text-white px-4 py-2 rounded-full shadow-2xl"
+                >
+                  <Waves size={14} className="animate-pulse text-blue-300" />
+                  <span className="text-[10px] font-black uppercase tracking-widest">Piscina Privada</span>
+                </motion.div>
+              </div>
+            )}
           </motion.div>
         </AnimatePresence>
 
-        {/* Navigation Arrows - High Contrast */}
-        {property.images.length > 1 && (
+        {/* Navigation Arrows */}
+        {heroImages.length > 1 && (
           <div className="absolute inset-x-0 top-1/2 -translate-y-1/2 flex justify-between px-6 pointer-events-none">
             <button
               onClick={handlePrevImage}
@@ -392,7 +419,7 @@ export const PropertyDetails: React.FC = () => {
         <div className="absolute bottom-8 left-8 flex gap-2">
           <div className="bg-secondary/40 text-white font-bold px-4 py-2 rounded-2xl backdrop-blur-xl border border-white/10 flex items-center gap-2 shadow-2xl">
             <Compass size={14} />
-            <span className={TAG_STYLE}>{currentImageIndex + 1} / {property.images.length}</span>
+            <span className={TAG_STYLE}>{currentImageIndex + 1} / {heroImages.length}</span>
           </div>
         </div>
       </div>
@@ -465,6 +492,23 @@ export const PropertyDetails: React.FC = () => {
               </button>
             </div>
           </section>
+
+          {/* 🔱 Galería Filtrable — Fase #2 */}
+          {property.images_meta && (property.images_meta as unknown as PropertyImage[]).length > 0 && (
+            <section className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-3xl font-serif font-bold text-text-main">Galería de Espacios</h2>
+                <span className="text-[10px] font-semibold uppercase tracking-[0.25em] opacity-80 text-primary">
+                  {(property.images_meta as unknown as PropertyImage[]).length} fotos
+                </span>
+              </div>
+              <FilteredGallery
+                images_meta={property.images_meta as unknown as PropertyImage[]}
+                images={property.images}
+                title={property.title}
+              />
+            </section>
+          )}
 
           {/* Amenities Grid */}
           <section className="space-y-8">

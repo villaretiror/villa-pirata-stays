@@ -29,7 +29,17 @@ export const mapSupabaseProperty = (
     security_deposit: Number(p.security_deposit) || 0,
     rating: Number(p.rating) || 5,
     reviews: Number(p.reviews) || 0,
-    images: Array.isArray(p.images) ? p.images : [],
+    images: Array.isArray(p.images) ? p.images.map(img => 
+      img.startsWith('@villas/') 
+        ? `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/${img.replace('@villas/', '')}`
+        : img
+    ) : [],
+    images_meta: Array.isArray((p as any).images_meta) ? (p as any).images_meta.map((meta: any) => ({
+      ...meta,
+      url: meta.url?.startsWith('@villas/')
+        ? `https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/${meta.url.replace('@villas/', '')}`
+        : meta.url
+    })) : null,
     amenities: Array.isArray(p.amenities) ? p.amenities : [],
     guests: Number(p.guests) || 2,
     bedrooms: Number(p.bedrooms) || 1,

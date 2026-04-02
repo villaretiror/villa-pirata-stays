@@ -194,10 +194,17 @@ const Home: React.FC = () => {
       if (deferredCategory === "todo") return true;
       const aText = (property.amenities || []).join(" ").toLowerCase();
       const dText = (property.description || "").toLowerCase();
+      const meta = (property.images_meta || []) as any[];
 
-      if (deferredCategory === "piscina") return aText.includes("piscina") || dText.includes("piscina");
-      if (deferredCategory === "playa") return dText.includes("playa") || dText.includes("mar") || dText.includes("beach");
-      if (deferredCategory === "mascotas") return aText.includes("pet") || aText.includes("mascota");
+      if (deferredCategory === "piscina") {
+        return aText.includes("piscina") || dText.includes("piscina") || meta.some(m => m.category === 'piscina');
+      }
+      if (deferredCategory === "playa") {
+        return dText.includes("playa") || dText.includes("mar") || dText.includes("beach") || meta.some(m => m.category === 'exterior' && (m.description || '').toLowerCase().includes('playa'));
+      }
+      if (deferredCategory === "mascotas") {
+        return aText.includes("pet") || aText.includes("mascota");
+      }
 
       return true;
     });

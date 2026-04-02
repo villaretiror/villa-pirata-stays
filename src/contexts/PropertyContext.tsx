@@ -53,7 +53,7 @@ export const PropertyProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     async () => {
       const { data, error: propResError } = await supabase
         .from('properties')
-        .select('id, title, subtitle, address, location, price, original_price, amenities, images, bedrooms, beds, baths, guests, description, rating, reviews_count, category, tax_rate, cleaning_fee, service_fee, location_coords, google_maps_url, waze_url, house_rules, airbnb_url, airbnb_id, property_features, seasonal_prices, offers, is_offline')
+        .select('id, title, subtitle, address, location, price, original_price, amenities, images, images_meta, bedrooms, beds, baths, guests, description, rating, reviews_count, category, tax_rate, cleaning_fee, service_fee, location_coords, google_maps_url, waze_url, house_rules, airbnb_url, airbnb_id, property_features, seasonal_prices, offers, is_offline')
         .or('is_offline.eq.false,is_offline.is.null');
       
       if (propResError) throw propResError;

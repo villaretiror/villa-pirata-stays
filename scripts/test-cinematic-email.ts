@@ -50,6 +50,22 @@ async function sendTest() {
     console.log("⚠️ NOTA: Saltando envío real (Falta RESEND_API_KEY). Revisa el archivo HTML arriba.");
     return;
   }
+
+  const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
+  console.log("🚀 ENVIANDO: Email real a Brian (villaretiror@gmail.com)...");
+  
+  const { data, error } = await resend.emails.send({
+    from: 'Villa Retiro <reservas@villaretiror.com>',
+    to: 'villaretiror@gmail.com',
+    subject: '🎟️ TU TICKET DORADO: Salty te espera en Villa Retiro R.',
+    html: html
+  });
+
+  if (error) {
+    console.error("❌ ERROR AL ENVIAR:", error);
+  } else {
+    console.log("✅ ÉXITO: Email enviado!", data?.id);
+  }
 }
 
 sendTest();

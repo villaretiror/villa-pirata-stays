@@ -849,6 +849,7 @@ export type Database = {
           id: string
           images: string[] | null
           images_backup: string[] | null
+          images_meta: Json | null
           is_offline: boolean | null
           location: string | null
           location_coords: string | null
@@ -910,6 +911,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           images_backup?: string[] | null
+          images_meta?: Json | null
           is_offline?: boolean | null
           location?: string | null
           location_coords?: string | null
@@ -971,6 +973,7 @@ export type Database = {
           id?: string
           images?: string[] | null
           images_backup?: string[] | null
+          images_meta?: Json | null
           is_offline?: boolean | null
           location?: string | null
           location_coords?: string | null

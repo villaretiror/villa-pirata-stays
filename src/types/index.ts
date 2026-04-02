@@ -1,5 +1,6 @@
 import { Database } from './supabase';
-
+import { PropertyImage } from './property';
+export * from './property';
 export type ViewState = 'guest' | 'host';
 
 // 🔱 EXPLICIT ACCESS TO SUPABASE ROWS
@@ -69,12 +70,13 @@ export interface CalendarSync {
 }
 
 // 🛡️ OMIT ALL FIELDS THAT ARE OVERRIDDEN TO AVOID CONFLICTS
-type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'original_price' | 
+type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'images_meta' | 'original_price' | 
 'availability_urgency_msg' | 'exact_lat_long' | 'general_area_map_url' | 'is_cleaning_in_progress';
 
 export interface Property extends Omit<PropertyRow, PropertyOmissions> {
   original_price?: number | null; 
   images: string[];
+  images_meta?: PropertyImage[] | null;
   reviews_list?: Review[];
   offers?: Offer[];
   fees: FeeStructure;

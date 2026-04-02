@@ -17,17 +17,22 @@ const SmartImage: React.FC<SmartImageProps> = ({
     const [loaded, setLoaded] = useState(false);
 
     // 🚀 BOUTIQUE OPTIMIZATION: High-Precision Image Resizing & Format Conversion
-    let currentSrc = errorCount === 0 ? src : fallbackSrc;
+    // errorCount 0: Optimized, 1: Raw, 2: Fallback
+    let currentSrc = (errorCount < 2) ? src : fallbackSrc;
     // 🚢 DUAL-STRATEGY: Primary (Optimized) vs Secondary (Raw Original)
     let optimizedSrc = currentSrc;
     if (optimizedSrc && optimizedSrc.includes('muscache.com')) {
-        const width = priority ? 1440 : 800;
+        // Airbnb standardized sizes: 240, 480, 720, 960, 1200, 1440
+        const width = priority ? 1440 : 1200; 
         // BUST-UP: Only transform if we haven't failed yet
         if (errorCount === 0) {
             optimizedSrc = optimizedSrc.split('?')[0] + `?im_w=${width}`;
+        } else if (errorCount === 1) {
+            // Revert to raw original without the im_w param but with cache buster
+            optimizedSrc = optimizedSrc.split('?')[0]; 
         }
     } else if (optimizedSrc && optimizedSrc.includes('unsplash.com')) {
-        const width = priority ? 1440 : 800;
+        const width = priority ? 1440 : 1200;
         optimizedSrc = optimizedSrc.split('?')[0] + `?auto=format,compress&q=80&w=${width}`;
     } else if (optimizedSrc && (optimizedSrc.includes('supabase.co/storage/v1/render/image') || optimizedSrc.includes('supabase.co/storage/v1/object/public'))) {
         optimizedSrc = optimizedSrc.replace('/render/image/public/', '/object/public/').split('?')[0]; 
@@ -36,6 +41,14 @@ const SmartImage: React.FC<SmartImageProps> = ({
     // 🔱 CACHE SLAYER: Add timestamp during retry to force a fresh non-cached pull
     if (errorCount === 1 && optimizedSrc) {
         optimizedSrc += (optimizedSrc.includes('?') ? '&' : '?') + `v_ref=${Date.now()}`;
+    }
+
+    if (!optimizedSrc && !fallbackSrc) {
+        return (
+            <div className={`bg-gray-100 flex items-center justify-center ${className || ''}`}>
+                <span className="text-[10px] uppercase tracking-widest opacity-30 font-bold">Sin Imagen</span>
+            </div>
+        );
     }
 
     return (

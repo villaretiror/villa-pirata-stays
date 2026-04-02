@@ -23,7 +23,7 @@ const ai = new GoogleGenAI({
     apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "",
 });
 
-const SALTY_MODEL = 'gemini-1.5-flash-latest';
+const SALTY_MODEL = 'gemini-2.0-flash-exp';
 
 const chatRequestSchema = z.object({
     messages: z.array(z.any()),
