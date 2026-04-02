@@ -150,7 +150,7 @@ export const CohostManager: React.FC<CohostManagerProps> = ({
     }
   };
 
-  const handleToggleTask = async (taskId: string, currentStatus: boolean | null) => {
+  const handleToggleTask = async (taskId: number, currentStatus: boolean | null) => {
     const isCompleted = !!currentStatus;
     const { error } = await supabase.from('tasks').update({
       done: !isCompleted

@@ -324,7 +324,7 @@ const HostDashboard: React.FC = () => {
                            <img src={p.profiles?.avatar_url || "https://i.pravatar.cc/100"} className="w-14 h-14 rounded-full border-4 border-white shadow-float" alt="U" />
                            <div><h4 className="font-black text-xl italic font-serif leading-none">{p.profiles?.full_name}</h4><p className="text-2xl font-serif font-black text-green-600 mt-2 tracking-tighter">${p.total_price}</p></div>
                         </div>
-                        <div className="aspect-video bg-gray-50 rounded-[2.5rem] border border-gray-100 overflow-hidden mb-8 shadow-inner"><img src={p.payment_proof_url} alt="Proof" className="w-full h-full object-contain p-4 transition-transform hover:scale-105 duration-700" /></div>
+                        <div className="aspect-video bg-gray-50 rounded-[2.5rem] border border-gray-100 overflow-hidden mb-8 shadow-inner"><img src={p.payment_proof_url || undefined} alt="Proof" className="w-full h-full object-contain p-4 transition-transform hover:scale-105 duration-700" /></div>
                         <div className="grid grid-cols-2 gap-4">
                            <button onClick={() => approvePayment(p.id)} className="bg-black text-white py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-2 hover:bg-gray-800 transition-all shadow-xl active:scale-95"><CheckCircle2 className="w-4 h-4 text-primary" /> Confirmar</button>
                            <button onClick={() => rejectPayment(p.id, "Comprobante no válido")} className="bg-white border border-gray-100 text-red-500 py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.3em] hover:bg-red-50 transition-all">Rechazar</button>

@@ -9,6 +9,7 @@ export type ReviewRow = Database['public']['Tables']['reviews']['Row'];
 export type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 export type PromoCodeRow = Database['public']['Tables']['promo_codes']['Row'];
 export type LeadRow = Database['public']['Tables']['leads']['Row'];
+export type ExpenseRow = Database['public']['Tables']['property_expenses']['Row'];
 
 export interface Review extends Partial<ReviewRow> {
   author: string;
@@ -144,6 +145,8 @@ export interface User extends Partial<ProfileRow> {
 }
 
 export interface Lead extends Partial<LeadRow> {}
+
+export interface Expense extends Partial<ExpenseRow> {}
 
 export interface SiteContent {
   hero: {
