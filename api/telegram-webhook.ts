@@ -39,8 +39,6 @@ export default async function handler(req: any, res: any) {
         const user = update.message.from;
         const username = user.username || '';
 
-        // 🛡️ SECURITY GATE (Villa Retiro Whitelist)
-        // Agregamos IDs conocidos y garantizamos que tú pasas siempre.
         // 🛡️ SECURITY GATE (Sovereign Priority)
         const ALLOWED_CHATS = ['-5184291508', '2085187904', '1182255799'];
         const isOwner = ['Villaretiror', 'brian', 'Villaretiro_Alerts_Bot'].includes(username);
@@ -51,30 +49,19 @@ export default async function handler(req: any, res: any) {
         }
 
         const isWhitelisted = ALLOWED_CHATS.includes(String(chatId));
+        // Respond if private chat, if mentioned, or if it's the owner speaking
         const isMentioned = text.includes('@Villaretiro_bot') || update.message.chat.type === 'private' || isOwner;
 
-        if (!isWhitelisted && !isOwner) {
-            console.warn(`[Security] Ignorando ID no autorizado: ${chatId}`);
-            return res.status(200).send('Unauthorized ID');
-        }
-
+        if (!isWhitelisted && !isOwner) return res.status(200).send('Unauthorized ID');
         if (!isMentioned) return res.status(200).send('No mentioned');
 
-        // 🧠 CONTEXT MEMORY
+        // 🧠 CONTEXT MEMORY (Aligned with REAL Schema: session_id, text, sender)
         const { data: chatContext } = await (supabaseServiceRole as any)
             .from('ai_chat_logs')
             .select('*')
-            .eq('chat_id', String(chatId))
+            .eq('session_id', String(chatId))
             .order('created_at', { ascending: false })
             .limit(10);
-
-        // 🛠️ EXECUTIVE TOOLS
-        const toolExecutors: Record<string, Function> = {
-            force_calendar_sync: async () => {
-                const stats = await CalendarSyncService.syncAll(supabaseServiceRole);
-                return { success: true, stats, msg: '⚓ Sincronización de Soberanía completada.' };
-            }
-        };
 
         // 🔱 IA ORACLE CONSULTATION
         const role = isOwner ? 'host' : 'guest';
@@ -91,10 +78,10 @@ export default async function handler(req: any, res: any) {
 
         const responseText = result.candidates?.[0]?.content?.parts?.[0]?.text || "Lo lamento, Capitán, pero mi conexión con el oráculo ha fallado momentáneamente.";
 
-        // 💾 LOG INTERACTION
+        // 💾 LOG INTERACTION (Aligned with REAL Schema: session_id, text, sender)
         await (supabaseServiceRole as any).from('ai_chat_logs').insert([
-            { chat_id: String(chatId), content: text, role: 'user', user_id: String(user.id) },
-            { chat_id: String(chatId), content: responseText, role: 'ai' }
+            { session_id: String(chatId), text: text, sender: role },
+            { session_id: String(chatId), text: responseText, sender: 'ai' }
         ]);
 
         // 🔱 DIRECT RESPONSE
@@ -103,13 +90,6 @@ export default async function handler(req: any, res: any) {
         return res.status(200).send('OK');
     } catch (error: any) {
         console.error("[Salty Webhook Error]:", error.message);
-        // Reportar error a Supabase para diagnóstico remoto
-        await (supabaseServiceRole as any).from('system_logs').insert({
-            level: 'error',
-            service: 'TelegramWebhook',
-            message: `Fallo Crítico: ${error.message}`
-        }).catch(() => {});
-        
         return res.status(200).send('Handled Error');
     }
 }
