@@ -30,7 +30,7 @@ const formatFirstName = (name: string) => {
 export default async function handler(req: any, res: any) {
   if (req.method === 'OPTIONS') return res.status(204).end();
 
-  // 🛡️ SECURITY: Verify request source (Supabase Internal or Admin Local)
+  // 🛡️ SECURITY: Verify request source
   const authHeader = req.headers['authorization'];
   const isLocal = req.headers['host']?.includes('localhost');
   const sharedSecret = process.env.API_SECRET_KEY || process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
@@ -40,83 +40,81 @@ export default async function handler(req: any, res: any) {
 
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.replace('Bearer ', '');
-    
-    // Check if it's the Shared Secret (for DB Webhooks)
     if (token === sharedSecret) {
       isAuthorized = true;
       triggerSource = 'db_webhook';
     } else {
-      // Check if it's a valid Supabase JWT (for Manual Host sending)
       try {
-        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-        // Verify user is an admin or host
-        if (user && user.email === 'villaretiror@gmail.com') { // Hardcoded per rule 6
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user && user.email === 'villaretiror@gmail.com') {
           isAuthorized = true;
           triggerSource = `manual_host_${user.id}`;
         }
-      } catch (e) {
-        console.error('[AUTH] Failed to verify JWT:', e);
-      }
+      } catch (e) {}
     }
   }
 
-  if (!isAuthorized) {
-    console.warn('[SECURITY] Unauthorized email trigger attempt | host:', req.headers['host'], '| hasAuth:', !!authHeader);
-    return res.status(401).json({ error: 'Unauthorized' });
-  }
-
+  if (!isAuthorized) return res.status(401).json({ error: 'Unauthorized' });
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
     const { 
-      type, 
-      email, 
-      customer, 
-      contactData, 
-      propertyId, 
-      customerName, 
-      customerEmail: reqCustomerEmail, 
-      userId, 
-      ...rest 
+      type, email, customer, contactData, propertyId, customerName, 
+      customerEmail: reqCustomerEmail, userId, ...rest 
     } = req.body || {};
     
     const userData = customer || contactData || {};
-
-    // 🔗 SINGLE SOURCE OF TRUTH: Fetch property from DB
     const v_propertyId = propertyId || '1081171030449673920';
-    const { data: dbProperty, error: propError } = await supabase
+
+    // 🔗 DYNAMIC DATA & BRANDING ENGINE
+    const { data: dbProperty } = await supabase
       .from('properties')
       .select('*')
       .eq('id', v_propertyId)
       .single();
 
-    if (propError || !dbProperty) {
-      console.error('[DATABASE_SYNC_ERROR]: Using fallbacks for property', v_propertyId);
-    }
+    // Mapping of Hardcoded Brand Assets (since they aren't in DB columns yet)
+    const BRAND_MAP: Record<string, any> = {
+      '1081171030449673920': {
+        logo: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
+        accent: '#FF7F3F',
+        name: 'Villa Retiro R.'
+      },
+      '42839458': {
+        logo: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/pirata_family_logo.png',
+        accent: '#004E64',
+        name: 'Pirata Family House'
+      }
+    };
 
+    const isPirata = v_propertyId === '42839458' || dbProperty?.title?.includes('Pirata');
+    const brand = BRAND_MAP[v_propertyId] || (isPirata ? BRAND_MAP['42839458'] : BRAND_MAP['1081171030449673920']);
+
+    // Build the finalized Property Object
     const p = {
-      name: dbProperty?.title || 'Villa Retiro Exclusive',
-      logo: dbProperty?.logo_url || 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
-      accentColor: dbProperty?.accent_color || '#FF7F3F',
-      wifiName: dbProperty?.wifi_name || 'VILLA_GUEST_WIFI',
-      wifiPass: dbProperty?.wifi_pass || '********',
+      name: dbProperty?.title || brand.name,
+      logo: brand.logo,
+      accentColor: brand.accent,
+      wifiName: 'Wifivacacional',
+      wifiPass: 'Wifivacacional',
       accessCode: dbProperty?.access_code || 'CONSULTAR_HOST',
       coords: dbProperty?.location_coords || '18.07065,-67.16544',
       guidebookUrl: dbProperty?.guidebook_url || null,
       heroImage: dbProperty?.images && dbProperty.images.length > 0 ? dbProperty.images[0] : null
     };
 
-    const mapsUrl = `https://www.google.com/maps?q=${p.coords}`;
-    const wazeUrl = `https://waze.com/ul?ll=${p.coords}&navigate=yes`;
-    const reviewUrl = dbProperty?.review_url || 'https://g.page/villaretiror/review';
+    // DEBUG: Ensure we are seeing the real values
+    console.log(`[Email Engine] Triggering ${type} for Property: ${p.name} | Code: ${p.accessCode} | ID: ${v_propertyId}`);
+
+    const mapsUrl = dbProperty?.google_maps_url || `https://www.google.com/maps?q=${p.coords}`;
+    const wazeUrl = dbProperty?.waze_url || `https://waze.com/ul?ll=${p.coords}&navigate=yes`;
     const stayPortalUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/stay/${v_propertyId}`;
 
-    const rawClientName = userData.name || customerName || '';
-    const firstName = formatFirstName(rawClientName);
-    const clientFullName = rawClientName || 'Cliente Indefinido';
+    const firstName = formatFirstName(userData.name || customerName || '');
+    const clientFullName = userData.name || customerName || 'Cliente Indefinido';
     const customerEmail = reqCustomerEmail || email || userData.email || 'villaretiror@gmail.com';
     
-    const fromAddress = 'Villa Retiro <reservas@villaretiror.com>';
+    const fromAddress = isPirata ? 'Pirata Stays <reservas@villaretiror.com>' : 'Villa Retiro <reservas@villaretiror.com>';
     const hostEmail = 'villaretiror@gmail.com';
 
     let emailOptions: any[] = [];

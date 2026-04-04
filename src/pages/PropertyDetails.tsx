@@ -323,7 +323,7 @@ export const PropertyDetails: React.FC = () => {
     <div className="bg-[#FDFCFB] min-h-screen pb-32 relative">
       {/* Top Nav Sticky con Framer Motion */}
       <motion.div
-        style={{ backgroundColor: headerBg, backdropFilter: 'blur(12px)' }}
+        style={{ backgroundColor: headerBg, backdropFilter: 'blur(8px)' }}
         className="fixed top-0 left-0 right-0 z-40 flex justify-between items-center px-4 py-3 pb-safe"
       >
         <motion.button
@@ -368,7 +368,7 @@ export const PropertyDetails: React.FC = () => {
         <AnimatePresence mode="popLayout">
           <motion.div
             key={currentImageIndex}
-            className="absolute inset-0 w-full h-full"
+            className="absolute inset-0 w-full h-full transform-gpu"
             initial={shouldReduceMotion ? { opacity: 0 } : { scale: 1.1, opacity: 0 }}
             animate={shouldReduceMotion ? { opacity: 1 } : { scale: 1, opacity: 1 }}
             exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0.95, opacity: 0 }}

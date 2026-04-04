@@ -17,6 +17,7 @@ interface BaseLayoutProps {
   previewText: string;
   logoUrl: string;
   accentColor: string;
+  propertyName: string;
   theme?: 'light' | 'dark';
   children: React.ReactNode;
 }
@@ -25,6 +26,7 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({
   previewText, 
   logoUrl, 
   accentColor, 
+  propertyName,
   theme = 'light',
   children 
 }) => {
@@ -83,7 +85,7 @@ export const BaseLayout: React.FC<BaseLayoutProps> = ({
               </Link>
             </Section>
             <Text style={footerText(isDark)}>
-              <strong style={{ color: accentColor }}>VILLA RETIRO R</strong> • Cabo Rojo, Puerto Rico<br />
+              <strong style={{ color: accentColor }}>{propertyName.toUpperCase()}</strong> • Cabo Rojo, Puerto Rico<br />
               Este es un canal de comunicación seguro operado por Salty AI.
             </Text>
           </Section>

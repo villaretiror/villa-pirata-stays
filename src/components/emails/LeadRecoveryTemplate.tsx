@@ -22,6 +22,7 @@ export const LeadRecoveryTemplate: React.FC<LeadRecoveryProps> = ({
       previewText={`🏝️ ¿Aún pensando en el paraíso, ${firstName}?`}
       logoUrl={logoUrl}
       accentColor={accentColor}
+      propertyName={propertyName}
     >
       <Section style={mainSectionStyle}>
         <Text style={h2Style}>¿Olvidaste algo en la orilla?</Text>
@@ -30,13 +31,21 @@ export const LeadRecoveryTemplate: React.FC<LeadRecoveryProps> = ({
           Hola, {firstName}. Soy <strong>Salty</strong>, el concierge digital de {propertyName}.
         </Text>
         <Text style={pStyle}>
-          Noté que la brisa de Cabo Rojo te llamó, pero la reserva no se completó. Solo quería avisarte que he guardado tu disponibilidad por un momento más para que no pierdas tu refugio ideal.
+          Noté que la brisa de Cabo Rojo te llamó, pero la reserva no se completó. Tus fechas siguen disponibles, pero <b>otras 2 personas</b> acaban de consultar por {propertyName} en las últimas horas.
         </Text>
+
+        <Section style={bunkerBox}>
+            <Text style={bunkerTitle(accentColor)}>🛡️ Reserva con Paz Total</Text>
+            <Text style={bunkerText}>Recuerda que somos un <b>Bunker Premium</b>: Energía Solar 24/7 y Cisterna Industrial. Pase lo que pase afuera, en tu villa la vida sigue sin interrupciones.</Text>
+        </Section>
+
         <Section style={ctaSectionStyle}>
           <Link href={recoveryUrl} style={ctaButtonStyle(accentColor)}>
-            Regresar al Paraíso
+            ✨ Asegurar Mi Refugio Ahora
           </Link>
+          <Text style={ctaSubText}>Trato Directo: Sin comisiones ocultas.</Text>
         </Section>
+
         <Text style={saltySignatureStyle}>
           "En la Villa, el tiempo se mide en olas y sonrisas. No dejes que las tuyas se escapen." — Salty
         </Text>
@@ -93,4 +102,34 @@ const saltySignatureStyle: React.CSSProperties = {
   fontStyle: 'italic',
   textAlign: 'center' as const,
   marginTop: '40px',
+};
+
+const bunkerBox: React.CSSProperties = {
+    backgroundColor: '#F9FBF2',
+    padding: '20px',
+    borderRadius: '16px',
+    border: '1px solid #D4AF3740',
+    margin: '20px 0',
+    textAlign: 'left' as const,
+};
+
+const bunkerTitle = (accentColor: string): React.CSSProperties => ({
+    fontSize: '12px',
+    fontWeight: 'bold',
+    color: accentColor,
+    margin: '0 0 5px 0',
+    textTransform: 'uppercase' as const,
+});
+
+const bunkerText: React.CSSProperties = {
+    fontSize: '13px',
+    color: '#4A4A4A',
+    lineHeight: '1.5',
+    margin: '0',
+};
+
+const ctaSubText: React.CSSProperties = {
+    fontSize: '11px',
+    color: '#888',
+    marginTop: '15px',
 };

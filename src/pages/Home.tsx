@@ -133,7 +133,7 @@ const Home: React.FC = () => {
         setIsSearchOpen(false);
         scrollToResults();
       }
-    }, 1500);
+    }, 800); // ⚡ SALTY TURBO: Reduced from 1500ms to 800ms for faster perceived response
   };
 
   const scrollToResults = () => {
@@ -292,10 +292,10 @@ const Home: React.FC = () => {
       </AnimatePresence>
 
       {/* Background Mesh Gradients */}
-      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0">
-        <div className="absolute top-[-10%] right-[-20%] w-[500px] h-[500px] bg-primary/20 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob"></div>
-        <div className="absolute top-[-10%] left-[-20%] w-[500px] h-[500px] bg-secondary/20 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-[20%] left-[20%] w-[400px] h-[400px] bg-accent/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob animation-delay-4000"></div>
+      <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 transform-gpu">
+        <div className="absolute top-[-10%] right-[-20%] w-[500px] h-[500px] bg-primary/20 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob will-change-transform"></div>
+        <div className="absolute top-[-10%] left-[-20%] w-[500px] h-[500px] bg-secondary/20 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob animation-delay-2000 will-change-transform"></div>
+        <div className="absolute top-[20%] left-[20%] w-[400px] h-[400px] bg-accent/30 rounded-full mix-blend-multiply filter blur-[80px] opacity-60 animate-blob animation-delay-4000 will-change-transform"></div>
       </div>
 
       {/* Search Overlay */}
@@ -524,7 +524,7 @@ const Home: React.FC = () => {
         ))}
       </div>
 
-      <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-md border-t border-white/40 min-h-screen px-6 pt-10 pb-32">
+      <div className="relative z-10 rounded-t-[2.5rem] bg-white/60 backdrop-blur-sm border-t border-white/40 min-h-screen px-6 pt-10 pb-32">
         <div className="mb-12">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8 text-center md:text-left">
             <div>

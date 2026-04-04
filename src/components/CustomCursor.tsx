@@ -42,7 +42,7 @@ const CustomCursor: React.FC = () => {
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/30 pointer-events-none z-[9999] mix-blend-difference flex items-center justify-center overflow-hidden bg-white/5 backdrop-blur-[2px]"
+        className="fixed top-0 left-0 w-8 h-8 rounded-full border border-primary/30 pointer-events-none z-[9999] mix-blend-difference flex items-center justify-center overflow-hidden bg-white/5"
         style={{
           translateX: springX,
           translateY: springY,

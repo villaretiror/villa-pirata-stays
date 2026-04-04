@@ -18,6 +18,8 @@ interface ReservationConfirmedProps {
   isReturning: boolean;
   checkIn: string;
   checkOut: string;
+  checkInTime?: string;
+  checkOutTime?: string;
   accessCode: string;
   wifiName: string;
   wifiPass: string;
@@ -28,6 +30,7 @@ interface ReservationConfirmedProps {
   guidebookUrl?: string | null;
   propertyImage?: string;
   weatherNote?: string;
+  houseRules?: string[];
 }
 
 export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> = ({
@@ -38,6 +41,8 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
   isReturning,
   checkIn,
   checkOut,
+  checkInTime = "3:00 PM",
+  checkOutTime = "11:00 AM",
   accessCode,
   wifiName,
   wifiPass,
@@ -48,6 +53,11 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
   guidebookUrl,
   propertyImage,
   weatherNote,
+  houseRules = [
+    "No se permiten fiestas ni eventos",
+    "Ambiente 100% libre de humo",
+    "Apagar A/C al salir de la villa"
+  ],
 }) => {
   const theme = isWithin24h ? 'dark' : 'light';
   const isDark = theme === 'dark';
@@ -61,6 +71,7 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
       previewText={isReturning ? `🌊 ¡Bienvenido de vuelta a ${propertyName}!` : `🏝️ ¡Confirmado! Tu refugio en ${propertyName} está listo`}
       logoUrl={logoUrl}
       accentColor={accentColor}
+      propertyName={propertyName}
       theme={theme}
     >
       {propertyImage && (
@@ -99,16 +110,33 @@ export const ReservationConfirmedTemplate: React.FC<ReservationConfirmedProps> =
             </Section>
           ) : (
             <Section>
-              <Text style={secureLabel(isDark)}>Tu acceso es 100% digital y sin contacto.</Text>
-              <Text style={pendingAccessStyle(accentColor)}>
-                Revelaremos tus códigos automáticamente 24 horas antes de tu llegada.
-              </Text>
+              <Row style={{ marginBottom: '15px' }}>
+                <Column>
+                    <Text style={locationInfo(isDark)}>📍 Propiedad: <b>{propertyName}</b></Text>
+                    <Text style={dateInfo(isDark)}>Check-in: <b>{checkIn}</b> ({checkInTime})</Text>
+                    <Text style={dateInfo(isDark)}>Check-out: <b>{checkOut}</b> ({checkOutTime})</Text>
+                </Column>
+              </Row>
               <Section style={dividerMiniStyle(isDark)} />
-              <Text style={locationInfo(isDark)}>📍 Propiedad: <b>{propertyName}</b></Text>
-              <Text style={dateInfo(isDark)}>Check-in: {checkIn}</Text>
+              <Section style={{ marginTop: '15px' }}>
+                <Text style={infoBoxLabel(accentColor)}>📋 Reglas de la Casa:</Text>
+                {houseRules.map((rule, idx) => (
+                    <Text key={idx} style={ruleItemStyle(isDark)}>• {rule}</Text>
+                ))}
+              </Section>
             </Section>
           )}
         </Container>
+
+        <Section style={supportSection(isDark)}>
+            <Row>
+                <Column style={{ width: '40px' }}><Text style={{ fontSize: '24px' }}>🛡️</Text></Column>
+                <Column>
+                    <Text style={supportTitle(accentColor)}>Salty Guard: Logística & Paz</Text>
+                    <Text style={supportText(isDark)}><b>Estacionamiento:</b> Privado y exclusivo dentro de la propiedad.<br/><b>Energía:</b> Bunker System (Solar + Cisterna) activo para tu confort.</Text>
+                </Column>
+            </Row>
+        </Section>
 
         <Section style={navigationSection}>
           <Text style={navLabel}>Rutas al Paraíso</Text>
@@ -404,4 +432,36 @@ const weatherText = (isDark: boolean): React.CSSProperties => ({
   fontStyle: 'italic',
   lineHeight: '1.6',
   margin: '0',
+});
+
+const ruleItemStyle = (isDark: boolean): React.CSSProperties => ({
+  fontSize: '13px',
+  color: isDark ? 'rgba(255,255,255,0.6)' : '#666',
+  margin: '8px 0',
+  lineHeight: '1.4',
+});
+
+const supportSection = (isDark: boolean): React.CSSProperties => ({
+  backgroundColor: isDark ? '#111A35' : '#F0F7FF',
+  padding: '25px',
+  borderRadius: '24px',
+  border: isDark ? '1px solid rgba(255,255,255,0.05)' : '1px solid #D0E7FF',
+  margin: '20px 0 40px',
+  textAlign: 'left' as const,
+});
+
+const supportTitle = (accentColor: string): React.CSSProperties => ({
+  fontSize: '12px',
+  fontWeight: 'bold',
+  color: accentColor,
+  textTransform: 'uppercase' as const,
+  letterSpacing: '1px',
+  margin: '0 0 5px 0',
+});
+
+const supportText = (isDark: boolean): React.CSSProperties => ({
+  fontSize: '13px',
+  color: isDark ? 'rgba(255,255,255,0.7)' : '#444',
+  margin: '0',
+  lineHeight: '1.6',
 });
