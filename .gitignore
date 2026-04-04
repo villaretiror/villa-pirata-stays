@@ -25,3 +25,7 @@ Thumbs.db
 .idea/
 .vercel
 .env*.local
+
+.vercel_backup
+.env.local
+.env.vercel
