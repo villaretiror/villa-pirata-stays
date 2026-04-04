@@ -320,6 +320,7 @@ export const DEFAULT_VILLA_KNOWLEDGE = {
     procedures: "Hospital Bella Vista a 20 mins. Policía/Ambulancia: 911."
   },
   survival_tips: {
+    solar_protocol: "Durante cortes de la red eléctrica externa, el sistema solar de respaldo automático brinda confort. Sin embargo, su duración DEPENDE de la carga de las baterías y del uso del huésped. Es INDISPENSABLE un uso consciente (evitar A/C excesivo, microondas o calentadores simultáneos) para no agotar la reserva. El anfitrión NO es responsable de cortes de luz externos; el sistema solar es una amenidad de valor añadido que requiere cooperación del huésped.",
     parking: "En el Poblado y playas populares (Buyé, Combate), el estacionamiento puede ser limitado los fines de semana. Te recomiendo llegar antes de las 10:00 AM.",
     cash: "Aunque la mayoría acepta tarjetas y ATH Móvil, algunos quioscos de abundancia en las playas solo aceptan efectivo. Hay cajeros en los supermercados Econo y Ralph's a 5 mins.",
     hours: "El Poblado cobra vida después de las 6:00 PM. Los restaurantes de Joyuda suelen cerrar cocina entre 9:00 PM y 10:00 PM.",
