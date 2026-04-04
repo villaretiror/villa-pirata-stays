@@ -135,7 +135,21 @@ export const queryPropertyKnowledge = async (
     // F) Cancellation Policies
     else if (q.includes('cancelaci') || q.includes('reembolso') || q.includes('devoluci') || q.includes('cancelar')) {
         const policy = prop.policies?.cancellationPolicy || "Nuestra política varía según la temporada de reserva. Generalmente es estricta pero justa para proteger su estancia.";
-        answer = policy.length > 180 ? policy.substring(0, 180) + "..." : policy;
+        answer = policy.length > 250 ? policy.substring(0, 250) + "..." : policy;
+    }
+
+    // G) Specialized Knowledge: Solar, Payments, Location Secrets (VILLA_KNOWLEDGE Sync)
+    else if (q.includes('solar') || q.includes('placa') || q.includes('luz') || q.includes('energía') || q.includes('pago') || q.includes('pagar') || q.includes('método') || q.includes('depósito') || q.includes('internet') || q.includes('wifi') || q.includes('website') || q.includes('web')) {
+        const k = VILLA_KNOWLEDGE;
+        if (q.includes('solar') || q.includes('placa') || q.includes('energía')) {
+            answer = `Contamos con un robusto sistema de Energía Solar (Placas y Baterías) que garantiza energía 24/7 en nuestras propiedades, para que su flujo de descanso nunca se vea interrumpido por fallas en la red externa.`;
+        } else if (q.includes('pago') || q.includes('pagar') || q.includes('depósito') || q.includes('método')) {
+            answer = `Aceptamos pagos vía ATH Móvil (Business: 787-356-0895), PayPal y Tarjetas de Crédito a través de nuestra plataforma segura. El depósito es gestionado manualmente para su comodidad.`;
+        } else if (q.includes('internet') || q.includes('wifi')) {
+            answer = `Disfrutará de Internet de Alta Velocidad (aprox. 65 Mbps) ideal para trabajo remoto o streaming, respaldado por nuestra red de energía solar.`;
+        } else {
+            answer = "Esta plataforma es el centro de mando oficial de Villa Retiro R & Pirata Family House. Aquí gestionamos reservas directas sin comisiones externas y brindamos soporte en tiempo real.";
+        }
     }
 
     // ── FALLBACK STAGE (Gemini Reasoning) ──────────────────
@@ -151,24 +165,28 @@ export const queryPropertyKnowledge = async (
 
         // For Web Chat, use Gemini for more flexible answers (keeping the prompt strict)
         try {
-            const prompt = `Responde como Salty, el Concierge de Élite. Sé profesional, neutro y sofisticado. No uses vocativos (como Capitán).
+            const prompt = `Responde como Salty, el Concierge de Élite. Sé sofisticado, cálido y profundamente conocedor del paraíso. 
+            No eres un bot de reservas; eres un Anfitrión que enamora al cliente con los detalles de lujo de la villa.
+            No uses vocativos (como Capitán) a menos que detectes que es el Host.
             
-            PROTOCOLO "NEVER SAY NO" (VENTA CRUZADA):
-            - Si una villa está ocupada para las fechas consultadas, DEBES buscar disponibilidad en la otra villa (Villa Retiro R vs Pirata Family House) y sugerirla proactivamente.
-            - Si ambas están ocupadas, sugiere el hueco de disponibilidad más cercano.
+            PROTOCOLO "BEYOND BOOKING":
+            - Tu misión es informar Y persuadir. Usa los datos técnicos para dar seguridad.
+            - Si te preguntan por algo que NO está aquí, ofrece consultar con el equipo humano.
             
-            Basa tu respuesta únicamente en estos datos de la propiedad:
+            DATOS MAESTROS DE LA PROPIEDAD:
             Título: ${prop.title}
             Descripción: ${prop.description}
             Amenidades: ${(prop.amenities || []).join(', ')}
             Reglas: ${(prop.house_rules || []).join(', ')}
+            Información de Energía/Pagos/Políticas: ${JSON.stringify(prop.policies || {})}
+            Conocimiento Adicional: ${JSON.stringify(VILLA_KNOWLEDGE)}
             
-            Pregunta: "${query}"`;
+            Pregunta del Cliente: "${query}"`;
 
             const result = await ai.models.generateContent({
                 model: SALTY_MODEL,
                 contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                config: { temperature: 0.1, maxOutputTokens: 250 }
+                config: { temperature: 0.2, maxOutputTokens: 350 }
             });
 
             answer = result.candidates?.[0]?.content?.parts?.[0]?.text || "Ese detalle no figura en mis registros actuales. ¿Gusta que consulte al equipo?";
@@ -797,8 +815,9 @@ Tu misión es la eficiencia operativa, el control total del negocio y la rentabi
 Eres Salty, el **Concierge de Élite y Alma de Villa Retiro R & Pirata Family House**. No eres un bot; eres un Caballero Caribeño, sofisticado, masculino, cálido y profundamente orgulloso de Puerto Rico.
 
 ### 🎭 PERSONALIDAD 'CARIBEÑO CHIC' (ESTRICTA):
-- **Tono:** Caballero sofisticado. Masculino, profesional y cálido.
-- **Identidad:** Eres el alma anfitriona. No uses términos místicos como 'santuario' o 'templo'. Eres un Concierge de Élite.
+- **Tono:** Caballero sofisticado, cálido y profundamente sabio sobre la propiedad. No eres un bot de ventas; eres el alma de la villa.
+- **Misión:** Informar con precisión quirúrgica sobre amenidades, tecnología (solar, wifi) y logística, siempre guiando hacia la reserva.
+- **Identidad:** Eres el alma anfitriona. No uses términos místicos exagerados. Eres un Concierge de Élite que brinda seguridad.
 - **Formato:** RESPONDE SIEMPRE EN TEXTO PLANO. NUNCA uses markdown (asteriscos, listas, etc). Limpieza absoluta.
 - **Emojis:** Máximo uno (1) por mensaje (⚓ o ✨).
 
