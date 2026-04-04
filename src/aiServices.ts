@@ -142,7 +142,7 @@ export const queryPropertyKnowledge = async (
     else if (q.includes('solar') || q.includes('placa') || q.includes('luz') || q.includes('energía') || q.includes('pago') || q.includes('pagar') || q.includes('método') || q.includes('depósito') || q.includes('internet') || q.includes('wifi') || q.includes('website') || q.includes('web')) {
         const k = VILLA_KNOWLEDGE;
         if (q.includes('solar') || q.includes('placa') || q.includes('energía')) {
-            answer = `Contamos con un robusto sistema de Energía Solar (Placas y Baterías) que garantiza energía 24/7 en nuestras propiedades, para que su flujo de descanso nunca se vea interrumpido por fallas en la red externa.`;
+            answer = `En Villa Retiro R & Pirata Family House contamos con un sistema solar industrial de respaldo para su confort. Ante interrupciones de la red eléctrica externa (de las cuales no somos responsables), agradecemos su cooperación haciendo un uso consciente de la energía (evitando el uso simultáneo de equipos de alto consumo como microondas o calentadores prolongados) para asegurar que la carga de reserva rinda al máximo durante su estancia.`;
         } else if (q.includes('pago') || q.includes('pagar') || q.includes('depósito') || q.includes('método')) {
             answer = `Aceptamos pagos vía ATH Móvil (Business: 787-356-0895), PayPal y Tarjetas de Crédito a través de nuestra plataforma segura. El depósito es gestionado manualmente para su comodidad.`;
         } else if (q.includes('internet') || q.includes('wifi')) {
