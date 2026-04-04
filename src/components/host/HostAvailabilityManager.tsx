@@ -54,6 +54,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
       setLocalForm({
         ...activeProperty,
         blockedDates: activeProperty.blockeddates || activeProperty.blockedDates || [],
+        isOffline: activeProperty.isOffline || activeProperty.is_offline || false,
         seasonal_prices: activeProperty.seasonal_prices || [],
         calendarSync: activeProperty.calendarSync || [],
         sync_settings: activeProperty.sync_settings || {
@@ -78,7 +79,7 @@ export default function HostAvailabilityManager({ properties, onRefresh }: { pro
         blockeddates: updatedForm.blockedDates,
         seasonal_prices: updatedForm.seasonal_prices,
         price: updatedForm.price,
-        is_offline: updatedForm.is_offline,
+        is_offline: updatedForm.isOffline,
         calendarSync: updatedForm.calendarSync,
         sync_settings: updatedForm.sync_settings // New: Dynamic Rule Persistence
       })

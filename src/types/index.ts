@@ -74,8 +74,8 @@ export interface CalendarSync {
 }
 
 // 🛡️ OMIT ALL FIELDS THAT ARE OVERRIDDEN TO AVOID CONFLICTS
-type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockedDates' | 'reviews_list' | 'images' | 'images_meta' | 'original_price' | 
-'availability_urgency_msg' | 'exact_lat_long' | 'general_area_map_url' | 'is_cleaning_in_progress';
+type PropertyOmissions = 'calendarSync' | 'seasonal_prices' | 'host' | 'offers' | 'fees' | 'policies' | 'blockeddates' | 'reviews_list' | 'images' | 'images_meta' | 'original_price' | 
+'availability_urgency_msg' | 'exact_lat_long' | 'general_area_map_url' | 'is_offline' | 'is_cleaning_in_progress';
 
 export interface Property extends Omit<PropertyRow, PropertyOmissions> {
   original_price?: number | null; 

@@ -44,13 +44,13 @@ export const CalendarSyncService = {
                     }
 
                     const blocks = this.parseIcsToBlocks(icsText, prop.id);
-                    
+
                     const { inserted, deleted } = await this.syncBlocksWithDb(supabase, prop.id, prop.title, blocks, feed.platform);
                     propImported += inserted;
                     totalGlobalImported += inserted;
 
                     updatedFeeds[idx] = { ...feed, syncStatus: 'success', lastSynced: new Date().toISOString() };
-                    
+
                     let msg = `✅ ${prop.title} (${feed.platform}): OK`;
                     if (inserted > 0) msg += ` (+${inserted})`;
                     if (deleted > 0) msg += ` (-${deleted})`;
@@ -77,8 +77,8 @@ export const CalendarSyncService = {
 
         for (const rawLine of lines) {
             const line = rawLine.trim();
-            if (line === 'BEGIN:VEVENT') { 
-                inEvent = true; dtStart = ''; dtEnd = ''; summary = ''; uid = ''; continue; 
+            if (line === 'BEGIN:VEVENT') {
+                inEvent = true; dtStart = ''; dtEnd = ''; summary = ''; uid = ''; continue;
             }
             if (line === 'END:VEVENT' && inEvent) {
                 inEvent = false;
@@ -88,7 +88,7 @@ export const CalendarSyncService = {
                     if (raw.includes('T')) {
                         const dt = raw.trim();
                         if (dt.length >= 15) {
-                            const isoStr = `${dt.substring(0,4)}-${dt.substring(4,6)}-${dt.substring(6,8)}T${dt.substring(9,11)}:${dt.substring(11,13)}:${dt.substring(13,15)}Z`;
+                            const isoStr = `${dt.substring(0, 4)}-${dt.substring(4, 6)}-${dt.substring(6, 8)}T${dt.substring(9, 11)}:${dt.substring(11, 13)}:${dt.substring(13, 15)}Z`;
                             const dateObj = new Date(isoStr);
                             if (!isNaN(dateObj.getTime())) {
                                 // Forzamos PR Time (UTC - 4)
@@ -155,12 +155,12 @@ export const CalendarSyncService = {
             // 🔱 ELITE HEURISTIC: Detect if it's a real booking or just a block
             const summary = (block.summary || '').trim();
             const lowerSummary = summary.toLowerCase();
-            
+
             // Standard AirBnB/Booking.com reserved markers
-            const isRealBooking = lowerSummary.includes('reserved') || 
-                                  lowerSummary.includes('hm') || 
-                                  lowerSummary.includes('reservation');
-            
+            const isRealBooking = lowerSummary.includes('reserved') ||
+                lowerSummary.includes('hm') ||
+                lowerSummary.includes('reservation');
+
             const isManual = !isRealBooking;
             const displayLabel = isRealBooking ? 'Reserva Externa' : (summary || 'Bloqueo Administrativo');
 
@@ -178,11 +178,11 @@ export const CalendarSyncService = {
                     customer_name: displayLabel
                 });
             } else if (match.sync_last_hash !== block.hash) {
-                await supabase.from('bookings').update({ 
-                    sync_last_hash: block.hash, 
+                await supabase.from('bookings').update({
+                    sync_last_hash: block.hash,
                     is_manual_block: isManual,
                     customer_name: displayLabel,
-                    updated_at: new Date().toISOString() 
+                    updated_at: new Date().toISOString()
                 }).eq('id', match.id);
                 updatedCount++;
             }
@@ -199,13 +199,13 @@ export const CalendarSyncService = {
     async getBlockedDatesFromUrl(url: string): Promise<string[]> {
         try {
             const isFrontend = typeof window !== 'undefined';
-            const fetchUrl = isFrontend 
+            const fetchUrl = isFrontend
                 ? `/api/calendar/export?url=${encodeURIComponent(url)}`
                 : url;
 
             const response = await fetch(fetchUrl);
             if (!response.ok) throw new Error("Fetch failed");
-            
+
             let icsText = '';
             if (isFrontend) {
                 const data = await response.json();
@@ -216,7 +216,7 @@ export const CalendarSyncService = {
 
             const blocks = this.parseIcsToBlocks(icsText, 'preview');
             const days: string[] = [];
-            
+
             for (const b of blocks) {
                 const current = new Date(`${b.start}T12:00:00`);
                 const end = new Date(`${b.end}T12:00:00`);

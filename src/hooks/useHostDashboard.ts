@@ -216,14 +216,34 @@ export const useHostDashboard = () => {
   const saveProperty = async (updated: Property) => {
     setIsSaving(true);
     try {
-      // 🛡️ DATA SANITIZATION: Omit frontend-only or join fields
-      const { host, isOffline, ...dbPayload } = updated as any;
+      // 🔱 ELITE DATA SANITIZATION: Separate frontend virtuals from database persistence
+      const { 
+        host, 
+        isOffline, 
+        blockedDates,
+        outputs,
+        ...dbPayload 
+      } = updated as any;
+
+      // 🔱 MAP BACK TO SCHEMA: Ensure database naming conventions are respected
+      const payload = {
+        ...dbPayload,
+        is_cleaning_in_progress: updated.is_cleaning_in_progress || false,
+        exact_lat_long: updated.exact_lat_long || null,
+        general_area_map_url: updated.general_area_map_url || '',
+        blockeddates: blockedDates || [], // Map back to 'blockeddates' (lowercase)
+        is_offline: isOffline || false,   // Map back to 'is_offline' (underscored)
+        updated_at: new Date().toISOString()
+      };
 
       const { error: updateError } = await supabase.from('properties')
-        .update({ ...dbPayload, updated_at: new Date().toISOString() })
+        .update(payload)
         .eq('id', updated.id);
 
-      if (updateError) throw updateError;
+      if (updateError) {
+        console.error("[saveProperty] Critical Persistence Error:", updateError);
+        throw updateError;
+      }
       
       showToast("Sincronización Completa ✅");
       onUpdateProperties(properties.map(p => p.id === updated.id ? updated : p));

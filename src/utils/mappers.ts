@@ -45,7 +45,7 @@ export const mapSupabaseProperty = (
     bedrooms: Number(p.bedrooms) || 1,
     beds: Number(p.beds) || 1,
     baths: Number(p.baths) || 1,
-    is_offline: p.is_offline || false,
+    isOffline: p.is_offline || false,
     google_maps_url: p.google_maps_url || '',
     
     // Complex Objects

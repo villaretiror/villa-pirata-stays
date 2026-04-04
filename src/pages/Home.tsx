@@ -154,7 +154,7 @@ const Home: React.FC = () => {
 
   const filteredProperties = React.useMemo(() => {
     return properties.filter(property => {
-      if (property.is_offline) return false;
+      if (property.isOffline) return false;
       const totalHumans = deferredAdults + deferredChildren;
       const capacity = Number(property.guests) || 1;
       if (capacity < totalHumans) return false;
