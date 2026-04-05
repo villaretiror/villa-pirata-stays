@@ -22,11 +22,8 @@ const getSaltyEnv = (key: string): string => {
   return '';
 };
 
-// 🔱 INITIALIZE AI (GEMINI)
-const ai = new GoogleGenAIClass({
-    apiKey: getSaltyEnv('GOOGLE_GENERATIVE_AI_API_KEY') || getSaltyEnv('GEMINI_API_KEY') || '',
-});
-export const SALTY_MODEL = 'gemini-3-flash-preview'; // ⚡ Frontier Model (2026 Sovereign Edition)
+// 🔱 INITIALIZE AI (STRICTLY SERVER-SIDE VIA BRIDGE)
+export const SALTY_MODEL = 'gemini-1.5-flash'; // ⚡ Balanced Hub Model (2026 Sovereign Edition)
 
 import type { Tables } from './types/supabase';
 
@@ -163,7 +160,7 @@ export const queryPropertyKnowledge = async (
             };
         }
 
-        // For Web Chat, use Gemini for more flexible answers (keeping the prompt strict)
+        // For Web Chat, use our secure server-side AI Bridge
         try {
             const prompt = `Responde como Salty, el Concierge de Élite. Sé sofisticado, cálido y profundamente conocedor del paraíso. 
             No eres un bot de reservas; eres un Anfitrión que enamora al cliente con los detalles de lujo de la villa.
@@ -183,14 +180,23 @@ export const queryPropertyKnowledge = async (
             
             Pregunta del Cliente: "${query}"`;
 
-            const result = await ai.models.generateContent({
-                model: SALTY_MODEL,
-                contents: [{ role: 'user', parts: [{ text: prompt }] }],
-                config: { temperature: 0.2, maxOutputTokens: 350 }
+            const { data: { session } } = await sb.auth.getSession();
+            const response = await fetch('/api/ai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${session?.access_token || getSaltyEnv('SUPABASE_ANON_KEY')}`
+                },
+                body: JSON.stringify({
+                    prompt,
+                    config: { temperature: 0.2, maxOutputTokens: 350 }
+                })
             });
 
-            answer = result.candidates?.[0]?.content?.parts?.[0]?.text || "Ese detalle no figura en mis registros actuales. ¿Gusta que consulte al equipo?";
+            const result = await response.json();
+            answer = result.text || "Ese detalle no figura en mis registros actuales. ¿Gusta que consulte al equipo?";
         } catch (e) {
+            console.error("[Salty-AI] Bridge Error:", e);
             answer = "En este momento no tengo ese dato exacto. ¿Desea que le contacte al equipo por mensaje?";
         }
     }
@@ -917,13 +923,21 @@ export const generateOnboardingDraft = async (
     `.trim();
 
     try {
-        const response = await ai.models.generateContent({
-            model: SALTY_MODEL,
-            contents: [{ role: 'user', parts: [{ text: prompt }] }],
-            config: { temperature: 0.4 }
+        const { data: { session } } = await supabase.auth.getSession();
+        const response = await fetch('/api/ai', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${session?.access_token || getSaltyEnv('SUPABASE_ANON_KEY')}`
+            },
+            body: JSON.stringify({
+                prompt,
+                config: { temperature: 0.4, maxOutputTokens: 350 }
+            })
         });
-        const text = response.text || '';
-        return text.trim();
+
+        const result = await response.json();
+        return (result.text || '').trim();
     } catch (e) {
         console.error("Error generating draft:", e);
         return stage === 'mid_stay'

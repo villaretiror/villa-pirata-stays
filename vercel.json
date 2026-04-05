@@ -9,6 +9,10 @@
         "api/**/*.ts": {
             "memory": 512,
             "maxDuration": 30
+        },
+        "api/**/*.js": {
+            "memory": 512,
+            "maxDuration": 30
         }
     },
 

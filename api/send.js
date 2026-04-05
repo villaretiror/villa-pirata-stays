@@ -108,12 +108,22 @@ export default async function handler(req, res) {
   const resendKey = process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY || '';
 
   // 🛡️ REINFORCED SECURITY AUDIT
-  const isAuthorized = (authHeader === `Bearer ${resendKey}`) || 
-                       (authHeader === `Bearer ${anonKey}`) ||
-                       (authHeader?.includes(anonKey) && anonKey.length > 10); // Safe fallback if concat issue
+  let isAuthorized = (authHeader === `Bearer ${resendKey}`) || 
+                       (authHeader === `Bearer ${anonKey}`);
+
+  // 🔱 DYNAMIC SESSION VALIDATION
+  if (!isAuthorized && authHeader?.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const { data: { user } } = await supabase.auth.getUser(token);
+      if (user) isAuthorized = true;
+    } catch (e) {
+      console.error("[API Auth] JWT Verification error:", e.message);
+    }
+  }
 
   if (!isAuthorized) {
-      console.warn(`[API Auth] 401 Unauthorized access attempt. Header: ${authHeader?.substring(0, 15)}...`);
+      console.warn(`[API Auth] 401 Unauthorized access attempt. Header: ${authHeader?.substring(0, 20)}...`);
       return res.status(401).json({ error: 'Unauthorized', debug: 'Invalid Auth Token' });
   }
 

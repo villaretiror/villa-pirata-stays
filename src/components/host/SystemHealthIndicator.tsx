@@ -24,8 +24,13 @@ const SystemHealthIndicator: React.FC = () => {
     const fetchHealth = async (triggerSync = false) => {
         if (triggerSync) {
             try {
+                const { data: { session } } = await supabase.auth.getSession();
                 // 🛰️ MASTER SENTINEL HEALTH CHECK
-                await fetch('/api/master?task=health');
+                await fetch('/api/master?task=health', {
+                    headers: {
+                        'Authorization': `Bearer ${session?.access_token}`
+                    }
+                });
                 setLastSync(new Date());
             } catch (e) {
                 console.error("Health sync failed:", e);

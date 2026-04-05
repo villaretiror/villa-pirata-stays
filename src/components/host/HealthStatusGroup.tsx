@@ -21,14 +21,17 @@ const HealthStatusGroup: React.FC = () => {
     const [loading, setLoading] = useState(true);
 
     const fetchHealth = async (triggerSync = false) => {
-        if (triggerSync) {
             try {
+                const { data: { session } } = await supabase.auth.getSession();
                 // 🛰️ MASTER SENTINEL HEALTH
-                await fetch('/api/master?task=health');
+                await fetch('/api/master?task=health', {
+                    headers: {
+                        'Authorization': `Bearer ${session?.access_token}`
+                    }
+                });
             } catch (e) {
                 console.error("Health sync failed:", e);
             }
-        }
 
         const { data, error } = await supabase
             .from('system_health')

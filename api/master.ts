@@ -23,11 +23,22 @@ const humanizeDate = (dateStr: string) => {
 
 export default async function handler(req: any, res: any) {
     try {
-        const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+        const authHeader = (req.headers['authorization'] || req.headers['Authorization']) as string | undefined;
         const secret = process.env.CRON_SECRET || 'dev_secret_retry';
-        const isAuthorized = (secret && authHeader === `Bearer ${secret}`);
+        
+        let isAuthorized = (secret && authHeader === `Bearer ${secret}`) || (req.query?.secret === secret);
 
-        if (!isAuthorized && req.query?.secret !== secret) {
+        // EXTRA: Allow active host sessions to query health
+        if (!isAuthorized && authHeader?.startsWith('Bearer ')) {
+            try {
+                const supabaseAuth = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+                const token = authHeader.split(' ')[1];
+                const { data: { user } } = await supabaseAuth.auth.getUser(token);
+                if (user) isAuthorized = true;
+            } catch (e) {}
+        }
+
+        if (!isAuthorized) {
             console.warn("[Cron Master] Unauthorized access attempt.");
             return res.status(401).json({ error: 'Unauthorized' });
         }

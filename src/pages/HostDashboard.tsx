@@ -83,10 +83,13 @@ const HostDashboard: React.FC = () => {
 
   const handleSendAccessEmail = async (booking: any) => {
     try {
-      showToast("Enviando instrucciones... 📨");
+      const { data: { session } } = await supabase.auth.getSession();
       await fetch('/api/send', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token}`
+        },
         body: JSON.stringify({
           type: 'reservation_confirmed',
           customerName: booking.profiles?.full_name || 'Huésped',
@@ -212,9 +215,9 @@ const HostDashboard: React.FC = () => {
       {/* Dynamic Mini-Chart */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft">
         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] mb-8 text-gray-300">Desempeño Visual (6M)</h3>
-        <div className="h-44 w-full">
+        <div className="h-44 w-full min-h-[350px]">
            <Suspense fallback={<div className="h-full bg-gray-50/50 animate-pulse rounded-2xl" />}>
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={350}>
                  <AreaChart data={chartData}>
                     <XAxis dataKey="label" hide />
                     <Tooltip contentStyle={{ borderRadius: '15px', border: 'none', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} />
