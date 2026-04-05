@@ -1,6 +1,6 @@
 import React from 'react';
 import { Section, Text, Container, Link } from '@react-email/components';
-import { BaseLayout } from './BaseLayout';
+import { BaseLayout } from './BaseLayout.js';
 
 interface ContactConfirmationProps {
   firstName: string;

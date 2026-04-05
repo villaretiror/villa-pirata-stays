@@ -8,7 +8,7 @@ import {
   Container,
   Img,
 } from '@react-email/components';
-import { BaseLayout } from './BaseLayout';
+import { BaseLayout } from './BaseLayout.js';
 
 interface ReservationConfirmedProps {
   firstName: string;

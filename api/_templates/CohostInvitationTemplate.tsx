@@ -1,6 +1,6 @@
 import React from 'react';
 import { Section, Text, Link, Container } from '@react-email/components';
-import { BaseLayout } from './BaseLayout';
+import { BaseLayout } from './BaseLayout.js';
 
 interface CohostInvitationProps {
   propertyName: string;
