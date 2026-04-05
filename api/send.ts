@@ -20,11 +20,11 @@ const notifyInviteInlined = async (email: string, property: string) => {
     } catch (e) {}
 };
 
-// Import Templates
-import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate.js';
-import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate.js';
-import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate.js';
-import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate.js';
+// Import Templates (Co-located for Vercel Serverless reliability)
+import { ReservationConfirmedTemplate } from './templates/ReservationConfirmedTemplate';
+import { ContactConfirmationTemplate } from './templates/ContactConfirmationTemplate';
+import { LeadRecoveryTemplate } from './templates/LeadRecoveryTemplate';
+import { CohostInvitationTemplate } from './templates/CohostInvitationTemplate';
 
 // 🛡️ INITIALIZE SECURE SERVER-SIDE SUPABASE
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
