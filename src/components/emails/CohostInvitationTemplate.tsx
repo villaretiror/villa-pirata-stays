@@ -20,6 +20,7 @@ export const CohostInvitationTemplate: React.FC<CohostInvitationProps> = ({
       previewText={`🤝 Invitación de Co-anfitrión para ${propertyName}`}
       logoUrl={logoUrl}
       accentColor={accentColor}
+      propertyName={propertyName}
     >
       <Section style={mainSectionStyle}>
         <Text style={h2Style}>Invitación Especial 🔱</Text>
