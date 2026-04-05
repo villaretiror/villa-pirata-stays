@@ -31,38 +31,15 @@ const SaltyVoiceButton: React.FC = () => {
 
     useEffect(() => {
         const initVapi = () => {
-            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK || (window as any).vapiAI || (window as any).VapiSDK;
-            const VapiConstructor = rawVapi?.default || rawVapi;
-
-            if (VapiConstructor && typeof VapiConstructor === 'function' && !vapiInstance) {
-                console.log('🔱 VAPI ENGINE: Motor Calibrado y Listo para el Salitre.');
-                const instance = new VapiConstructor(PUBLIC_KEY);
+            const rawVapi = (window as any).vapiSDK || (window as any).Vapi || (window as any).vapi;
+            if (rawVapi) {
+                console.log('🔱 VAPI ENGINE: Motor V2 Detectado y Calibrado.');
                 setIsSdkLoaded(true);
-                
-                instance.on('call-start', () => {
-                    setCallStatus('active');
-                    setShowTooltip(true);
-                });
-                instance.on('call-end', () => {
-                    setCallStatus('inactive');
-                    setVolume(0);
-                    setTimeout(() => setShowTooltip(false), 3000);
-                });
-                instance.on('volume-level', (level: number) => {
-                    setVolume(level);
-                });
-                instance.on('error', (err: any) => {
-                    console.error('Vapi Error:', err);
-                    setCallStatus('inactive');
-                    setVolume(0);
-                });
-
-                setVapiInstance(instance);
             }
         };
 
         const timer = setInterval(() => {
-            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
+            const rawVapi = (window as any).vapiSDK || (window as any).Vapi || (window as any).vapi;
             if (rawVapi) {
                 initVapi();
                 clearInterval(timer);
@@ -75,26 +52,58 @@ const SaltyVoiceButton: React.FC = () => {
         };
     }, [vapiInstance]);
 
-    const startVapiCall = async (libInstance: any) => {
+    const startVapiCall = async () => {
         setCallStatus('loading');
         try {
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                alert('Navegador no compatible con voz. Use Chrome o Safari. ⚓');
-                setCallStatus('inactive');
-                return;
+            const rawVapi = (window as any).vapiSDK || (window as any).Vapi || (window as any).vapi;
+            
+            if (!rawVapi) throw new Error('SDK no cargado');
+
+            let instance;
+            // 🔱 V2 PATTERN: run() returns the call instance
+            if (typeof rawVapi.run === 'function') {
+                instance = rawVapi.run({
+                    apiKey: PUBLIC_KEY,
+                    assistant: SALTY_ASSISTANT_ID,
+                    config: {
+                        variableValues: {
+                            propertyId: propertyId || '1081171030449673920',
+                            currentPath: window.location.pathname,
+                            currentUrl: window.location.href
+                        }
+                    }
+                });
+            } else if (typeof rawVapi === 'function') {
+                // FALLBACK V1 PATTERN
+                instance = new (rawVapi as any)(PUBLIC_KEY);
+                await instance.start(SALTY_ASSISTANT_ID, {
+                    assistantOverrides: {
+                        variableValues: {
+                            propertyId: propertyId || '1081171030449673920',
+                            currentPath: window.location.pathname
+                        }
+                    }
+                });
             }
 
-            // 🔱 CONTEXT INJECTION: Tell Salty where we are!
-            await libInstance.start(SALTY_ASSISTANT_ID, {
-                assistantOverrides: {
-                    variableValues: {
-                        propertyId: propertyId || '1081171030449673920',
-                        currentPath: window.location.pathname,
-                        currentUrl: window.location.href
-                    }
-                }
-            });
-            console.log('Salty Voice Context Unified! 🔱');
+            if (instance) {
+                instance.on('call-start', () => {
+                    setCallStatus('active');
+                    setShowTooltip(true);
+                });
+                instance.on('call-end', () => {
+                    setCallStatus('inactive');
+                    setVolume(0);
+                    setTimeout(() => setShowTooltip(false), 3000);
+                });
+                instance.on('volume-level', (level: number) => setVolume(level));
+                instance.on('error', (err: any) => {
+                    console.error('Vapi Error:', err);
+                    setCallStatus('inactive');
+                    setVolume(0);
+                });
+                setVapiInstance(instance);
+            }
         } catch (err: any) {
             console.error('Failed to start call:', err);
             alert(`Error al iniciar llamada: ${err.message || 'Verifique el micro'}. 🎙️`);
@@ -103,23 +112,10 @@ const SaltyVoiceButton: React.FC = () => {
     };
 
     const toggleCall = async () => {
-        let activeInstance = vapiInstance;
-        if (!activeInstance) {
-            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
-            const VapiConstructor = rawVapi?.default || rawVapi;
-            if (VapiConstructor) {
-                activeInstance = new VapiConstructor(PUBLIC_KEY);
-                setVapiInstance(activeInstance);
-            } else {
-                alert('Motores calibrándose. Reintentar. 🔱⚓');
-                return;
-            }
-        }
-
-        if (callStatus === 'active') {
-            activeInstance.stop();
+        if (callStatus === 'active' && vapiInstance) {
+            vapiInstance.stop();
         } else {
-            await startVapiCall(activeInstance);
+            await startVapiCall();
         }
     };
 
