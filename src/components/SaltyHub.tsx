@@ -95,15 +95,19 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
     if (!isVisible) return null;
 
     return (
-        <div className="fixed inset-0 pointer-events-none z-[9999999]" ref={containerRef}>
-            <motion.div
-                drag
-                dragMomentum={false}
-                dragConstraints={containerRef}
-                className="absolute pointer-events-auto cursor-grab active:cursor-grabbing"
-                initial={{ bottom: '10%', right: '5%' }}
-            >
-                <div className="relative group">
+        <motion.div
+            drag
+            dragMomentum={false}
+            className="fixed z-[2147483647] cursor-grab active:cursor-grabbing"
+            style={{ 
+                bottom: '100px', 
+                right: '40px',
+                touchAction: 'none' // Prevent scrolling while dragging on mobile
+            }}
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+        >
+            <div className="relative group">
                     {/* Close Button (The X) */}
                     <motion.button
                         whileHover={{ scale: 1.1 }}
@@ -200,7 +204,6 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                     </div>
                 </div>
             </motion.div>
-        </div>
     );
 };
 
