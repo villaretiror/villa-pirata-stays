@@ -46,9 +46,17 @@ export default async function handler(req: any, res: any) {
     } else {
       try {
         const { data: { user } } = await supabase.auth.getUser(token);
-        if (user && user.email === 'villaretiror@gmail.com') {
-          isAuthorized = true;
-          triggerSource = `manual_host_${user.id}`;
+        if (user) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+
+          if (profile?.role === 'host' || user.email === 'villaretiror@gmail.com') {
+            isAuthorized = true;
+            triggerSource = `manual_host_${user.id}`;
+          }
         }
       } catch (e) {}
     }
@@ -223,11 +231,11 @@ export default async function handler(req: any, res: any) {
 
       case 'cohost_invitation': {
         const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
-        const inviteToken = rest.token || '';
-        const invitePropId = propertyId || '';
+        const inviteToken = rest.token || userData.token || '';
+        const invitePropId = v_propertyId || '';
         // Build a direct invite URL: /login?invite=true&token=TOKEN&property=PROPERTY_ID
         const inviteUrl = `${siteUrl}/login?invite=true${inviteToken ? `&token=${inviteToken}` : ''}${invitePropId ? `&property=${invitePropId}` : ''}`;
-        console.log(`[Cohost Invitation] Sending to: ${customerEmail} | URL: ${inviteUrl}`);
+        console.log(`[Cohost Invitation] Sending to: ${customerEmail} | Prop: ${invitePropId} | URL: ${inviteUrl}`);
         const html = await render(React.createElement(CohostInvitationTemplate, {
           propertyName: p.name,
           logoUrl: p.logo,
@@ -294,7 +302,16 @@ export default async function handler(req: any, res: any) {
       results.push(data);
     }
 
-    return res.status(200).json({ success: true, results });
+    return res.status(200).json({ 
+      success: true, 
+      results,
+      debug: {
+          to: customerEmail,
+          from: fromAddress,
+          source: triggerSource,
+          property: p.name
+      }
+    });
 
   } catch (err: any) {
     console.error("[Email System] Error:", err.message);
