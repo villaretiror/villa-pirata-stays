@@ -276,7 +276,8 @@ const Home: React.FC = () => {
   return (
     <LazyMotion features={domAnimation}>
     <div className="min-h-screen pb-32 relative bg-sand overflow-hidden scroll-smooth">
-      {/* 🔱 SALTY RADAR: Realtime Sync Indicator */}
+      {/* 🔱 SALTY RADAR: Realtime Sync Indicator (SILENCED for Premium Aesthetics) */}
+      {/* 
       <AnimatePresence>
         {isRefreshing && (
           <motion.div
@@ -290,6 +291,7 @@ const Home: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
+      */}
 
       {/* Background Mesh Gradients */}
       <div className="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none z-0 transform-gpu">
