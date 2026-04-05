@@ -31,10 +31,11 @@ const SaltyVoiceButton: React.FC = () => {
 
     useEffect(() => {
         const initVapi = () => {
-            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
+            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK || (window as any).vapiAI || (window as any).VapiSDK;
             const VapiConstructor = rawVapi?.default || rawVapi;
 
             if (VapiConstructor && typeof VapiConstructor === 'function' && !vapiInstance) {
+                console.log('🔱 VAPI ENGINE: Motor Calibrado y Listo para el Salitre.');
                 const instance = new VapiConstructor(PUBLIC_KEY);
                 setIsSdkLoaded(true);
                 
