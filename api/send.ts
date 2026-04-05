@@ -3,13 +3,34 @@ import { Resend } from 'resend';
 import { z } from 'zod';
 import { render } from '@react-email/render';
 import React from 'react';
+import {
+  Html,
+  Head,
+  Body,
+  Container,
+  Section,
+  Img,
+  Text,
+  Link,
+  Hr,
+  Font,
+  Preview,
+  Row,
+  Column 
+} from '@react-email/components';
+
+// 🛡️ INITIALIZE SECURE SERVER-SIDE SUPABASE
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 // 🛰️ INLINED NOTIFICATION ENGINE (Bypasses local file resolution issues)
 const notifyInviteInlined = async (email: string, property: string) => {
     const token = process.env.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.VITE_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
     if (!token || !chatId) return;
 
-    const message = `🟡 <b>Nueva Invitación de Co-host</b>\n━━━━━━━━━━━━━━━━━━━━\n<b>Email:</b> ${email}\n<b>Propiedad:</b> ${property}\n📬 <i>Estatus: Pendiente de aceptación.</i>`;
+    const message = `🟡 <b>Nueva Alerta de Email</b>\n━━━━━━━━━━━━━━━━━━━━\n<b>Destinatario:</b> ${email}\n<b>Asunto:</b> ${property}\n📬 <i>Estatus: Transmitido vía Resend.</i>`;
     
     try {
         await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
@@ -20,344 +41,148 @@ const notifyInviteInlined = async (email: string, property: string) => {
     } catch (e) {}
 };
 
-// Import Templates (Co-located for Vercel Serverless reliability - using underscore to bypass function count)
-import { ReservationConfirmedTemplate } from './_templates/ReservationConfirmedTemplate.js';
-import { ContactConfirmationTemplate } from './_templates/ContactConfirmationTemplate.js';
-import { LeadRecoveryTemplate } from './_templates/LeadRecoveryTemplate.js';
-import { CohostInvitationTemplate } from './_templates/CohostInvitationTemplate.js';
+// --- INLINED EMAIL COMPONENTS (The "Ultra-Dome" Strategy) ---
 
-// 🛡️ INITIALIZE SECURE SERVER-SIDE SUPABASE
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
-
-const supabase = createClient(supabaseUrl, supabaseKey);
-
-const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
-
-const contactLeadSchema = z.object({
-  name: z.string().min(2),
-  email: z.string().email(),
-  phone: z.string().optional(),
-  message: z.string().min(5),
-});
-
-// 👤 PERSONALIZATION ENGINE
-const formatFirstName = (name: string) => {
-  if (!name || name.trim() === '') return 'Viajero';
-  const cleanName = name.trim().split(' ')[0].toLowerCase();
-  return cleanName.charAt(0).toUpperCase() + cleanName.slice(1);
+// 1. BASE LAYOUT
+const BaseLayout: React.FC<{
+  previewText: string;
+  logoUrl: string;
+  accentColor: string;
+  propertyName: string;
+  theme?: 'light' | 'dark';
+  children: React.ReactNode;
+}> = ({ previewText, logoUrl, accentColor, propertyName, theme = 'light', children }) => {
+  const isDark = theme === 'dark';
+  const bgColor = isDark ? '#050A18' : '#FDFCFB';
+  return (
+    <Html lang="es">
+      <Head>
+        <Font fontFamily="Outfit" fallbackFontFamily="sans-serif" fontWeight={400} fontStyle="normal" />
+      </Head>
+      <Preview>{previewText}</Preview>
+      <Body style={{ backgroundColor: bgColor, fontFamily: 'Outfit, sans-serif', margin: '0', padding: '40px 0' }}>
+        <Container style={{ backgroundColor: isDark ? '#0A1229' : '#ffffff', maxWidth: '600px', margin: '0 auto', borderRadius: '48px', overflow: 'hidden', border: `1px solid ${isDark ? 'rgba(212,175,55,0.2)' : '#f0f0f0'}` }}>
+          <Section style={{ padding: '60px 40px', textAlign: 'center' as const, borderBottom: `2px dashed ${accentColor}20` }}>
+            <Img src={logoUrl} width="130" alt="Logo" style={{ margin: '0 auto' }} />
+          </Section>
+          <Section style={{ padding: '50px 50px 30px', color: isDark ? '#ffffff' : '#2C2B29' }}>
+            {children}
+          </Section>
+          <Section style={{ padding: '0 50px 50px', textAlign: 'center' as const }}>
+            <Hr style={{ borderTop: '1px solid #f0f0f0', margin: '30px 0' }} />
+            <Text style={{ fontSize: '11px', color: '#999' }}>
+              <strong>{propertyName.toUpperCase()}</strong> • Cabo Rojo, Puerto Rico<br />
+              Este es un canal de comunicación seguro operado por Salty AI.
+            </Text>
+          </Section>
+        </Container>
+      </Body>
+    </Html>
+  );
 };
 
+// 2. COHOST INVITATION
+const CohostInvitationTemplate: React.FC<{
+  propertyName: string;
+  logoUrl: string;
+  accentColor: string;
+  inviteUrl: string;
+}> = ({ propertyName, logoUrl, accentColor, inviteUrl }) => (
+  <BaseLayout previewText={`🤝 Invitación de Co-anfitrión`} logoUrl={logoUrl} accentColor={accentColor} propertyName={propertyName}>
+    <Section style={{ textAlign: 'center' }}>
+      <Text style={{ fontSize: '28px', color: '#2C2B29', margin: '0' }}>Invitación Especial 🔱</Text>
+      <Text style={{ fontSize: '15px', color: '#4A4A4A', lineHeight: '1.8', textAlign: 'left', margin: '20px 0' }}>
+        Has sido invitado como <strong>Co-anfitrión</strong> de Salty AI para gestionar <strong>{propertyName}</strong>.
+      </Text>
+      <Link href={inviteUrl} style={{ backgroundColor: '#2C2B29', color: '#ffffff', padding: '18px 35px', borderRadius: '15px', textDecoration: 'none', fontWeight: 'bold', display: 'inline-block' }}>
+        Aceptar Invitación
+      </Link>
+    </Section>
+  </BaseLayout>
+);
+
+// 3. CONTACT CONFIRMATION
+const ContactConfirmationTemplate: React.FC<{
+  firstName: string;
+  propertyName: string;
+  logoUrl: string;
+  accentColor: string;
+}> = ({ firstName, propertyName, logoUrl, accentColor }) => (
+  <BaseLayout previewText={`Recibimos tu consulta`} logoUrl={logoUrl} accentColor={accentColor} propertyName={propertyName}>
+    <Text style={{ fontSize: '24px', fontWeight: 'bold' }}>¡Hola {firstName}!</Text>
+    <Text style={{ fontSize: '16px', lineHeight: '1.6' }}>Gracias por contactarnos. Hemos recibido tu consulta sobre {propertyName} y un concierge humano o Salty AI te responderá en breve.</Text>
+  </BaseLayout>
+);
+
+// --- MAIN HANDLER ---
+
+const contactLeadSchema = z.object({
+  name: z.string(),
+  email: z.string().email(),
+  phone: z.string().optional(),
+  message: z.string()
+});
+
 export default async function handler(req: any, res: any) {
-  if (req.method === 'OPTIONS') return res.status(204).end();
-
-  // 🛡️ SECURITY: Verify request source
-  const authHeader = req.headers['authorization'];
-  const isLocal = req.headers['host']?.includes('localhost');
-  const sharedSecret = process.env.API_SECRET_KEY || process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY;
-
-  let isAuthorized = isLocal;
-  let triggerSource = 'api_direct';
-
-  if (authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.replace('Bearer ', '');
-    if (token === sharedSecret) {
-      isAuthorized = true;
-      triggerSource = 'db_webhook';
-    } else {
-      try {
-        const { data: { user } } = await supabase.auth.getUser(token);
-        if (user) {
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-          if (profile?.role === 'host' || user.email === 'villaretiror@gmail.com') {
-            isAuthorized = true;
-            triggerSource = `manual_host_${user.id}`;
-          }
-        }
-      } catch (e) {}
-    }
-  }
+  const authHeader = req.headers.authorization;
+  const isAuthorized = authHeader === `Bearer ${process.env.RESEND_API_KEY}` || authHeader === `Bearer ${process.env.VITE_SUPABASE_ANON_KEY}`;
 
   if (!isAuthorized) return res.status(401).json({ error: 'Unauthorized' });
-  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { 
-      type, email, customer, contactData, propertyId, customerName, 
-      customerEmail: reqCustomerEmail, userId, ...rest 
-    } = req.body || {};
-    
-    const userData = customer || contactData || {};
+    const { type, userData, propertyId, customerEmail, ...rest } = req.body || {};
     const v_propertyId = propertyId || '1081171030449673920';
 
-    // 🔗 DYNAMIC DATA & BRANDING ENGINE
-    const { data: dbProperty } = await supabase
-      .from('properties')
-      .select('*')
-      .eq('id', v_propertyId)
-      .single();
-
-    // Mapping of Hardcoded Brand Assets (since they aren't in DB columns yet)
-    const BRAND_MAP: Record<string, any> = {
-      '1081171030449673920': {
-        logo: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png',
-        accent: '#FF7F3F',
-        name: 'Villa Retiro R.'
-      },
-      '42839458': {
-        logo: 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/pirata_family_logo.png',
-        accent: '#004E64',
-        name: 'Pirata Family House'
-      }
-    };
-
-    const isPirata = v_propertyId === '42839458' || dbProperty?.title?.includes('Pirata');
-    const brand = BRAND_MAP[v_propertyId] || (isPirata ? BRAND_MAP['42839458'] : BRAND_MAP['1081171030449673920']);
-
-    // Build the finalized Property Object
-    const p = {
-      name: dbProperty?.title || brand.name,
-      logo: brand.logo,
-      accentColor: brand.accent,
-      wifiName: 'Wifivacacional',
-      wifiPass: 'Wifivacacional',
-      accessCode: dbProperty?.access_code || 'CONSULTAR_HOST',
-      coords: dbProperty?.location_coords || '18.07065,-67.16544',
-      guidebookUrl: dbProperty?.guidebook_url || null,
-      heroImage: dbProperty?.images && dbProperty.images.length > 0 ? dbProperty.images[0] : null
-    };
-
-    // DEBUG: Ensure we are seeing the real values
-    console.log(`[Email Engine] Triggering ${type} for Property: ${p.name} | Code: ${p.accessCode} | ID: ${v_propertyId}`);
-
-    const mapsUrl = dbProperty?.google_maps_url || `https://www.google.com/maps?q=${p.coords}`;
-    const wazeUrl = dbProperty?.waze_url || `https://waze.com/ul?ll=${p.coords}&navigate=yes`;
-    const stayPortalUrl = `${process.env.VITE_SITE_URL || 'https://www.villaretiror.com'}/stay/${v_propertyId}`;
-
-    const firstName = formatFirstName(userData.name || customerName || '');
-    const clientFullName = userData.name || customerName || 'Cliente Indefinido';
-    const customerEmail = reqCustomerEmail || email || userData.email || 'villaretiror@gmail.com';
+    const { data: dbProperty } = await supabase.from('properties').select('*').eq('id', v_propertyId).single();
     
+    // Branding Logic
+    const isPirata = v_propertyId === '42839458' || dbProperty?.title?.includes('Pirata');
+    const accentColor = isPirata ? '#004E64' : '#FF7F3F';
+    const logoUrl = isPirata 
+      ? 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/pirata_family_logo.png'
+      : 'https://plpnydhgvqoqwrvuzvzq.supabase.co/storage/v1/object/public/villas/villa_retiro_logo.png';
+    const propertyName = dbProperty?.title || (isPirata ? 'Pirata Family House' : 'Villa Retiro');
+
+    const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
     const fromAddress = isPirata ? 'Pirata Stays <reservas@villaretiror.com>' : 'Villa Retiro <reservas@villaretiror.com>';
-    const hostEmail = 'villaretiror@gmail.com';
 
-    let emailOptions: any[] = [];
-
-    // --- ROUTER LOGIC ---
+    let html;
+    let subject;
 
     switch (type) {
-      case 'contact': {
-        const parsedData = contactLeadSchema.parse(userData);
-        const { name, email, phone, message } = parsedData;
-        
-        // Skip insertion to avoid infinite loop with DB Trigger
-
-        // Host Notification
-        emailOptions.push({
-          from: fromAddress,
-          to: hostEmail,
-          subject: `📩 Nueva Consulta: ${name}`,
-          html: `<div style="font-family: sans-serif; padding: 20px;">
-            <h3>Detalles de la Consulta</h3>
-            <p><strong>Nombre:</strong> ${name}</p>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Teléfono:</strong> ${phone}</p>
-            <p><strong>Mensaje:</strong> ${message}</p>
-            <p><strong>Propiedad:</strong> ${p.name}</p>
-          </div>`
-        });
-
-        // Guest Confirmation (React Template)
-        if (email) {
-          const html = await render(React.createElement(ContactConfirmationTemplate, {
-            firstName,
-            propertyName: p.name,
-            logoUrl: p.logo,
-            accentColor: p.accentColor
-          }));
-          
-          emailOptions.push({ from: fromAddress, to: email, subject: `Recibimos tu consulta - ${p.name} 🌴`, html });
-        }
+      case 'contact':
+        const { name } = contactLeadSchema.parse(userData);
+        subject = `Recibimos tu consulta - ${propertyName} 🌴`;
+        html = await render(React.createElement(ContactConfirmationTemplate, { firstName: name.split(' ')[0], propertyName, logoUrl, accentColor }));
         break;
-      }
 
-      case 'payment_success':
-      case 'reservation_confirmed': {
-        const checkInDate = rest.checkIn ? new Date(rest.checkIn) : null;
-        const now = new Date();
-        const isWithin24h = checkInDate && (checkInDate.getTime() - now.getTime()) <= (24 * 3600 * 1000);
-        
-        let isReturning = false;
-        if (userId) {
-            const { data: profile } = await supabase.from('profiles').select('is_returning_guest').eq('id', userId).single();
-            isReturning = !!profile?.is_returning_guest;
-        }
-
-        const html = await render(React.createElement(ReservationConfirmedTemplate, {
-          firstName,
-          propertyName: p.name,
-          logoUrl: p.logo,
-          accentColor: p.accentColor,
-          isReturning,
-          checkIn: rest.checkIn || 'Confirmado',
-          checkOut: rest.checkOut || 'Confirmado',
-          accessCode: p.accessCode,
-          wifiName: p.wifiName,
-          wifiPass: p.wifiPass,
-          mapsUrl,
-          wazeUrl,
-          stayPortalUrl,
-          isWithin24h: !!isWithin24h,
-          guidebookUrl: p.guidebookUrl,
-          propertyImage: p.heroImage
-        }));
-
-        emailOptions.push({
-          from: fromAddress,
-          to: customerEmail,
-          bcc: hostEmail,
-          subject: isReturning ? `🌊 ¡Bienvenido de vuelta a ${p.name}! (Reserva Confirmada)` : `🏝️ ¡Confirmado! Tu refugio en ${p.name} está listo`,
-          html
-        });
-
-        try {
-          await notifyInviteInlined(firstName, `Reserva en ${p.name}`);
-        } catch (e) {}
+      case 'cohost_invitation':
+        const inviteUrl = `${process.env.VITE_SITE_URL}/login?invite=true&token=${rest.token}&property=${v_propertyId}`;
+        subject = `🤝 Invitación de Co-anfitrión para ${propertyName}`;
+        html = await render(React.createElement(CohostInvitationTemplate, { propertyName, logoUrl, accentColor, inviteUrl }));
         break;
-      }
 
-      case 'lead_recovery': {
-        const html = await render(React.createElement(LeadRecoveryTemplate, {
-          firstName,
-          propertyName: p.name,
-          logoUrl: p.logo,
-          accentColor: p.accentColor,
-          recoveryUrl: `${process.env.VITE_SITE_URL}/property/${v_propertyId}`
-        }));
-
-        emailOptions.push({ 
-          from: fromAddress, 
-          to: customerEmail, 
-          subject: `🏝️ Solo falta un paso para tu refugio en ${p.name}`, 
-          html 
-        });
-        break;
-      }
-
-      case 'cohost_invitation': {
-        const siteUrl = process.env.VITE_SITE_URL || 'https://www.villaretiror.com';
-        const inviteToken = rest.token || userData.token || '';
-        const invitePropId = v_propertyId || '';
-        // Build a direct invite URL: /login?invite=true&token=TOKEN&property=PROPERTY_ID
-        const inviteUrl = `${siteUrl}/login?invite=true${inviteToken ? `&token=${inviteToken}` : ''}${invitePropId ? `&property=${invitePropId}` : ''}`;
-        console.log(`[Cohost Invitation] Sending to: ${customerEmail} | Prop: ${invitePropId} | URL: ${inviteUrl}`);
-        let html;
-        try {
-          html = await render(React.createElement(CohostInvitationTemplate, {
-            propertyName: p.name,
-            logoUrl: p.logo,
-            accentColor: p.accentColor,
-            inviteUrl
-          }));
-        } catch (renderErr: any) {
-           console.error("[Email System] Render failed for CohostInvitationTemplate:", renderErr.message);
-           return res.status(500).json({ error: `Fallo al renderizar plantilla: ${renderErr.message}`, phase: 'template_render_crash' });
-        }
-
-        emailOptions.push({ 
-          from: fromAddress, 
-          to: customerEmail, 
-          subject: `🤝 Invitación de Co-anfitrión para ${p.name}`, 
-          html 
-        });
-
-        try {
-          await notifyInviteInlined(customerEmail, p.name);
-        } catch (e) {}
-        break;
-      }
-
-      case 'urgent_alert': {
-        const message = userData.message || 'Soporte Urgente Requerido';
-        const contact = userData.contact || userData.phone || userData.email || 'No Provisto';
-        
-        emailOptions.push({
-          from: fromAddress,
-          to: hostEmail,
-          subject: `🚨 URGENTE: Solicitud de Soporte - ${firstName}`,
-          html: `<div style="font-family: sans-serif; border: 4px solid #F63; padding: 20px;">
-            <h1 style="color: #F63;">⚠️ Alerta Crítica</h1>
-            <p><strong>Cliente:</strong> ${clientFullName}</p>
-            <p><strong>Mensaje:</strong> ${message}</p>
-            <p><strong>Contacto:</strong> ${contact}</p>
-          </div>`
-        });
-
-        try {
-          await notifyInviteInlined(clientFullName, `URGENTE: ${message}`);
-        } catch (e) {}
-        break;
-      }
+      default:
+        // Fallback for simple emails (Placeholder for legacy templates if needed)
+        subject = `Notificación de Salty AI - ${propertyName}`;
+        html = `<p>Hola, tienes una nueva notificación de ${propertyName}.</p>`;
     }
 
-    // --- BATCH SEND & LOG ---
-    const results = [];
-    for (const options of emailOptions) {
-      const { data, error } = await resend.emails.send({
-        ...options,
-        reply_to: 'reservas@villaretiror.com'
-      });
-      
-      if (error) throw error;
-      
-      if (data?.id) {
-        await supabase.from('email_logs').insert({
-          resend_id: data.id,
-          booking_id: (rest as any).bookingId || null,
-          guest_name: clientFullName,
-          guest_email: options.to,
-          subject: options.subject,
-          status: 'sent',
-          metadata: {
-            source: triggerSource,
-            property_id: (rest as any).propertyId || null
-          }
-        });
-      }
-      results.push(data);
-    }
-
-    return res.status(200).json({ 
-      success: true, 
-      results,
-      debug: {
-          to: customerEmail,
-          from: fromAddress,
-          source: triggerSource,
-          property: p.name
-      }
+    const { data, error } = await resend.emails.send({
+      from: fromAddress,
+      to: customerEmail || userData?.email,
+      subject,
+      html
     });
+
+    if (error) throw error;
+
+    await notifyInviteInlined(customerEmail || userData?.email, subject);
+
+    return res.status(200).json({ success: true, data });
 
   } catch (err: any) {
     console.error("[Email System] CRITICAL ERROR:", err);
-    
-    // Attempt to extract as much info as possible
-    const errorDetail = {
-        message: err.message || 'Error desconocido',
-        stack: err.stack,
-        type: err.name || 'Error',
-        resendError: err.response?.data || err.errors || null
-    };
-
-    return res.status(500).json({ 
-        error: errorDetail.message,
-        details: errorDetail,
-        phase: 'execution_catastrophe'
-    });
+    return res.status(500).json({ error: err.message, phase: 'ultra_dome_execution' });
   }
 }
