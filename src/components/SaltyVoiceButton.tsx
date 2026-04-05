@@ -12,13 +12,13 @@ const SaltyVoiceButton: React.FC = () => {
     const [callStatus, setCallStatus] = useState<'inactive' | 'loading' | 'active'>('inactive');
     const [vapiInstance, setVapiInstance] = useState<any>(null);
     const [volume, setVolume] = useState(0);
+    const [isSdkLoaded, setIsSdkLoaded] = useState(false);
     const [propertyId, setPropertyId] = useState<string | null>(null);
     const [showTooltip, setShowTooltip] = useState(false);
 
     // 🔱 DETECT CONTEXT (Property ID from URL)
     useEffect(() => {
         const pathParts = window.location.pathname.split('/');
-        // IDs are either numeric (8+ chars) or UUIDs (36 chars)
         const id = pathParts.find(part => 
             (!isNaN(Number(part)) && part.length >= 8) || 
             (part.length > 30) // UUID check
@@ -30,13 +30,13 @@ const SaltyVoiceButton: React.FC = () => {
     }, [window.location.pathname]);
 
     useEffect(() => {
-        // Intentar inicializar Vapi desde el objeto global
         const initVapi = () => {
             const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
             const VapiConstructor = rawVapi?.default || rawVapi;
 
             if (VapiConstructor && typeof VapiConstructor === 'function' && !vapiInstance) {
                 const instance = new VapiConstructor(PUBLIC_KEY);
+                setIsSdkLoaded(true);
                 
                 instance.on('call-start', () => {
                     setCallStatus('active');
@@ -61,7 +61,8 @@ const SaltyVoiceButton: React.FC = () => {
         };
 
         const timer = setInterval(() => {
-            if ((window as any).Vapi) {
+            const rawVapi = (window as any).Vapi || (window as any).vapi || (window as any).vapiSDK;
+            if (rawVapi) {
                 initVapi();
                 clearInterval(timer);
             }
@@ -143,7 +144,7 @@ const SaltyVoiceButton: React.FC = () => {
                                     <Signal className="w-3.5 h-3.5 text-[#D4AF37]" />
                                 )}
                                 <span className={`${callStatus === 'active' ? 'text-red-400' : 'text-[#D4AF37]'} text-[10px] font-black uppercase tracking-[0.2em]`}>
-                                    {callStatus === 'active' ? 'Conectado con Salty' : 'Concierge de Voz Directo'}
+                                    {callStatus === 'active' ? 'Conectado con Salty' : (isSdkLoaded ? 'Concierge de Voz Directo' : 'Calibrando Motores...')}
                                 </span>
                             </div>
                             
@@ -188,7 +189,7 @@ const SaltyVoiceButton: React.FC = () => {
                     )}
                     
                     {/* Status Pip */}
-                    <div className={`absolute top-0 right-1 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-colors z-20 ${callStatus === 'active' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                    <div className={`absolute top-0 right-1 w-4 h-4 rounded-full border-2 border-white shadow-lg transition-colors z-20 ${callStatus === 'active' ? 'bg-red-500' : (isSdkLoaded ? 'bg-green-500' : 'bg-[#D4AF37] animate-pulse')}`}></div>
                 </button>
             </div>
         </div>

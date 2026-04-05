@@ -32,11 +32,13 @@ jobs:
           echo "$HOME/.vapi/bin" >> $GITHUB_PATH
 
       - name: Secure Vapi Environment Sync
+        shell: bash
         run: |
-          export PATH="$HOME/.vapi/bin:$PATH"
           if [ -n "${{ secrets.VAPI_API_KEY }}" ]; then
-            vapi login --token "${{ secrets.VAPI_API_KEY }}" || echo "Login failed but proceeding..."
+            vapi login --token "${{ secrets.VAPI_API_KEY }}" || echo "Vapi Login check failed: Skipping sync but continuing build..."
+            vapi init --skip-install || echo "Vapi init skipped"
+          else
+            echo "VAPI_API_KEY not found: Proceeding with core app deployment only."
           fi
-          vapi init --skip-install || echo "Vapi skip-install ignored in CI"
         env:
           VAPI_API_KEY: ${{ secrets.VAPI_API_KEY }}
