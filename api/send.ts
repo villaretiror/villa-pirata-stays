@@ -1,15 +1,21 @@
+import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
-import { supabase } from '../src/lib/supabase.js';
-import { NotificationService } from '../src/services/NotificationService.js';
 import { z } from 'zod';
 import { render } from '@react-email/render';
 import React from 'react';
+import { NotificationService } from '../src/services/NotificationService.js';
 
 // Import Templates
 import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate.js';
 import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate.js';
 import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate.js';
 import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate.js';
+
+// 🛡️ INITIALIZE SECURE SERVER-SIDE SUPABASE
+const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const resend = new Resend(process.env.RESEND_API_KEY || process.env.VITE_RESEND_API_KEY);
 
@@ -314,7 +320,20 @@ export default async function handler(req: any, res: any) {
     });
 
   } catch (err: any) {
-    console.error("[Email System] Error:", err.message);
-    return res.status(500).json({ error: err.message });
+    console.error("[Email System] CRITICAL ERROR:", err);
+    
+    // Attempt to extract as much info as possible
+    const errorDetail = {
+        message: err.message || 'Error desconocido',
+        stack: err.stack,
+        type: err.name || 'Error',
+        resendError: err.response?.data || err.errors || null
+    };
+
+    return res.status(500).json({ 
+        error: errorDetail.message,
+        details: errorDetail,
+        phase: 'execution_catastrophe'
+    });
   }
 }
