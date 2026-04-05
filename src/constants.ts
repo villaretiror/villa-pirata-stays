@@ -1,6 +1,8 @@
 import { Property, LocalGuideCategory } from './types';
 
 export const HOST_PHONE = "17873560895";
+export const VAPI_PUBLIC_KEY = "816607fa-e7f9-4fdf-879c-f00a5d1c8b1c";
+export const SALTY_ASSISTANT_ID = "280fb186-f436-4b9b-ac30-48badafd3a0d";
 
 // Origen: Sector Samán, F 11 C. 5, Cabo Rojo, 00622
 // Google Maps origin param: 18.0636,-67.1569

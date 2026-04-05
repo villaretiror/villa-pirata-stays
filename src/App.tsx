@@ -33,6 +33,7 @@ import { supabase } from './lib/SupabaseService';
 import SaltyVoiceButton from './components/SaltyVoiceButton';
 import CustomCursor from './components/CustomCursor';
 import CookieConsent from './components/CookieConsent';
+import SaltyHub from './components/SaltyHub';
 
 // ⏳ Shell Loading Component for Suspense (Elite Branding)
 const PageLoader = () => (
@@ -159,9 +160,7 @@ const App: React.FC = () => {
         </motion.main>
       </AnimatePresence>
 
-      {showWhatsApp && <SaltyVoiceButton />}
-      {showWhatsApp && <FloatingWhatsApp propertyTitle={propertyTitle} />}
-      {showWhatsApp && <SaltyToast propertyId={currentProperty?.id} propertyTitle={propertyTitle} amenities={currentProperty?.amenities} />}
+      <SaltyHub propertyId={currentProperty?.id} propertyTitle={propertyTitle} />
       <Footer />
       {showNavbar && <Navbar />}
       <CustomCursor />
