@@ -3,13 +3,13 @@ import { Resend } from 'resend';
 import { z } from 'zod';
 import { render } from '@react-email/render';
 import React from 'react';
-import { NotificationService } from '../src/services/NotificationService.js';
+import { NotificationService } from '../src/services/NotificationService';
 
 // Import Templates
-import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate.js';
-import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate.js';
-import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate.js';
-import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate.js';
+import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate';
+import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate';
+import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate';
+import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate';
 
 // 🛡️ INITIALIZE SECURE SERVER-SIDE SUPABASE
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';

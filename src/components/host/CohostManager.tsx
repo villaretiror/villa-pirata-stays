@@ -149,11 +149,13 @@ export const CohostManager: React.FC<CohostManagerProps> = ({
 
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({ error: 'Error desconocido' }));
+        console.error("❌ API CRASH DETAILS:", errorData);
         throw new Error(`${errorData.error || `HTTP ${res.status}`}`);
       }
       onShowToast(`✅ Invitación reenviada a ${ch.email}`);
     } catch (e: any) {
       onShowToast(`❌ Error al enviar: ${e.message}`);
+      console.error("[Resend Error]", e);
     } finally {
       setSendingResend(null);
     }
