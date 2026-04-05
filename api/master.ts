@@ -50,16 +50,6 @@ export default async function handler(req: any, res: any) {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
         const { action, task } = req.query;
 
-        /** 
-         * 🔱 DYNAMIC CONCIERGE RESOLUTION
-         * Fetch all properties to avoid hardcoding titles.
-         */
-        const { data: properties, error: propertiesError } = await supabase.from('properties').select('id, title, access_code, wifi_name, wifi_pass');
-        if (propertiesError) throw new Error(`Failed to fetch properties: ${propertiesError.message}`);
-
-        const propertyMap: Record<string, any> = {};
-        (properties || []).forEach(p => propertyMap[String(p.id)] = p);
-
         if (req.method === 'POST' && action === 'notify') {
             const { type, guestName, property, checkIn, checkOut, phone, proofUrl } = req.body;
             try {
@@ -71,6 +61,19 @@ export default async function handler(req: any, res: any) {
             } catch (error: any) {
                 return res.status(500).json({ error: error.message });
             }
+        }
+
+        // --- 🔱 FAST-PATH: System Health Check (Instant Response) ---
+        if (task === 'health') {
+            const results_health: any = { status: 'healthy', timestamp: new Date().toISOString() };
+            try {
+                const dbStart = Date.now();
+                const { error: dbError } = await supabase.from('properties').select('id').limit(1);
+                results_health.database = { status: dbError ? 'error' : 'healthy', latency: `${Date.now() - dbStart}ms` };
+            } catch (e) {
+                results_health.database = { status: 'error' };
+            }
+            return res.status(200).json(results_health);
         }
 
         if (req.method === 'GET' || (req.method === 'POST' && task)) {
@@ -92,7 +95,6 @@ export default async function handler(req: any, res: any) {
                 } catch (err: any) {
                     console.error(`[Cron Task Error] ${name}:`, err.message);
                     results.summary[name] = { status: 'error', error: err.message };
-                    
                     try {
                         await supabase.from('cron_heartbeats').insert({
                             task_name: name,
@@ -100,40 +102,19 @@ export default async function handler(req: any, res: any) {
                             duration_ms: Date.now() - taskStart,
                             error_message: err.message
                         });
-                    } catch (e) {
-                        console.error('[Cron Heartbeat Logging Failed]:', e);
-                    }
-                    
-                    if (name === 'sync' || name === 'automation') {
-                        // 🛡️ HEARTBEAT REDLINE: Check if this is the second consecutive failure
-                        // Columns in cron_heartbeats: id, timestamp, task_name, status, duration_ms, details, error_message
-                        const { data: recentFailures } = await supabase
-                            .from('cron_heartbeats')
-                            .select('status')
-                            .eq('task_name', name)
-                            .order('timestamp', { ascending: false }) // 🔱 FIXED: timestamp instead of created_at
-                            .limit(2);
-                        
-                        const isConsecutive = recentFailures && recentFailures.length >= 2 && recentFailures.every(h => h.status === 'error');
-                        
-                        if (isConsecutive) {
-                            await NotificationService.sendTelegramAlert(
-                                `🚨 <b>CRITICAL HEARTBEAT FAILURE: ${name.toUpperCase()}</b>\n` +
-                                `━━━━━━━━━━━━━━━━━━━━\n` +
-                                `⚠️ <b>Estatus:</b> Segundo fallo consecutivo (30 min sin pulso).\n` +
-                                `❌ <b>Error:</b> <code>${err.message}</code>\n\n` +
-                                `🔱 <i>Acción: Intervención manual requerida de inmediato.</i>`, 
-                                undefined, false
-                            );
-                        } else {
-                            console.warn(`[Cron Warning] First failure for ${name}. Silent mode activated.`);
-                        }
-                    }
+                    } catch (e) {}
+                    return null;
                 }
             };
 
-            // --- 🔱 SENTINEL EXECUTION PIPELINE ---
+            // --- 🔱 SENTINEL EXECUTION PIPELINE (Managed Tasks) ---
             const taskPromises = [];
+            
+            // Only fetch properties if we're actually going to run logic tasks
+            const { data: properties, error: propertiesError } = await supabase.from('properties').select('id, title, access_code, wifi_name, wifi_pass');
+            if (propertiesError) throw new Error(`Failed to fetch properties: ${propertiesError.message}`);
+            const propertyMap: Record<string, any> = {};
+            (properties || []).forEach(p => propertyMap[String(p.id)] = p);
 
             // A. iCal Sync (Airbnb Sovereignty)
             if (task === 'sync' || task === 'all' || !task) {
