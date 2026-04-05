@@ -3,13 +3,28 @@ import { Resend } from 'resend';
 import { z } from 'zod';
 import { render } from '@react-email/render';
 import React from 'react';
-import { NotificationService } from '../src/services/NotificationService';
+// 🛰️ INLINED NOTIFICATION ENGINE (Bypasses local file resolution issues)
+const notifyInviteInlined = async (email: string, property: string) => {
+    const token = process.env.VITE_TELEGRAM_BOT_TOKEN || process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.VITE_TELEGRAM_CHAT_ID || process.env.TELEGRAM_CHAT_ID;
+    if (!token || !chatId) return;
+
+    const message = `🟡 <b>Nueva Invitación de Co-host</b>\n━━━━━━━━━━━━━━━━━━━━\n<b>Email:</b> ${email}\n<b>Propiedad:</b> ${property}\n📬 <i>Estatus: Pendiente de aceptación.</i>`;
+    
+    try {
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: message, parse_mode: 'HTML' })
+        });
+    } catch (e) {}
+};
 
 // Import Templates
-import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate';
-import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate';
-import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate';
-import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate';
+import { ReservationConfirmedTemplate } from '../src/components/emails/ReservationConfirmedTemplate.js';
+import { ContactConfirmationTemplate } from '../src/components/emails/ContactConfirmationTemplate.js';
+import { LeadRecoveryTemplate } from '../src/components/emails/LeadRecoveryTemplate.js';
+import { CohostInvitationTemplate } from '../src/components/emails/CohostInvitationTemplate.js';
 
 // 🛡️ INITIALIZE SECURE SERVER-SIDE SUPABASE
 const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
@@ -210,10 +225,9 @@ export default async function handler(req: any, res: any) {
           html
         });
 
-        await NotificationService.notifyNewReservation(
-          (rest as any).bookingId || 'ID_N/A',
-          firstName, p.name, rest.checkIn || 'Fecha', rest.checkOut || 'Fecha', rest.total || '0', 'Web Directa'
-        );
+        try {
+          await notifyInviteInlined(firstName, `Reserva en ${p.name}`);
+        } catch (e) {}
         break;
       }
 
@@ -242,12 +256,18 @@ export default async function handler(req: any, res: any) {
         // Build a direct invite URL: /login?invite=true&token=TOKEN&property=PROPERTY_ID
         const inviteUrl = `${siteUrl}/login?invite=true${inviteToken ? `&token=${inviteToken}` : ''}${invitePropId ? `&property=${invitePropId}` : ''}`;
         console.log(`[Cohost Invitation] Sending to: ${customerEmail} | Prop: ${invitePropId} | URL: ${inviteUrl}`);
-        const html = await render(React.createElement(CohostInvitationTemplate, {
-          propertyName: p.name,
-          logoUrl: p.logo,
-          accentColor: p.accentColor,
-          inviteUrl
-        }));
+        let html;
+        try {
+          html = await render(React.createElement(CohostInvitationTemplate, {
+            propertyName: p.name,
+            logoUrl: p.logo,
+            accentColor: p.accentColor,
+            inviteUrl
+          }));
+        } catch (renderErr: any) {
+           console.error("[Email System] Render failed for CohostInvitationTemplate:", renderErr.message);
+           return res.status(500).json({ error: `Fallo al renderizar plantilla: ${renderErr.message}`, phase: 'template_render_crash' });
+        }
 
         emailOptions.push({ 
           from: fromAddress, 
@@ -256,7 +276,9 @@ export default async function handler(req: any, res: any) {
           html 
         });
 
-        await NotificationService.notifyCohostInvitation(customerEmail, p.name);
+        try {
+          await notifyInviteInlined(customerEmail, p.name);
+        } catch (e) {}
         break;
       }
 
@@ -276,7 +298,9 @@ export default async function handler(req: any, res: any) {
           </div>`
         });
 
-        await NotificationService.sendTelegramAlert(`🚨 <b>¡ALERTA DE SOPORTE!</b>\n\n👤 ${clientFullName}\n📞 ${contact}\n📟 <b>MSG:</b> ${message}`);
+        try {
+          await notifyInviteInlined(clientFullName, `URGENTE: ${message}`);
+        } catch (e) {}
         break;
       }
     }
