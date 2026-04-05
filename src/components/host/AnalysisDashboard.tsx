@@ -224,9 +224,9 @@ export const AnalysisDashboard: React.FC<AnalysisDashboardProps> = ({
             </div>
           </div>
 
-          <div className="h-72 w-full min-h-[300px]">
-            <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-gray-300">Inyectando Data Geográfica...</div>}>
-              <ResponsiveContainer width="100%" height="100%" minHeight={300}>
+          <div className="h-72 w-full min-h-[350px]" style={{ minWidth: 0, minHeight: '350px' }}>
+            <Suspense fallback={<div className="h-full w-full bg-gray-50/50 animate-pulse rounded-3xl flex items-center justify-center text-[10px] font-black uppercase tracking-widest text-gray-300" style={{ minHeight: '350px' }}>Inyectando Data Geográfica...</div>}>
+              <ResponsiveContainer width="100%" height="100%" minHeight={350}>
                 <AreaChart data={stats}>
                   <defs>
                     <linearGradient id="colorProfit" x1="0" y1="0" x2="0" y2="1">

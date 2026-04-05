@@ -215,8 +215,8 @@ const HostDashboard: React.FC = () => {
       {/* Dynamic Mini-Chart */}
       <div className="bg-white p-8 rounded-[2.5rem] border border-gray-100 shadow-soft" style={{ minWidth: 0 }}>
         <h3 className="text-[10px] font-black uppercase tracking-[0.4em] mb-8 text-gray-300">Desempeño Visual (6M)</h3>
-        <div className="h-44 w-full min-h-[350px]" style={{ minWidth: 0 }}>
-           <Suspense fallback={<div className="h-full bg-gray-50/50 animate-pulse rounded-2xl" />}>
+        <div className="h-44 w-full min-h-[350px]" style={{ minWidth: 0, minHeight: '350px' }}>
+           <Suspense fallback={<div className="h-full bg-gray-50/50 animate-pulse rounded-2xl" style={{ minHeight: '350px' }} />}>
               <ResponsiveContainer width="100%" height="100%" minHeight={350}>
                  <AreaChart data={chartData}>
                     <XAxis dataKey="label" hide />
