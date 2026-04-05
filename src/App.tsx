@@ -24,13 +24,10 @@ const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
 
 // Static Components (Keep for fast initial UI)
 import Navbar from './components/Navbar';
-import FloatingWhatsApp from './components/FloatingWhatsApp';
-import SaltyToast from './components/SaltyToast';
 import Footer from './components/Footer';
 import ProtectedRoute from './components/ProtectedRoute';
 import { useProperty } from './contexts/PropertyContext';
 import { supabase } from './lib/SupabaseService';
-import SaltyVoiceButton from './components/SaltyVoiceButton';
 import CustomCursor from './components/CustomCursor';
 import CookieConsent from './components/CookieConsent';
 import SaltyHub from './components/SaltyHub';
