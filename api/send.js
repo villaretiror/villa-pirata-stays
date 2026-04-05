@@ -130,7 +130,10 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { type, userData, propertyId, customerEmail, ...rest } = req.body || {};
+    const body = req.body || {};
+    const { type, userData, propertyId, ...rest } = body;
+    const customerEmail = body.customerEmail || body.email || userData?.email || rest.email;
+    const customerName = body.customerName || body.name || userData?.name || rest.customerName || rest.name;
     const v_propertyId = propertyId || '1081171030449673920';
 
     const { data: dbProperty } = await supabase.from('properties').select('*').eq('id', v_propertyId).single();
@@ -151,9 +154,9 @@ export default async function handler(req, res) {
 
     switch (type) {
       case 'contact':
-        const { name } = contactLeadSchema.parse(userData);
+        const firstName = (customerName || 'Huésped').split(' ')[0];
         subject = `Recibimos tu consulta - ${propertyName} 🌴`;
-        html = await render(React.createElement(ContactConfirmationTemplate, { firstName: name.split(' ')[0], propertyName, logoUrl, accentColor }));
+        html = await render(React.createElement(ContactConfirmationTemplate, { firstName, propertyName, logoUrl, accentColor }));
         break;
 
       case 'cohost_invitation':
@@ -169,7 +172,7 @@ export default async function handler(req, res) {
 
     const { data, error } = await resend.emails.send({
       from: fromAddress,
-      to: customerEmail || userData?.email,
+      to: customerEmail,
       subject,
       html
     });

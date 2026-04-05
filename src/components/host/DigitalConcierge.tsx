@@ -89,7 +89,7 @@ export const DigitalConcierge: React.FC = () => {
         },
         body: JSON.stringify({
           type: testForm.type,
-          email: testForm.email,
+          customerEmail: testForm.email,
           customerName: testForm.name,
           propertyId: testForm.propertyId
         })
