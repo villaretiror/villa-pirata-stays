@@ -143,9 +143,16 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                     URL.revokeObjectURL(url);
                 };
             } else {
-                const errData = await response.json().catch(() => ({ error: "Unknown Engine Failure" }));
-                console.error("🔱 RADAR: TTS Engine Failure", errData);
-                setIsTalking(false);
+                const errData = await response.json().catch(() => ({ error: "Quota/API Failure" }));
+                console.warn("🔱 RADAR: OpenAI TTS Failed. Launching Vocal Lifeboat... 🚣‍♂️", errData);
+                
+                // 🚣‍♂️ VOCAL LIFEBOAT (Web Speech API)
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'es-ES';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.0;
+                utterance.onend = () => setIsTalking(false);
+                window.speechSynthesis.speak(utterance);
             }
         } catch (err: any) {
             console.error("🔱 RADAR: Speech Error", err.message);
