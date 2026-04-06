@@ -109,27 +109,24 @@ export default async function handler(req: any, res: any) {
 
         console.log(`[🔱 TTS Dispatcher]: Elite Engine -> G:${!!googleKey} P:${!!projectId} O:${!!openaiKey}`);
 
-        // 🔱 PRIORITY 1: GEMINI-TTS (Multimodal Studio Engine)
+        // 🔱 PRIORITY 1: GEMINI-TTS (Stable Studio Engine)
         if (googleKey) {
           let retryCount = 0;
           const maxRetries = 1;
 
           while (retryCount <= maxRetries) {
             try {
-              console.log(`[🔱 TTS Radar]: Launching Gemini-TTS (Attempt ${retryCount + 1})...`);
-              const googleTtsUrl = `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${googleKey}`;
+              console.log(`[🔱 TTS Radar]: Launching Gemini-TTS (Stable Channel, Attempt ${retryCount + 1})...`);
+              // 🎙️ STABLE ENDPOINT: v1 instead of v1beta1 to bypass preview blocks
+              const googleTtsUrl = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleKey}`;
               const gResponse = await fetch(googleTtsUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                  input: { 
-                    text,
-                    prompt: "Dilo con un tono de concierge de lujo, pausado, extremadamente profesional y sofisticado. Como un anfitrión de élite en una villa del Caribe."
-                  },
+                  input: { text },
                   voice: { 
                     languageCode: "es-ES", 
-                    name: "es-ES-Studio-F", 
-                    model_name: "gemini-2.1-f-tts-studio" 
+                    name: "es-ES-Studio-F"
                   },
                   audioConfig: { audioEncoding: "MP3" }
                 })
@@ -140,7 +137,7 @@ export default async function handler(req: any, res: any) {
                 const buffer = Buffer.from(gData.audioContent, 'base64');
                 res.setHeader('Content-Type', 'audio/mpeg');
                 res.setHeader('Cache-Control', 'public, max-age=3600');
-                console.log(`[🔱 TTS Success]: Gemini-TTS Delivered. ✅`);
+                console.log(`[🔱 TTS Success]: Stable Gemini-TTS Delivered. ✅`);
                 return res.send(buffer);
               }
 
@@ -149,13 +146,13 @@ export default async function handler(req: any, res: any) {
 
               // 🛡️ REBOUNCE: If API is just enabled but not ready, wait and retry once.
               if ((gMsg.includes('not been used') || gMsg.includes('disabled')) && retryCount < maxRetries) {
-                console.log(`[🔱 TTS Propagation]: Waiting for Google API to wake up... (2s)`);
+                console.log(`[🔱 TTS Propagation]: Waiting for Google API Stable... (2s)`);
                 await new Promise(r => setTimeout(r, 2000));
                 retryCount++;
                 continue;
               }
 
-              console.warn(`[🔱 TTS Warning]: Gemini-TTS blocked: ${gMsg}`);
+              console.warn(`[🔱 TTS Blocked]: Gemini-TTS Stable failed: ${gMsg}`);
               break; // Exit retry loop on other errors
             } catch (gErr) {
               console.error(`[🔱 TTS Error]: Gemini-TTS fatal failure:`, gErr);
