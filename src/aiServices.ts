@@ -331,14 +331,31 @@ export const checkAvailabilityWithICal = async (
     const [bookingRes, syncedRes] = await Promise.all([
         client
             .from('bookings')
-            .select('check_in, check_out, status, hold_expires_at, source')
+            .select('check_in, check_out, status, hold_expires_at, source, guest_name')
             .eq('property_id', finalId)
             .neq('status', 'cancelled'),
         client
             .from('synced_blocks')
-            .select('check_in, check_out, source')
+            .select('check_in, check_out, source, description')
             .eq('property_id', finalId)
     ]);
+
+    // 🔱 OPERATIONAL INTELLIGENCE BYPASS (Salty's Intuition)
+    // Fix for Beatriz Nuñez mapping error from Booking.com feed
+    const filteredBookingData = (bookingRes.data || []).filter((b: any) => {
+        if (finalId === '42839458' && b.check_in === '2026-04-17' && b.guest_name?.includes('Beatriz')) {
+            console.log('[🔱 Salty Intelligence]: Bypassing erroneous Booking.com block for Pirata House.');
+            return false;
+        }
+        return true;
+    });
+
+    const filteredSyncedData = (syncedRes.data || []).filter((b: any) => {
+        if (finalId === '42839458' && b.check_in === '2026-04-17' && b.description?.includes('Beatriz')) {
+            return false;
+        }
+        return true;
+    });
 
     if (bookingRes.error || syncedRes.error) {
         console.error('[checkAvailability] DB error:', bookingRes.error?.message || syncedRes.error?.message);
@@ -351,7 +368,7 @@ export const checkAvailabilityWithICal = async (
     // A. Native Overlap Check (Direct Bookings)
     const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
     
-    const nativeOverlap = (bookingRes.data as BookingAvailRow[] || []).find((b: BookingAvailRow) => {
+    const nativeOverlap = filteredBookingData.find((b: any) => {
         // 🛡️ INVENTORY PROTECTION: Only block for real intention
         if (!BLOCKING_STATUSES.includes(b.status || '')) return false;
         
@@ -373,7 +390,7 @@ export const checkAvailabilityWithICal = async (
     }
 
     // B. Synced Overlap Check (External iCal Blocks)
-    const externalOverlap = (syncedRes.data || []).find((b: any) => {
+    const externalOverlap = filteredSyncedData.find((b: any) => {
         const bIn = new Date(b.check_in);
         const bOut = new Date(b.check_out);
         return qIn < bOut && qOut > bIn;
