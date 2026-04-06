@@ -236,8 +236,23 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
 
             const recorder = new MediaRecorder(stream, { mimeType });
             const chunks: Blob[] = [];
-            recorder.ondataavailable = (e) => chunks.push(e.data);
+            // 🔱 HIGH-FIDELITY CHUNK ENGINE
+            recorder.ondataavailable = (e) => {
+                if (e.data && e.data.size > 0) {
+                    chunks.push(e.data);
+                    console.log(`🔱 SALTY RADAR: Captured chunk of ${e.data.size} bytes`);
+                }
+            };
+
             recorder.onstop = () => {
+                const totalSize = chunks.reduce((acc, c) => acc + c.size, 0);
+                console.log(`🔱 SALTY RADAR: Recording stopped. Total size: ${totalSize} bytes`);
+                
+                if (totalSize === 0) {
+                    console.error("🔱 SALTY RADAR CRITICAL: Empty recording detected!");
+                    return;
+                }
+
                 const audioBlob = new Blob(chunks, { type: mimeType });
                 const url = URL.createObjectURL(audioBlob);
                 setRecordedAudioUrl(url);
@@ -245,7 +260,9 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 setIsRecording(false);
                 stream.getTracks().forEach(track => track.stop());
             };
-            recorder.start();
+
+            // 🔱 ACTIVATE PRESSURE CAPTURE (1s intervals to satisfy Safari)
+            recorder.start(1000);
             setMediaRecorder(recorder);
             setIsRecording(true);
         } catch (err) {
