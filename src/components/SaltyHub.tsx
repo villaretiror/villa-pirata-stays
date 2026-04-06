@@ -132,7 +132,11 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 const url = URL.createObjectURL(blob);
                 const audio = new Audio(url);
                 saltyAudioRef.current = audio;
-                await audio.play();
+                try {
+                    await audio.play();
+                } catch (playErr) {
+                    console.error("Salty Voice failed to play:", playErr);
+                }
                 audio.onended = () => {
                     setIsTalking(false);
                     URL.revokeObjectURL(url);
@@ -394,15 +398,41 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                                 {recordedAudioUrl && (
                                     <div className="bg-secondary p-2 rounded-2xl flex items-center justify-between shadow-lg">
                                         <div className="flex items-center gap-2">
-                                            <button onClick={() => audioPreviewRef.current?.play()} className="w-8 h-8 bg-primary text-secondary rounded-full flex items-center justify-center">
+                                            <button 
+                                                onClick={async () => {
+                                                    if (audioPreviewRef.current) {
+                                                        try {
+                                                            audioPreviewRef.current.load();
+                                                            await audioPreviewRef.current.play();
+                                                        } catch (e) {
+                                                            console.error("Audio playback error:", e);
+                                                        }
+                                                    }
+                                                }} 
+                                                className="w-8 h-8 bg-primary text-secondary rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
+                                            >
                                                 <Play size={14} fill="currentColor" />
                                             </button>
                                             <span className="text-[10px] text-white/80 font-mono">{formatTime(recordingTime)}</span>
-                                            <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" />
+                                            <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" preload="auto" />
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={() => { setRecordedAudioUrl(null); setRecordedAudioBlob(null); }} className="p-1.5 text-red-400"><Trash2 size={14} /></button>
-                                            <button onClick={sendRecordedAudio} className="px-3 py-1 bg-primary text-secondary rounded-lg text-[10px] font-black uppercase">Enviar 📤</button>
+                                            <button 
+                                                onClick={() => { 
+                                                    setRecordedAudioUrl(null); 
+                                                    setRecordedAudioBlob(null); 
+                                                }} 
+                                                className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                            <button 
+                                                onClick={sendRecordedAudio} 
+                                                disabled={isTyping}
+                                                className="px-3 py-1 bg-primary text-secondary rounded-lg text-[10px] font-black uppercase hover:opacity-90 disabled:opacity-50"
+                                            >
+                                                {isTyping ? 'Enviando...' : 'Enviar 📤'}
+                                            </button>
                                         </div>
                                     </div>
                                 )}
