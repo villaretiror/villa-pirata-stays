@@ -111,53 +111,68 @@ export default async function handler(req: any, res: any) {
 
         // 🔱 PRIORITY 1: GEMINI-TTS (Multimodal Studio Engine)
         if (googleKey) {
-          try {
-            console.log(`[🔱 TTS Radar]: Launching Gemini-TTS (Kore Studio)...`);
-            const googleTtsUrl = `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${googleKey}`;
-            const gResponse = await fetch(googleTtsUrl, {
-              method: 'POST',
-              headers: { 
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify({
-                input: { 
-                  text,
-                  prompt: "Dilo con un tono de concierge de lujo, pausado, extremadamente profesional y sofisticado. Como un anfitrión de élite en una villa del Caribe."
-                },
-                voice: { 
-                  languageCode: "es-ES", 
-                  name: "es-ES-Studio-F", 
-                  model_name: "gemini-2.1-f-tts-studio" 
-                },
-                audioConfig: { audioEncoding: "MP3" }
-              })
-            });
+          let retryCount = 0;
+          const maxRetries = 1;
 
-            if (gResponse.ok) {
-              const gData = await gResponse.json();
-              const buffer = Buffer.from(gData.audioContent, 'base64');
-              res.setHeader('Content-Type', 'audio/mpeg');
-              res.setHeader('Cache-Control', 'public, max-age=3600');
-              return res.send(buffer);
+          while (retryCount <= maxRetries) {
+            try {
+              console.log(`[🔱 TTS Radar]: Launching Gemini-TTS (Attempt ${retryCount + 1})...`);
+              const googleTtsUrl = `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${googleKey}`;
+              const gResponse = await fetch(googleTtsUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  input: { 
+                    text,
+                    prompt: "Dilo con un tono de concierge de lujo, pausado, extremadamente profesional y sofisticado. Como un anfitrión de élite en una villa del Caribe."
+                  },
+                  voice: { 
+                    languageCode: "es-ES", 
+                    name: "es-ES-Studio-F", 
+                    model_name: "gemini-2.1-f-tts-studio" 
+                  },
+                  audioConfig: { audioEncoding: "MP3" }
+                })
+              });
+
+              if (gResponse.ok) {
+                const gData = await gResponse.json();
+                const buffer = Buffer.from(gData.audioContent, 'base64');
+                res.setHeader('Content-Type', 'audio/mpeg');
+                res.setHeader('Cache-Control', 'public, max-age=3600');
+                console.log(`[🔱 TTS Success]: Gemini-TTS Delivered. ✅`);
+                return res.send(buffer);
+              }
+
+              const gErrData = await gResponse.json();
+              const gMsg = gErrData.error?.message || "";
+
+              // 🛡️ REBOUNCE: If API is just enabled but not ready, wait and retry once.
+              if ((gMsg.includes('not been used') || gMsg.includes('disabled')) && retryCount < maxRetries) {
+                console.log(`[🔱 TTS Propagation]: Waiting for Google API to wake up... (2s)`);
+                await new Promise(r => setTimeout(r, 2000));
+                retryCount++;
+                continue;
+              }
+
+              console.warn(`[🔱 TTS Warning]: Gemini-TTS blocked: ${gMsg}`);
+              break; // Exit retry loop on other errors
+            } catch (gErr) {
+              console.error(`[🔱 TTS Error]: Gemini-TTS fatal failure:`, gErr);
+              break;
             }
-            const gErrData = await gResponse.json();
-            console.warn(`[🔱 TTS Warning]: Gemini-TTS blocked. Details:`, gErrData.error?.message || "Check Project Permissions");
-          } catch (gErr) {
-            console.error(`[🔱 TTS Error]: Gemini-TTS fatal failure:`, gErr);
           }
         }
 
-        // 🔱 PRIORITY 2: OPENAI TTS (Fallback)
+        // 🔱 PRIORITY 2: OPENAI TTS (Silent Reserve)
         if (openaiKey) {
           try {
-            console.log(`[🔱 TTS Radar]: Falling back to OpenAI Engine...`);
             const mp3 = await openai.audio.speech.create({ model: "tts-1", voice: "onyx", input: text });
             const buffer = Buffer.from(await mp3.arrayBuffer());
             res.setHeader('Content-Type', 'audio/mpeg');
-            res.setHeader('Cache-Control', 'public, max-age=3600');
             return res.send(buffer);
           } catch (oErr: any) {
-            console.error(`[🔱 TTS FAIL]: OpenAI Engine Error:`, oErr.message);
+            // Silent failure for fallback - we only care if ALL fail
           }
         }
 
