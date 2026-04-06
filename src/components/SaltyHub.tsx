@@ -109,13 +109,19 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         }
     };
 
-    // 🔱 TEXT TO SPEECH (TTS)
+    // 🔱 VOCAL CONTROL CENTER
+    const stopVoice = useCallback(() => {
+        if (saltyAudioRef.current) {
+            saltyAudioRef.current.pause();
+            saltyAudioRef.current.currentTime = 0;
+        }
+        window.speechSynthesis.cancel();
+        setIsTalking(false);
+    }, []);
+
     const speakSalty = async (text: string) => {
         try {
-            if (saltyAudioRef.current) {
-                saltyAudioRef.current.pause();
-                saltyAudioRef.current.currentTime = 0;
-            }
+            stopVoice(); // 🔱 CLEAN SLATE
             setIsTalking(true);
 
             const cleanText = text
@@ -379,11 +385,25 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                                     </div>
                                     <div>
                                         <h3 className="text-sm font-black text-secondary tracking-widest uppercase">Salty Concierge</h3>
-                                        <div className="flex items-center gap-1.5">
-                                            <span className={`w-2 h-2 rounded-full ${isTalking ? 'bg-blue-600 animate-pulse' : 'bg-green-600'}`}></span>
-                                            <span className="text-[10px] font-bold text-secondary/60 uppercase tracking-tighter">
-                                                {isTalking ? 'Hablando...' : 'En Línea'}
-                                            </span>
+                                        <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-1.5">
+                                                <span className={`w-2 h-2 rounded-full ${isTalking ? 'bg-blue-600 animate-pulse' : 'bg-green-600'}`}></span>
+                                                <span className="text-[10px] font-bold text-secondary/60 uppercase tracking-tighter">
+                                                    {isTalking ? 'Hablando...' : 'En Línea'}
+                                                </span>
+                                            </div>
+                                            
+                                            {isTalking && (
+                                                <motion.button 
+                                                    initial={{ opacity: 0, x: -10 }}
+                                                    animate={{ opacity: 1, x: 0 }}
+                                                    onClick={stopVoice}
+                                                    className="flex items-center gap-1 px-2 py-0.5 bg-black/10 hover:bg-black/20 text-secondary rounded-full transition-all border border-black/5"
+                                                >
+                                                    <VolumeX size={10} />
+                                                    <span className="text-[9px] font-black uppercase">Silenciar</span>
+                                                </motion.button>
+                                            )}
                                         </div>
                                     </div>
                                 </div>
