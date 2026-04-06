@@ -103,11 +103,11 @@ export default async function handler(req: any, res: any) {
       if (!text) return res.status(400).json({ error: 'Text required' });
       
       try {
-        const googleKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "";
-        const projectId = process.env.GOOGLE_PROJECT_ID || process.env.VITE_GOOGLE_PROJECT_ID || "980673655590";
-        const openaiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "";
+        const googleKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
+        const projectId = process.env.GOOGLE_PROJECT_ID || "980673655590";
+        const openaiKey = process.env.OPENAI_API_KEY || "";
 
-        console.log(`[🔱 TTS Dispatcher]: Engine Probe -> G:${!!googleKey} P:${!!projectId} O:${!!openaiKey}`);
+        console.log(`[🔱 TTS Dispatcher]: Elite Engine -> G:${!!googleKey} P:${!!projectId} O:${!!openaiKey}`);
 
         // 🔱 PRIORITY 1: GEMINI-TTS (Multimodal Studio Engine)
         if (googleKey) {

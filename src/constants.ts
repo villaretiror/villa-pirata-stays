@@ -26,7 +26,7 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
         name: 'Isla de Ratones (Charter Privado)',
         distance: '10 min + Bote',
         desc: 'El escape definitivo a una isla privada rodeada de manglares. Aguas turquesas cristalinas perfectas para el snorkeling.',
-        image: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&q=80&w=1200',
+        image: '',
         mapUrl: mapRoute('Boquerón, Cabo Rojo, Puerto Rico'),
         saltyTip: 'Coordinamos tu traslado privado desde los muelles de Boquerón. Pregúntame cómo.'
       }
@@ -41,7 +41,7 @@ export const INITIAL_LOCAL_GUIDE: LocalGuideCategory[] = [
         name: 'Valmar Cocina Creativa',
         distance: '8 min',
         desc: 'La cima de la gastronomía moderna en el oeste. Propuesta de vanguardia con ingredientes locales y mixología de autor chic.',
-        image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&q=80&w=1200',
+        image: '',
         mapUrl: mapRoute('Valmar Cocina Creativa, Cabo Rojo, Puerto Rico'),
         saltyTip: 'No te vayas sin probar su coctelería de autor. Es la más sofisticada de la región.'
       },
@@ -126,7 +126,6 @@ export const PROPERTIES: Property[] = [
     rating: 4.78,
     reviews_count: 9,
     images: [
-      "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/0afd3011-e7b9-4ae2-94b5-5466425b52b2.jpeg",
       "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/b118ac79-89a6-47b1-adf4-5fea46f6dc33.jpeg",
       "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/0afd3011-e7b9-4ae2-94b5-5466425b52b2.jpeg",
       "https://a0.muscache.com/im/pictures/miso/Hosting-1081171030449673920/original/e1f1a0e7-dff5-40f8-95df-d349ff4ad13e.jpeg",
@@ -223,12 +222,13 @@ export const PROPERTIES: Property[] = [
     reviews_count: 17,
     images: [
       "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/1ace8639-f247-4ebf-b0f0-174e5b3c1b46.jpeg",
-      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/1ace8639-f247-4ebf-b0f0-174e5b3c1b46.jpeg",
-      "https://a0.muscache.com/im/pictures/miso/Hosting-42839458/original/c2464fa9-f2f9-4709-ae86-e6ace617f7f8.jpeg",
       "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/b5cf8898-cbe6-4f07-a98e-6818f8b9ae73.jpeg",
       "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/33a7455c-5e08-4aaa-96dd-13c9c3c3170e.jpeg",
       "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/e31738ed-102f-426c-82d2-31263eb8d445.jpeg",
-      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/a3fc93d3-5558-4390-8213-2431be1edef5.jpeg"
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/663d9178-5d25-4c60-aff6-fa05479ea2b6.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/71e05d23-2863-4700-ae89-082ce7bd83ee.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/d05105ca-9a67-4632-9f37-d958df3fba1e.jpeg",
+      "https://a0.muscache.com/im/pictures/hosting/Hosting-42839458/original/0eec49e9-c567-4402-ba53-d144e05417ec.jpeg"
     ],
     amenities: [
       'SISTEMA SOLAR (Energía Constante)',
