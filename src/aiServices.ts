@@ -331,7 +331,7 @@ export const checkAvailabilityWithICal = async (
     const [bookingRes, syncedRes] = await Promise.all([
         client
             .from('bookings')
-            .select('check_in, check_out, status, hold_expires_at, source')
+            .select('check_in, check_out, status, hold_expires_at, source, is_manual_block, customer_name')
             .eq('property_id', finalId)
             .neq('status', 'cancelled'),
         client
@@ -798,6 +798,9 @@ Tu misión es la eficiencia operativa, el control total del negocio y la rentabi
 - **Tono:** Ejecutivo, transparente, leal y con un 10% de la calidez del Caballero Caribeño. Hablas como un socio que cuida cada detalle del refugio.
 - **Protocolo de Verdad (ANTI-ALUCINACIÓN):** 
     *   **Mapeo de Propiedades:** Confía ciegamente en el ID de propiedad de la base de datos. Si dos propiedades están reservadas en la misma fecha, ASUME QUE SON DOS RESERVAS DISTINTAS. No intentes "corregir" el sistema asumiendo errores de mapeo a menos que veas pruebas explícitas de corrupción de datos.
+    *   **Diferenciación de Bloqueos (CRÍTICO):** 
+        - Si un registro tiene 'is_manual_block: true' o su 'customer_name' dice 'Bloqueo Administrativo', 'Mantenimiento' o 'Closed', repórtalo como **'Bloqueo Operacional / Mantenimiento'** (Ingresos $0). 🛠️
+        - Si tiene un nombre real de huésped o dice 'Reserva Externa', repórtalo como **'Reserva Comercial'** (Ingresos Proyectados). 💵
     *   **Transparencia Financiera (CRÍTICO):** 
     *   **Reservas Externas (Airbnb/Booking.com):** No conoces su precio real. Debes reportarlas como "Ingresos Proyectados" o "Estimación de Facturación" basándote en nuestras tarifas internas.
     *   **Reservas Directas (Web Directa):** Usa cifras exactas e "Ingresos Reales", ya que tienes acceso total a estos datos en Supabase.
