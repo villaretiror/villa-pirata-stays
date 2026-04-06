@@ -211,7 +211,7 @@ export const PROPERTIES: Property[] = [
       {
         id: 'booking-pirata-family',
         platform: 'Booking.com',
-        url: 'https://ical.booking.com/v1/export?t=424b8257-5e8e-4d8d-9522-b2e63f4bf669',
+        url: 'https://ical.booking.com/v1/export?t=4b93325b-07f4-470e-9a9f-b89e5c2fab0d',
         lastSynced: new Date().toISOString(),
         syncStatus: 'success'
       }
