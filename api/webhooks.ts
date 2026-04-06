@@ -101,10 +101,27 @@ export default async function handler(req: any, res: any) {
     if (source === 'tts') {
       const { text } = req.body;
       if (!text) return res.status(400).json({ error: 'Text required' });
-      const mp3 = await openai.audio.speech.create({ model: "tts-1", voice: "onyx", input: text });
-      const buffer = Buffer.from(await mp3.arrayBuffer());
-      res.setHeader('Content-Type', 'audio/mpeg');
-      return res.send(buffer);
+      
+      try {
+        console.log(`[🔱 TTS Radar]: Generating speech for: "${text.substring(0, 30)}..."`);
+        const mp3 = await openai.audio.speech.create({ 
+          model: "tts-1", 
+          voice: "onyx", 
+          input: text 
+        });
+        
+        const buffer = Buffer.from(await mp3.arrayBuffer());
+        res.setHeader('Content-Type', 'audio/mpeg');
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+        return res.send(buffer);
+      } catch (ttsErr: any) {
+        console.error(`[🔱 TTS FAIL]:`, ttsErr.message);
+        return res.status(500).json({ 
+          error: "TTS_ENGINE_FAILURE", 
+          details: ttsErr.message,
+          hint: "Check OPENAI_API_KEY in Vercel Env Vars."
+        });
+      }
     }
 
     // 📧 SOURCE: RESEND / ⭐ SOURCE: REVIEW

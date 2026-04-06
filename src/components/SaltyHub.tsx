@@ -136,15 +136,19 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 try {
                     await audio.play();
                 } catch (playErr) {
-                    console.error("Salty Voice failed to play:", playErr);
+                    console.error("🔱 RADAR FAIL: Salty Voice play error", playErr);
                 }
                 audio.onended = () => {
                     setIsTalking(false);
                     URL.revokeObjectURL(url);
                 };
+            } else {
+                const errData = await response.json().catch(() => ({ error: "Unknown Engine Failure" }));
+                console.error("🔱 RADAR: TTS Engine Failure", errData);
+                setIsTalking(false);
             }
-        } catch (err) {
-            console.error("TTS Error:", err);
+        } catch (err: any) {
+            console.error("🔱 RADAR: Speech Error", err.message);
             setIsTalking(false);
         }
     };
