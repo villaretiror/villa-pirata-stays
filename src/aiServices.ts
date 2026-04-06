@@ -52,7 +52,7 @@ export const aiServices = {
         // A. Overlap Engine
         const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
         
-        const nativeOverlap = (bookingRes.data || []).find((b: any) => {
+        const nativeOverlap: any = (bookingRes.data || []).find((b: any) => {
             if (!BLOCKING_STATUSES.includes(b.status || '')) return false;
             if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
             
@@ -62,7 +62,43 @@ export const aiServices = {
         });
 
         if (nativeOverlap) {
-            return { available: false, reason: 'Esas fechas ya están bajo el control de otro huésped o bloqueo interno.' };
+            const isBookingClosed = nativeOverlap.source === 'Booking.com' && (nativeOverlap.customer_name?.includes('CLOSED') || !nativeOverlap.customer_name);
+            const displayType = (nativeOverlap.is_manual_block && !isBookingClosed) ? 'Mantenimiento' : 'Comercial';
+            
+            return { 
+                available: false, 
+                reason: `Choque detectado: ${displayType}.`,
+                blockingEvent: {
+                    type: displayType,
+                    source: nativeOverlap.source,
+                    check_in: nativeOverlap.check_in,
+                    check_out: nativeOverlap.check_out,
+                    guest: nativeOverlap.customer_name || 'Huésped Externo'
+                }
+            };
+        }
+
+        // B. External Synced Blocks Overlap (Double Check)
+        const externalOverlap = (syncedRes.data || []).find((b: any) => {
+            const bIn = new Date(b.check_in);
+            const bOut = new Date(b.check_out);
+            return qIn < bOut && qOut > bIn;
+        });
+
+        if (externalOverlap) {
+            const isBookingClosed = externalOverlap.source === 'Booking.com';
+            const displayType = isBookingClosed ? 'Comercial' : 'Bloqueo Externo';
+            
+            return { 
+                available: false, 
+                reason: `Bloqueo externo detectado: ${displayType}.`,
+                blockingEvent: {
+                    type: displayType,
+                    source: externalOverlap.source,
+                    check_in: externalOverlap.check_in,
+                    check_out: externalOverlap.check_out
+                }
+            };
         }
 
         return { 
