@@ -97,38 +97,63 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, message: "Status acknowledged. ⚓" });
     }
 
-    // 🔊 SOURCE: TTS
+    // 🔊 SOURCE: TTS (Maestro Vocal Engine)
     if (source === 'tts') {
       const { text } = req.body;
       if (!text) return res.status(400).json({ error: 'Text required' });
       
       try {
-        const apiKeyPresent = !!process.env.OPENAI_API_KEY;
-        console.log(`[🔱 TTS Audit]: Text length: ${text.length} | API Key Detected: ${apiKeyPresent}`);
+        const googleKey = getEnvVar('GOOGLE_GENERATIVE_AI_API_KEY') || getEnvVar('GEMINI_API_KEY');
+        const openaiKey = getEnvVar('OPENAI_API_KEY');
 
-        if (!apiKeyPresent) {
-          return res.status(500).json({ 
-            error: "MISSING_API_KEY", 
-            details: "La variable OPENAI_API_KEY no está configurada en Vercel." 
-          });
+        // 🔱 PRIORITY 1: GOOGLE CLOUD TTS (Neural / Gemini Ecosystem)
+        if (googleKey) {
+          try {
+            console.log(`[🔱 TTS Radar]: Using Google Cloud Neural Engine...`);
+            const googleTtsUrl = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleKey}`;
+            const gResponse = await fetch(googleTtsUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                input: { text },
+                voice: { languageCode: "es-ES", name: "es-ES-Neural2-F" }, // 🔱 PREMIUM NEURAL VOICE
+                audioConfig: { audioEncoding: "MP3", pitch: 0, speakingRate: 1.0 }
+              })
+            });
+
+            if (gResponse.ok) {
+              const gData = await gResponse.json();
+              const buffer = Buffer.from(gData.audioContent, 'base64');
+              res.setHeader('Content-Type', 'audio/mpeg');
+              res.setHeader('Cache-Control', 'public, max-age=3600');
+              return res.send(buffer);
+            }
+            console.warn(`[🔱 TTS Warning]: Google Engine rejected request. Falling back to OpenAI.`);
+          } catch (gErr) {
+            console.error(`[🔱 TTS Error]: Google Engine failure:`, gErr);
+          }
         }
 
-        const mp3 = await openai.audio.speech.create({ 
-          model: "tts-1", 
-          voice: "onyx", 
-          input: text 
-        });
-        
-        const buffer = Buffer.from(await mp3.arrayBuffer());
-        res.setHeader('Content-Type', 'audio/mpeg');
-        res.setHeader('Cache-Control', 'public, max-age=3600');
-        return res.send(buffer);
-      } catch (ttsErr: any) {
-        console.error(`[🔱 TTS FAIL]:`, ttsErr.message);
-        return res.status(500).json({ 
-          error: "TTS_ENGINE_FAILURE", 
-          details: ttsErr.message 
-        });
+        // 🔱 PRIORITY 2: OPENAI TTS (Classic Secondary)
+        if (openaiKey) {
+          try {
+            console.log(`[🔱 TTS Radar]: Using OpenAI Engine...`);
+            const mp3 = await openai.audio.speech.create({ model: "tts-1", voice: "onyx", input: text });
+            const buffer = Buffer.from(await mp3.arrayBuffer());
+            res.setHeader('Content-Type', 'audio/mpeg');
+            res.setHeader('Cache-Control', 'public, max-age=3600');
+            return res.send(buffer);
+          } catch (oErr: any) {
+            console.error(`[🔱 TTS FAIL]: OpenAI Engine Error:`, oErr.message);
+          }
+        }
+
+        // 🔱 FINAL FALLBACK: Throw error to trigger Frontend Lifeboat
+        return res.status(500).json({ error: "ALL_ENGINES_FAILED", details: "No premium vocal engines available." });
+
+      } catch (err: any) {
+        console.error(`[🔱 TTS Dispatcher Error]:`, err.message);
+        return res.status(500).json({ error: err.message });
       }
     }
 
