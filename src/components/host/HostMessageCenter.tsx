@@ -163,7 +163,7 @@ const HostMessageCenter: React.FC<HostMessageCenterProps> = ({ hostAvatar, onNav
             if (lastGuestMsg) {
                 const result = await queryPropertyKnowledge(
                     lastGuestMsg, 
-                    activeThread.property_id || activeThread.propertyTitle
+                    activeThread.property_id || activeThread.propertyTitle || ''
                 );
                 
                 if (result.ok) {

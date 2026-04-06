@@ -53,7 +53,7 @@ export default async function handler(req: Request) {
             const parsedBody = chatRequestSchema.parse(body);
             const { messages: rawMessages, sessionId, userId: bodyUserId, propertyId, currentUrl } = parsedBody;
 
-            const effectivePropertyId = await resolvePropertyId(propertyId || "1081171030449673920", supabase);
+            const effectivePropertyId = (await resolvePropertyId(propertyId || "1081171030449673920", supabase)) || "1081171030449673920";
 
             const [{ data: dbProperties }, { data: knowledgeSetting }] = await Promise.all([
                 supabase.from('properties').select('*'),
