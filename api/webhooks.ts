@@ -103,7 +103,16 @@ export default async function handler(req: any, res: any) {
       if (!text) return res.status(400).json({ error: 'Text required' });
       
       try {
-        console.log(`[🔱 TTS Radar]: Generating speech for: "${text.substring(0, 30)}..."`);
+        const apiKeyPresent = !!process.env.OPENAI_API_KEY;
+        console.log(`[🔱 TTS Audit]: Text length: ${text.length} | API Key Detected: ${apiKeyPresent}`);
+
+        if (!apiKeyPresent) {
+          return res.status(500).json({ 
+            error: "MISSING_API_KEY", 
+            details: "La variable OPENAI_API_KEY no está configurada en Vercel." 
+          });
+        }
+
         const mp3 = await openai.audio.speech.create({ 
           model: "tts-1", 
           voice: "onyx", 
@@ -118,8 +127,7 @@ export default async function handler(req: any, res: any) {
         console.error(`[🔱 TTS FAIL]:`, ttsErr.message);
         return res.status(500).json({ 
           error: "TTS_ENGINE_FAILURE", 
-          details: ttsErr.message,
-          hint: "Check OPENAI_API_KEY in Vercel Env Vars."
+          details: ttsErr.message 
         });
       }
     }
