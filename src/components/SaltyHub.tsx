@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { Phone, X, MessageCircle, PhoneCall, Headphones, MoreVertical, GripVertical, Rocket, Signal } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+    Phone, X, MessageCircle, PhoneCall, Headphones, GripVertical, Signal, 
+    Mic, Square, Send, Play, Trash2, VolumeX, Volume2, ChevronDown, CheckCircle2
+} from 'lucide-react';
 import { HOST_PHONE, SALTY_ASSISTANT_ID, VAPI_PUBLIC_KEY } from '../constants';
 
-// 🔱 ELITE CONFIG: Keys from constants or env
+// 🔱 ELITE CONFIG
 const PUBLIC_KEY = VAPI_PUBLIC_KEY || '816607fa-e7f9-4fdf-879c-f00a5d1c8b1c';
 const ASSISTANT_ID = SALTY_ASSISTANT_ID || '280fb186-f436-4b9b-ac30-48badafd3a0d';
 
@@ -13,13 +16,31 @@ interface SaltyHubProps {
 }
 
 const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
+    // 🔱 MAIN STATES
     const [isOpen, setIsOpen] = useState(false);
+    const [isChatOpen, setIsChatOpen] = useState(false);
     const [isVisible, setIsVisible] = useState(true);
     const [callStatus, setCallStatus] = useState<'inactive' | 'loading' | 'active'>('inactive');
     const [vapiInstance, setVapiInstance] = useState<any>(null);
     const [isSdkLoaded, setIsSdkLoaded] = useState(false);
     const [volume, setVolume] = useState(0);
-    const containerRef = useRef<HTMLDivElement>(null);
+
+    // 🔱 CHAT & VOICE STATES
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [inputValue, setInputValue] = useState('');
+    const [isTyping, setIsTyping] = useState(false);
+    const [activeMessage, setActiveMessage] = useState<string | null>(null);
+    const [showBubble, setShowBubble] = useState(false);
+    const [isTalking, setIsTalking] = useState(false);
+    const saltyAudioRef = useRef<HTMLAudioElement | null>(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [mediaRecorder, setMediaRecorder] = useState<MediaRecorder | null>(null);
+    const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
+    const [recordedAudioBlob, setRecordedAudioBlob] = useState<Blob | null>(null);
+    const audioPreviewRef = useRef<HTMLAudioElement | null>(null);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const timerRef = useRef<NodeJS.Timeout | null>(null);
+    const [sessionId] = useState(() => `sess_${Math.random().toString(36).substring(2, 10)}`);
 
     // 🔱 SDK DETECTOR
     useEffect(() => {
@@ -33,6 +54,7 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         return () => clearInterval(timer);
     }, []);
 
+    // 🔱 VOICE CALL (Vapi)
     const startVapiCall = async () => {
         setCallStatus('loading');
         try {
@@ -80,24 +102,13 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         if (callStatus === 'active') {
             vapiInstance?.stop();
         } else {
+            setIsChatOpen(false);
+            setIsOpen(false);
             startVapiCall();
         }
     };
 
-    const [activeMessage, setActiveMessage] = useState<string | null>(null);
-    const [showBubble, setShowBubble] = useState(false);
-    const [isTalking, setIsTalking] = useState(false);
-    const saltyAudioRef = useRef<HTMLAudioElement | null>(null);
-
-    const toggleWhatsApp = () => {
-        const message = propertyTitle 
-            ? `¡Hola Salty! Vi "${propertyTitle}" y me interesa reservar.` 
-            : '¡Hola! Quisiera información sobre Villa Retiro R.';
-        const url = `https://wa.me/${HOST_PHONE}?text=${encodeURIComponent(message)}`;
-        window.open(url, '_blank');
-    };
-
-    // 🔱 VOICE ENGINE (TTS)
+    // 🔱 TEXT TO SPEECH (TTS)
     const speakSalty = async (text: string) => {
         try {
             if (saltyAudioRef.current) {
@@ -133,7 +144,168 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         }
     };
 
-    // 🔱 INTENT RADAR (Event Listener)
+    // 🔱 TEXT MESSAGE HANDLER
+    const handleSendMessage = async () => {
+        if (!inputValue.trim()) return;
+        const userMsg = { role: 'user', content: inputValue };
+        setChatMessages(prev => [...prev, userMsg]);
+        setInputValue('');
+        setIsTyping(true);
+        setShowBubble(false);
+
+        try {
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [...chatMessages, userMsg],
+                    propertyId,
+                    sessionId,
+                    currentUrl: window.location.href
+                })
+            });
+
+            if (!response.ok) throw new Error();
+            const reader = response.body?.getReader();
+            let aiResponse = "";
+            if (reader) {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    const chunk = new TextDecoder().decode(value);
+                    const lines = chunk.split('\n');
+                    for (const line of lines) {
+                        if (line.startsWith('0:')) {
+                            try {
+                                const text = JSON.parse(line.substring(2));
+                                aiResponse += text;
+                                setChatMessages(prev => {
+                                    const last = prev[prev.length - 1];
+                                    if (last?.role === 'model') return [...prev.slice(0, -1), { ...last, content: aiResponse }];
+                                    return [...prev, { role: 'model', content: aiResponse }];
+                                });
+                            } catch (e) {}
+                        }
+                    }
+                }
+                if (aiResponse) speakSalty(aiResponse);
+            }
+        } catch (e) {
+            setChatMessages(prev => [...prev, { role: 'model', content: "Lo siento, mis radares de comunicación fallaron brevemente." }]);
+        } finally {
+            setIsTyping(false);
+        }
+    };
+
+    // 🔱 AUDIO RECORDING LOGIC
+    const formatTime = (seconds: number) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    useEffect(() => {
+        if (isRecording) {
+            setRecordingTime(0);
+            timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+        } else {
+            if (timerRef.current) clearInterval(timerRef.current);
+        }
+        return () => { if (timerRef.current) clearInterval(timerRef.current); };
+    }, [isRecording]);
+
+    const startRecording = async () => {
+        setRecordedAudioUrl(null);
+        setRecordedAudioBlob(null);
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const recorder = new MediaRecorder(stream);
+            const chunks: Blob[] = [];
+            recorder.ondataavailable = (e) => chunks.push(e.data);
+            recorder.onstop = () => {
+                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                const url = URL.createObjectURL(audioBlob);
+                setRecordedAudioUrl(url);
+                setRecordedAudioBlob(audioBlob);
+                setIsRecording(false);
+                stream.getTracks().forEach(track => track.stop());
+            };
+            recorder.start();
+            setMediaRecorder(recorder);
+            setIsRecording(true);
+        } catch (err) {
+            console.error("Mic access denied:", err);
+            setChatMessages(prev => [...prev, { role: 'model', content: "Capitán, no logro sentir el micrófono. ¿Podría verificar los permisos? 🔱" }]);
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorder && isRecording) mediaRecorder.stop();
+    };
+
+    const sendRecordedAudio = async () => {
+        if (!recordedAudioBlob) return;
+        setIsTyping(true);
+        const reader = new FileReader();
+        reader.readAsDataURL(recordedAudioBlob);
+        reader.onloadend = async () => {
+            const base64Data = (reader.result as string).split(',')[1];
+            const userMsg = { 
+                role: 'user', 
+                content: [
+                    { text: "🎙️ [Nota de Voz Enviada]" },
+                    { inlineData: { mimeType: 'audio/webm', data: base64Data } }
+                ] 
+            };
+            setChatMessages(prev => [...prev, { role: 'user', content: "🎙️ Nota de voz enviada." }]);
+            setRecordedAudioUrl(null);
+            setRecordedAudioBlob(null);
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: chatMessages.concat(userMsg),
+                        propertyId,
+                        sessionId,
+                        currentUrl: window.location.href
+                    })
+                });
+
+                if (response.ok) {
+                    const reader = response.body?.getReader();
+                    let aiResponse = "";
+                    if (reader) {
+                        while (true) {
+                            const { done, value } = await reader.read();
+                            if (done) break;
+                            const chunk = new TextDecoder().decode(value);
+                            const lines = chunk.split('\n');
+                            for (const line of lines) {
+                                if (line.startsWith('0:')) {
+                                    const text = JSON.parse(line.substring(2));
+                                    aiResponse += text;
+                                    setChatMessages(prev => {
+                                        const last = prev[prev.length - 1];
+                                        if (last?.role === 'model') return [...prev.slice(0, -1), { ...last, content: aiResponse }];
+                                        return [...prev, { role: 'model', content: aiResponse }];
+                                    });
+                                }
+                            }
+                        }
+                        if (aiResponse) speakSalty(aiResponse);
+                    }
+                }
+            } catch (err) {
+                console.error("Audio processing error:", err);
+            } finally {
+                setIsTyping(false);
+            }
+        };
+    };
+
+    // 🔱 INTENT RADAR
     useEffect(() => {
         const handlePush = (e: any) => {
             const detail = e.detail;
@@ -141,28 +313,22 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 setActiveMessage(detail.message);
                 setShowBubble(true);
                 if (detail.speak) speakSalty(detail.message);
-                
-                // Auto-hide bubble after 8 seconds
                 setTimeout(() => setShowBubble(false), 8000);
             }
         };
-
         window.addEventListener('salty-push', handlePush);
-        
-        // Contextual greeting after 5s
         const timer = setTimeout(() => {
-            if (!showBubble) {
+            if (!showBubble && !isChatOpen) {
                 setActiveMessage("¡Hola! Soy Salty, su Concierge. ¿En qué puedo servirles hoy? 🔱");
                 setShowBubble(true);
                 setTimeout(() => setShowBubble(false), 6000);
             }
         }, 5000);
-
         return () => {
             window.removeEventListener('salty-push', handlePush);
             clearTimeout(timer);
         };
-    }, []);
+    }, [isChatOpen, showBubble]);
 
     if (!isVisible) return null;
 
@@ -171,139 +337,162 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
             drag
             dragMomentum={false}
             className="fixed z-[2147483647] cursor-grab active:cursor-grabbing"
-            style={{ 
-                bottom: '100px', 
-                right: '40px',
-                touchAction: 'none' // Prevent scrolling while dragging on mobile
-            }}
+            style={{ bottom: '100px', right: '40px', touchAction: 'none' }}
             initial={{ opacity: 0, scale: 0.5 }}
             animate={{ opacity: 1, scale: 1 }}
         >
             <div className="relative group">
-                {/* 🔱 INTELLIGENCE BUBBLE (Salty Thinking/Talking) */}
+                {/* 🔱 CHAT PANEL (Elite Glassmorphism) */}
                 <AnimatePresence>
-                    {showBubble && activeMessage && (
+                    {isChatOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.8, y: 50, filter: 'blur(10px)' }}
+                            animate={{ opacity: 1, scale: 1, y: 0, filter: 'blur(0px)' }}
+                            exit={{ opacity: 0, scale: 0.8, y: 30, filter: 'blur(10px)' }}
+                            className="absolute bottom-20 -right-4 w-[320px] md:w-[380px] bg-white/95 backdrop-blur-3xl border border-black/10 rounded-[2.5rem] rounded-br-[4px] shadow-[0_30px_70px_rgba(0,0,0,0.25)] overflow-hidden flex flex-col z-[100]"
+                        >
+                            <div className="p-4 bg-primary flex items-center justify-between border-b border-secondary/10">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-full border-2 border-secondary overflow-hidden shadow-lg">
+                                        <img src="/images/salty-avatar.jpg" alt="Salty" className="w-full h-full object-cover" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-sm font-black text-secondary tracking-widest uppercase">Salty Concierge</h3>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`w-2 h-2 rounded-full ${isTalking ? 'bg-blue-600 animate-pulse' : 'bg-green-600'}`}></span>
+                                            <span className="text-[10px] font-bold text-secondary/60 uppercase tracking-tighter">
+                                                {isTalking ? 'Hablando...' : 'En Línea'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button onClick={() => setIsChatOpen(false)} className="p-2 hover:bg-black/10 rounded-full transition-colors">
+                                    <ChevronDown className="text-secondary" />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 max-h-[350px] overflow-y-auto p-4 space-y-4 no-scrollbar">
+                                {chatMessages.length === 0 && (
+                                    <div className="bg-primary/10 p-4 rounded-2xl">
+                                        <p className="text-[11px] text-secondary font-bold">"Soy Salty, su concierge personal. ¿Desean notas de voz, ayuda con su reserva o conocer los secretos de la Villa?"</p>
+                                    </div>
+                                )}
+                                {chatMessages.map((msg, idx) => (
+                                    <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                        <div className={`max-w-[85%] p-3 rounded-2xl text-[12px] font-medium leading-relaxed ${msg.role === 'user' ? 'bg-secondary text-white shadow-lg' : 'bg-sand/40 border border-secondary/5 text-text-main'}`}>
+                                            {msg.content}
+                                        </div>
+                                    </div>
+                                ))}
+                                {isTyping && <div className="animate-pulse text-[10px] font-black uppercase text-gray-400 flex items-center gap-2">
+                                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" />
+                                    Espera un momento, Capitán...
+                                </div>}
+                            </div>
+
+                            <div className="p-4 bg-gray-50/50 border-t border-black/5 flex flex-col gap-2">
+                                {recordedAudioUrl && (
+                                    <div className="bg-secondary p-2 rounded-2xl flex items-center justify-between shadow-lg">
+                                        <div className="flex items-center gap-2">
+                                            <button onClick={() => audioPreviewRef.current?.play()} className="w-8 h-8 bg-primary text-secondary rounded-full flex items-center justify-center">
+                                                <Play size={14} fill="currentColor" />
+                                            </button>
+                                            <span className="text-[10px] text-white/80 font-mono">{formatTime(recordingTime)}</span>
+                                            <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" />
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button onClick={() => { setRecordedAudioUrl(null); setRecordedAudioBlob(null); }} className="p-1.5 text-red-400"><Trash2 size={14} /></button>
+                                            <button onClick={sendRecordedAudio} className="px-3 py-1 bg-primary text-secondary rounded-lg text-[10px] font-black uppercase">Enviar 📤</button>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {!recordedAudioUrl && (
+                                    <div className="flex gap-2 items-center">
+                                        <button
+                                            onMouseDown={startRecording} onMouseUp={stopRecording}
+                                            onTouchStart={startRecording} onTouchEnd={stopRecording}
+                                            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-secondary text-primary hover:opacity-90'}`}
+                                        >
+                                            {isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={18} />}
+                                        </button>
+                                        <input 
+                                            type="text" placeholder="Escriba aquí, Capitán..." value={inputValue}
+                                            onChange={(e) => setInputValue(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
+                                            className="flex-1 bg-white border border-black/10 rounded-xl px-4 py-2 text-xs outline-none h-10 font-bold"
+                                        />
+                                        <button onClick={handleSendMessage} disabled={isTyping} className="w-10 h-10 bg-primary text-secondary rounded-xl flex items-center justify-center shadow-lg active:scale-95 disabled:opacity-50">
+                                            <Send size={16} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* 🔱 INTELLIGENCE BUBBLE (Thought bubble) */}
+                <AnimatePresence>
+                    {showBubble && activeMessage && !isChatOpen && (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.5, y: 20, x: '-50%' }}
                             animate={{ opacity: 1, scale: 1, y: 0, x: '-50%' }}
                             exit={{ opacity: 0, scale: 0.5, y: 10, x: '-50%' }}
-                            className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 bg-white/95 backdrop-blur-3xl border border-black/10 rounded-[2rem] rounded-br-[4px] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-20"
+                            onClick={() => { setIsChatOpen(true); setShowBubble(false); }}
+                            className="absolute -top-24 left-1/2 -translate-x-1/2 w-64 bg-white/95 backdrop-blur-3xl border border-black/10 rounded-[2rem] rounded-br-[4px] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.15)] z-20 cursor-pointer hover:scale-105 transition-transform"
                         >
-                            <p className="text-[11px] text-text-main font-bold leading-relaxed">
-                                {activeMessage}
-                            </p>
-                            {/* Speech Bubble Tail */}
+                            <p className="text-[11px] text-text-main font-bold leading-relaxed">{activeMessage}</p>
                             <div className="absolute -bottom-2 right-4 w-4 h-4 bg-white/95 border-r border-b border-black/10 rotate-45" />
                         </motion.div>
                     )}
                 </AnimatePresence>
 
-                {/* Close Button (The X) */}
                 <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setIsVisible(false)}
-                    className="absolute -top-3 -left-3 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg"
+                    whileHover={{ scale: 1.1 }} onClick={() => setIsVisible(false)}
+                    className="absolute -top-3 -left-3 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 z-10 shadow-lg"
                 >
                     <X className="w-3 h-3" />
                 </motion.button>
 
-                {/* Draggable Handle Indicator */}
-                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-40 transition-opacity text-black">
-                    <GripVertical className="w-4 h-4" />
-                </div>
-
                 <div className="flex flex-col-reverse items-center gap-4">
-                    {/* Main Hub Orb */}
                     <motion.button
                         onClick={() => setIsOpen(!isOpen)}
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                         className={`w-16 h-16 rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden backdrop-blur-xl border-2 transition-all duration-500 ${
-                            isTalking 
-                            ? 'bg-primary border-secondary shadow-[0_0_20px_rgba(212,175,55,0.4)]' 
-                            : callStatus === 'active' 
-                            ? 'bg-red-500/90 border-red-400' 
-                            : 'bg-black/90 border-[#D4AF37]/30'
+                            isTalking ? 'bg-primary border-secondary shadow-[0_0_20px_rgba(212,175,55,0.4)]' : 
+                            callStatus === 'active' ? 'bg-red-500/90 border-red-400' : 'bg-black/90 border-[#D4AF37]/30'
                         }`}
                     >
-                        {/* Salty Avatar / Pulse */}
                         <div className="absolute inset-0 flex items-center justify-center">
-                            {isTalking && (
-                                <motion.div 
-                                    initial={{ scale: 0.8, opacity: 0.5 }}
-                                    animate={{ scale: 1.5, opacity: 0 }}
-                                    transition={{ repeat: Infinity, duration: 1.5 }}
-                                    className="absolute inset-0 bg-primary/40 rounded-full"
-                                />
-                            )}
-                            {callStatus === 'active' ? (
-                                <div 
-                                    className="absolute inset-0 bg-red-400/20 animate-pulse" 
-                                    style={{ transform: `scale(${1 + volume * 2})`, borderRadius: '50%' }}
-                                />
-                            ) : !isTalking && (
-                                <div className="absolute inset-0 bg-gradient-to-tr from-[#D4AF37]/10 to-transparent" />
-                            )}
-                                
-                                <img 
-                                    src="/salty-avatar.png" 
-                                    alt="Salty" 
-                                    className={`w-10 h-10 rounded-full object-cover border border-white/20 transition-all ${callStatus === 'active' ? 'scale-110' : ''}`}
-                                    onError={(e) => {
-                                        (e.target as any).src = "https://ui-avatars.com/api/?name=Salty&background=BBA27E&color=fff";
-                                    }}
-                                />
-                            </div>
+                            {isTalking && <motion.div initial={{ scale: 0.8, opacity: 0.5 }} animate={{ scale: 1.5, opacity: 0 }} transition={{ repeat: Infinity, duration: 1.5 }} className="absolute inset-0 bg-primary/40 rounded-full" />}
+                            <img 
+                                src="/images/salty-avatar.jpg" 
+                                alt="Salty" 
+                                className={`w-12 h-12 rounded-full object-cover border-2 border-white/20 transition-all ${isTalking ? 'scale-110 blur-[1px]' : ''}`} 
+                                onError={(e) => {(e.target as any).src = "https://ui-avatars.com/api/?name=Salty&background=BBA27E&color=fff";}}
+                            />
+                        </div>
+                        <div className={`absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-black ${isSdkLoaded ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'}`} />
+                    </motion.button>
 
-                            {/* Status Indicator Pip */}
-                            <div className={`absolute top-2 right-2 w-3 h-3 rounded-full border-2 border-black ${
-                                isSdkLoaded ? 'bg-green-500' : 'bg-yellow-500 animate-pulse'
-                            }`} />
-                        </motion.button>
-
-                        {/* Expanded Radial Menu */}
-                        <AnimatePresence>
-                            {isOpen && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20, scale: 0.5 }}
-                                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                                    exit={{ opacity: 0, y: 10, scale: 0.5 }}
-                                    className="flex flex-col items-center gap-3 mb-2"
-                                >
-                                    {/* Action: Vapi Voice */}
-                                    <button
-                                        onClick={toggleVoice}
-                                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl border backdrop-blur-xl transition-all ${
-                                            callStatus === 'active' 
-                                            ? 'bg-red-500 text-white border-red-400' 
-                                            : 'bg-white/95 text-black border-gray-100 hover:bg-[#D4AF37] hover:text-white'
-                                        }`}
-                                    >
-                                        {callStatus === 'active' ? <Phone className="animate-pulse" /> : <PhoneCall className="w-5 h-5" />}
-                                    </button>
-
-                                    {/* Action: WhatsApp */}
-                                    <button
-                                        onClick={toggleWhatsApp}
-                                        className="w-12 h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-xl border border-gray-100 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all"
-                                    >
-                                        <MessageCircle className="w-5 h-5" />
-                                    </button>
-
-                                    {/* Action: Info / Calibrating */}
-                                    {!isSdkLoaded && (
-                                        <div className="bg-black/80 px-3 py-1.5 rounded-full border border-white/10 flex items-center gap-2">
-                                            <Signal className="w-3 h-3 text-yellow-400 animate-pulse" />
-                                            <span className="text-[8px] font-black uppercase text-white/70 tracking-widest">Calibrando</span>
-                                        </div>
-                                    )}
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </div>
+                    <AnimatePresence>
+                        {isOpen && (
+                            <motion.div initial={{ opacity: 0, y: 20, scale: 0.5 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.5 }} className="flex flex-col items-center gap-3 mb-2">
+                                <button onClick={() => { setIsChatOpen(true); setIsOpen(false); }} className="w-12 h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-xl border border-gray-100 text-secondary hover:bg-secondary hover:text-white transition-all">
+                                    <MessageCircle className="w-5 h-5" />
+                                </button>
+                                <button onClick={toggleVoice} className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-xl border backdrop-blur-xl transition-all ${callStatus === 'active' ? 'bg-red-500 text-white border-red-400' : 'bg-white/95 text-black border-gray-100 hover:bg-[#D4AF37] hover:text-white'}`}>
+                                    {callStatus === 'active' ? <Phone className="animate-pulse" /> : <PhoneCall className="w-5 h-5" />}
+                                </button>
+                                <button onClick={() => { const url = `https://wa.me/${HOST_PHONE}?text=${encodeURIComponent(propertyTitle ? `¡Hola Salty! Vi "${propertyTitle}" y me interesa reservar.` : '¡Hola! Quisiera información.')}`; window.open(url, '_blank'); }} className="w-12 h-12 rounded-2xl bg-white/95 flex items-center justify-center shadow-xl border border-gray-100 text-[#25D366] hover:bg-[#25D366] hover:text-white transition-all">
+                                    <Signal className="w-5 h-5" />
+                                </button>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
-            </motion.div>
+            </div>
+        </motion.div>
     );
 };
 
