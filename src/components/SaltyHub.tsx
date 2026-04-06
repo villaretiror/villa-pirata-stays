@@ -395,13 +395,18 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                                             
                                             {isTalking && (
                                                 <motion.button 
-                                                    initial={{ opacity: 0, x: -10 }}
-                                                    animate={{ opacity: 1, x: 0 }}
+                                                    initial={{ opacity: 0, scale: 0.8 }}
+                                                    animate={{ 
+                                                        opacity: 1, 
+                                                        scale: 1,
+                                                        boxShadow: ["0 0 0px #eec57d", "0 0 12px #eec57d", "0 0 0px #eec57d"]
+                                                    }}
+                                                    transition={{ repeat: Infinity, duration: 2 }}
                                                     onClick={stopVoice}
-                                                    className="flex items-center gap-1 px-2 py-0.5 bg-black/10 hover:bg-black/20 text-secondary rounded-full transition-all border border-black/5"
+                                                    className="flex items-center gap-1.5 px-2.5 py-1 bg-secondary text-primary rounded-full hover:scale-105 active:scale-95 transition-all border border-primary/30 shadow-xl"
                                                 >
-                                                    <VolumeX size={10} />
-                                                    <span className="text-[9px] font-black uppercase">Silenciar</span>
+                                                    <VolumeX size={12} strokeWidth={3} />
+                                                    <span className="text-[10px] font-black uppercase tracking-tighter">Silenciar</span>
                                                 </motion.button>
                                             )}
                                         </div>
