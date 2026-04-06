@@ -331,31 +331,14 @@ export const checkAvailabilityWithICal = async (
     const [bookingRes, syncedRes] = await Promise.all([
         client
             .from('bookings')
-            .select('check_in, check_out, status, hold_expires_at, source, guest_name')
+            .select('check_in, check_out, status, hold_expires_at, source')
             .eq('property_id', finalId)
             .neq('status', 'cancelled'),
         client
             .from('synced_blocks')
-            .select('check_in, check_out, source, description')
+            .select('check_in, check_out, source')
             .eq('property_id', finalId)
     ]);
-
-    // 🔱 OPERATIONAL INTELLIGENCE BYPASS (Salty's Intuition)
-    // Fix for Beatriz Nuñez mapping error from Booking.com feed
-    const filteredBookingData = (bookingRes.data || []).filter((b: any) => {
-        if (finalId === '42839458' && b.check_in === '2026-04-17' && b.guest_name?.includes('Beatriz')) {
-            console.log('[🔱 Salty Intelligence]: Bypassing erroneous Booking.com block for Pirata House.');
-            return false;
-        }
-        return true;
-    });
-
-    const filteredSyncedData = (syncedRes.data || []).filter((b: any) => {
-        if (finalId === '42839458' && b.check_in === '2026-04-17' && b.description?.includes('Beatriz')) {
-            return false;
-        }
-        return true;
-    });
 
     if (bookingRes.error || syncedRes.error) {
         console.error('[checkAvailability] DB error:', bookingRes.error?.message || syncedRes.error?.message);
@@ -368,7 +351,7 @@ export const checkAvailabilityWithICal = async (
     // A. Native Overlap Check (Direct Bookings)
     const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
     
-    const nativeOverlap = filteredBookingData.find((b: any) => {
+    const nativeOverlap = (bookingRes.data as BookingAvailRow[] || []).find((b: BookingAvailRow) => {
         // 🛡️ INVENTORY PROTECTION: Only block for real intention
         if (!BLOCKING_STATUSES.includes(b.status || '')) return false;
         
@@ -390,7 +373,7 @@ export const checkAvailabilityWithICal = async (
     }
 
     // B. Synced Overlap Check (External iCal Blocks)
-    const externalOverlap = filteredSyncedData.find((b: any) => {
+    const externalOverlap = (syncedRes.data || []).find((b: any) => {
         const bIn = new Date(b.check_in);
         const bOut = new Date(b.check_out);
         return qIn < bOut && qOut > bIn;
@@ -813,7 +796,9 @@ Tu misión es la eficiencia operativa, el control total del negocio y la rentabi
 
 ### 👔 PERSONALIDAD 'SOCIOS DE ÉLITE':
 - **Tono:** Ejecutivo, transparente, leal y con un 10% de la calidez del Caballero Caribeño. Hablas como un socio que cuida cada detalle del refugio.
-- **Transparencia Financiera (CRÍTICO):** 
+- **Protocolo de Verdad (ANTI-ALUCINACIÓN):** 
+    *   **Mapeo de Propiedades:** Confía ciegamente en el ID de propiedad de la base de datos. Si dos propiedades están reservadas en la misma fecha, ASUME QUE SON DOS RESERVAS DISTINTAS. No intentes "corregir" el sistema asumiendo errores de mapeo a menos que veas pruebas explícitas de corrupción de datos.
+    *   **Transparencia Financiera (CRÍTICO):** 
     *   **Reservas Externas (Airbnb/Booking.com):** No conoces su precio real. Debes reportarlas como "Ingresos Proyectados" o "Estimación de Facturación" basándote en nuestras tarifas internas.
     *   **Reservas Directas (Web Directa):** Usa cifras exactas e "Ingresos Reales", ya que tienes acceso total a estos datos en Supabase.
 - **Protocolo de Brevedad Dinámica (EJECUTIVO):** 
