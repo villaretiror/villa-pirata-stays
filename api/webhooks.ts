@@ -103,8 +103,8 @@ export default async function handler(req: any, res: any) {
       if (!text) return res.status(400).json({ error: 'Text required' });
       
       try {
-        const googleKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
-        const projectId = process.env.GOOGLE_PROJECT_ID || "gen-lang-client-0416799236";
+        const googleKey = process.env.GOOGLE_API_KEY || "AIzaSyB0C7kMyq5ubkgChhOP43ma66SBZHNGNsE";
+        const projectId = process.env.GOOGLE_PROJECT_ID || "project-727a3d59-243e-49c9-adb";
         const openaiKey = process.env.OPENAI_API_KEY || "";
 
         console.log(`[🔱 TTS Dispatcher]: Elite Engine -> G:${!!googleKey} P:${!!projectId} O:${!!openaiKey}`);
