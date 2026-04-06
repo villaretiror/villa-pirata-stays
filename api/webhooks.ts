@@ -104,7 +104,7 @@ export default async function handler(req: any, res: any) {
       
       try {
         const googleKey = process.env.GOOGLE_API_KEY || process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "";
-        const projectId = process.env.GOOGLE_PROJECT_ID || "980673655590";
+        const projectId = process.env.GOOGLE_PROJECT_ID || "gen-lang-client-0416799236";
         const openaiKey = process.env.OPENAI_API_KEY || "";
 
         console.log(`[🔱 TTS Dispatcher]: Elite Engine -> G:${!!googleKey} P:${!!projectId} O:${!!openaiKey}`);
