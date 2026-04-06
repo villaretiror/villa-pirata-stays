@@ -97,27 +97,40 @@ export default async function handler(req: any, res: any) {
       return res.status(200).json({ success: true, message: "Status acknowledged. ⚓" });
     }
 
-    // 🔊 SOURCE: TTS (Maestro Vocal Engine)
+    // 🔊 SOURCE: TTS (Gemini-TTS Maestro Engine)
     if (source === 'tts') {
       const { text } = req.body;
       if (!text) return res.status(400).json({ error: 'Text required' });
       
       try {
         const googleKey = getEnvVar('GOOGLE_GENERATIVE_AI_API_KEY') || getEnvVar('GEMINI_API_KEY');
+        const projectId = getEnvVar('GOOGLE_PROJECT_ID') || getEnvVar('VITE_GOOGLE_PROJECT_ID');
         const openaiKey = getEnvVar('OPENAI_API_KEY');
 
-        // 🔱 PRIORITY 1: GOOGLE CLOUD TTS (Neural / Gemini Ecosystem)
+        // 🔱 PRIORITY 1: GEMINI-TTS (Multimodal Studio Engine)
         if (googleKey) {
           try {
-            console.log(`[🔱 TTS Radar]: Using Google Cloud Neural Engine...`);
-            const googleTtsUrl = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${googleKey}`;
+            console.log(`[🔱 TTS Radar]: Launching Gemini-TTS Multimodal Engine...`);
+            const googleTtsUrl = `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${googleKey}`;
             const gResponse = await fetch(googleTtsUrl, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              headers: { 
+                'Content-Type': 'application/json',
+                ...(projectId ? { 'x-goog-user-project': projectId } : {})
+              },
               body: JSON.stringify({
-                input: { text },
-                voice: { languageCode: "es-ES", name: "es-ES-Neural2-F" }, // 🔱 PREMIUM NEURAL VOICE
-                audioConfig: { audioEncoding: "MP3", pitch: 0, speakingRate: 1.0 }
+                input: { 
+                  text,
+                  // 🎭 VOICE PROMPT: Actor's instruction for Gemini-TTS
+                  prompt: "Dilo con un tono de concierge de lujo, pausado, extremadamente profesional y sofisticado. Como un anfitrión de élite en una villa del Caribe."
+                },
+                voice: { 
+                  languageCode: "es-ES", 
+                  // 🎙️ CHOICE: 'Kore' is a top-tier Studio voice for a refined assistant
+                  name: "es-ES-Studio-F", 
+                  model_name: "gemini-2.1-f-tts-studio" 
+                },
+                audioConfig: { audioEncoding: "MP3" }
               })
             });
 
@@ -128,16 +141,17 @@ export default async function handler(req: any, res: any) {
               res.setHeader('Cache-Control', 'public, max-age=3600');
               return res.send(buffer);
             }
-            console.warn(`[🔱 TTS Warning]: Google Engine rejected request. Falling back to OpenAI.`);
+            const gErrData = await gResponse.json();
+            console.warn(`[🔱 TTS Warning]: Gemini-TTS failed. Details:`, gErrData.error?.message);
           } catch (gErr) {
-            console.error(`[🔱 TTS Error]: Google Engine failure:`, gErr);
+            console.error(`[🔱 TTS Error]: Gemini-TTS fatal failure:`, gErr);
           }
         }
 
-        // 🔱 PRIORITY 2: OPENAI TTS (Classic Secondary)
+        // 🔱 PRIORITY 2: OPENAI TTS (Fallback)
         if (openaiKey) {
           try {
-            console.log(`[🔱 TTS Radar]: Using OpenAI Engine...`);
+            console.log(`[🔱 TTS Radar]: Falling back to OpenAI Engine...`);
             const mp3 = await openai.audio.speech.create({ model: "tts-1", voice: "onyx", input: text });
             const buffer = Buffer.from(await mp3.arrayBuffer());
             res.setHeader('Content-Type', 'audio/mpeg');
@@ -149,7 +163,7 @@ export default async function handler(req: any, res: any) {
         }
 
         // 🔱 FINAL FALLBACK: Throw error to trigger Frontend Lifeboat
-        return res.status(500).json({ error: "ALL_ENGINES_FAILED", details: "No premium vocal engines available." });
+        return res.status(500).json({ error: "ALL_ENGINES_FAILED", details: "Check Google Project ID and Billing." });
 
       } catch (err: any) {
         console.error(`[🔱 TTS Dispatcher Error]:`, err.message);
