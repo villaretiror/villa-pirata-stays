@@ -41,6 +41,7 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
     const [recordingTime, setRecordingTime] = useState(0);
     const timerRef = useRef<NodeJS.Timeout | null>(null);
     const [sessionId] = useState(() => `sess_${Math.random().toString(36).substring(2, 10)}`);
+    const [shouldSpeakResponse, setShouldSpeakResponse] = useState(false); // 🔱 SELECTIVE VOICE SENSOR
 
     // 🔱 SDK DETECTOR
     useEffect(() => {
@@ -148,21 +149,14 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         }
     };
 
-    // 🔱 TEXT MESSAGE HANDLER
-    const handleSendMessage = async () => {
-        if (!inputValue.trim()) return;
-        const userMsg = { role: 'user', content: inputValue };
-        setChatMessages(prev => [...prev, userMsg]);
-        setInputValue('');
-        setIsTyping(true);
-        setShowBubble(false);
-
+    // 🔱 CHAT ENGINE (Universal Processor)
+    const processChatResponse = async (messages: any[], speak: boolean) => {
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [...chatMessages, userMsg],
+                    messages,
                     propertyId,
                     sessionId,
                     currentUrl: window.location.href
@@ -192,13 +186,27 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                         }
                     }
                 }
-                if (aiResponse) speakSalty(aiResponse);
+                // 🔱 INTELLIGENT VOICE: Only speak if request came via voice note
+                if (aiResponse && speak) speakSalty(aiResponse);
             }
         } catch (e) {
             setChatMessages(prev => [...prev, { role: 'model', content: "Lo siento, mis radares de comunicación fallaron brevemente." }]);
         } finally {
             setIsTyping(false);
         }
+    };
+
+    // 🔱 TEXT MESSAGE HANDLER
+    const handleSendMessage = async () => {
+        if (!inputValue.trim()) return;
+        setShouldSpeakResponse(false); // 🔱 SILENCE FOR TEXT
+        const userMsg = { role: 'user', content: inputValue };
+        setChatMessages(prev => [...prev, userMsg]);
+        setInputValue('');
+        setIsTyping(true);
+        setShowBubble(false);
+
+        await processChatResponse([...chatMessages, userMsg], false);
     };
 
     const [recordedAudioMimeType, setRecordedAudioMimeType] = useState<string>('audio/webm');
@@ -221,13 +229,14 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
     }, [isRecording]);
 
     const startRecording = async () => {
-        if (isRecording || mediaRecorder) return; // 🔱 SECURITY GUARD
+        if (isRecording || mediaRecorder) return; 
         setRecordedAudioUrl(null);
         setRecordedAudioBlob(null);
+        setShouldSpeakResponse(true); // 🔱 ARMAR RESPUESTA POR VOZ
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            // 🔱 CROSS-BROWSER MIME DETECTOR (Elite Standard)
             const mimeType = [
                 'audio/mp4',
                 'audio/webm',
@@ -236,28 +245,28 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
             ].find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
             
             setRecordedAudioMimeType(mimeType);
-            console.log(`🔱 SALTY RADAR: Recording in ${mimeType}`);
 
             const recorder = new MediaRecorder(stream, { mimeType });
             const chunks: Blob[] = [];
             
-            // 🔱 HIGH-FIDELITY CHUNK ENGINE
             recorder.ondataavailable = (e) => {
-                if (e.data && e.data.size > 0) {
-                    chunks.push(e.data);
-                }
+                if (e.data && e.data.size > 0) chunks.push(e.data);
             };
 
             recorder.onstop = () => {
                 const totalSize = chunks.reduce((acc, c) => acc + c.size, 0);
-                if (totalSize === 0) return;
+                if (totalSize === 0) {
+                    setIsRecording(false);
+                    setMediaRecorder(null);
+                    return;
+                }
 
                 const audioBlob = new Blob(chunks, { type: mimeType });
                 const url = URL.createObjectURL(audioBlob);
                 setRecordedAudioUrl(url);
                 setRecordedAudioBlob(audioBlob);
                 setIsRecording(false);
-                setMediaRecorder(null); // 🔱 CLEAN SLATE
+                setMediaRecorder(null);
                 stream.getTracks().forEach(track => track.stop());
             };
 
@@ -266,11 +275,20 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
             setIsRecording(true);
         } catch (err) {
             console.error("Mic access denied:", err);
+            setIsRecording(false);
+            setMediaRecorder(null);
         }
     };
 
     const stopRecording = () => {
-        if (mediaRecorder && isRecording) mediaRecorder.stop();
+        if (mediaRecorder && isRecording) {
+            try {
+                mediaRecorder.stop();
+            } catch (err) {
+                setIsRecording(false);
+                setMediaRecorder(null);
+            }
+        }
     };
 
     const sendRecordedAudio = async () => {
@@ -281,7 +299,6 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         reader.onloadend = async () => {
             const base64Data = (reader.result as string).split(',')[1];
             
-            // 🔱 SYNCED MULTIMODAL PAYLOAD
             const userMsg = { 
                 role: 'user', 
                 content: [
@@ -294,47 +311,7 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
             setRecordedAudioUrl(null);
             setRecordedAudioBlob(null);
 
-            try {
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        messages: chatMessages.concat(userMsg),
-                        propertyId,
-                        sessionId,
-                        currentUrl: window.location.href
-                    })
-                });
-
-                if (response.ok) {
-                    const reader = response.body?.getReader();
-                    let aiResponse = "";
-                    if (reader) {
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                            const chunk = new TextDecoder().decode(value);
-                            const lines = chunk.split('\n');
-                            for (const line of lines) {
-                                if (line.startsWith('0:')) {
-                                    const text = JSON.parse(line.substring(2));
-                                    aiResponse += text;
-                                    setChatMessages(prev => {
-                                        const last = prev[prev.length - 1];
-                                        if (last?.role === 'model') return [...prev.slice(0, -1), { ...last, content: aiResponse }];
-                                        return [...prev, { role: 'model', content: aiResponse }];
-                                    });
-                                }
-                            }
-                        }
-                        if (aiResponse) speakSalty(aiResponse);
-                    }
-                }
-            } catch (err) {
-                console.error("Audio processing error:", err);
-            } finally {
-                setIsTyping(false);
-            }
+            await processChatResponse(chatMessages.concat(userMsg), true);
         };
     };
 
@@ -464,8 +441,12 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                                 {!recordedAudioUrl && (
                                     <div className="flex gap-2 items-center">
                                         <button
-                                            onMouseDown={startRecording} onMouseUp={stopRecording}
-                                            onTouchStart={startRecording} onTouchEnd={stopRecording}
+                                            onMouseDown={startRecording} 
+                                            onMouseUp={stopRecording}
+                                            onMouseLeave={stopRecording} // 🔱 SAFETY EXIT
+                                            onTouchStart={startRecording} 
+                                            onTouchEnd={stopRecording}
+                                            onTouchCancel={stopRecording} // 🔱 MOBILE EXIT
                                             className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${isRecording ? 'bg-red-500 text-white animate-pulse' : 'bg-secondary text-primary hover:opacity-90'}`}
                                         >
                                             {isRecording ? <Square size={18} fill="currentColor" /> : <Mic size={18} />}
