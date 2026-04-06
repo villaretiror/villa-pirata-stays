@@ -221,6 +221,7 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
     }, [isRecording]);
 
     const startRecording = async () => {
+        if (isRecording || mediaRecorder) return; // 🔱 SECURITY GUARD
         setRecordedAudioUrl(null);
         setRecordedAudioBlob(null);
         try {
@@ -256,6 +257,7 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 setRecordedAudioUrl(url);
                 setRecordedAudioBlob(audioBlob);
                 setIsRecording(false);
+                setMediaRecorder(null); // 🔱 CLEAN SLATE
                 stream.getTracks().forEach(track => track.stop());
             };
 
