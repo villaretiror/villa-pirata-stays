@@ -118,7 +118,7 @@ export const PROPERTIES: Property[] = [
       {
         id: 'booking-villa-retiro',
         platform: 'Booking.com',
-        url: 'https://ical.booking.com/v1/export?t=246c7179-e44f-458e-bede-2ff3376464b1',
+        url: 'https://ical.booking.com/v1/export?t=bf142b0d-286a-4bf0-86dc-6f84db12f496',
         lastSynced: new Date().toISOString(),
         syncStatus: 'success'
       }
