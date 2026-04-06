@@ -103,14 +103,16 @@ export default async function handler(req: any, res: any) {
       if (!text) return res.status(400).json({ error: 'Text required' });
       
       try {
-        const googleKey = getEnvVar('GOOGLE_GENERATIVE_AI_API_KEY') || getEnvVar('GEMINI_API_KEY');
-        const projectId = getEnvVar('GOOGLE_PROJECT_ID') || getEnvVar('VITE_GOOGLE_PROJECT_ID');
-        const openaiKey = getEnvVar('OPENAI_API_KEY');
+        const googleKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || process.env.VITE_GOOGLE_GENERATIVE_AI_API_KEY || "";
+        const projectId = process.env.GOOGLE_PROJECT_ID || process.env.VITE_GOOGLE_PROJECT_ID || "980673655590";
+        const openaiKey = process.env.OPENAI_API_KEY || process.env.VITE_OPENAI_API_KEY || "";
+
+        console.log(`[🔱 TTS Dispatcher]: Engine Probe -> G:${!!googleKey} P:${!!projectId} O:${!!openaiKey}`);
 
         // 🔱 PRIORITY 1: GEMINI-TTS (Multimodal Studio Engine)
         if (googleKey) {
           try {
-            console.log(`[🔱 TTS Radar]: Launching Gemini-TTS Multimodal Engine...`);
+            console.log(`[🔱 TTS Radar]: Launching Gemini-TTS (Kore Studio)...`);
             const googleTtsUrl = `https://texttospeech.googleapis.com/v1beta1/text:synthesize?key=${googleKey}`;
             const gResponse = await fetch(googleTtsUrl, {
               method: 'POST',
@@ -121,12 +123,10 @@ export default async function handler(req: any, res: any) {
               body: JSON.stringify({
                 input: { 
                   text,
-                  // 🎭 VOICE PROMPT: Actor's instruction for Gemini-TTS
                   prompt: "Dilo con un tono de concierge de lujo, pausado, extremadamente profesional y sofisticado. Como un anfitrión de élite en una villa del Caribe."
                 },
                 voice: { 
                   languageCode: "es-ES", 
-                  // 🎙️ CHOICE: 'Kore' is a top-tier Studio voice for a refined assistant
                   name: "es-ES-Studio-F", 
                   model_name: "gemini-2.1-f-tts-studio" 
                 },
@@ -142,7 +142,7 @@ export default async function handler(req: any, res: any) {
               return res.send(buffer);
             }
             const gErrData = await gResponse.json();
-            console.warn(`[🔱 TTS Warning]: Gemini-TTS failed. Details:`, gErrData.error?.message);
+            console.warn(`[🔱 TTS Warning]: Gemini-TTS blocked. Details:`, gErrData.error?.message || "Check Project Permissions");
           } catch (gErr) {
             console.error(`[🔱 TTS Error]: Gemini-TTS fatal failure:`, gErr);
           }
