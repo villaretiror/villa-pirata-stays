@@ -427,14 +427,10 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                                     <div className="bg-secondary p-2 rounded-2xl flex items-center justify-between shadow-lg">
                                         <div className="flex items-center gap-2">
                                             <button 
-                                                onClick={async () => {
-                                                    if (audioPreviewRef.current) {
-                                                        try {
-                                                            audioPreviewRef.current.load();
-                                                            await audioPreviewRef.current.play();
-                                                        } catch (e) {
-                                                            console.error("Audio playback error:", e);
-                                                        }
+                                                onClick={() => {
+                                                    if (recordedAudioUrl) {
+                                                        const audio = new Audio(recordedAudioUrl);
+                                                        audio.play().catch(e => console.error("🔱 RADAR: Playback failed", e));
                                                     }
                                                 }} 
                                                 className="w-8 h-8 bg-primary text-secondary rounded-full flex items-center justify-center hover:scale-110 active:scale-95 transition-all"
@@ -442,7 +438,6 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                                                 <Play size={14} fill="currentColor" />
                                             </button>
                                             <span className="text-[10px] text-white/80 font-mono">{formatTime(recordingTime)}</span>
-                                            <audio ref={audioPreviewRef} src={recordedAudioUrl} className="hidden" preload="auto" />
                                         </div>
                                         <div className="flex gap-2">
                                             <button 
