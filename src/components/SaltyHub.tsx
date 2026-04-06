@@ -201,6 +201,8 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         }
     };
 
+    const [recordedAudioMimeType, setRecordedAudioMimeType] = useState<string>('audio/webm');
+
     // 🔱 AUDIO RECORDING LOGIC
     const formatTime = (seconds: number) => {
         const mins = Math.floor(seconds / 60);
@@ -232,26 +234,22 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 'audio/wav'
             ].find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
             
+            setRecordedAudioMimeType(mimeType);
             console.log(`🔱 SALTY RADAR: Recording in ${mimeType}`);
 
             const recorder = new MediaRecorder(stream, { mimeType });
             const chunks: Blob[] = [];
+            
             // 🔱 HIGH-FIDELITY CHUNK ENGINE
             recorder.ondataavailable = (e) => {
                 if (e.data && e.data.size > 0) {
                     chunks.push(e.data);
-                    console.log(`🔱 SALTY RADAR: Captured chunk of ${e.data.size} bytes`);
                 }
             };
 
             recorder.onstop = () => {
                 const totalSize = chunks.reduce((acc, c) => acc + c.size, 0);
-                console.log(`🔱 SALTY RADAR: Recording stopped. Total size: ${totalSize} bytes`);
-                
-                if (totalSize === 0) {
-                    console.error("🔱 SALTY RADAR CRITICAL: Empty recording detected!");
-                    return;
-                }
+                if (totalSize === 0) return;
 
                 const audioBlob = new Blob(chunks, { type: mimeType });
                 const url = URL.createObjectURL(audioBlob);
@@ -261,13 +259,11 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
                 stream.getTracks().forEach(track => track.stop());
             };
 
-            // 🔱 ACTIVATE PRESSURE CAPTURE (1s intervals to satisfy Safari)
             recorder.start(1000);
             setMediaRecorder(recorder);
             setIsRecording(true);
         } catch (err) {
             console.error("Mic access denied:", err);
-            setChatMessages(prev => [...prev, { role: 'model', content: "Capitán, no logro sentir el micrófono. ¿Podría verificar los permisos? 🔱" }]);
         }
     };
 
@@ -282,13 +278,16 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         reader.readAsDataURL(recordedAudioBlob);
         reader.onloadend = async () => {
             const base64Data = (reader.result as string).split(',')[1];
+            
+            // 🔱 SYNCED MULTIMODAL PAYLOAD
             const userMsg = { 
                 role: 'user', 
                 content: [
                     { text: "🎙️ [Nota de Voz Enviada]" },
-                    { inlineData: { mimeType: 'audio/webm', data: base64Data } }
+                    { inlineData: { mimeType: recordedAudioMimeType, data: base64Data } }
                 ] 
             };
+            
             setChatMessages(prev => [...prev, { role: 'user', content: "🎙️ Nota de voz enviada." }]);
             setRecordedAudioUrl(null);
             setRecordedAudioBlob(null);
