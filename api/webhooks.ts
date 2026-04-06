@@ -117,8 +117,7 @@ export default async function handler(req: any, res: any) {
             const gResponse = await fetch(googleTtsUrl, {
               method: 'POST',
               headers: { 
-                'Content-Type': 'application/json',
-                ...(projectId ? { 'x-goog-user-project': projectId } : {})
+                'Content-Type': 'application/json'
               },
               body: JSON.stringify({
                 input: { 
