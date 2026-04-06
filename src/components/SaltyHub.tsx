@@ -223,11 +223,22 @@ const SaltyHub: React.FC<SaltyHubProps> = ({ propertyTitle, propertyId }) => {
         setRecordedAudioBlob(null);
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const recorder = new MediaRecorder(stream);
+            
+            // 🔱 CROSS-BROWSER MIME DETECTOR (Elite Standard)
+            const mimeType = [
+                'audio/mp4',
+                'audio/webm',
+                'audio/ogg',
+                'audio/wav'
+            ].find(type => MediaRecorder.isTypeSupported(type)) || 'audio/webm';
+            
+            console.log(`🔱 SALTY RADAR: Recording in ${mimeType}`);
+
+            const recorder = new MediaRecorder(stream, { mimeType });
             const chunks: Blob[] = [];
             recorder.ondataavailable = (e) => chunks.push(e.data);
             recorder.onstop = () => {
-                const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+                const audioBlob = new Blob(chunks, { type: mimeType });
                 const url = URL.createObjectURL(audioBlob);
                 setRecordedAudioUrl(url);
                 setRecordedAudioBlob(audioBlob);
