@@ -4,8 +4,15 @@ import { PropertyResolver } from './services/PropertyResolver';
 import { KnowledgeEngine } from './services/KnowledgeEngine';
 import { PromptFactory } from './services/PromptFactory';
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || '';
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+const getEnv = (key: string) => {
+    // @ts-ignore
+    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) return import.meta.env[key];
+    if (typeof process !== 'undefined' && process.env && process.env[key]) return process.env[key];
+    return '';
+};
+
+const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
+const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY');
 
 /**
  * 🔱 AI SERVICES (Salty's Cerebral Core 9.0 - Modular)
