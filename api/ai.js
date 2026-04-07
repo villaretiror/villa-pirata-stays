@@ -10,8 +10,10 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_SERVICE_ROLE_KEY || ""
 );
 
-const genAI = new GoogleGenAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "");
-const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+const genAI = new GoogleGenAI({ 
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "" 
+});
+const model = "gemini-1.5-flash"; // Valid stable model
 
 export default async function handler(req, res) {
   // 🛡️ AUTHENTICATION RADAR
@@ -44,9 +46,10 @@ export default async function handler(req, res) {
 
     console.log(`[AI API] Processing intent for user: ${user?.email || 'System'}`);
 
-    const result = await model.generateContent({
+    const result = await genAI.models.generateContent({
+      model,
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
+      config: {
         temperature: config.temperature || 0.2,
         maxOutputTokens: config.maxOutputTokens || 500,
         ...config
