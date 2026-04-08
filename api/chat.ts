@@ -100,7 +100,7 @@ export default async function handler(req: Request) {
             const functionDeclarations: any[] = [
                 {
                     name: 'check_availability',
-                    description: 'Busca disponibilidad real.',
+                    description: 'OBLIGATORIO para verificar disponibilidad real en fechas específicas. Úsalo SIEMPRE que se mencionen fechas de entrada/salida o se pregunte si la villa está libre.',
                     parameters: {
                         type: Type.OBJECT,
                         properties: {
