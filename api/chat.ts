@@ -143,18 +143,28 @@ export default async function handler(req: Request) {
                 const streamResponse = await ai.models.generateContentStream({
                     model: SALTY_MODEL,
                     contents,
-                    config: { systemInstruction: VILLA_CONCIERGE_PROMPT, tools: [{ functionDeclarations }], temperature: 0.5 }
+                    config: {
+                        systemInstruction: VILLA_CONCIERGE_PROMPT,
+                        tools: [{ functionDeclarations }],
+                        temperature: 0.5,
+                        maxOutputTokens: 1000
+                    }
                 });
 
                 let accumulatedParts: any[] = [];
                 for await (const chunk of streamResponse) {
-                    const candidate = chunk.candidates?.[0];
-                    if (!candidate?.content?.parts) continue;
-                    for (const part of candidate.content.parts) {
-                        accumulatedParts.push(part);
-                        if (part.text) {
-                            finalFullText += part.text;
-                            writeStream('0', part.text);
+                    // Modern SDK: chunk contains text and candidates
+                    if (chunk.text) {
+                        finalFullText += chunk.text;
+                        writeStream('0', chunk.text);
+                    }
+                    
+                    const parts = chunk.candidates?.[0]?.content?.parts;
+                    if (parts) {
+                        for (const part of parts) {
+                            accumulatedParts.push(part);
+                            // Ensure part.text isn't duplicated if we already handled chunk.text
+                            // but we still need it in accumulatedParts for the tool-calling loop.
                         }
                     }
                 }

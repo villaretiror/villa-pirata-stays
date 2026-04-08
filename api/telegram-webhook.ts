@@ -224,7 +224,10 @@ export default async function handler(req: any, res: any) {
         const result = await (ai as any).models.generateContent({
             model: 'gemini-3-flash-preview',
             contents: [ { role: 'user', parts } ],
-            config: { temperature: 0.2 } 
+            config: { 
+                temperature: 0.2,
+                systemInstruction: 'Eres Salty, el Concierge de Élite de Villa Retiro. Ayuda al Capitán Host.'
+            } 
         });
 
         const responseText = result.text || "Capitán, mis registros están estáticos. Reintente.";
