@@ -25,7 +25,7 @@ export const PropertyResolver = {
         // 🔱 NATIVE ALIAS RESOLVER (Internal DB Lookup)
         const { data: prop } = await client.from('properties')
             .select('id')
-            .or(`internal_name.ilike.%${lower}%,title.ilike.%${lower}%,subtitle.ilike.%${lower}%`)
+            .or(`title.ilike.%${lower}%,subtitle.ilike.%${lower}%`)
             .limit(1)
             .maybeSingle();
 

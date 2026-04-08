@@ -170,18 +170,14 @@ export default async function handler(req: Request) {
 
                 let accumulatedParts: any[] = [];
                 for await (const chunk of streamResponse) {
-                    // Modern SDK: chunk contains text and candidates
-                    if (chunk.text) {
-                        finalFullText += chunk.text;
-                        writeStream('0', chunk.text);
-                    }
-                    
-                    const parts = chunk.candidates?.[0]?.content?.parts;
-                    if (parts) {
-                        for (const part of parts) {
+                    const candidate = chunk.candidates?.[0];
+                    if (candidate?.content?.parts) {
+                        for (const part of candidate.content.parts) {
                             accumulatedParts.push(part);
-                            // Ensure part.text isn't duplicated if we already handled chunk.text
-                            // but we still need it in accumulatedParts for the tool-calling loop.
+                            if (part.text) {
+                                finalFullText += part.text;
+                                writeStream('0', part.text);
+                            }
                         }
                     }
                 }
@@ -196,8 +192,8 @@ export default async function handler(req: Request) {
                     writeStream('a', call);
                     const executor = toolExecutors[call.name];
                     const result = executor ? await executor(call.args || {}) : { error: "Tool not found" };
-                    writeStream('p', { name: call.name, response: { result }, id: call.id });
-                    toolResultParts.push({ functionResponse: { name: call.name, response: { result }, id: call.id } });
+                    writeStream('p', { name: call.name, response: { result } });
+                    toolResultParts.push({ functionResponse: { name: call.name, response: { result } } });
                 }
                 contents.push({ role: 'user', parts: toolResultParts });
                 iterations++;

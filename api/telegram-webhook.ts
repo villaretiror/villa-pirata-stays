@@ -230,7 +230,9 @@ export default async function handler(req: any, res: any) {
             } 
         });
 
-        const responseText = result.text || "Capitán, mis registros están estáticos. Reintente.";
+        const responseText = result.candidates?.[0]?.content?.parts
+            ?.map((p: any) => p.text || '')
+            .join('') || "Capitán, mis registros están estáticos. Reintente.";
 
         // 💾 LOG INTERACTION
         await supabase.from('ai_chat_logs').insert([

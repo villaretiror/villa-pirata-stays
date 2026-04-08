@@ -181,8 +181,7 @@ export const CalendarSyncService = {
                 await supabase.from('bookings').update({
                     sync_last_hash: block.hash,
                     is_manual_block: isManual,
-                    customer_name: displayLabel,
-                    updated_at: new Date().toISOString()
+                    customer_name: displayLabel
                 }).eq('id', match.id);
                 updatedCount++;
             }
