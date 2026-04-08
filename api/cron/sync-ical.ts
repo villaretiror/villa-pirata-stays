@@ -121,7 +121,7 @@ export default async function handler(req: any, res: any) {
                             if (f.platform === feed.platform) return { ...f, lastSynced: new Date().toISOString(), syncStatus: 'success', events_found: blocks.length };
                             return f;
                         });
-                        await supabase.from('properties').update({ calendarSync: feeds, updated_at: new Date().toISOString() }).eq('id', prop.id);
+                        await supabase.from('properties').update({ calendarSync: feeds }).eq('id', prop.id);
 
                     } else {
                         // Fail-safe check
