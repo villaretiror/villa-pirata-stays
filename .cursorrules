@@ -19,7 +19,8 @@
 - **Zero Read-Only Policy:** Ningún dashboard puede ser meramente informativo. Todo panel (Host/Staff) debe permitir acciones inmediatas (CRUD) con feedback visual de carga/éxito.
 - **Task Loop:** El `StaffDashboard` es el centro de misiones. El personal debe poder marcar tareas como "Completadas" con impacto inmediato en la disponibilidad de la villa.
 
-## 🧠 SALTY AI 7.0 (THE CLOSER)
+## 🧠 SALTY AI 9.0 (THE CLOSER & CONCIERGE)
+- **Modelo Soberano e Inmutable (AI Model Freeze):** Queda estrictamente PROHIBIDO cambiar el modelo de IA (`SALTY_MODEL`, `gemini-3.1-flash-preview`, etc.) en cualquier endpoint (`api/chat.ts`, `api/telegram-webhook.ts`) a menos que exista una instrucción explícita y personal del Capitán. No se permiten degradaciones o cambios "a ciegas" que comprometan la estabilidad del flujo de conversión. El motor actual validado es **Gemini 3.1 Flash Preview (Abril 2026)**.
 - **Salty Vendedor:** Salty ya no solo informa; Salty Cierra. Si una villa está ocupada, ejecuta automáticamente el "Protocolo de Cross-Selling" ofreciendo la otra propiedad de la flota con link directo.
 - **Panic Trigger:** El botón de Emergencia en el chat debe disparar `handleCrisisAlert` con severidad crítica (Level 5) y persistencia en `urgent_alerts`.
 
