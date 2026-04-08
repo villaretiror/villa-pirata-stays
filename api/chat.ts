@@ -8,6 +8,7 @@ import {
     applyAIQuote,
     resolvePropertyId,
     getSaltyPrompt,
+    listBookings
     } from '../src/aiServices.js';
 
 export const config = {
@@ -118,6 +119,18 @@ export default async function handler(req: Request) {
                         properties: { villa_id: { type: Type.STRING } },
                         required: ['villa_id']
                     }
+                },
+                {
+                    name: 'list_bookings',
+                    description: 'Muestra las próximas reservas confirmadas para una villa.',
+                    parameters: {
+                        type: Type.OBJECT,
+                        properties: {
+                            villa_id: { type: Type.STRING },
+                            limit: { type: Type.NUMBER }
+                        },
+                        required: ['villa_id']
+                    }
                 }
             ];
 
@@ -133,6 +146,10 @@ export default async function handler(req: Request) {
                     const id = args.villa_id || args.propertyId || '1081171030449673920';
                     const result = await findCalendarGaps(id, supabase);
                     return { status: 'success', ...result };
+                },
+                list_bookings: async (args: any) => {
+                    const result = await listBookings(args.villa_id, args.limit || 5);
+                    return { status: result.ok ? 'success' : 'error', ...result };
                 }
             };
 

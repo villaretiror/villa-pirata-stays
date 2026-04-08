@@ -133,6 +133,28 @@ export const aiServices = {
 
         const info = await KnowledgeEngine.discover(propertyId, query, supabase);
         return info.length > 0 ? info.join('\n') : null;
+    },
+
+    /**
+     * Lists recent or future bookings for a property.
+     */
+    async listBookings(propertyInput: string, limit: number = 5) {
+        const config = getSupabaseConfig();
+        const supabase = createClient(config.url, config.key);
+        const propertyId = await PropertyResolver.resolveId(propertyInput, supabase);
+        
+        if (!propertyId) return { ok: false, error: 'Propiedad no encontrada.' };
+
+        const { data, error } = await supabase
+            .from('bookings')
+            .select('id, customer_name, check_in, check_out, status, source, total_price')
+            .eq('property_id', propertyId)
+            .neq('status', 'cancelled')
+            .order('check_in', { ascending: true })
+            .limit(limit);
+
+        if (error) return { ok: false, error: 'Falla en lectura de bitácora.' };
+        return { ok: true, bookings: data };
     }
 };
 
@@ -177,6 +199,10 @@ export const applyAIQuote = async (_propId: string, _in: string, _out: string, _
 
 export const findCalendarGaps = async (_id: string, _client?: any) => {
     return [];
+};
+
+export const listBookings = async (propertyInput: string, limit?: number) => {
+    return await aiServices.listBookings(propertyInput, limit);
 };
 
 export const findAlternatePropertyAvailable = async (_id: string, _in: string, _out: string, _client?: any) => {
