@@ -44,71 +44,89 @@ export const aiServices = {
 
         const { qIn, qOut } = dateCheck;
 
-        // 3. Query Real Bookings & Synced Blocks
-        const [bookingRes, syncedRes] = await Promise.all([
-            supabase
-                .from('bookings')
-                .select('check_in, check_out, status, hold_expires_at, source, is_manual_block, customer_name')
-                .eq('property_id', finalId)
-                .neq('status', 'cancelled'),
-            supabase
-                .from('synced_blocks')
-                .select('check_in, check_out, source')
-                .eq('property_id', finalId)
+        // 3. 🔱 UNIFIED VISION: Fetch perfect mirror of Host Dashboard data
+        const [bundleRes, syncedRes] = await Promise.all([
+            supabase.rpc('get_property_availability_bundle', { 
+                target_property_id: finalId 
+            }),
+            supabase.from('synced_blocks').select('check_in, check_out, source').eq('property_id', finalId)
         ]);
 
-        if (bookingRes.error || syncedRes.error) {
+        if (bundleRes.error || syncedRes.error) {
+            console.error("🔱 RADAR FAILURE:", bundleRes.error || syncedRes.error);
             return { available: false, reason: 'Tengo interferencia en las cartas náuticas. Déjeme validar con el Capitán principal.' };
         }
 
-        // A. Overlap Engine
+        const bundle = bundleRes.data;
+        const dbBookings = bundle.bookings || [];
+        const synced = syncedRes.data || [];
+        const rules = bundle.rules || [];
+        const propData = bundle.property || {};
+        
+        // 🔱 ACTIVE DEPLOYMENT: Combine all blocking factors
+        const activeBookings = [...dbBookings, ...synced];
+
+        // 📅 RECALIBRATED DATE ENGINE: AST Mirror Logic
+        const addRange = (start: string, end: string) => {
+            const bIn = new Date(start + 'T12:00:00');
+            const bOut = new Date(end + 'T12:00:00');
+            return qIn < bOut && qOut > bIn;
+        };
+
+        // 1. Process Manual Blocks from Property Table (Legacy)
+        const legacyBlocked = propData.blockeddates || propData.blockedDates || [];
+        if (Array.isArray(legacyBlocked)) {
+            const isBlockedManual = legacyBlocked.some(dStr => {
+                const dateObj = new Date(dStr + 'T12:00:00');
+                const qInDate = new Date(checkIn + 'T12:00:00');
+                const qOutDate = new Date(checkOut + 'T12:00:00');
+                return dateObj >= qInDate && dateObj < qOutDate;
+            });
+            if (isBlockedManual) return { available: false, reason: 'Estas fechas han sido bloqueadas manualmente por la administración para mantenimiento o uso privado.' };
+        }
+
+        // 2. Process Availability Rules & Advance Notice
+        let advanceNotice = propData.sync_settings?.advance_notice || 2;
+        if (rules && rules.length > 0) {
+            const todayStr = now.toISOString().split('T')[0];
+            const activeRule = rules.find((r: any) => todayStr >= r.start_date && todayStr <= r.end_date);
+            if (activeRule && activeRule.advance_notice_days !== undefined) {
+                advanceNotice = activeRule.advance_notice_days;
+            }
+            
+            // Check for specific date range blocks in rules
+            const ruleBlock = rules.find((r: any) => r.is_blocked && addRange(r.start_date, r.end_date));
+            if (ruleBlock) return { available: false, reason: 'El periodo solicitado no está disponible según las reglas operativas actuales.' };
+        }
+
+        // Re-validate with Dynamic Advance Notice
+        const dynamicDateCheck = DateValidator.validateRange(checkIn, checkOut, advanceNotice);
+        if (!dynamicDateCheck.ok) return { available: false, reason: dynamicDateCheck.error };
+
+        // A. Overlap Engine (Consolidated Truth)
         const BLOCKING_STATUSES = ['pending', 'confirmed', 'Paid', 'pending_verification', 'pending_ai_validation', 'external_block'];
         
-        const nativeOverlap: any = (bookingRes.data || []).find((b: any) => {
-            if (!BLOCKING_STATUSES.includes(b.status || '')) return false;
+        const overlap: any = (activeBookings || []).find((b: any) => {
+            if (b.status && !BLOCKING_STATUSES.includes(b.status)) return false;
             if (b.status === 'pending_ai_validation' && b.hold_expires_at && new Date(b.hold_expires_at) < now) return false;
             
-            const bIn = new Date(b.check_in);
-            const bOut = new Date(b.check_out);
-            return qIn < bOut && qOut > bIn;
+            return addRange(b.check_in, b.check_out);
         });
 
-        if (nativeOverlap) {
-            const isBookingClosed = nativeOverlap.source === 'Booking.com' && (nativeOverlap.customer_name?.includes('CLOSED') || !nativeOverlap.customer_name);
-            const displayType = (nativeOverlap.is_manual_block && !isBookingClosed) ? 'Mantenimiento' : 'Comercial';
+        if (overlap) {
+            const isBookingClosed = overlap.source === 'Booking.com' && (overlap.customer_name?.includes('CLOSED') || !overlap.customer_name);
+            const isManual = overlap.is_manual_block || overlap.status === 'external_block';
+            const displayType = (isManual && !isBookingClosed) ? 'Mantenimiento' : 'Comercial';
             
             return { 
                 available: false, 
                 reason: `Choque detectado: ${displayType}.`,
                 blockingEvent: {
                     type: displayType,
-                    source: nativeOverlap.source,
-                    check_in: nativeOverlap.check_in,
-                    check_out: nativeOverlap.check_out,
-                    guest: nativeOverlap.customer_name || 'Huésped Externo'
-                }
-            };
-        }
-
-        // B. External Synced Blocks Overlap (Double Check)
-        const externalOverlap = (syncedRes.data || []).find((b: any) => {
-            const bIn = new Date(b.check_in);
-            const bOut = new Date(b.check_out);
-            return qIn < bOut && qOut > bIn;
-        });
-
-        if (externalOverlap) {
-            const isBookingClosed = externalOverlap.source === 'Booking.com';
-            const displayType = isBookingClosed ? 'Comercial' : 'Bloqueo Externo';
-            
-            return { 
-                available: false, 
-                reason: `Bloqueo externo detectado: ${displayType}.`,
-                blockingEvent: {
-                    type: displayType,
-                    source: externalOverlap.source,
-                    check_in: externalOverlap.check_in,
-                    check_out: externalOverlap.check_out
+                    source: overlap.source || 'Directo',
+                    check_in: overlap.check_in,
+                    check_out: overlap.check_out,
+                    guest: overlap.customer_name || 'Huésped Externo'
                 }
             };
         }
