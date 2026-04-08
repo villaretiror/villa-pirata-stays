@@ -222,7 +222,7 @@ export default async function handler(req: any, res: any) {
         if (visualData) parts.push(visualData);
 
         const result = await (ai as any).models.generateContent({
-            model: 'gemini-1.5-flash',
+            model: 'gemini-3-flash-preview',
             contents: [ { role: 'user', parts } ],
             config: { temperature: 0.2 } 
         });

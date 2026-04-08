@@ -13,7 +13,7 @@ const supabase = createClient(
 const genAI = new GoogleGenAI({ 
   apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY || process.env.GEMINI_API_KEY || "" 
 });
-const model = "gemini-1.5-flash"; // Valid stable model
+const model = "gemini-3-flash-preview"; // Latest 2026 stable preview model
 
 export default async function handler(req, res) {
   // 🛡️ AUTHENTICATION RADAR

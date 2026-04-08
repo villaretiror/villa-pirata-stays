@@ -4,15 +4,19 @@ import { PropertyResolver } from './services/PropertyResolver';
 import { KnowledgeEngine } from './services/KnowledgeEngine';
 import { PromptFactory } from './services/PromptFactory';
 
-const getEnv = (key: string) => {
-    // @ts-ignore
-    if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) return import.meta.env[key];
-    if (typeof process !== 'undefined' && process.env && process.env[key]) return process.env[key];
-    return '';
-};
+const getSupabaseConfig = () => {
+    const getEnv = (key: string) => {
+        // @ts-ignore
+        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env[key]) return import.meta.env[key];
+        if (typeof process !== 'undefined' && process.env && process.env[key]) return process.env[key];
+        return '';
+    };
 
-const SUPABASE_URL = getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL');
-const SUPABASE_ANON_KEY = getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY');
+    return {
+        url: getEnv('VITE_SUPABASE_URL') || getEnv('SUPABASE_URL'),
+        key: getEnv('VITE_SUPABASE_ANON_KEY') || getEnv('SUPABASE_ANON_KEY')
+    };
+};
 
 /**
  * 🔱 AI SERVICES (Salty's Cerebral Core 9.0 - Modular)
@@ -24,7 +28,8 @@ export const aiServices = {
      * Uses DateValidator and PropertyResolver.
      */
     async checkAvailabilityWithICal(propertyInput: string, checkIn: string, checkOut: string) {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const config = getSupabaseConfig();
+        const supabase = createClient(config.url, config.key);
         const now = new Date();
 
         // 1. Resolve Property (Dynamic Lookup)
@@ -120,7 +125,8 @@ export const aiServices = {
      * Resolves property-specific knowledge via the Librarian (KnowledgeEngine).
      */
     async queryPropertyKnowledge(propertyInput: string, query: string) {
-        const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const config = getSupabaseConfig();
+        const supabase = createClient(config.url, config.key);
         const propertyId = await PropertyResolver.resolveId(propertyInput, supabase);
         
         if (!propertyId) return null;
@@ -134,12 +140,14 @@ export const aiServices = {
 // These match the exact signatures and return types expected by the entire system.
 
 export const resolvePropertyId = async (input: string, client?: any) => {
-    const supabase = client || createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const config = getSupabaseConfig();
+    const supabase = client || createClient(config.url, config.key);
     return await PropertyResolver.resolveId(input, supabase);
 };
 
 export const queryPropertyKnowledge = async (query: string, propertyId: string, client?: any, _options?: any) => {
-    const supabase = client || createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const config = getSupabaseConfig();
+    const supabase = client || createClient(config.url, config.key);
     const info = await KnowledgeEngine.discover(propertyId, query, supabase);
     return {
         ok: true,
@@ -191,7 +199,8 @@ export const findNextAvailability = async (_id: string, _start?: string, _end?: 
 export const handleCrisisAlert = async (...args: any[]) => {
     // Flexible signature to handle any number of arguments from the UI
     const propertyId = args[2] || args[0]; 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const config = getSupabaseConfig();
+    const supabase = createClient(config.url, config.key);
     await supabase.from('urgent_alerts').insert({ property_id: propertyId, message: 'CRISIS ALERT: Automated Trigger', severity: args[3] || 3 });
     return { ok: true };
 };
