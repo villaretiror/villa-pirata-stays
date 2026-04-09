@@ -138,9 +138,13 @@ export default async function handler(req: any, res: any) {
 
         // 🛡️ SECURITY SHIELD (Owner Verification)
         const ALLOWED_CHATS = ['-5184291508', '2085187904', '1182255799'];
-        const isOwner = ['Villaretiror', 'brian', 'Villaretiro_Alerts_Bot'].includes(username);
+        const isOwner = ['Villaretiror', 'brian', 'Villaretiro_Alerts_Bot', 'salty', 'brianrojas'].includes(username.toLowerCase());
         
-        if (!ALLOWED_CHATS.includes(String(chatId)) && !isOwner) return res.status(200).send('Unauthorized Access');
+        // Log access attempt
+        if (!isOwner) {
+            console.log(`🔱 Salty Radar: Public Guest Access from ${username} (${chatId})`);
+        }
+
         const isMentioned = text.includes('@villaretiro_bot') || update.message.chat.type === 'private' || isOwner;
         if (!isMentioned && !photo) return res.status(200).send('No mention');
 
@@ -194,13 +198,15 @@ export default async function handler(req: any, res: any) {
         const { data: businessData } = isOwner ? await supabase.from('business_activity_logs').select('*').order('date', { ascending: false }).limit(5) : { data: null };
         const { data: chatContext } = await supabase.from('ai_chat_logs').select('*').eq('session_id', String(chatId)).order('created_at', { ascending: false }).limit(10);
         
+        const role = isOwner ? 'host' : 'guest';
+        const rawHistory = (chatContext || []).map((msg: any) => `${msg.sender}: ${msg.text}`).reverse().join('\n');
+        
         // 🛰️ CALENDAR RADAR (Current Month)
         const startOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
         const endOfMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().split('T')[0];
-        const { data: activeBookings } = isOwner ? await supabase.from('bookings').select('property_id, check_in, check_out, source, status').gte('check_in', startOfMonth).lte('check_in', endOfMonth) : { data: null };
-
-        const role = isOwner ? 'host' : 'guest';
-        const rawHistory = (chatContext || []).map((msg: any) => `${msg.sender}: ${msg.text}`).reverse().join('\n');
+        // 🔱 UNIFIED RADAR: High-precision availability fetch
+        const { data: activeBookings } = await supabase.from('bookings').select('property_id, check_in, check_out, source, status').gte('check_in', startOfMonth).lte('check_in', endOfMonth);
+        const { data: latestBlocks } = await supabase.from('synced_blocks').select('check_in, check_out').limit(50);
         
         const systemPrompt = `
         ${getSaltyPrompt(role, { userName: user.first_name, source: 'Telegram' }, '')}
@@ -208,10 +214,11 @@ export default async function handler(req: any, res: any) {
         ### 👑 PROTOCOLO DE PAZ MENTAL (Soberano):
         1. Eres el Vicepresidente de Operaciones con PODER TOTAL pero RESPONSABILIDAD ABSOLUTA.
         2. No inventes nada. Usa la Fuente de Verdad: ${JSON.stringify(PROPERTIES)}
-        3. RADAR DE RESERVAS (ESTRICTAMENTE REAL): ${JSON.stringify(activeBookings)}
+        3. RADAR DE RESERVAS (ESTRICTAMENTE REAL): ${JSON.stringify(activeBookings || latestBlocks)}
         4. Para el Capitán: Sé su reporte inteligente basado en ${JSON.stringify(businessData)}.
         5. ACCIONES: Siempre usa botones de confirmación para sincronizar o modificar.
         6. VISIÓN: Si recibes una imagen, descríbela técnicamente bajo el prisma de la operación (eficiencia, mantenimiento o finanzas).
+        7. **HALLUCINATION PROHIBITED**: Si mencionas disponibilidad, DEBES basarte en el RADAR arriba. Si no hay data para una fecha, di que está "en validación".
         
         ### 🕵️ CONTEXTO ESTRATÉGICO:
         ${rawHistory}

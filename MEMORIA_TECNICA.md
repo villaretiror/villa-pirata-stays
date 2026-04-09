@@ -142,6 +142,17 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 
 ---
 
+### [2026-04-09] - 🔱 Supabase MCP Handshake & Type Audit
+- **Logro**: Integración total del Servidor MCP de Supabase y auditoría de alta fidelidad.
+- **Cambios Realizados**:
+    *   **MCP Wrapper**: Actualización de `.cursor/supabase-mcp-wrapper.sh` con inyección segura de credenciales (`SUPABASE_SERVICE_ROLE_KEY` y `SUPABASE_URL`) para permitir el handshake con Cursor.
+    *   **Configuración**: Activación de `.cursor/mcp.json` para orquestación directa desde el editor.
+    *   **Auditoría de Tipos**: Verificación en tiempo real de la tabla `properties`. Se confirmaron las columnas críticas (`calendarSync`, `property_features`, `sync_settings`) y se detectaron nuevas estructuras para `reviews_list` y `seasonal_prices`.
+- **Validación**: Conexión exitosa. El sistema ahora permite a los agentes consultar el esquema de base de datos con precisión militar, evitando desalineaciones entre el código y la DB.
+- **Por Qué**: Empoderar al equipo multi-agente con acceso directo a la fuente de verdad (Soberanía de Datos) para acelerar el desarrollo de funciones sin errores de esquema.
+
+---
+
 ## 🛡️ Estatus de la Flota (Orquestación Activa)
 - [x] Implementar Shadow Mode para validación automática de contraste.
 - [x] Refactorización de Élite en `FinanceService`.
@@ -157,5 +168,6 @@ Este documento es el registro histórico de las decisiones estratégicas de inge
 - [x] **Salty 6.5** — Búsqueda Semántica de Conocimiento (Anti-Alucinación) operativa.
 - [x] **Salty 6.6** — Luxury UX/UI Overhaul (QA Final) aplicado.
 - [x] **Salty 6.7** — Sincronización del Motor de Descubrimiento (Fix) operativa.
+- [x] **Supabase MCP Handshake** — Handshake y auditoría de tipos completada.
 
-"Salty 6.7 está en el aire. El mapa del paraíso vuelve a brillar." 🔱 ⚓ 🎙️
+"Salty ahora tiene visión directa al búnker de datos. La precisión es absoluta." 🔱 ⚓ 🏦

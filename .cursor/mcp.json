@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "supabase": {
+      "command": "/Users/brianrojas/Downloads/villa-&-pirata-stays/.cursor/supabase-mcp-wrapper.sh",
+      "args": []
+    }
+  }
+}

@@ -215,9 +215,53 @@ export const applyAIQuote = async (_propId: string, _in: string, _out: string, _
     };
 };
 
-export const findCalendarGaps = async (_id: string, _client?: any) => {
-    return [];
-};
+    export const findCalendarGaps = async (propertyInput: string, client?: any) => {
+        const config = getSupabaseConfig();
+        const supabase = client || createClient(config.url, config.key);
+        const propertyId = await PropertyResolver.resolveId(propertyInput, supabase);
+        if (!propertyId) return { ok: false, gaps: [], error: 'Propiedad no encontrada' };
+
+        // Reuse the unified bundle
+        const { data: bundle } = await supabase.rpc('get_property_availability_bundle', { 
+            target_property_id: propertyId 
+        });
+        const { data: synced } = await supabase.from('synced_blocks').select('check_in, check_out').eq('property_id', propertyId);
+
+        const allBlocks = [
+            ...(bundle?.bookings || []),
+            ...(synced || []),
+            ...(bundle?.property?.blockeddates || []).map((d: string) => ({ check_in: d, check_out: d })) // Simple normalization
+        ];
+
+        const today = new Date();
+        const gaps: { start: string, end: string, nights: number }[] = [];
+        
+        // Scan next 30 days
+        for (let i = 0; i < 30; i++) {
+            const start = new Date(today);
+            start.setDate(today.getDate() + i);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 2); // Look for min 2 nights
+
+            const sStr = start.toISOString().split('T')[0];
+            const eStr = end.toISOString().split('T')[0];
+
+            // Check if this 2-night range is free
+            const isBlocked = allBlocks.some(b => {
+                const bIn = b.check_in;
+                const bOut = b.check_out;
+                return sStr < bOut && eStr > bIn;
+            });
+
+            if (!isBlocked) {
+                gaps.push({ start: sStr, end: eStr, nights: 2 });
+                i += 2; // Skip ahead
+                if (gaps.length >= 3) break; // Return top 3
+            }
+        }
+
+        return { ok: true, gaps };
+    };
 
 export const listBookings = async (propertyInput: string, limit?: number) => {
     return await aiServices.listBookings(propertyInput, limit);
