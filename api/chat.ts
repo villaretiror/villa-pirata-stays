@@ -156,11 +156,9 @@ export default async function handler(req: Request) {
             let iterations = 0;
             let finalFullText = "";
 
-            const SALTY_CORE_MODEL = 'gemini-1.5-flash';
-
             while (iterations < 5) {
                 const streamResponse = await (ai as any).models.generateContentStream({
-                    model: SALTY_CORE_MODEL,
+                    model: SALTY_MODEL,
                     contents,
                     config: {
                         systemInstruction: VILLA_CONCIERGE_PROMPT,
