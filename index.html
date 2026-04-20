@@ -108,9 +108,29 @@
   </script>
   <!-- 🔱 VAPI VOICE ENGINE: El corazón del Concierge de Voz (Sovereign Edition) -->
   <script src="https://cdn.jsdelivr.net/gh/VapiAI/html-script-tag@latest/dist/assets/index.js" onload="console.log('🔱 VAPI ENGINE: Motor Cargado Correctamente.')" onerror="console.error('🔱 VAPI ENGINE: Error Crítico al cargar el motor desde CDN.')"></script>
+  <!-- Meta Pixel Code -->
+  <script>
+    !function(f,b,e,v,n,t,s)
+    {if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+    n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+    if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+    n.queue=[];t=b.createElement(e);t.async=!0;
+    t.src=v;s=b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t,s)}(window, document,'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '304030460773434');
+    fbq('track', 'PageView');
+  </script>
+  <!-- End Meta Pixel Code -->
 </head>
 
+
 <body class="bg-sand text-text-main antialiased h-full selection:bg-primary selection:text-white">
+  <noscript>
+    <img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=304030460773434&ev=PageView&noscript=1" />
+  </noscript>
+
   <script src="/reporter.js"></script>
   <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
