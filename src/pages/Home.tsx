@@ -189,7 +189,7 @@ const Home: React.FC = () => {
         if (hasConflict) return false;
 
         // 2. Check against Manual Blocks
-        const mBlocks = property.blockedDates || property.blockeddates || [];
+        const mBlocks = property.blockedDates || (property as any).blockeddates || [];
         const isBlockedManually = mBlocks.some((d: string) => d >= sStr && d < eStr);
         if (isBlockedManually) return false;
       }

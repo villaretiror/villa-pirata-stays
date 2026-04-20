@@ -39,6 +39,8 @@ const BookingCalendar: React.FC<BookingCalendarProps> = ({
     }, []);
 
     const [[monthOffset, direction], setMonthOffset] = useState([0, 0]);
+    const [monthsShown, setMonthsShown] = useState(1);
+    const [isDragging, setIsDragging] = useState(false);
     const calMonth = useMemo(() => addMonths(minDate, monthOffset), [minDate, monthOffset]);
 
     const paginate = (newDirection: number) => {
