@@ -70,19 +70,6 @@ export const CalendarSyncService = {
         return { total: totalGlobalImported, details: reports.join('\n') };
     },
 
-    parseIcsToBlocks(icsText: string, propertyId: string) {
-        const lines = icsText.split(/\r?\n/);
-        let inEvent = false, dtStart = '', dtEnd = '', summary = '', uid = '';
-        const blocks = [];
-
-        for (const rawLine of lines) {
-            const line = rawLine.trim();
-            if (line === 'BEGIN:VEVENT') {
-                inEvent = true; dtStart = ''; dtEnd = ''; summary = ''; uid = ''; continue;
-            }
-            if (line === 'END:VEVENT' && inEvent) {
-                inEvent = false;
-
     // 🛡️ ICAL PRECISION PARSER: Manejo explícito de hora UTC hacia AST (Puerto Rico/Caribe)
     processICalDate(raw: string) {
         if (!raw) return '';
