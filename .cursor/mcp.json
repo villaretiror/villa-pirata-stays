@@ -1,8 +1,17 @@
 {
   "mcpServers": {
     "supabase": {
-      "command": "/Users/brianrojas/Downloads/villa-&-pirata-stays/.cursor/supabase-mcp-wrapper.sh",
-      "args": []
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest"
+      ],
+      "env": {
+        "SUPABASE_URL": "https://plpnydhgvqoqwrvuzvzq.supabase.co",
+        "SUPABASE_PROJECT_ID": "plpnydhgvqoqwrvuzvzq",
+        "SUPABASE_SERVICE_ROLE_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBscG55ZGhndnFvcXdydnV6dnpxIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2NjgwNTI4OSwiZXhwIjoyMDgyMzgxMjg5fQ.ThM3yxp4X-rDYtwWh4Ke6GQ4beLtWdqlTHp0ms7MXwg",
+        "SUPABASE_ACCESS_TOKEN": "sbp_9050a888dc0e554cc9658b524472061d4aa7a47c"
+      }
     }
   }
 }

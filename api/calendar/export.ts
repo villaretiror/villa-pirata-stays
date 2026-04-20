@@ -166,8 +166,13 @@ export default async function handler(req: any, res: any) {
             event.uid(`vrr-rule-${rule.id}`);
         });
 
+        // 🔱 SALTY LOOP CLOSURE: Prevent any caching of availability
         res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="villa-${id}.ics"`);
+        res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+        res.setHeader('Pragma', 'no-cache');
+        res.setHeader('Expires', '0');
+        
         res.status(200).send(calendar.toString());
 
     } catch (error: any) {

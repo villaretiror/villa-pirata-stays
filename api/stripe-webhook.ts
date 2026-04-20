@@ -72,13 +72,21 @@ export default async function handler(req: any, res: any) {
         }
 
         // 1. Secure Atomic Update
-        await supabase.from('bookings').update({
+        const bookingUpdate = supabase.from('bookings').update({
           status: 'confirmed',
           payment_method: 'stripe',
           contract_signed: true
         }).eq('id', bookingId);
 
-        console.log(`[Stripe Webhook] 🔱 Reservation ${bookingId} CONFIRMED.`);
+        // 🔱 SALTY LOOP CLOSURE: "Touch" the property to force external platforms 
+        // (Airbnb/Booking) to notice the change in the iCal feed via LAST-MODIFIED.
+        const propertyTouch = supabase.from('properties').update({
+          updated_at: new Date().toISOString()
+        }).eq('id', currentBooking.property_id);
+
+        await Promise.all([bookingUpdate, propertyTouch]);
+
+        console.log(`[Stripe Webhook] 🔱 Reservation ${bookingId} CONFIRMED & Property ${currentBooking.property_id} Touched.`);
 
         // 2-4. Fire all notifications in parallel (non-blocking for Stripe)
         Promise.allSettled([

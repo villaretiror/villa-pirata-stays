@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
+import { CalendarSyncService } from '../src/services/CalendarSyncService';
 
 const getEnvVar = (key: string): string => process.env[key] || process.env[`VITE_${key}`] || "";
 
@@ -12,48 +13,23 @@ const supabase = createClient(
   getEnvVar('SUPABASE_SERVICE_ROLE_KEY')
 );
 
-// 🛡️ ZERO-TRUST: GHOST WINDOW ICAL PARSER
-function checkIcsOverlap(icsText: string, checkIn: string, checkOut: string): boolean {
-    const lines = icsText.split(/\r?\n/);
-    let inEvent = false, dtStart = '', dtEnd = '';
-    
-    const reqStart = Number(checkIn.replace(/-/g, ''));
-    const reqEnd = Number(checkOut.replace(/-/g, ''));
+// 🛡️ ZERO-TRUST: GHOST WINDOW OVERLAP PROTECTOR
+function hasGhostOverlap(icsText: string, propertyId: string, checkIn: string, checkOut: string): boolean {
+    try {
+        const blocks = CalendarSyncService.parseIcsToBlocks(icsText, propertyId);
+        
+        // Match the YYYY-MM-DD format for direct string comparison
+        const reqStart = checkIn;
+        const reqEnd = checkOut;
 
-    for (const rawLine of lines) {
-       const line = rawLine.trim();
-       if (line === 'BEGIN:VEVENT') { inEvent = true; dtStart = ''; dtEnd = ''; continue; }
-       if (line === 'END:VEVENT' && inEvent) {
-           inEvent = false;
-           if (!dtStart || !dtEnd) continue;
-           
-           const parseToYMD = (raw: string) => {
-               if (raw.includes('T') && raw.length >= 15) {
-                   const iso = `${raw.substring(0,4)}-${raw.substring(4,6)}-${raw.substring(6,8)}T${raw.substring(9,11)}:${raw.substring(11,13)}:${raw.substring(13,15)}Z`;
-                   const d = new Date(iso);
-                   if (!isNaN(d.getTime())) {
-                       const prT = new Date(d.getTime() + (3600000 * -4));
-                       return Number(`${prT.getUTCFullYear()}${String(prT.getUTCMonth()+1).padStart(2,'0')}${String(prT.getUTCDate()).padStart(2,'0')}`);
-                   }
-               }
-               const rawD = raw.replace(/T.*/, '');
-               if(rawD.length >= 8) return Number(`${rawD.substring(0,4)}${rawD.substring(4,6)}${rawD.substring(6,8)}`);
-               return 0;
-           };
-           
-           const blockS = parseToYMD(dtStart);
-           const blockE = parseToYMD(dtEnd);
-           
-           if (blockS && blockE) {
-               if (reqStart < blockE && blockS < reqEnd) return true; // CRITICAL: Ghost Overlap Detected
-           }
-       }
-       if (inEvent) {
-          if (line.startsWith('DTSTART')) dtStart = (line.split(':').pop() || '').trim();
-          if (line.startsWith('DTEND')) dtEnd = (line.split(':').pop() || '').trim();
-       }
+        return blocks.some(block => {
+            // Standard overlap logic: (StartA < EndB) AND (EndA > StartB)
+            return reqStart < block.end && block.start < reqEnd;
+        });
+    } catch (err) {
+        console.error('[Ghost-Check] Parser Failure:', err);
+        return false; // Fail-safe: if parser breaks, we don't block payment (but log it)
     }
-    return false;
 }
 
 export default async function handler(req: any, res: any) {
@@ -100,7 +76,7 @@ export default async function handler(req: any, res: any) {
                  if (!feedRes.ok) return false;
                  
                  const icsText = await feedRes.text();
-                 return checkIcsOverlap(icsText, booking.check_in, booking.check_out);
+                 return hasGhostOverlap(icsText, String(booking.property_id), booking.check_in!, booking.check_out!);
               })
             );
             

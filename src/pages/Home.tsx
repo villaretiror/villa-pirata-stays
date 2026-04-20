@@ -152,6 +152,14 @@ const Home: React.FC = () => {
 
   console.log("FILTRO ACTIVO:", { adults, children, pets, activeCategory, propertiesCount: properties.length });
 
+  // 🛡️ TIME-TRAVEL SHIELD: Local Date Formatting (No UTC Shifts)
+  const formatLocalYMD = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
   const filteredProperties = React.useMemo(() => {
     return properties.filter(property => {
       if (property.isOffline) return false;
@@ -161,17 +169,17 @@ const Home: React.FC = () => {
 
       // 🛡️ AVAILABILITY SHIELD: Filter by dates if selected
       if (deferredStartDate && deferredEndDate) {
-        const sStr = deferredStartDate.toISOString().split('T')[0];
-        const eStr = deferredEndDate.toISOString().split('T')[0];
+        const sStr = formatLocalYMD(deferredStartDate);
+        const eStr = formatLocalYMD(deferredEndDate);
         
         const occupiedDates = getOccupiedDatesForProperty(String(property.id));
-        const occupiedStrings = new Set(occupiedDates.map(d => d.toISOString().split('T')[0]));
+        const occupiedStrings = new Set(occupiedDates.map(d => formatLocalYMD(d)));
         
         // 🛡️ RANGE VALIDATOR: Check every night of requested stay
         let hasConflict = false;
         let scan = new Date(deferredStartDate);
         while (scan < deferredEndDate) {
-          if (occupiedStrings.has(scan.toISOString().split('T')[0])) {
+          if (occupiedStrings.has(formatLocalYMD(scan))) {
             hasConflict = true;
             break;
           }
@@ -181,8 +189,8 @@ const Home: React.FC = () => {
         if (hasConflict) return false;
 
         // 2. Check against Manual Blocks
-        const mBlocks = property.blockedDates || [];
-        const isBlockedManually = mBlocks.some(d => d >= sStr && d < eStr);
+        const mBlocks = property.blockedDates || property.blockeddates || [];
+        const isBlockedManually = mBlocks.some((d: string) => d >= sStr && d < eStr);
         if (isBlockedManually) return false;
       }
 
@@ -208,7 +216,30 @@ const Home: React.FC = () => {
 
       return true;
     });
-  }, [properties, getOccupiedDatesForProperty, deferredAdults, deferredChildren, deferredPets, deferredCategory, deferredStartDate, deferredEndDate]);
+  }, [properties, getOccupiedDatesForProperty, deferredAdults, deferredChildren, deferredPets, deferredCategory, deferredStartDate, deferredEndDate, formatLocalYMD]);
+
+  // 🛰️ GLOBAL RADAR: Calculate dates where ALL properties are occupied
+  const globalBlockedDates = React.useMemo(() => {
+    if (properties.length === 0) return [];
+    
+    const propertyOccupancy = properties.map(p => {
+        const occ = getOccupiedDatesForProperty(String(p.id));
+        return new Set(occ.map(d => formatLocalYMD(d)));
+    });
+
+    if (propertyOccupancy.length === 0) return [];
+
+    // Find intersection: days that exist in ALL occupied sets
+    const firstProperty = Array.from(propertyOccupancy[0]);
+    const intersection = firstProperty.filter(dateStr => 
+        propertyOccupancy.every(occSet => occSet.has(dateStr))
+    );
+
+    return intersection.map(dateStr => {
+        const [y, m, d] = dateStr.split('-').map(Number);
+        return new Date(y, m - 1, d, 0, 0, 0);
+    });
+  }, [properties, getOccupiedDatesForProperty, formatLocalYMD]);
 
   // Wait to filter availability after user selection rather than preemptively blocking the global search calendar
   // to avoid confusing users when multiple properties have overlapping legitimate reservations.
@@ -333,21 +364,21 @@ const Home: React.FC = () => {
 
               {searchTab === 'dates' ? (
                   <div className="mb-6 animate-fade-in">
-                    <BookingCalendar 
-                      startDate={startDate} 
-                      endDate={endDate} 
-                      hideHeader={true}
-                      onChange={(update) => {
-                        const [start, end] = update;
-                        setStartDate(start);
-                        setEndDate(end);
-                        if (start && end) {
-                            setTimeout(() => setSearchTab('guests'), 400); // Auto-jump
-                        }
-                      }} 
-                      blockedDates={[]} 
-                      isRangeAvailable={isRangeAvailable}
-                    />
+                      <BookingCalendar 
+                        startDate={startDate} 
+                        endDate={endDate} 
+                        hideHeader={true}
+                        onChange={(update) => {
+                          const [start, end] = update;
+                          setStartDate(start);
+                          setEndDate(end);
+                          if (start && end) {
+                              setTimeout(() => setSearchTab('guests'), 400); // Auto-jump
+                          }
+                        }} 
+                        blockedDates={globalBlockedDates} 
+                        isRangeAvailable={isRangeAvailable}
+                      />
                   </div>
               ) : (
                   <div className="p-5 bg-sand/60 rounded-[2rem] border border-primary/10 mb-6 animate-fade-in">

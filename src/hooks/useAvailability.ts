@@ -19,6 +19,14 @@ export const useAvailability = (propertyId: string | undefined) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+    // 🛡️ TIME-TRAVEL SHIELD: Local Date Formatting (No UTC Shifts)
+    const formatLocal = (d: Date) => {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    };
+
     const fetchAvailability = useCallback(async () => {
         if (!propertyId) return;
         setIsLoading(true);
@@ -76,7 +84,7 @@ export const useAvailability = (propertyId: string | undefined) => {
             const legacyBlocked = propData.blockeddates || propData.blockedDates || [];
             if (Array.isArray(legacyBlocked)) {
                 legacyBlocked.forEach((dStr: string) => {
-                    const [y, m, d] = dStr.split('-').map(Number);
+                    const [y, m, d ] = dStr.split('-').map(Number);
                     allBlocked.push(new Date(y, m - 1, d, 0, 0, 0));
                 });
             }
@@ -93,7 +101,7 @@ export const useAvailability = (propertyId: string | undefined) => {
             // Advance Notice Engine
             let globalAdvanceNotice = 1; // standard
             if (rules && rules.length > 0) {
-                const todayStr = now.toISOString().split('T')[0];
+                const todayStr = formatLocal(now);
                 const activeRule = rules.find((r: any) => todayStr >= r.start_date && todayStr <= r.end_date);
                 if (activeRule && activeRule.advance_notice_days !== undefined) {
                     globalAdvanceNotice = activeRule.advance_notice_days;
@@ -154,14 +162,6 @@ export const useAvailability = (propertyId: string | undefined) => {
         refresh: fetchAvailability,
         isRangeAvailable: (start: Date, end: Date) => {
             if (!start || !end) return true;
-
-            // 🛡️ TIME-TRAVEL SHIELD: Local Date Formatting (No UTC Shifts)
-            const formatLocal = (d: Date) => {
-                const y = d.getFullYear();
-                const m = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${y}-${m}-${day}`;
-            };
 
             const sStr = formatLocal(start);
             const eStr = formatLocal(end);

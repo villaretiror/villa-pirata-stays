@@ -83,30 +83,73 @@ export const CalendarSyncService = {
             if (line === 'END:VEVENT' && inEvent) {
                 inEvent = false;
 
-                // 🛡️ ICAL PRECISION PARSER: Manejo explícito de hora UTC hacia AST
-                const processICalDate = (raw: string) => {
-                    if (raw.includes('T')) {
-                        const dt = raw.trim();
-                        if (dt.length >= 15) {
-                            const isoStr = `${dt.substring(0, 4)}-${dt.substring(4, 6)}-${dt.substring(6, 8)}T${dt.substring(9, 11)}:${dt.substring(11, 13)}:${dt.substring(13, 15)}Z`;
-                            const dateObj = new Date(isoStr);
-                            if (!isNaN(dateObj.getTime())) {
-                                // Forzamos PR Time (UTC - 4)
-                                const prTime = new Date(dateObj.getTime() + (3600000 * -4));
-                                const y = prTime.getUTCFullYear();
-                                const m = String(prTime.getUTCMonth() + 1).padStart(2, '0');
-                                const d = String(prTime.getUTCDate()).padStart(2, '0');
-                                return `${y}-${m}-${d}`;
-                            }
-                        }
+    // 🛡️ ICAL PRECISION PARSER: Manejo explícito de hora UTC hacia AST (Puerto Rico/Caribe)
+    processICalDate(raw: string) {
+        if (!raw) return '';
+        const dt = raw.trim();
+        
+        // Handle full ISO/iCal datetime format (e.g., 20260401T020000Z)
+        if (dt.includes('T')) {
+            try {
+                // Typical format: 20260401T020000Z or 20260401T020000
+                const parts = dt.split('T');
+                const datePart = parts[0];
+                const timePart = parts[1].replace('Z', '');
+                
+                if (datePart.length >= 8) {
+                    const y = datePart.substring(0, 4);
+                    const m = datePart.substring(4, 6);
+                    const d = datePart.substring(6, 8);
+                    
+                    let hh = '00', mm = '00', ss = '00';
+                    if (timePart.length >= 6) {
+                        hh = timePart.substring(0, 2);
+                        mm = timePart.substring(2, 4);
+                        ss = timePart.substring(4, 6);
                     }
-                    const dateOnly = raw.replace(/T.*/, '').trim();
-                    return `${dateOnly.substring(0, 4)}-${dateOnly.substring(4, 6)}-${dateOnly.substring(6, 8)}`;
-                };
+                    
+                    const isoStr = `${y}-${m}-${d}T${hh}:${mm}:${ss}Z`;
+                    const dateObj = new Date(isoStr);
+                    
+                    if (!isNaN(dateObj.getTime())) {
+                        // Forzamos PR Time (UTC - 4) para normalizar a la zona horaria de la Villa
+                        const prTime = new Date(dateObj.getTime() + (3600000 * -4));
+                        const fy = prTime.getUTCFullYear();
+                        const fm = String(prTime.getUTCMonth() + 1).padStart(2, '0');
+                        const fd = String(prTime.getUTCDate()).padStart(2, '0');
+                        return `${fy}-${fm}-${fd}`;
+                    }
+                }
+            } catch (e) {
+                console.error('[CalendarSyncService] Error parsing T-date:', dt, e);
+            }
+        }
+        
+        // Fallback for Date-only format (e.g., 20260401)
+        const dateOnly = dt.replace(/T.*/, '').trim();
+        if (dateOnly.length >= 8) {
+            return `${dateOnly.substring(0, 4)}-${dateOnly.substring(4, 6)}-${dateOnly.substring(6, 8)}`;
+        }
+        
+        return dateOnly;
+    },
+
+    parseIcsToBlocks(icsText: string, propertyId: string) {
+        const lines = icsText.split(/\r?\n/);
+        let inEvent = false, dtStart = '', dtEnd = '', summary = '', uid = '';
+        const blocks = [];
+
+        for (const rawLine of lines) {
+            const line = rawLine.trim();
+            if (line === 'BEGIN:VEVENT') {
+                inEvent = true; dtStart = ''; dtEnd = ''; summary = ''; uid = ''; continue;
+            }
+            if (line === 'END:VEVENT' && inEvent) {
+                inEvent = false;
 
                 if (dtStart.length >= 8 && dtEnd.length >= 8) {
-                    const startDate = processICalDate(dtStart);
-                    const endDate = processICalDate(dtEnd);
+                    const startDate = this.processICalDate(dtStart);
+                    const endDate = this.processICalDate(dtEnd);
                     const eventHash = `${startDate}_${endDate}_${summary}_${uid}`.substring(0, 100);
 
                     blocks.push({ start: startDate, end: endDate, summary, hash: eventHash });
@@ -216,11 +259,18 @@ export const CalendarSyncService = {
             const blocks = this.parseIcsToBlocks(icsText, 'preview');
             const days: string[] = [];
 
+            const formatLocalYMD = (d: Date) => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
             for (const b of blocks) {
                 const current = new Date(`${b.start}T12:00:00`);
                 const end = new Date(`${b.end}T12:00:00`);
                 while (current < end) {
-                    days.push(current.toISOString().split('T')[0]);
+                    days.push(formatLocalYMD(current));
                     current.setDate(current.getDate() + 1);
                 }
             }
